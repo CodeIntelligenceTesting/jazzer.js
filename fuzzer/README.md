@@ -1,10 +1,15 @@
 # Fuzzer plugin for Node
 
-This plugin loads libfuzzer into Node. For now, it can be built with `npm
-install`; a subsequent `npm test` will make sure that it can be loaded. More
-docs to come...
+This plugin loads libfuzzer into Node. Users can install it with `npm install`,
+which tries to download a prebuilt shared object from GitHub but falls back to
+compilation on the user's machine if there is no suitable binary.
+
+More docs to come...
 
 ## Development
+
+The project can be built with `npm run compile` (which is incremental after the
+first build); a subsequent `npm test` makes sure that the plugin loads cleanly.
 
 When working on the plugin's C++ code, you may want to use a language server
 like `clangd` for IDE features. CMake is configured to emit a
