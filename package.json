@@ -1,0 +1,35 @@
+{
+  "name": "fuzzyeagle",
+  "version": "0.0.0",
+  "description": "Coverage-guided, in-process fuzzing for the Node.js",
+  "main": "index.js",
+  "scripts": {
+    "compile": "tsc -p .",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
+  },
+  "keywords": [
+    "coverage-guided",
+    "fuzzing"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
+  },
+  "homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
+  "dependencies": {
+    "@babel/core": "^7.18.6",
+    "@types/babel__core": "^7.1.19",
+    "@types/yargs": "^17.0.10",
+    "istanbul-lib-hook": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^4.7.4"
+  }
+}
