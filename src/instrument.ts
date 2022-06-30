@@ -12,7 +12,6 @@ import {
 
 const { hookRequire } = require("istanbul-lib-hook");
 
-// @ts-ignore
 hookRequire(shouldInstrument, instrumentCode);
 
 export function instrumentCode(code: string): string {

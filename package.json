@@ -6,7 +6,8 @@
   "scripts": {
     "compile": "tsc -p .",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "repository": {
     "type": "git",
@@ -23,13 +24,17 @@
   },
   "homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
   "dependencies": {
-    "@babel/core": "^7.18.6",
-    "@types/babel__core": "^7.1.19",
-    "@types/yargs": "^17.0.10",
-    "istanbul-lib-hook": "^3.0.0"
+    "istanbul-lib-hook": "^3.0.0",
+    "yargs": "^17.5.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.18.6",
+    "@types/babel__core": "^7.1.19",
+    "@types/jest": "^28.1.4",
     "@types/node": "^18.0.0",
+    "@types/yargs": "^17.0.10",
+    "jest": "^28.1.2",
+    "ts-jest": "^28.0.5",
     "typescript": "^4.7.4"
   }
 }
