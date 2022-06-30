@@ -169,7 +169,7 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 }
 
 // Re-export everything from the native library.
-export type FuzzFn = (data: Uint8Array) => void;
+export type FuzzFn = (data: Buffer) => void;
 export type FuzzOpts = string[];
 
 export interface Fuzzer {
@@ -184,11 +184,8 @@ export interface Fuzzer {
 }
 
 export const fuzzer: Fuzzer = {
-	printVersion: addon.printVersion as () => void,
-	startFuzzing: addon.startFuzzing as (
-		fuzzFn: FuzzFn,
-		fuzzOpts: FuzzOpts
-	) => void,
+	printVersion: addon.printVersion,
+	startFuzzing: addon.startFuzzing,
 	nextCounter,
 	incrementCounter,
 	readCounter,

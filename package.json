@@ -51,7 +51,7 @@
 		"packages/*"
 	],
 	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown"
+		"**/*": "prettier --write --ignore-unknown --allow-empty"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
