@@ -15,6 +15,15 @@ endif()
 # Enable the functionality of Node-API version 3 and disable everything added
 # later, so that we don't accidentally break compatibility with older versions
 # of Node (see https://nodejs.org/api/n-api.html#node-api-version-matrix).
+#
+# Note that prebuild recommends in its README to use ${napi_build_version} here,
+# but the variable is only set when cmake-js is invoked via prebuild (in which
+# case the API version is taken from "binary.napi_versions" in package.json).
+# Since we want the build to work in other cases as well, let's just use a
+# constant. (There is currently no point in a dynamic setting anyway since we
+# specify the oldest version that we're compatible with, and Node-API's ABI
+# stability guarantees that this version is available in all future Node-API
+# releases.)
 add_definitions(-DNAPI_VERSION=3)
 
 include_directories(${CMAKE_JS_INC})
