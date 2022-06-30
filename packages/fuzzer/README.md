@@ -1,14 +1,15 @@
-# Fuzzer addon for Node
+# @jazzer.js/fuzzer
 
-This addon loads libfuzzer into Node. Users can install it with `npm install`,
-which tries to download a prebuilt shared object from GitHub but falls back to
-compilation on the user's machine if there is no suitable binary.
+This module provides a native Node.js addon which loads libfuzzer into Node.js.
+Users can install it with `npm install`, which tries to download a prebuilt
+shared object from GitHub but falls back to compilation on the user's machine if
+there is no suitable binary.
 
-Loading the addon initializes libfuzzer and the sanitizer runtime. Users can
-then start the fuzzer with the `startFuzzing` function; see [the
-test](test_fuzzer.ts) for an example. For the time being, the fuzzer runs on the
-main thread and therefore blocks Node's event loop; this is most likely what
-users want, so that their JS fuzz target can run in its normal environment.
+Loading the addon initializes libFuzzer and the sanitizer runtime. Users can
+then start the fuzzer with the exported `startFuzzing` function; see
+[the test](fuzzer.test.ts) for an example. For the time being, the fuzzer runs
+on the main thread and therefore blocks Node's event loop; this is most likely
+what users want, so that their JS fuzz target can run in its normal environment.
 
 ## Development
 
@@ -33,7 +34,7 @@ Internally, the build system uses several steps:
 
 To debug build issues, it's often useful to start with a plain
 `cmake-js compile` or `cmake-js recompile`, which just invokes CMake with a few
-extra arguments that help it to find the Node headers and such.
+extra arguments that help it find the Node.js headers and such.
 
 When working on the addon's C++ code, you may want to use a language server like
 `clangd` for IDE features. CMake is configured to emit a `compile_commands.json`
