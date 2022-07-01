@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "main": "fuzzer.js",
   "scripts": {
-    "test": "node fuzzer.js",
+    "test": "node test_fuzzer.js",
     "prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
     "upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload ${GITHUB_TOKEN}",
     "install": "prebuild-install --runtime napi || cmake-js rebuild",
