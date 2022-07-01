@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-empty-function */
+
 // TODO: Pass request for next counter to native plugin
 let counter = 0;
 export function nextCounter(): number {

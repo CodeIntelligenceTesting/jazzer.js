@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import yargs, { Argv } from "yargs";
-import { instrument } from "./instrument/instrument";
 import path from "path";
+import { instrument } from "./instrument/instrument";
 
 yargs(process.argv.slice(2))
 	.scriptName("fuzzyEagle")
@@ -13,6 +13,7 @@ yargs(process.argv.slice(2))
 				.positional("target", { describe: "fuzz target", type: "string" })
 				.positional("corpus", { describe: "corpus", type: "string" });
 		},
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
 			instrument(path.join(process.cwd(), args.target));
 		}

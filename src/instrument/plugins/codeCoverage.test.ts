@@ -1,7 +1,7 @@
 import { transformSync } from "@babel/core";
 import { codeCoverage } from "./codeCoverage";
 
-let native = require("../../native");
+const native = require("../../native"); // eslint-disable-line @typescript-eslint/no-var-requires
 jest.mock("../../native");
 
 native.nextCounter.mockReturnValue(0);
@@ -9,10 +9,10 @@ native.nextCounter.mockReturnValue(0);
 describe("code coverage instrumentation", () => {
 	describe("IfStatement", () => {
 		it("should add counter in consequent branch and afterwards", () => {
-			let input = `
+			const input = `
                |if (1 < 2)
                |  true;`;
-			let output = `
+			const output = `
                |if (1 < 2) {
                |  incrementCounter(0);
                |  true;
@@ -22,12 +22,12 @@ describe("code coverage instrumentation", () => {
 			expectInstrumentation(input, output);
 		});
 		it("should add counter in alternate branch and afterwards", () => {
-			let input = `
+			const input = `
                |if (1 < 2)
                |  true;
                |else
                |  false;`;
-			let output = `
+			const output = `
                |if (1 < 2) {
                |  incrementCounter(0);
                |  true;
@@ -43,13 +43,13 @@ describe("code coverage instrumentation", () => {
 
 	describe("SwitchStatement", () => {
 		it("should add counter in case and afterwards", () => {
-			let input = `
+			const input = `
                |switch(a) {
                |  case 1: true;
                |  case 2: false; break;
                |  default: true;
                |}`;
-			let output = `
+			const output = `
                |switch (a) {
                |  case 1:
                |    incrementCounter(0);
@@ -72,13 +72,13 @@ describe("code coverage instrumentation", () => {
 
 	describe("TryStatement", () => {
 		it("should add counter in catch block and afterwards", () => {
-			let input = `
+			const input = `
                |try {
                |  dangerousCall();
                |} catch (e) {
                |  console.error(e, e.stack);
                |}`;
-			let output = `
+			const output = `
                |try {
                |  dangerousCall();
                |} catch (e) {
@@ -93,11 +93,11 @@ describe("code coverage instrumentation", () => {
 
 	describe("Loop", () => {
 		it("should add counter in loop and afterwards", () => {
-			let input = `
+			const input = `
                |for(let i = 0; i < 100; i++) {
                |  counter++
                |}`;
-			let output = `
+			const output = `
                |for (let i = 0; i < 100; i++) {
                |  incrementCounter(0);
                |  counter++;
@@ -110,13 +110,13 @@ describe("code coverage instrumentation", () => {
 
 	describe("Function", () => {
 		it("should add counter in function", () => {
-			let input = `
+			const input = `
                |let foo = function add(a) {
                |  return (b) => {
                |    return a + b;
                |  } 
                |};`;
-			let output = `
+			const output = `
                |let foo = function add(a) {
                |  incrementCounter(0);
                |  return b => {
@@ -130,16 +130,16 @@ describe("code coverage instrumentation", () => {
 
 	describe("LogicalExpression", () => {
 		it("should add counters in leaves", () => {
-			let input = `let condition = (a === "a" || (potentiallyNull ?? b === "b")) && c !== "c"`;
-			let output = `let condition = ((incrementCounter(0), a === "a") || ((incrementCounter(0), potentiallyNull) ?? (incrementCounter(0), b === "b"))) && (incrementCounter(0), c !== "c");`;
+			const input = `let condition = (a === "a" || (potentiallyNull ?? b === "b")) && c !== "c"`;
+			const output = `let condition = ((incrementCounter(0), a === "a") || ((incrementCounter(0), potentiallyNull) ?? (incrementCounter(0), b === "b"))) && (incrementCounter(0), c !== "c");`;
 			expectInstrumentation(input, output);
 		});
 	});
 
 	describe("ConditionalExpression", () => {
 		it("should add counters branches", () => {
-			let input = `a === "a" ? true : false;`;
-			let output = `
+			const input = `a === "a" ? true : false;`;
+			const output = `
         |a === "a" ? (incrementCounter(0), true) : (incrementCounter(0), false);
         |incrementCounter(0);`;
 			expectInstrumentation(input, output);
@@ -148,7 +148,7 @@ describe("code coverage instrumentation", () => {
 });
 
 function expectInstrumentation(input: string, output: string) {
-	let result = transformSync(removeIndentation(input), {
+	const result = transformSync(removeIndentation(input), {
 		plugins: [codeCoverage],
 	});
 	expect(result?.code).toBe(removeIndentation(output));

@@ -14,32 +14,12 @@ import {
 import { NodePath, PluginTarget, types } from "@babel/core";
 import { nextCounter } from "../../native";
 
-function addCounterToStmt(branchStmt: Statement): BlockStatement {
-	let counterStmt = makeCounterIncStmt();
-	if (branchStmt.type == "BlockStatement") {
-		const br = branchStmt as BlockStatement;
-		br.body.unshift(counterStmt);
-		return br;
-	} else {
-		return types.blockStatement([counterStmt, branchStmt]);
-	}
-}
-
-function makeCounterIncStmt(): ExpressionStatement {
-	return types.expressionStatement(makeCounterIncExpr());
-}
-
-function makeCounterIncExpr(): Expression {
-	return types.callExpression(types.identifier("incrementCounter"), [
-		types.numericLiteral(nextCounter()),
-	]);
-}
-
 export function codeCoverage(): PluginTarget {
 	return {
 		visitor: {
+			// eslint-disable-next-line @typescript-eslint/ban-types
 			Function(path: NodePath<Function>) {
-				let bodyStmt = path.node.body as BlockStatement;
+				const bodyStmt = path.node.body as BlockStatement;
 				if (bodyStmt) {
 					bodyStmt.body.unshift(makeCounterIncStmt());
 				}
@@ -62,7 +42,7 @@ export function codeCoverage(): PluginTarget {
 				path.insertAfter(makeCounterIncStmt());
 			},
 			TryStatement(path: NodePath<TryStatement>) {
-				let catchStmt = path.node.handler;
+				const catchStmt = path.node.handler;
 				if (catchStmt) {
 					catchStmt.body.body.unshift(makeCounterIncStmt());
 				}
@@ -95,4 +75,25 @@ export function codeCoverage(): PluginTarget {
 			},
 		},
 	};
+}
+
+function addCounterToStmt(branchStmt: Statement): BlockStatement {
+	const counterStmt = makeCounterIncStmt();
+	if (branchStmt.type == "BlockStatement") {
+		const br = branchStmt as BlockStatement;
+		br.body.unshift(counterStmt);
+		return br;
+	} else {
+		return types.blockStatement([counterStmt, branchStmt]);
+	}
+}
+
+function makeCounterIncStmt(): ExpressionStatement {
+	return types.expressionStatement(makeCounterIncExpr());
+}
+
+function makeCounterIncExpr(): Expression {
+	return types.callExpression(types.identifier("incrementCounter"), [
+		types.numericLiteral(nextCounter()),
+	]);
 }
