@@ -1,7 +1,7 @@
 // TODO: Pass request for next counter to native plugin
 let counter = 0;
 export function nextCounter(): number {
-  return counter++;
+	return counter++;
 }
 
 // TODO: incrementCounter applies the never-zero policy
