@@ -1,11 +1,12 @@
-import { instrumentCode } from "./instrument";
+import { transformSync } from "@babel/core";
+import { codeCoverage } from "./codeCoverage";
 
-let native = require("./native");
-jest.mock("./native");
+let native = require("../../native");
+jest.mock("../../native");
 
 native.nextCounter.mockReturnValue(0);
 
-describe("instrumentation", () => {
+describe("code coverage instrumentation", () => {
   describe("IfStatement", () => {
     it("should add counter in consequent branch and afterwards", () => {
       let input = `
@@ -126,12 +127,34 @@ describe("instrumentation", () => {
       expectInstrumentation(input, output);
     });
   });
+
+  describe("LogicalExpression", () => {
+    it("should add counters in leaves", () => {
+      let input = `let condition = (a === "a" || (potentiallyNull ?? b === "b")) && c !== "c"`;
+      let output = `let condition = ((incrementCounter(0), a === "a") || ((incrementCounter(0), potentiallyNull) ?? (incrementCounter(0), b === "b"))) && (incrementCounter(0), c !== "c");`;
+
+      expectInstrumentation(input, output);
+    });
+  });
+
+  describe("ConditionalExpression", () => {
+    it("should add counters branches", () => {
+      let input = `a === "a" ? true : false;`;
+      let output = `
+        |a === "a" ? (incrementCounter(0), true) : (incrementCounter(0), false);
+        |incrementCounter(0);`;
+
+      expectInstrumentation(input, output);
+    });
+  });
 });
 
 function expectInstrumentation(input: string, output: string) {
-  expect(instrumentCode(removeIndentation(input))).toBe(
-    removeIndentation(output)
-  );
+  let result = transformSync(removeIndentation(input), {
+    plugins: [codeCoverage],
+  });
+
+  expect(result?.code).toBe(removeIndentation(output));
 }
 
 function removeIndentation(text: string): string {
