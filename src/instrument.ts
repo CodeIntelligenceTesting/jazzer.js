@@ -9,6 +9,7 @@ import {
   SwitchStatement,
   TryStatement,
 } from "@babel/types";
+import {nextCounter} from "./native";
 
 const { hookRequire } = require("istanbul-lib-hook");
 
@@ -18,7 +19,6 @@ export function instrumentCode(code: string): string {
   let output = transformSync(code, {
     plugins: [addCodeCoverage],
   });
-  console.log(output?.code);
   return output?.code || code;
 }
 
@@ -41,10 +41,6 @@ function makeCounterIncStmt(): ExpressionStatement {
   );
 }
 
-function nextCounter(): number {
-  return 0;
-}
-
 function addCodeCoverage(): PluginTarget {
   return {
     visitor: {
@@ -59,22 +55,24 @@ function addCodeCoverage(): PluginTarget {
         if (path.node.alternate) {
           path.node.alternate = addCounterToStmt(path.node.alternate);
         }
+        path.insertAfter(makeCounterIncStmt())
       },
       SwitchStatement(path: NodePath<SwitchStatement>) {
         path.node.cases.forEach((caseStmt) =>
           caseStmt.consequent.unshift(makeCounterIncStmt())
         );
+        path.insertAfter(makeCounterIncStmt())
       },
       Loop(path: NodePath<Loop>) {
         path.node.body = addCounterToStmt(path.node.body);
         path.insertAfter(makeCounterIncStmt());
       },
       TryStatement(path: NodePath<TryStatement>) {
-        path.node.block.body.unshift(makeCounterIncStmt());
         let catchStmt = path.node.handler;
         if (catchStmt) {
           catchStmt.body.body.unshift(makeCounterIncStmt());
         }
+        path.insertAfter(makeCounterIncStmt())
       },
     },
   };
