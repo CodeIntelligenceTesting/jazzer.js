@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import yargs, { Argv } from "yargs";
-import { instrument } from "./instrument";
+import { instrument } from "./instrument/instrument";
 import path from "path";
 
 yargs(process.argv.slice(2))

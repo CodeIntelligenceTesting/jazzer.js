@@ -1,26 +1,18 @@
-import { NodePath, PluginTarget, transformSync, types } from "@babel/core";
 import {
   BlockStatement,
+  ConditionalExpression,
+  Expression,
   ExpressionStatement,
-  IfStatement,
   Function,
-  Statement,
+  IfStatement,
+  LogicalExpression,
   Loop,
+  Statement,
   SwitchStatement,
   TryStatement,
 } from "@babel/types";
-import { nextCounter } from "./native";
-
-const { hookRequire } = require("istanbul-lib-hook");
-
-hookRequire(shouldInstrument, instrumentCode);
-
-export function instrumentCode(code: string): string {
-  let output = transformSync(code, {
-    plugins: [addCodeCoverage],
-  });
-  return output?.code || code;
-}
+import { NodePath, PluginTarget, types } from "@babel/core";
+import { nextCounter } from "../../native";
 
 function addCounterToStmt(branchStmt: Statement): BlockStatement {
   let counterStmt = makeCounterIncStmt();
@@ -34,14 +26,16 @@ function addCounterToStmt(branchStmt: Statement): BlockStatement {
 }
 
 function makeCounterIncStmt(): ExpressionStatement {
-  return types.expressionStatement(
-    types.callExpression(types.identifier("incrementCounter"), [
-      types.numericLiteral(nextCounter()),
-    ])
-  );
+  return types.expressionStatement(makeCounterIncExpr());
 }
 
-function addCodeCoverage(): PluginTarget {
+function makeCounterIncExpr(): Expression {
+  return types.callExpression(types.identifier("incrementCounter"), [
+    types.numericLiteral(nextCounter()),
+  ]);
+}
+
+export function codeCoverage(): PluginTarget {
   return {
     visitor: {
       Function(path: NodePath<Function>) {
@@ -74,19 +68,31 @@ function addCodeCoverage(): PluginTarget {
         }
         path.insertAfter(makeCounterIncStmt());
       },
+      LogicalExpression(path: NodePath<LogicalExpression>) {
+        if (path.node.left.type !== "LogicalExpression") {
+          path.node.left = types.sequenceExpression([
+            makeCounterIncExpr(),
+            path.node.left,
+          ]);
+        }
+        if (path.node.right.type !== "LogicalExpression") {
+          path.node.right = types.sequenceExpression([
+            makeCounterIncExpr(),
+            path.node.right,
+          ]);
+        }
+      },
+      ConditionalExpression(path: NodePath<ConditionalExpression>) {
+        path.node.consequent = types.sequenceExpression([
+          makeCounterIncExpr(),
+          path.node.consequent,
+        ]);
+        path.node.alternate = types.sequenceExpression([
+          makeCounterIncExpr(),
+          path.node.alternate,
+        ]);
+        path.insertAfter(makeCounterIncStmt());
+      },
     },
   };
-}
-
-function shouldInstrument(filepath: string): boolean {
-  return !filepath.includes("node_modules");
-}
-
-export function instrument(fuzzTargetPath: string) {
-  let fuzzFn = require(fuzzTargetPath).fuzz;
-
-  if (typeof fuzzFn !== "function") {
-    throw new Error(`${fuzzTargetPath} has no fuzz function exported`);
-  }
-  console.log(`fuzzing ${typeof fuzzFn}`);
 }
