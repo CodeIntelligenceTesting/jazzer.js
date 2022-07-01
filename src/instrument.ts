@@ -9,7 +9,7 @@ import {
   SwitchStatement,
   TryStatement,
 } from "@babel/types";
-import {nextCounter} from "./native";
+import { nextCounter } from "./native";
 
 const { hookRequire } = require("istanbul-lib-hook");
 
@@ -55,13 +55,13 @@ function addCodeCoverage(): PluginTarget {
         if (path.node.alternate) {
           path.node.alternate = addCounterToStmt(path.node.alternate);
         }
-        path.insertAfter(makeCounterIncStmt())
+        path.insertAfter(makeCounterIncStmt());
       },
       SwitchStatement(path: NodePath<SwitchStatement>) {
         path.node.cases.forEach((caseStmt) =>
           caseStmt.consequent.unshift(makeCounterIncStmt())
         );
-        path.insertAfter(makeCounterIncStmt())
+        path.insertAfter(makeCounterIncStmt());
       },
       Loop(path: NodePath<Loop>) {
         path.node.body = addCounterToStmt(path.node.body);
@@ -72,7 +72,7 @@ function addCodeCoverage(): PluginTarget {
         if (catchStmt) {
           catchStmt.body.body.unshift(makeCounterIncStmt());
         }
-        path.insertAfter(makeCounterIncStmt())
+        path.insertAfter(makeCounterIncStmt());
       },
     },
   };

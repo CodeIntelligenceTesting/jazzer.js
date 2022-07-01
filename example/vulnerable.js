@@ -1,4 +1,3 @@
-const lib = require('./lib');
+const lib = require("./lib");
 
-if (process.argv.length > 2)
-  lib.revealSecrets(process.argv[2]);
+if (process.argv.length > 2) lib.revealSecrets(process.argv[2]);
