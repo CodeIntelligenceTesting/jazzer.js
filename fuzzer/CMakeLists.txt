@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10) # shipped with Ubuntu 18.04
 project(fuzzy-eagle)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)      # mostly supported since GCC 7
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # To help with development, let's write compile_commands.json unconditionally.
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -26,9 +27,9 @@ endif()
 # releases.)
 add_definitions(-DNAPI_VERSION=3)
 
-include_directories(${CMAKE_JS_INC})
 add_library(${PROJECT_NAME} SHARED "fuzzy-eagle.cpp" ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
 # Include node-addon-api wrappers. Starting in version 7.0.0, cmake-js will be
@@ -39,3 +40,45 @@ execute_process(COMMAND node -p "require('node-addon-api').include"
 string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR})
+
+# Download and build compiler-rt, which contains libfuzzer.
+include(ExternalProject)
+ExternalProject_Add(compiler-rt
+  URL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/compiler-rt-13.0.1.src.tar.xz
+  URL_HASH SHA256=7b33955031f9a9c5d63077dedb0f99d77e4e7c996266952c1cec55626dca5dfc
+  # compiler-rt usually initializes the sanitizer runtime by means of a pointer
+  # in the .preinit_array section; since .preinit_array isn't supported for
+  # shared objects like our Node plugin, disable it here. (We call the
+  # initialization function explicitly in our plugin's initialization code.)
+  CMAKE_ARGS -DCMAKE_CXX_FLAGS="-DSANITIZER_CAN_USE_PREINIT_ARRAY=0"
+  # Skip the install step because it tries to copy files to a hardcoded path in "/usr".
+  INSTALL_COMMAND ""
+  # Tell CMake about the libfuzzer libraries that are built as part of the
+  # external project. Some CMake generators fail if we later depend on the
+  # libraries without declaring them here (including ninja).
+  BUILD_BYPRODUCTS
+  <BINARY_DIR>/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a
+  <BINARY_DIR>/lib/linux/libclang_rt.ubsan_standalone-x86_64.a)
+
+# Make our plugin depend on and link against libfuzzer.
+add_dependencies(${PROJECT_NAME} compiler-rt)
+ExternalProject_Get_Property(compiler-rt BINARY_DIR)
+ExternalProject_Get_Property(compiler-rt SOURCE_DIR)
+message(STATUS "Source dir: ${SOURCE_DIR}")
+target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/lib)
+target_link_libraries(${PROJECT_NAME}
+  -Wl,--push-state,--whole-archive
+  ${BINARY_DIR}/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a
+  ${BINARY_DIR}/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
+  -Wl,--pop-state
+
+  # We may want to include additional libraries here. For example,
+  # libclang_rt.fuzzer_interceptors-x86_64.a contains
+  # https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/fuzzer/FuzzerInterceptors.cpp,
+  # i.e., fuzzer-friendly overrides for some common libc functions. However,
+  # there is a challenge with this particular library: we're not in the binary,
+  # so we can't intercept libc.
+  #
+  # Remember to add any libraries mentioned here to the BUILD_BYPRODUCTS of the
+  # external compiler-rt project above.
+  )

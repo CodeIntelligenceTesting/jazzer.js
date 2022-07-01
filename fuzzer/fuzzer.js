@@ -1,3 +1,4 @@
 const addon = require("bindings")("fuzzy-eagle");
 
-addon.printVersion();
+// Re-export everything from the native library.
+module.exports = addon;
