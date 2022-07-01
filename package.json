@@ -1,48 +1,48 @@
 {
-  "name": "fuzzyeagle",
-  "version": "0.0.0",
-  "description": "Coverage-guided, in-process fuzzing for the Node.js",
-  "homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
-  "keywords": [
-    "coverage-guided",
-    "fuzzing"
-  ],
-  "author": "",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
-  },
-  "main": "index.js",
-  "scripts": {
-    "compile": "tsc -p .",
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "format:all": "prettier --write .",
-    "prepare": "husky install"
-  },
-  "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
-  },
-  "dependencies": {
-    "istanbul-lib-hook": "^3.0.0",
-    "yargs": "^17.5.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.18.6",
-    "@types/babel__core": "^7.1.19",
-    "@types/jest": "^28.1.4",
-    "@types/node": "^18.0.0",
-    "@types/yargs": "^17.0.10",
-    "husky": "^8.0.1",
-    "jest": "^28.1.2",
-    "lint-staged": "^13.0.3",
-    "prettier": "2.7.1",
-    "ts-jest": "^28.0.5",
-    "typescript": "^4.7.4"
-  }
+	"name": "fuzzyeagle",
+	"version": "0.0.0",
+	"description": "Coverage-guided, in-process fuzzing for the Node.js",
+	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
+	"keywords": [
+		"coverage-guided",
+		"fuzzing"
+	],
+	"author": "",
+	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
+	},
+	"main": "index.js",
+	"scripts": {
+		"compile": "tsc -p .",
+		"build": "tsc",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"format:all": "prettier --write .",
+		"prepare": "husky install"
+	},
+	"lint-staged": {
+		"**/*": "prettier --write --ignore-unknown"
+	},
+	"dependencies": {
+		"istanbul-lib-hook": "^3.0.0",
+		"yargs": "^17.5.1"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.18.6",
+		"@types/babel__core": "^7.1.19",
+		"@types/jest": "^28.1.4",
+		"@types/node": "^18.0.0",
+		"@types/yargs": "^17.0.10",
+		"husky": "^8.0.1",
+		"jest": "^28.1.2",
+		"lint-staged": "^13.0.3",
+		"prettier": "2.7.1",
+		"ts-jest": "^28.0.5",
+		"typescript": "^4.7.4"
+	}
 }
