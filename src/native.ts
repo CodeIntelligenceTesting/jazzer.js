@@ -8,5 +8,31 @@ export function nextCounter(): number {
 }
 
 // TODO: incrementCounter applies the never-zero policy
-// noinspection JSUnusedLocalSymbols
 export function incrementCounter(id: number) {}
+
+export function traceStrCmp(s1: string, s2: string, operator: string): boolean {
+	let result = false;
+	let shouldCallLibfuzzer = false;
+	switch (operator) {
+		case "==":
+			result = s1 == s2;
+			shouldCallLibfuzzer = !result;
+			break;
+		case "===":
+			result = s1 === s2;
+			shouldCallLibfuzzer = !result;
+			break;
+		case "!=":
+			result = s1 != s2;
+			shouldCallLibfuzzer = result;
+			break;
+		case "!==":
+			result = s1 !== s2;
+			shouldCallLibfuzzer = result;
+			break;
+	}
+	if (shouldCallLibfuzzer) {
+		// TODO: Pass values to native plugin
+	}
+	return result;
+}
