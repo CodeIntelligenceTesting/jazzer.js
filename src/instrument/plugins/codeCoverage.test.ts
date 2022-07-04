@@ -1,10 +1,12 @@
-import { transformSync } from "@babel/core";
 import { codeCoverage } from "./codeCoverage";
+import { instrumentWith } from "./testhelpers";
 
-const native = require("../../native"); // eslint-disable-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const native = require("../../native");
 jest.mock("../../native");
-
 native.nextCounter.mockReturnValue(0);
+
+const expectInstrumentation = instrumentWith(codeCoverage);
 
 describe("code coverage instrumentation", () => {
 	describe("IfStatement", () => {
@@ -146,14 +148,3 @@ describe("code coverage instrumentation", () => {
 		});
 	});
 });
-
-function expectInstrumentation(input: string, output: string) {
-	const result = transformSync(removeIndentation(input), {
-		plugins: [codeCoverage],
-	});
-	expect(result?.code).toBe(removeIndentation(output));
-}
-
-function removeIndentation(text: string): string {
-	return text.replace(/^\s*\|/gm, "");
-}
