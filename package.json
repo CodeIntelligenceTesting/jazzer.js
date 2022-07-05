@@ -20,7 +20,7 @@
 	"scripts": {
 		"compile": "tsc -p .",
 		"build": "tsc",
-		"test": "jest",
+		"test": "jest && cd fuzzer && npm install && npm test",
 		"test:watch": "jest --watch",
 		"lint": "eslint .",
 		"lint:fix": "npm run lint -- --fix",
@@ -49,6 +49,7 @@
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-jest": "^26.5.3",
 		"husky": "^8.0.1",
+		"jest": "^28.1.2",
 		"lint-staged": "^13.0.3",
 		"prettier": "2.7.1",
 		"ts-jest": "^28.0.5",
