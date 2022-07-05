@@ -44,13 +44,23 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR})
 # Download and build compiler-rt, which contains libfuzzer.
 include(ExternalProject)
 ExternalProject_Add(compiler-rt
-  URL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/compiler-rt-13.0.1.src.tar.xz
-  URL_HASH SHA256=7b33955031f9a9c5d63077dedb0f99d77e4e7c996266952c1cec55626dca5dfc
+  URL https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/llvm-project-14.0.6.src.tar.xz
+  URL_HASH SHA256=8b3cfd7bc695bd6cea0f37f53f0981f34f87496e79e2529874fd03a2f9dd3a8a
+  SOURCE_SUBDIR compiler-rt
+  CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
   # shared objects like our Node plugin, disable it here. (We call the
   # initialization function explicitly in our plugin's initialization code.)
-  CMAKE_ARGS -DCMAKE_CXX_FLAGS="-DSANITIZER_CAN_USE_PREINIT_ARRAY=0"
+  -DCMAKE_CXX_FLAGS="-DSANITIZER_CAN_USE_PREINIT_ARRAY=0"
+  # No need to build all the sanitizers; the UBSan standalone runtime is built
+  # by default, and that's all we need.
+  -DCOMPILER_RT_SANITIZERS_TO_BUILD=""
+  # Don't build libc++ into the fuzzer; our own code is C++ as well, so we're
+  # going to link against a C++ runtime anyway.
+  -DCOMPILER_RT_USE_LIBCXX=OFF
+  # Use the same build type as the parent project.
+  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   # Skip the install step because it tries to copy files to a hardcoded path in "/usr".
   INSTALL_COMMAND ""
   # Tell CMake about the libfuzzer libraries that are built as part of the
@@ -64,8 +74,7 @@ ExternalProject_Add(compiler-rt
 add_dependencies(${PROJECT_NAME} compiler-rt)
 ExternalProject_Get_Property(compiler-rt BINARY_DIR)
 ExternalProject_Get_Property(compiler-rt SOURCE_DIR)
-message(STATUS "Source dir: ${SOURCE_DIR}")
-target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/lib)
+target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/compiler-rt/lib)
 target_link_libraries(${PROJECT_NAME}
   -Wl,--push-state,--whole-archive
   ${BINARY_DIR}/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a

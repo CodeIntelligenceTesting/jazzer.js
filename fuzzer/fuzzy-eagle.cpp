@@ -12,6 +12,7 @@
 #include <ubsan/ubsan_init.h>
 
 namespace {
+
 // Information about a JS fuzz target.
 struct FuzzTargetInfo {
   Napi::Env env;
@@ -32,6 +33,7 @@ int FuzzCallback(const uint8_t *Data, size_t Size) {
       {Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size)});
   return 0;
 }
+
 } // namespace
 
 // A basic sanity check: ask the Node API for version information and print it.
