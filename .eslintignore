@@ -1,6 +1,5 @@
 dist
 coverage
 node_modules
-fuzzer/build
-fuzzer/node_modules
+packages/fuzzer/build
 .idea

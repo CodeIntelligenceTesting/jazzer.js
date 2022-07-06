@@ -2,8 +2,8 @@ import { codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const native = require("../../native");
-jest.mock("../../native");
+const native = require("../native");
+jest.mock("../native");
 native.nextCounter.mockReturnValue(0);
 
 const expectInstrumentation = instrumentWith(codeCoverage);

@@ -24,7 +24,7 @@ describe("compare hooks instrumentation", () => {
 			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, false, "c", "==");
 		});
 
-		it("intercepts not equals (`==` and `===`)", () => {
+		it("intercepts not equals (`!=` and `!==`)", () => {
 			native.traceStrCmp.mockClear().mockReturnValue(true);
 
 			const input = `
@@ -48,8 +48,8 @@ describe("compare hooks instrumentation", () => {
 // API function with a jest mock, which can be configured in the test.
 function mockNativePluginApi() {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const native = require("../../native");
-	jest.mock("../../native");
+	const native = require("../native");
+	jest.mock("../native");
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
 	global.fuzzer = native;

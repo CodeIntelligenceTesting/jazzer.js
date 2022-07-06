@@ -12,7 +12,7 @@ import {
 	TryStatement,
 } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { nextCounter } from "../../native";
+import { nextCounter } from "../native";
 
 export function codeCoverage(): PluginTarget {
 	return {
@@ -77,14 +77,14 @@ export function codeCoverage(): PluginTarget {
 	};
 }
 
-function addCounterToStmt(branchStmt: Statement): BlockStatement {
+function addCounterToStmt(stmt: Statement): BlockStatement {
 	const counterStmt = makeCounterIncStmt();
-	if (branchStmt.type == "BlockStatement") {
-		const br = branchStmt as BlockStatement;
+	if (stmt.type == "BlockStatement") {
+		const br = stmt as BlockStatement;
 		br.body.unshift(counterStmt);
 		return br;
 	} else {
-		return types.blockStatement([counterStmt, branchStmt]);
+		return types.blockStatement([counterStmt, stmt]);
 	}
 }
 
