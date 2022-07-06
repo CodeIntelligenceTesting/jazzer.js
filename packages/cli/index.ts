@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import yargs, { Argv } from "yargs";
-import path from "path";
-import { instrument } from "./instrument/instrument";
+import * as path from "path";
+import { instrument } from "../instrumentor/instrument";
 
 yargs(process.argv.slice(2))
 	.scriptName("fuzzyEagle")

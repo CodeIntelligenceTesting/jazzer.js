@@ -1,0 +1,14 @@
+{
+	"name": "@fuzzy-eagle/cli",
+	"version": "0.0.0",
+	"description": "",
+	"main": "index.js",
+	"author": "Code Intelligence",
+	"license": "Apache-2.0",
+	"dependencies": {
+		"yargs": "^17.5.1"
+	},
+	"devDependencies": {
+		"@types/yargs": "^17.0.10"
+	}
+}
