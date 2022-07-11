@@ -17,10 +17,6 @@
 			"@fuzzy-eagle/instrumentor": ["./packages/instrumentor"]
 		}
 	},
-	"include": [
-		"packages/cli/**/*.ts",
-		"packages/instrumentor/**/*.ts",
-		"packages/fuzzer/**/*.ts"
-	],
-	"exclude": ["node_modules", "packages/fuzzer/build"]
+	"include": ["packages/**/*.ts"],
+	"exclude": ["node_modules"]
 }

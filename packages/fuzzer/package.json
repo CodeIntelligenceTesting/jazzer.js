@@ -6,11 +6,11 @@
 	"license": "Apache-2.0",
 	"main": "fuzzer.js",
 	"scripts": {
-		"test": "node test_fuzzer.js",
+		"test": "node ../../dist/fuzzer/test_fuzzer.js",
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
 		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload ${GITHUB_TOKEN}",
-		"install": "prebuild-install --runtime napi || cmake-js rebuild",
-		"compile": "cmake-js compile"
+		"install": "prebuild-install --runtime napi || cmake-js rebuild --out ../../build",
+		"compile": "cmake-js compile --out ../../build"
 	},
 	"dependencies": {
 		"bindings": "^1.5.0",
