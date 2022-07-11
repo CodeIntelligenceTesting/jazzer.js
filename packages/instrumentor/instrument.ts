@@ -1,26 +1,27 @@
 import { transformSync } from "@babel/core";
+import { hookRequire } from "istanbul-lib-hook";
 import { codeCoverage } from "./plugins/codeCoverage";
 
-const { hookRequire } = require("istanbul-lib-hook"); // eslint-disable-line @typescript-eslint/no-var-requires
+export function registerInstrumentor(includes: string[], excludes: string[]) {
+	hookRequire(shouldInstrument(includes, excludes), instrumentCode);
+}
 
-hookRequire(shouldInstrument, instrumentCode);
+export function shouldInstrument(
+	includes: string[],
+	excludes: string[]
+): (filepath: string) => boolean {
+	return (filepath: string) => {
+		const included =
+			includes.find((include) => filepath.includes(include)) !== undefined;
+		const excluded =
+			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
+		return included && !excluded;
+	};
+}
 
-export function instrumentCode(code: string): string {
+function instrumentCode(code: string): string {
 	const output = transformSync(code, {
 		plugins: [codeCoverage],
 	});
 	return output?.code || code;
-}
-
-function shouldInstrument(filepath: string): boolean {
-	return !filepath.includes("node_modules");
-}
-
-export function instrument(fuzzTargetPath: string) {
-	const fuzzFn = require(fuzzTargetPath).fuzz; // eslint-disable-line @typescript-eslint/no-var-requires
-
-	if (typeof fuzzFn !== "function") {
-		throw new Error(`${fuzzTargetPath} has no fuzz function exported`);
-	}
-	console.log(`fuzzing ${typeof fuzzFn}`);
 }

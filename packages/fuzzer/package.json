@@ -4,7 +4,7 @@
 	"author": "Code Intelligence",
 	"version": "0.0.0",
 	"license": "Apache-2.0",
-	"main": "fuzzer.js",
+	"main": "fuzzer.ts",
 	"scripts": {
 		"test": "node ../../dist/fuzzer/test_fuzzer.js",
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
@@ -24,6 +24,7 @@
 		]
 	},
 	"devDependencies": {
+		"@types/bindings": "^1.5.1",
 		"prebuild": "^11.0.3"
 	},
 	"repository": {
