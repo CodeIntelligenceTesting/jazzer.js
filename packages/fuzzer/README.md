@@ -6,7 +6,7 @@ compilation on the user's machine if there is no suitable binary.
 
 Loading the plugin initializes libfuzzer and the sanitizer runtime. Users can
 then start the fuzzer with the `startFuzzing` function; see [the
-test](test_fuzzer.js) for an example. For the time being, the fuzzer runs on the
+test](test_fuzzer.ts) for an example. For the time being, the fuzzer runs on the
 main thread and therefore blocks Node's event loop; this is most likely what
 users want, so that their JS fuzz target can run in its normal environment.
 

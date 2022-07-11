@@ -1,26 +1,41 @@
 import { transformSync } from "@babel/core";
+import { shouldInstrument } from "./matcher";
 import { codeCoverage } from "./plugins/codeCoverage";
+import { Fuzzer } from "@fuzzy-eagle/fuzzer";
 
-const { hookRequire } = require("istanbul-lib-hook"); // eslint-disable-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { hookRequire } = require("istanbul-lib-hook");
 
-hookRequire(shouldInstrument, instrumentCode);
+export interface InstrumentationOptions {
+	fuzzFunction: string;
+	includes: string[];
+	excludes: string[];
+	fuzzerOptions: string[];
+}
 
-export function instrumentCode(code: string): string {
+function instrumentCode(code: string): string {
 	const output = transformSync(code, {
 		plugins: [codeCoverage],
 	});
 	return output?.code || code;
 }
 
-function shouldInstrument(filepath: string): boolean {
-	return !filepath.includes("node_modules");
-}
-
-export function instrument(fuzzTargetPath: string) {
-	const fuzzFn = require(fuzzTargetPath).fuzz; // eslint-disable-line @typescript-eslint/no-var-requires
-
+export function instrument(
+	fuzzTargetPath: string,
+	options: InstrumentationOptions
+) {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	const fuzzFn = require(fuzzTargetPath)[options.fuzzFunction];
 	if (typeof fuzzFn !== "function") {
-		throw new Error(`${fuzzTargetPath} has no fuzz function exported`);
+		throw new Error(
+			`${fuzzTargetPath} has no fuzz function "${options.fuzzFunction}" exported`
+		);
 	}
-	console.log(`fuzzing ${typeof fuzzFn}`);
+
+	hookRequire(
+		shouldInstrument(options.includes, options.excludes),
+		instrumentCode
+	);
+
+	Fuzzer.startFuzzing(fuzzFn, options.fuzzerOptions);
 }
