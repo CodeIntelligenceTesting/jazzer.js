@@ -1,5 +1,5 @@
 dist
+build
 coverage
 node_modules
-packages/fuzzer/build
 .idea
