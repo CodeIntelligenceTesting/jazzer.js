@@ -12,4 +12,9 @@ export const Fuzzer = {
 		fuzzOpts: FuzzOpts
 	) => void,
 	printVersion: addon.printVersion as () => void,
+	traceUnequalStrings: addon.traceUnequalStrings as (
+		id: number,
+		str1: string,
+		str2: string
+	) => void,
 };

@@ -1,5 +1,5 @@
 {
-	"name": "fuzzyeagle",
+	"name": "fuzzy-eagle",
 	"version": "0.0.0",
 	"description": "Coverage-guided, in-process fuzzing for Node.js",
 	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
@@ -16,24 +16,22 @@
 		"type": "git",
 		"url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
 	},
-	"main": "index.js",
 	"scripts": {
-		"compile": "tsc -p .",
-		"build": "tsc",
+		"compile:watch": "tsc -p . --incremental --pretty --watch",
+		"build": "tsc -b tsconfig.build.json",
 		"test": "jest",
 		"test:watch": "jest --watch",
-		"test:all": "./scripts/test.sh",
+		"test:all": "npm run test && npm run test --ws --if-present",
 		"lint": "eslint .",
 		"lint:fix": "npm run lint -- --fix",
 		"prettier": "prettier --check .",
 		"prettier:fix": "prettier --write .",
 		"format": "npm run prettier:fix && npm run lint:fix",
-		"prepare": "husky install"
-	},
-	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown"
+		"prepare": "husky install",
+		"install": "npm run build && npm run compile --ws --if-present"
 	},
 	"devDependencies": {
+		"@types/bindings": "^1.5.1",
 		"@types/jest": "^28.1.4",
 		"@types/yargs": "^17.0.10",
 		"@typescript-eslint/eslint-plugin": "^5.30.0",
@@ -50,5 +48,12 @@
 	},
 	"workspaces": [
 		"packages/*"
-	]
+	],
+	"lint-staged": {
+		"**/*": "prettier --write --ignore-unknown"
+	},
+	"engines": {
+		"node": ">= 14.0.0",
+		"npm": ">= 7.0.0"
+	}
 }

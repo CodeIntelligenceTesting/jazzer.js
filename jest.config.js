@@ -2,5 +2,5 @@
 module.exports = {
 	preset: "ts-jest",
 	testEnvironment: "node",
-	modulePathIgnorePatterns: ["<rootDir>/dist/"],
+	modulePathIgnorePatterns: ["dist", "packages/fuzzer/build"],
 };
