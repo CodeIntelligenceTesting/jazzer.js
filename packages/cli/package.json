@@ -1,14 +1,33 @@
 {
 	"name": "@fuzzy-eagle/cli",
 	"version": "0.0.0",
-	"description": "",
-	"main": "index.js",
+	"private": true,
+	"description": "FuzzyEagle CLI",
+	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
+	"bugs": {
+		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git",
+		"directory": "packages/cli"
+	},
+	"main": "dist/cli.js",
+	"types": "dist/cli.d.ts",
+	"bin": {
+		"fuzzyEagle": "dist/cli.js"
+	},
 	"dependencies": {
+		"@fuzzy-eagle/instrumentor": "*",
 		"yargs": "^17.5.1"
 	},
 	"devDependencies": {
 		"@types/yargs": "^17.0.10"
+	},
+	"engines": {
+		"node": ">= 14.0.0",
+		"npm": ">= 7.0.0"
 	}
 }

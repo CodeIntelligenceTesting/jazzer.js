@@ -1,0 +1,26 @@
+# Ignore build files similar to .gitignore
+.idea
+.github
+.husky
+.eslint*
+.prettier*
+*.tgz
+jest*
+build
+coverage
+node_modules
+
+# Exclude docs, those can be accessed online
+docs
+*.md
+
+# Exclude example
+example
+
+# Exclude all tests, test helpers and such
+*test*
+
+# Exclude all TypeScript source files
+*.ts
+!*.d.ts
+*test*.d.ts

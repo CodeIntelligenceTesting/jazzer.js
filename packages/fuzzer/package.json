@@ -1,16 +1,32 @@
 {
 	"name": "@fuzzy-eagle/fuzzer",
-	"description": "A libfuzzer-based fuzzer for Node",
-	"author": "Code Intelligence",
 	"version": "0.0.0",
+	"private": true,
+	"description": "A libfuzzer-based fuzzer for Node",
+	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
+	"author": "Code Intelligence",
 	"license": "Apache-2.0",
-	"main": "fuzzer.ts",
+	"bugs": {
+		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git",
+		"directory": "packages/fuzzer"
+	},
+	"main": "dist/fuzzer.js",
+	"types": "dist/fuzzer.d.ts",
 	"scripts": {
-		"test": "node ../../dist/fuzzer/test_fuzzer.js",
+		"test": "node ./dist/test_fuzzer.js",
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
 		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload ${GITHUB_TOKEN}",
-		"install": "prebuild-install --runtime napi || cmake-js rebuild --out ../../build",
-		"compile": "cmake-js compile --out ../../build"
+		"install": "prebuild-install --runtime napi || cmake-js rebuild --out build",
+		"compile": "cmake-js compile --out build"
+	},
+	"binary": {
+		"napi_versions": [
+			3
+		]
 	},
 	"dependencies": {
 		"bindings": "^1.5.0",
@@ -18,17 +34,12 @@
 		"node-addon-api": "^5.0.0",
 		"prebuild-install": "^7.1.1"
 	},
-	"binary": {
-		"napi_versions": [
-			3
-		]
-	},
 	"devDependencies": {
 		"@types/bindings": "^1.5.1",
 		"prebuild": "^11.0.3"
 	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
+	"engines": {
+		"node": ">= 14.0.0",
+		"npm": ">= 7.0.0"
 	}
 }
