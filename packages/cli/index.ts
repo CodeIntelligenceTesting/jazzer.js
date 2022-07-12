@@ -2,7 +2,7 @@
 
 import yargs, { Argv } from "yargs";
 import * as path from "path";
-import { instrument, InstrumentationOptions } from "../instrumentor/instrument";
+import { instrument, InstrumentationOptions } from "@fuzzy-eagle/instrumentor";
 
 yargs(process.argv.slice(2))
 	.scriptName("fuzzyEagle")

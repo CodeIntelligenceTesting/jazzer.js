@@ -1,11 +1,20 @@
 {
 	"name": "@fuzzy-eagle/cli",
 	"version": "0.0.0",
+	"private": true,
 	"description": "",
-	"main": "index.js",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle.git"
+	},
+	"main": "dist/index.js",
+	"bin": {
+		"fuzzyEagle": "dist/index.js"
+	},
 	"dependencies": {
+		"@fuzzy-eagle/instrumentor": "*",
 		"yargs": "^17.5.1"
 	},
 	"devDependencies": {
