@@ -11,6 +11,8 @@
 #include <fuzzer/FuzzerDefs.h>
 #include <ubsan/ubsan_init.h>
 
+#include "shared/callbacks.h"
+
 namespace {
 
 // Information about a JS fuzz target.
@@ -104,6 +106,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
   exports["printVersion"] = Napi::Function::New<PrintVersion>(env);
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
+
+  RegisterCallbackExports(env, exports);
   return exports;
 }
 

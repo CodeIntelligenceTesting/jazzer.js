@@ -1,10 +1,10 @@
-# Fuzzer plugin for Node
+# Fuzzer addon for Node
 
-This plugin loads libfuzzer into Node. Users can install it with `npm install`,
+This addon loads libfuzzer into Node. Users can install it with `npm install`,
 which tries to download a prebuilt shared object from GitHub but falls back to
 compilation on the user's machine if there is no suitable binary.
 
-Loading the plugin initializes libfuzzer and the sanitizer runtime. Users can
+Loading the addon initializes libfuzzer and the sanitizer runtime. Users can
 then start the fuzzer with the `startFuzzing` function; see [the
 test](test_fuzzer.js) for an example. For the time being, the fuzzer runs on the
 main thread and therefore blocks Node's event loop; this is most likely what
@@ -13,8 +13,10 @@ users want, so that their JS fuzz target can run in its normal environment.
 ## Development
 
 The project can be built with `npm run compile` (which is incremental after the
-first build); a subsequent `npm test` makes sure that the plugin loads cleanly.
-Binaries can be prebuilt with `npm run prebuild` and uploaded with `npm run upload`.
+first build); a subsequent `npm test` makes sure that the addon loads cleanly.
+Binaries can be prebuilt with `npm run prebuild` and uploaded with
+`npm run upload`. Please format the code with `clang-format` (or use the format
+functionality of `clangd`).
 
 Internally, the build system uses several steps:
 
@@ -29,10 +31,10 @@ Internally, the build system uses several steps:
 5. In our CMake configuration, we set up compiler-rt as an external project;
    CMake fetches and builds it before compiling our own code against it.
 
-To debug build issues, it's often useful to start with a plain `cmake-js compile` or `cmake-js recompile`, which just invokes CMake with a few extra
-arguments that help it to find the Node headers and such.
+To debug build issues, it's often useful to start with a plain
+`cmake-js compile` or `cmake-js recompile`, which just invokes CMake with a few
+extra arguments that help it to find the Node headers and such.
 
-When working on the plugin's C++ code, you may want to use a language server
-like `clangd` for IDE features. CMake is configured to emit a
-`compile_commands.json` file, so the language server should work after the first
-`npm install`.
+When working on the addon's C++ code, you may want to use a language server like
+`clangd` for IDE features. CMake is configured to emit a `compile_commands.json`
+file, so the language server should work after the first `npm install`.

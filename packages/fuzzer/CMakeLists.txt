@@ -27,7 +27,10 @@ endif()
 # releases.)
 add_definitions(-DNAPI_VERSION=3)
 
-add_library(${PROJECT_NAME} SHARED "fuzzy-eagle.cpp" ${CMAKE_JS_SRC})
+add_library(${PROJECT_NAME} SHARED
+  "fuzzy-eagle.cpp"
+  "shared/callbacks.cpp"
+  ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
