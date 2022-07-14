@@ -17,14 +17,14 @@
 	"main": "dist/instrument.js",
 	"types": "dist/instrument.d.js",
 	"dependencies": {
-		"@fuzzy-eagle/fuzzer": "*",
 		"@babel/core": "^7.18.6",
+		"@fuzzy-eagle/fuzzer": "*",
 		"istanbul-lib-hook": "^3.0.0"
 	},
 	"devDependencies": {
 		"@types/babel__core": "^7.1.19",
 		"@types/istanbul-lib-hook": "^2.0.1",
-		"@types/node": "^18.0.0"
+		"@types/node": "^18.0.3"
 	},
 	"engines": {
 		"node": ">= 14.0.0",

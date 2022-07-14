@@ -29,7 +29,7 @@ export function compareHooks(): PluginTarget {
 					path.node.operator === "!=="
 				) {
 					path.replaceWith(
-						types.callExpression(types.identifier("fuzzer.traceStrCmp"), [
+						types.callExpression(types.identifier("Fuzzer.traceStrCmp"), [
 							path.node.left,
 							path.node.right,
 							types.stringLiteral(path.node.operator),

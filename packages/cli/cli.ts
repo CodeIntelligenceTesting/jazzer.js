@@ -114,7 +114,12 @@ interface Options {
 	fuzzerOptions: string[];
 }
 
+declare global {
+	var Fuzzer: any;
+}
+
 function startFuzzing(options: Options) {
+	globalThis.Fuzzer = Fuzzer;
 	registerInstrumentor(options.includes, options.excludes);
 
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
