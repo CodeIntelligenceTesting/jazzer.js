@@ -1,3 +1,8 @@
+# Fuzzer reports
+crash-*
+oom-*
+
+# Editors
 .idea
 
 # Build dir
