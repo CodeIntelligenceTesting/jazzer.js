@@ -1,0 +1,13 @@
+{
+	"name": "fuzzy-eagle-spectral-example",
+	"version": "0.0.0",
+	"scripts": {
+		"fuzz": "npx fuzzyEagle spectral-example -i spectral -e nothing"
+	},
+	"dependencies": {
+		"@stoplight/spectral-parsers": "^1.0.1"
+	},
+	"devDependencies": {
+		"@fuzzyEagle/cli": "file:../../packages/cli"
+	}
+}
