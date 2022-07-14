@@ -1,6 +1,7 @@
 import { transformSync } from "@babel/core";
 import { hookRequire } from "istanbul-lib-hook";
 import { codeCoverage } from "./plugins/codeCoverage";
+import { compareHooks } from "./plugins/compareHooks";
 
 export function registerInstrumentor(includes: string[], excludes: string[]) {
 	hookRequire(shouldInstrument(includes, excludes), instrumentCode);
@@ -21,7 +22,7 @@ export function shouldInstrument(
 
 function instrumentCode(code: string): string {
 	const output = transformSync(code, {
-		plugins: [codeCoverage],
+		plugins: [codeCoverage, compareHooks],
 	});
 	return output?.code || code;
 }

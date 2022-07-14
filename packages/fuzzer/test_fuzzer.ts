@@ -3,10 +3,13 @@ import { Fuzzer } from "./fuzzer";
 Fuzzer.printVersion();
 
 // Our fake fuzz target.
-const fuzz = (data: Uint8Array) => {
-	console.log("Fuzz target called with", data);
+export function fuzz(data: Uint8Array) {
+	const s = data.toString();
+	// console.log("Fuzz target called with", s);
 	// Fake a string comparison to make sure that libfuzzer hooks work.
-	Fuzzer.traceUnequalStrings(42, "foo", "bar");
-};
-
-Fuzzer.startFuzzing(fuzz, ["-runs=0"]);
+	if (s.length > 3) {
+		if (s.slice(0, 3) === "bar") {
+			throw Error('Found "bar"!');
+		}
+	}
+}

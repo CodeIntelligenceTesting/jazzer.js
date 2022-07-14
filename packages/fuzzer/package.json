@@ -21,7 +21,8 @@
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
 		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload ${GITHUB_TOKEN}",
 		"install": "prebuild-install --runtime napi || cmake-js rebuild --out build",
-		"compile": "cmake-js compile --out build"
+		"compile": "cmake-js compile --out build",
+		"format": "clang-format -i *.cpp shared/*.cpp shared/*.h"
 	},
 	"binary": {
 		"napi_versions": [
@@ -36,6 +37,8 @@
 	},
 	"devDependencies": {
 		"@types/bindings": "^1.5.1",
+		"@types/node": "^18.0.3",
+		"clang-format": "^1.8.0",
 		"prebuild": "^11.0.3"
 	},
 	"engines": {

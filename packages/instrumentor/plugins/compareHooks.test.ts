@@ -15,7 +15,7 @@ describe("compare hooks instrumentation", () => {
 			|a === "b" == "c"`;
 			const output = `
 			|let a = "a";
-			|fuzzer.traceStrCmp(fuzzer.traceStrCmp(a, "b", "==="), "c", "==");`;
+			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "==="), "c", "==");`;
 
 			const result = expectInstrumentation<boolean>(input, output);
 			expect(result).toBe(false);
@@ -32,7 +32,7 @@ describe("compare hooks instrumentation", () => {
 			|a !== "b" != "c"`;
 			const output = `
 			|let a = "a";
-			|fuzzer.traceStrCmp(fuzzer.traceStrCmp(a, "b", "!=="), "c", "!=");`;
+			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "!=="), "c", "!=");`;
 
 			const result = expectInstrumentation<boolean>(input, output);
 			expect(result).toBe(true);
