@@ -3,9 +3,9 @@
 	"version": "0.0.0",
 	"description": "An example showing how fuzzy-eagle handles string comparisons in the code",
 	"scripts": {
-		"fuzz": "npx fuzzyEagle fuzz"
+		"cifuzz": "fuzzyEagle fuzz"
 	},
 	"devDependencies": {
-		"@fuzzyEagle/cli": "file:../../packages/cli"
+		"@fuzzy-eagle/core": "file:../../packages/core"
 	}
 }

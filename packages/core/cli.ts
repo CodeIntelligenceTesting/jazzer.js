@@ -2,8 +2,7 @@
 
 import yargs, { Argv } from "yargs";
 import * as path from "path";
-import { registerInstrumentor } from "@fuzzy-eagle/instrumentor";
-import { Fuzzer } from "@fuzzy-eagle/fuzzer";
+import { startFuzzing } from "./core";
 
 yargs(process.argv.slice(2))
 	.scriptName("fuzzyEagle")
@@ -105,29 +104,3 @@ yargs(process.argv.slice(2))
 		}
 	)
 	.help().argv;
-
-interface Options {
-	fuzzTarget: string;
-	fuzzFunction: string;
-	includes: string[];
-	excludes: string[];
-	fuzzerOptions: string[];
-}
-
-declare global {
-	var Fuzzer: any;
-}
-
-function startFuzzing(options: Options) {
-	globalThis.Fuzzer = Fuzzer;
-	registerInstrumentor(options.includes, options.excludes);
-
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const fuzzFn = require(options.fuzzTarget)[options.fuzzFunction];
-	if (typeof fuzzFn !== "function") {
-		throw new Error(
-			`${options.fuzzTarget} does not export function "${options.fuzzFunction}"`
-		);
-	}
-	Fuzzer.startFuzzing(fuzzFn, options.fuzzerOptions);
-}

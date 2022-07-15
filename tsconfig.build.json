@@ -1,7 +1,7 @@
 {
 	"files": [],
 	"references": [
-		{ "path": "packages/cli" },
+		{ "path": "packages/core" },
 		{ "path": "packages/fuzzer" },
 		{ "path": "packages/instrumentor" }
 	]
