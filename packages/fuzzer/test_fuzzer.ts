@@ -1,15 +1,14 @@
-import { Fuzzer } from "./fuzzer";
-
-Fuzzer.printVersion();
-
-// Our fake fuzz target.
 export function fuzz(data: Uint8Array) {
 	const s = data.toString();
-	// console.log("Fuzz target called with", s);
-	// Fake a string comparison to make sure that libfuzzer hooks work.
-	if (s.length > 3) {
-		if (s.slice(0, 3) === "bar") {
-			throw Error('Found "bar"!');
+	if (s.length > 6) {
+		if (
+			s.slice(0, 3) === "CIF" &&
+			s[3] === "U" &&
+			s[4] == "Z" &&
+			s[5] == "Z" &&
+			s[6] == "!"
+		) {
+			throw Error("Welcome to Awesome Fuzzing!");
 		}
 	}
 }
