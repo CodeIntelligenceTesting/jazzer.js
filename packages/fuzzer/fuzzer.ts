@@ -20,7 +20,7 @@ const addon = bind("fuzzy-eagle");
 
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
-const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
+export const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
 
 addon.registerCoverageMap(coverageMap);
 addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);

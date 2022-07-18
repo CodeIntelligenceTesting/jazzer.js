@@ -68,17 +68,18 @@ void PrintVersion(const Napi::CallbackInfo &info) {
 // value is ignored.
 void StartFuzzing(const Napi::CallbackInfo &info) {
   if (info.Length() != 2 || !info[0].IsFunction() || !info[1].IsArray()) {
-    throw Napi::Error::New(info.Env(),
-                           "Need two arguments, which must be the fuzz target "
-                           "function and an array of libfuzzer arguments");
+    Napi::Error::New(info.Env(),
+                     "Need two arguments, which must be the fuzz target "
+                     "function and an array of libfuzzer arguments")
+        .ThrowAsJavaScriptException();
   }
 
   std::vector<std::string> fuzzer_args;
   for (auto [_, fuzzer_arg] : info[1].As<Napi::Array>()) {
     auto val = static_cast<Napi::Value>(fuzzer_arg);
     if (!val.IsString()) {
-      throw Napi::Error::New(info.Env(),
-                             "libfuzzer arguments have to be strings");
+      Napi::Error::New(info.Env(), "libfuzzer arguments have to be strings")
+          .ThrowAsJavaScriptException();
     }
 
     fuzzer_args.push_back(val.As<Napi::String>().Utf8Value());
