@@ -72,7 +72,15 @@ export function traceStrCmp(s1: string, s2: string, operator: string): boolean {
 export type FuzzFn = (data: Uint8Array) => void;
 export type FuzzOpts = string[];
 
-export const Fuzzer = {
+export interface Fuzzer {
+	printVersion: () => void;
+	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
+	nextCounter: typeof nextCounter;
+	traceStrCmp: typeof traceStrCmp;
+	incrementCounter: typeof incrementCounter;
+}
+
+export const fuzzer: Fuzzer = {
 	printVersion: addon.printVersion as () => void,
 	startFuzzing: addon.startFuzzing as (
 		fuzzFn: FuzzFn,
