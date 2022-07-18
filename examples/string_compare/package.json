@@ -1,11 +1,11 @@
 {
-	"name": "fuzzy-eagle-string-compare-example",
+	"name": "jazzerjs-string-compare-example",
 	"version": "0.0.0",
 	"description": "An example showing how fuzzy-eagle handles string comparisons in the code",
 	"scripts": {
-		"cifuzz": "fuzzyEagle fuzz"
+		"fuzz": "jazzer fuzz"
 	},
 	"devDependencies": {
-		"@fuzzy-eagle/core": "file:../../packages/core"
+		"@jazzer.js/core": "file:../../packages/core"
 	}
 }

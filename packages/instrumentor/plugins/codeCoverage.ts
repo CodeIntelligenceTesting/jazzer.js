@@ -28,7 +28,7 @@ import {
 	TryStatement,
 } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { nextCounter } from "@fuzzy-eagle/fuzzer";
+import { nextCounter } from "@jazzer.js/fuzzer";
 
 export function codeCoverage(): PluginTarget {
 	return {

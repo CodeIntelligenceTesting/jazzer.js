@@ -20,7 +20,7 @@ import * as path from "path";
 import { startFuzzing } from "./core";
 
 yargs(process.argv.slice(2))
-	.scriptName("fuzzyEagle")
+	.scriptName("jazzer")
 	.parserConfiguration({
 		"camel-case-expansion": false,
 		"strip-aliased": true,

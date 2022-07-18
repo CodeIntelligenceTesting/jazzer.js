@@ -1,5 +1,5 @@
 {
-	"name": "@fuzzy-eagle/core",
+	"name": "@jazzer.js/core",
 	"version": "0.0.0",
 	"private": true,
 	"description": "FuzzyEagle CLI",
@@ -17,10 +17,10 @@
 	"main": "dist/cli.js",
 	"types": "dist/cli.d.ts",
 	"bin": {
-		"fuzzyEagle": "dist/cli.js"
+		"jazzer": "dist/cli.js"
 	},
 	"dependencies": {
-		"@fuzzy-eagle/instrumentor": "*",
+		"@jazzer.js/instrumentor": "*",
 		"yargs": "^17.5.1"
 	},
 	"devDependencies": {
