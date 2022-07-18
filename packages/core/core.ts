@@ -1,5 +1,5 @@
 /* eslint no-var: 0 */
-import { Fuzzer } from "@fuzzy-eagle/fuzzer";
+import * as fuzzer from "@fuzzy-eagle/fuzzer";
 import { registerInstrumentor } from "@fuzzy-eagle/instrumentor";
 
 interface Options {
@@ -11,11 +11,11 @@ interface Options {
 }
 
 declare global {
-	var Fuzzer: any;
+	var Fuzzer: fuzzer.Fuzzer;
 }
 
 export function startFuzzing(options: Options) {
-	globalThis.Fuzzer = Fuzzer;
+	globalThis.Fuzzer = fuzzer.fuzzer;
 	registerInstrumentor(options.includes, options.excludes);
 
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
