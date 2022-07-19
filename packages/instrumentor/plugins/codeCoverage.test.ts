@@ -156,10 +156,9 @@ describe("code coverage instrumentation", () => {
 
 	describe("ConditionalExpression", () => {
 		it("should add counters branches", () => {
-			const input = `a === "a" ? true : false;`;
+			const input = `(a === "a" ? x : y) + 1`;
 			const output = `
-        |a === "a" ? (Fuzzer.incrementCounter(0), true) : (Fuzzer.incrementCounter(0), false);
-        |Fuzzer.incrementCounter(0);`;
+        |(a === "a" ? (Fuzzer.incrementCounter(0), x) : (Fuzzer.incrementCounter(0), y)) + 1;`;
 			expectInstrumentation(input, output);
 		});
 	});
