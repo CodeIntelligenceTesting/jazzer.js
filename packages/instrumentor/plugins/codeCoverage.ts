@@ -35,9 +35,11 @@ export function codeCoverage(): PluginTarget {
 		visitor: {
 			// eslint-disable-next-line @typescript-eslint/ban-types
 			Function(path: NodePath<Function>) {
-				const bodyStmt = path.node.body as BlockStatement;
-				if (bodyStmt) {
-					bodyStmt.body.unshift(makeCounterIncStmt());
+				if (path.node.body.type == "BlockStatement") {
+					const bodyStmt = path.node.body as BlockStatement;
+					if (bodyStmt) {
+						bodyStmt.body.unshift(makeCounterIncStmt());
+					}
 				}
 			},
 			IfStatement(path: NodePath<IfStatement>) {
@@ -87,7 +89,9 @@ export function codeCoverage(): PluginTarget {
 					makeCounterIncExpr(),
 					path.node.alternate,
 				]);
-				path.insertAfter(makeCounterIncStmt());
+				if (path.parent.type === "BlockStatement") {
+					path.insertAfter(makeCounterIncStmt());
+				}
 			},
 		},
 	};
@@ -95,7 +99,7 @@ export function codeCoverage(): PluginTarget {
 
 function addCounterToStmt(stmt: Statement): BlockStatement {
 	const counterStmt = makeCounterIncStmt();
-	if (stmt.type == "BlockStatement") {
+	if (stmt.type === "BlockStatement") {
 		const br = stmt as BlockStatement;
 		br.body.unshift(counterStmt);
 		return br;
