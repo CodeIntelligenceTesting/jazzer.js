@@ -1,6 +1,6 @@
 {
 	"name": "jazzer.js",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Coverage-guided, in-process fuzzing for Node.js",
 	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
 	"keywords": [
