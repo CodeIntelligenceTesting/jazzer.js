@@ -56,7 +56,7 @@ int FuzzCallback(const uint8_t *Data, size_t Size) {
 void PrintVersion(const Napi::CallbackInfo &info) {
   auto napi_version = Napi::VersionManagement::GetNapiVersion(info.Env());
   auto node_version = Napi::VersionManagement::GetNodeVersion(info.Env());
-  std::cout << "fuzzyEagle running on Node " << node_version->major
+  std::cout << "Jazzer.js running on Node " << node_version->major
             << " using Node-API version " << napi_version << std::endl;
 }
 
@@ -92,7 +92,7 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
   // Prepare a fake command line and start the fuzzer. This is made slightly
   // awkward by the fact that libfuzzer requires the string data to be mutable
   // and expects a C-style array of pointers.
-  std::string progname{"fuzzer"};
+  std::string progname{"jazzer"};
   std::vector<char *> fuzzer_arg_pointers;
   fuzzer_arg_pointers.push_back(progname.data());
   for (auto &arg : fuzzer_args)

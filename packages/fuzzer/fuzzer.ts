@@ -16,7 +16,7 @@
 
 import { default as bind } from "bindings";
 
-const addon = bind("fuzzy-eagle");
+const addon = bind("jazzer.js");
 
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;

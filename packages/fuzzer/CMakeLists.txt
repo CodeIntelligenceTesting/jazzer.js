@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10) # shipped with Ubuntu 18.04
-project(fuzzy-eagle)
+project(jazzer.js)
 
 set(CMAKE_CXX_STANDARD 17)      # mostly supported since GCC 7
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,7 +28,7 @@ endif()
 add_definitions(-DNAPI_VERSION=3)
 
 add_library(${PROJECT_NAME} SHARED
-  "fuzzy-eagle.cpp"
+  "addon.cpp"
   "shared/callbacks.cpp"
   "shared/coverage_tracker.cpp"
   ${CMAKE_JS_SRC})
