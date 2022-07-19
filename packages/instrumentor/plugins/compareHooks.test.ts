@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
+const helpers = mockHelpers();
 import { compareHooks } from "./compareHooks";
 import { instrumentAndEvalWith } from "./testhelpers";
+import { types } from "@babel/core";
 
 const native = mockNativePluginApi();
 
@@ -25,36 +27,43 @@ describe("compare hooks instrumentation", () => {
 	describe("string compares", () => {
 		it("intercepts equals (`==` and `===`)", () => {
 			native.traceStrCmp.mockClear().mockReturnValue(false);
-
+			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 			const input = `
 			|let a = "a"
 			|a === "b" == "c"`;
 			const output = `
 			|let a = "a";
-			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "==="), "c", "==");`;
+			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "===", 0), "c", "==", 0);`;
 
 			const result = expectInstrumentation<boolean>(input, output);
 			expect(result).toBe(false);
 			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===");
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, false, "c", "==");
+			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===", 0);
+			expect(native.traceStrCmp).toHaveBeenNthCalledWith(
+				2,
+				false,
+				"c",
+				"==",
+				0
+			);
 		});
 
 		it("intercepts not equals (`!=` and `!==`)", () => {
 			native.traceStrCmp.mockClear().mockReturnValue(true);
+			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
 			|let a = "a"
 			|a !== "b" != "c"`;
 			const output = `
 			|let a = "a";
-			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "!=="), "c", "!=");`;
+			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "!==", 0), "c", "!=", 0);`;
 
 			const result = expectInstrumentation<boolean>(input, output);
 			expect(result).toBe(true);
 			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==");
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=");
+			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==", 0);
+			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=", 0);
 		});
 	});
 });
@@ -70,4 +79,11 @@ function mockNativePluginApi() {
 	// @ts-ignore
 	global.Fuzzer = native;
 	return native;
+}
+
+function mockHelpers() {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	const helpers = require("./helpers");
+	jest.mock("./helpers");
+	return helpers;
 }

@@ -16,6 +16,7 @@
 
 import { BinaryExpression } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
+import { fakePC } from "./helpers";
 
 export function compareHooks(): PluginTarget {
 	return {
@@ -49,6 +50,7 @@ export function compareHooks(): PluginTarget {
 							path.node.left,
 							path.node.right,
 							types.stringLiteral(path.node.operator),
+							fakePC(),
 						])
 					);
 				}

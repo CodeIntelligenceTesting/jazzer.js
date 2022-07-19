@@ -56,7 +56,12 @@ export function incrementCounter(id: number) {
 	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, id);
 }
 
-export function traceStrCmp(s1: string, s2: string, operator: string): boolean {
+export function traceStrCmp(
+	s1: string,
+	s2: string,
+	operator: string,
+	id: number
+): boolean {
 	let result = false;
 	let shouldCallLibfuzzer = false;
 	switch (operator) {
@@ -77,9 +82,8 @@ export function traceStrCmp(s1: string, s2: string, operator: string): boolean {
 			shouldCallLibfuzzer = result;
 			break;
 	}
-	if (shouldCallLibfuzzer) {
-		// TODO Pass a proper site ID.
-		addon.traceUnequalStrings(42, s1, s2);
+	if (shouldCallLibfuzzer && s1 && s2) {
+		addon.traceUnequalStrings(id, s1, s2);
 	}
 	return result;
 }
