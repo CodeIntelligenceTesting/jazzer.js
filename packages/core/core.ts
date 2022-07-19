@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-/* eslint no-var: 0 */
-import * as fuzzer from "@fuzzy-eagle/fuzzer";
-import { registerInstrumentor } from "@fuzzy-eagle/instrumentor";
+import * as fuzzer from "@jazzer.js/fuzzer";
+import { registerInstrumentor } from "@jazzer.js/instrumentor";
 
 interface Options {
 	fuzzTarget: string;
@@ -27,6 +26,7 @@ interface Options {
 }
 
 declare global {
+	// eslint-disable-next-line no-var
 	var Fuzzer: fuzzer.Fuzzer;
 }
 

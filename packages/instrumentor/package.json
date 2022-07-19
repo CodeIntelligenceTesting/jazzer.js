@@ -1,24 +1,23 @@
 {
-	"name": "@fuzzy-eagle/instrumentor",
-	"version": "0.0.0",
-	"private": true,
-	"description": "FuzzyEagle source code instrumentor",
-	"homepage": "https://github.com/CodeIntelligenceTesting/fuzzyEagle#readme",
+	"name": "@jazzer.js/instrumentor",
+	"version": "0.2.0",
+	"description": "Jazzer.js source code instrumentor",
+	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
 	"bugs": {
-		"url": "https://github.com/CodeIntelligenceTesting/fuzzyEagle/issues"
+		"url": "https://github.com/CodeIntelligenceTesting/jazzer.js/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/CodeIntelligenceTesting/fuzzyEagle.git",
+		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git",
 		"directory": "packages/instrumentor"
 	},
 	"main": "dist/instrument.js",
 	"types": "dist/instrument.d.js",
 	"dependencies": {
 		"@babel/core": "^7.18.6",
-		"@fuzzy-eagle/fuzzer": "*",
+		"@jazzer.js/fuzzer": "*",
 		"istanbul-lib-hook": "^3.0.0"
 	},
 	"devDependencies": {

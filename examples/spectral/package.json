@@ -1,13 +1,13 @@
 {
-	"name": "fuzzy-eagle-spectral-example",
-	"version": "0.0.0",
+	"name": "jazzerjs-spectral-example",
+	"version": "0.2.0",
 	"scripts": {
-		"fuzz": "fuzzyEagle spectral-example -i spectral -e nothing"
+		"fuzz": "jazzer spectral-example -i spectral -e nothing"
 	},
 	"dependencies": {
 		"@stoplight/spectral-parsers": "^1.0.1"
 	},
 	"devDependencies": {
-		"@fuzzy-eagle/core": "file:../../packages/core"
+		"@jazzer.js/core": "file:../../packages/core"
 	}
 }

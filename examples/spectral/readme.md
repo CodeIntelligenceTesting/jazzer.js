@@ -1,4 +1,4 @@
-# FuzzyEagle Example: Spectral
+# Jazzer.js Example: Spectral
 
 Fuzz test example for [Spectral](https://github.com/stoplightio/spectral).
 

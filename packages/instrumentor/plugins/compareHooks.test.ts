@@ -64,8 +64,8 @@ describe("compare hooks instrumentation", () => {
 // API function with a jest mock, which can be configured in the test.
 function mockNativePluginApi() {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const native = require("@fuzzy-eagle/fuzzer");
-	jest.mock("@fuzzy-eagle/fuzzer");
+	const native = require("@jazzer.js/fuzzer");
+	jest.mock("@jazzer.js/fuzzer");
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
 	global.Fuzzer = native;
