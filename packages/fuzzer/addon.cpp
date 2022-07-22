@@ -41,12 +41,24 @@ struct FuzzTargetInfo {
 std::optional<FuzzTargetInfo> gFuzzTarget;
 
 int FuzzCallback(const uint8_t *Data, size_t Size) {
-  gFuzzTarget->target.Call(
-      // TODO Do we really want to copy the data? The user isn't allowed to
-      // modify it (else the fuzzer will abort); moreover, we don't know when
-      // the JS buffer is going to be garbage-collected. But it would still be
-      // nice for efficiency if we could use a pointer instead of copying.
-      {Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size)});
+  // Create a new active scope so that handles for the buffer objects created in
+  // this function will be associated with it. This makes sure that these
+  // handles are only held alive through the lifespan of this scope and gives
+  // the garbage collector a chance to deallocate them between the fuzzer
+  // iterations. Otherwise, new handles will be associated with the original
+  // scope created by Node.js when calling native code. This would exhaust
+  // memory resources since the scope would only end when the native function
+  // returns, which will not happen because of the fuzzing loop.
+  // See:
+  // https://github.com/nodejs/node-addon-api/blob/35b65712c26a49285cdbe2b4d04e25a5eccbe719/doc/object_lifetime_management.md
+  auto scope = Napi::HandleScope(gFuzzTarget->env);
+
+  // TODO Do we really want to copy the data? The user isn't allowed to
+  // modify it (else the fuzzer will abort); moreover, we don't know when
+  // the JS buffer is going to be garbage-collected. But it would still be
+  // nice for efficiency if we could use a pointer instead of copying.
+  auto data = Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size);
+  gFuzzTarget->target.Call({data});
   return 0;
 }
 
