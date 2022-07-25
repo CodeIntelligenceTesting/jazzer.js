@@ -1,0 +1,17 @@
+{
+	"name": "jpeg-fuzz",
+	"version": "1.0.0",
+	"description": "",
+	"main": "fuzz.js",
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"jpeg-js": "^0.4.4"
+	},
+	"scripts": {
+		"fuzz": "jazzer fuzz -i jpeg-js -e nothing"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}
