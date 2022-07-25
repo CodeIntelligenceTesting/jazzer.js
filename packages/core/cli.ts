@@ -103,19 +103,34 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			startFuzzing({
-				fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
-				fuzzFunction: args.fuzzFunction,
-				includes: args.instrumentation_includes.map((include: string) =>
-					// empty string matches every file
-					include === "*" ? "" : include
-				),
-				excludes: args.instrumentation_excludes.map((exclude: string) =>
-					// empty string matches every file
-					exclude === "*" ? "" : exclude
-				),
-				fuzzerOptions: args.corpus.concat(args._),
-			});
+			try {
+				startFuzzing({
+					fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
+					fuzzFunction: args.fuzzFunction,
+					includes: args.instrumentation_includes.map((include: string) =>
+						// empty string matches every file
+						include === "*" ? "" : include
+					),
+					excludes: args.instrumentation_excludes.map((exclude: string) =>
+						// empty string matches every file
+						exclude === "*" ? "" : exclude
+					),
+					fuzzerOptions: args.corpus.concat(args._),
+				});
+			} catch (e: unknown) {
+				let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
+				if (e instanceof Error) {
+					errorMessage += e.message;
+					console.log(errorMessage);
+					console.log(e.stack);
+				} else if (typeof e === "string" || e instanceof String) {
+					errorMessage += e.toLowerCase();
+					console.log(errorMessage);
+				} else {
+					errorMessage += "unknown";
+					console.log(errorMessage);
+				}
+			}
 		}
 	)
 	.help().argv;
