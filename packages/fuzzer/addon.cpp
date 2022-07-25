@@ -43,13 +43,15 @@ std::optional<FuzzTargetInfo> gFuzzTarget;
 int FuzzCallback(const uint8_t *Data, size_t Size) {
   // Create a new active scope so that handles for the buffer objects created in
   // this function will be associated with it. This makes sure that these
-  // handles are only held alive through the lifespan of this scope and gives
+  // handles are only held live through the lifespan of this scope and gives
   // the garbage collector a chance to deallocate them between the fuzzer
   // iterations. Otherwise, new handles will be associated with the original
-  // scope created by Node.js when calling native code. This would exhaust
-  // memory resources since the scope would only end when the native function
-  // returns, which will not happen because of the fuzzing loop.
-  // See:
+  // scope created by Node.js when calling StartFuzzing. The lifespan for this
+  // default scope is tied to the lifespan of the native method call. The result
+  // is that, by default, handles remain valid and the objects associated with
+  // these handles will be held live for the lifespan of the native method call.
+  // This would exhaust memory resources since we run in an endless fuzzing loop
+  // and only return when a bug is found. See:
   // https://github.com/nodejs/node-addon-api/blob/35b65712c26a49285cdbe2b4d04e25a5eccbe719/doc/object_lifetime_management.md
   auto scope = Napi::HandleScope(gFuzzTarget->env);
 
