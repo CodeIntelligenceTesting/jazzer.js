@@ -18,8 +18,12 @@ jobs:
           cache: "npm"
       - name: Install Dependencies
         run: npm install
-      - name: Check file formatting
+      - name: Check formatting for JS/TS
         run: npm run lint
+      - name: Install dependencies with apt
+        run: sudo apt-get install --yes clang-tidy
+      - name: Check formatting for C/C++
+        run: npm run lint -w packages/fuzzer
 
   unit_tests:
     runs-on: ${{ matrix.os }}
