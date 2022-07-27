@@ -20,6 +20,8 @@
 extern "C" {
 void __sanitizer_weak_hook_strcmp(void *called_pc, const char *s1,
                                   const char *s2, int result);
+void __sanitizer_cov_trace_const_cmp8_with_pc(uintptr_t called_pc,
+                                              uint64_t arg1, uint64_t arg2);
 }
 
 // Record a comparison between two strings in the target that returned unequal.
@@ -39,11 +41,27 @@ void TraceUnequalStrings(const Napi::CallbackInfo &info) {
   __sanitizer_weak_hook_strcmp((void *)id, s1.c_str(), s2.c_str(), 1);
 }
 
+void TraceIntegerCompare(const Napi::CallbackInfo &info) {
+  if (info.Length() != 3) {
+    Napi::Error::New(
+        info.Env(),
+        "Need three arguments: the trace ID and the two compared numbers")
+        .ThrowAsJavaScriptException();
+  }
+
+  auto id = info[0].As<Napi::Number>().Int64Value();
+  auto arg1 = info[1].As<Napi::Number>().Int64Value();
+  auto arg2 = info[2].As<Napi::Number>().Int64Value();
+  __sanitizer_cov_trace_const_cmp8_with_pc(id, arg1, arg2);
+}
+
 void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
-  exports["traceUnequalStrings"] =
-      Napi::Function::New<TraceUnequalStrings>(env);
   exports["registerCoverageMap"] =
       Napi::Function::New<RegisterCoverageMap>(env);
   exports["registerNewCounters"] =
       Napi::Function::New<RegisterNewCounters>(env);
+  exports["traceUnequalStrings"] =
+      Napi::Function::New<TraceUnequalStrings>(env);
+  exports["traceIntegerCompare"] =
+      Napi::Function::New<TraceIntegerCompare>(env);
 }
