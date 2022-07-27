@@ -19,7 +19,7 @@ import { compareHooks } from "./compareHooks";
 import { instrumentAndEvalWith } from "./testhelpers";
 import { types } from "@babel/core";
 
-const native = mockNativePluginApi();
+const native = mockNativeAddonApi();
 
 const expectInstrumentation = instrumentAndEvalWith(compareHooks);
 
@@ -66,12 +66,95 @@ describe("compare hooks instrumentation", () => {
 			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=", 0);
 		});
 	});
+
+	describe("integer compares", () => {
+		it("intercepts equals (`==` and `===`))", () => {
+			native.traceNumberCmp.mockClear().mockReturnValue(false);
+			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+
+			const input = `
+			|let a = 10
+			|a === 20 == 30`;
+			const output = `
+			|let a = 10;
+			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "===", 0), 30, "==", 0);`;
+			const result = expectInstrumentation<boolean>(input, output);
+			expect(result).toBe(false);
+			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+				1,
+				10,
+				20,
+				"===",
+				0
+			);
+			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+				2,
+				false,
+				30,
+				"==",
+				0
+			);
+		});
+
+		it("intercepts not equals (`!=` and `!==`))", () => {
+			native.traceNumberCmp.mockClear().mockReturnValue(true);
+			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+
+			const input = `
+			|let a = 10
+			|a !== 20 != 30`;
+			const output = `
+			|let a = 10;
+			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "!==", 0), 30, "!=", 0);`;
+			const result = expectInstrumentation<boolean>(input, output);
+			expect(result).toBe(true);
+			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+				1,
+				10,
+				20,
+				"!==",
+				0
+			);
+			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+				2,
+				true,
+				30,
+				"!=",
+				0
+			);
+		});
+
+		it("intercepts greater and less them", () => {
+			[">", "<", ">=", "<="].forEach((operator) => {
+				native.traceNumberCmp.mockClear().mockReturnValue(false);
+				helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+				const input = `
+				|let a = 10
+				|a ${operator} 20`;
+				const output = `
+				|let a = 10;
+				|Fuzzer.traceNumberCmp(a, 20, "${operator}", 0);`;
+				const result = expectInstrumentation<boolean>(input, output);
+				expect(result).toBe(false);
+				expect(native.traceNumberCmp).toHaveBeenCalledTimes(1);
+				expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+					1,
+					10,
+					20,
+					operator,
+					0
+				);
+			});
+		});
+	});
 });
 
-// Mock global native plugin API
+// Mock global native addon API
 // This is normally done by the jest environment. Here we replace every
 // API function with a jest mock, which can be configured in the test.
-function mockNativePluginApi() {
+function mockNativeAddonApi() {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const native = require("@jazzer.js/fuzzer");
 	jest.mock("@jazzer.js/fuzzer");
