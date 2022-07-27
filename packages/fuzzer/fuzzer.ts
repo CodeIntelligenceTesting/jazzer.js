@@ -88,6 +88,37 @@ export function traceStrCmp(
 	return result;
 }
 
+export function traceNumberCmp(
+	n1: number,
+	n2: number,
+	operator: string,
+	id: number
+): boolean {
+	if (Number.isInteger(n1) && Number.isInteger(n2)) {
+		addon.traceIntegerCompare(id, n1, n2);
+	}
+	switch (operator) {
+		case "==":
+			return n1 == n2;
+		case "===":
+			return n1 === n2;
+		case "!=":
+			return n1 != n2;
+		case "!==":
+			return n1 !== n2;
+		case ">":
+			return n1 > n2;
+		case ">=":
+			return n1 >= n2;
+		case "<":
+			return n1 < n2;
+		case "<=":
+			return n1 <= n2;
+		default:
+			throw `unexpected number comparison operator ${operator}`;
+	}
+}
+
 // Re-export everything from the native library.
 export type FuzzFn = (data: Uint8Array) => void;
 export type FuzzOpts = string[];
@@ -96,8 +127,9 @@ export interface Fuzzer {
 	printVersion: () => void;
 	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
 	nextCounter: typeof nextCounter;
-	traceStrCmp: typeof traceStrCmp;
 	incrementCounter: typeof incrementCounter;
+	traceStrCmp: typeof traceStrCmp;
+	traceNumberCmp: typeof traceNumberCmp;
 }
 
 export const fuzzer: Fuzzer = {
@@ -107,6 +139,7 @@ export const fuzzer: Fuzzer = {
 		fuzzOpts: FuzzOpts
 	) => void,
 	nextCounter,
-	traceStrCmp,
 	incrementCounter,
+	traceStrCmp,
+	traceNumberCmp,
 };
