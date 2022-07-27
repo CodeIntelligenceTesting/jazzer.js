@@ -51,7 +51,9 @@ ExternalProject_Add(compiler-rt
   URL https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/llvm-project-14.0.6.src.tar.xz
   URL_HASH SHA256=8b3cfd7bc695bd6cea0f37f53f0981f34f87496e79e2529874fd03a2f9dd3a8a
   SOURCE_SUBDIR compiler-rt
-  PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/transform_exit_to_return.patch
+  PATCH_COMMAND
+        patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/transform_exit_to_return.patch &&
+        patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/add_with_pc_sanitizer_cov_tracing_functions.patch
   CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
