@@ -1,0 +1,11 @@
+{
+	"name": "jazzerjs-value-profiling-example",
+	"version": "0.2.0",
+	"description": "An example showing how Jazzer.js handles integer comparisons in the code",
+	"scripts": {
+		"fuzz": "jazzer fuzz -- -use_value_profile=1"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}
