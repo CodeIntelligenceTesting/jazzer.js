@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
+/**
+ * @param {number} n
+ */
 function encrypt(n) {
 	return n ^ 0x11223344;
 }
 
-function fuzz(data) {
+/**
+ * @param { Buffer } data
+ */
+module.exports.fuzz = function (data) {
 	if (data.length < 16) {
 		return;
 	}
@@ -30,6 +36,4 @@ function fuzz(data) {
 	) {
 		throw Error("XOR with a constant is not a secure encryption method ;-)");
 	}
-}
-
-exports.fuzz = fuzz;
+};

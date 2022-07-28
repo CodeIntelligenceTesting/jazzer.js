@@ -5,19 +5,22 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const xml2js = require("xml2js");
 
+/**
+ * @param { Buffer } data
+ */
 async function fuzz(data) {
 	try {
 		await xml2js.parseStringPromise(data.toString(), {});
 	} catch (error) {
-		if (!expectedError(error)) throw error;
+		if (!ignoredError(error)) throw error;
 	}
 }
 
-function expectedError(error) {
-	return !!expected.find((message) => error.message.startsWith(message));
+function ignoredError(error) {
+	return !!ignored.find((message) => error.message.startsWith(message));
 }
 
-const expected = [
+const ignored = [
 	"Non-whitespace before first tag",
 	"Unencoded",
 	"Unexpected end",
@@ -34,4 +37,4 @@ const expected = [
 	"Unexpected close tag",
 ];
 
-exports.fuzz = fuzz;
+module.exports.fuzz = fuzz;

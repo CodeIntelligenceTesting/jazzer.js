@@ -5,21 +5,24 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const jpeg = require("jpeg-js");
 
-function fuzz(buf) {
+/**
+ * @param { Buffer } data
+ */
+module.exports.fuzz = function (data) {
 	try {
-		jpeg.decode(buf);
+		jpeg.decode(data);
 	} catch (error) {
 		// Those are "valid" exceptions. we can't catch them in one line as
 		// jpeg-js doesn't export/inherit from one exception class/style.
-		if (!expectedError(error)) throw error;
+		if (!ignoredError(error)) throw error;
 	}
+};
+
+function ignoredError(error) {
+	return !!ignored.find((message) => error.message.indexOf(message) !== -1);
 }
 
-function expectedError(error) {
-	return !!expected.find((message) => error.message.indexOf(message) !== -1);
-}
-
-const expected = [
+const ignored = [
 	"JPEG",
 	"length octect",
 	"Failed to",
@@ -27,7 +30,3 @@ const expected = [
 	"invalid table spec",
 	"SOI not found",
 ];
-
-module.exports = {
-	fuzz,
-};
