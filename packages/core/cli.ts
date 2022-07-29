@@ -99,6 +99,18 @@ yargs(process.argv.slice(2))
 					alias: "e",
 					group: "Fuzzer:",
 					default: ["node_modules"],
+				})
+				.option("dry_run", {
+					describe:
+						"Perform a dry run with the fuzzing instrumentation disabled. " +
+						"A dry run only executes the fuzz test with the inputs from the " +
+						"corpus and returns directly. That is, no fuzzing is performed. " +
+						"This option can then be used when reporting code coverage for " +
+						"a fuzz test",
+					type: "boolean",
+					alias: "d",
+					group: "Fuzzer:",
+					default: false,
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -115,6 +127,7 @@ yargs(process.argv.slice(2))
 						// empty string matches every file
 						exclude === "*" ? "" : exclude
 					),
+					dryRun: args.dry_run,
 					fuzzerOptions: args.corpus.concat(args._),
 				});
 			} catch (e: unknown) {

@@ -22,6 +22,7 @@ interface Options {
 	fuzzFunction: string;
 	includes: string[];
 	excludes: string[];
+	dryRun: boolean;
 	fuzzerOptions: string[];
 }
 
@@ -32,7 +33,11 @@ declare global {
 
 export function startFuzzing(options: Options) {
 	globalThis.Fuzzer = fuzzer.fuzzer;
-	registerInstrumentor(options.includes, options.excludes);
+	if (options.dryRun) {
+		options.fuzzerOptions.push("-runs=0");
+	} else {
+		registerInstrumentor(options.includes, options.excludes);
+	}
 
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const fuzzFn = require(options.fuzzTarget)[options.fuzzFunction];
