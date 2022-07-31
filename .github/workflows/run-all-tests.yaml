@@ -8,34 +8,51 @@ on:
   workflow_dispatch:
 
 jobs:
-  linting:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "npm"
-      - name: Install Dependencies
-        run: npm install
-      - name: Check formatting for JS/TS
-        run: npm run lint
-      - name: Install dependencies with apt
-        run: sudo apt-get install --yes clang-tidy
-      - name: Check formatting for C/C++
-        run: npm run lint -w packages/fuzzer
+  #  linting:
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #      - uses: actions/setup-node@v3
+  #        with:
+  #          node-version: 16
+  #          cache: "npm"
+  #      - name: Install Dependencies
+  #        run: npm install
+  #      - name: Check formatting for JS/TS
+  #        run: npm run lint
+  #      - name: Install dependencies with apt
+  #        run: sudo apt-get install --yes clang-tidy
+  #      - name: Check formatting for C/C++
+  #        run: npm run lint -w packages/fuzzer
 
   unit_tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # TODO add, windows-latest]
+        #        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [macos-latest]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: "npm"
+      - name: Cache LLVM and Clang
+        id: cache-llvm
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:/Program Files/LLVM
+            ./llvm
+          key: ${{ matrix.os }}-llvm-14.0
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@f0cccbdf563688c6e0f9273d4bc27a8c5278de85
+        with:
+          version: "14.0"
+          cashed: ${{ steps.cache-llvm.outputs.cache-hit }}
+      - name: Setup - Windows
+        uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
+        if: ${{ matrix.os == 'windows-latest' }}
       - name: Install Dependencies
         run: npm install
       - name: Run all tests
