@@ -20,8 +20,11 @@
 extern "C" {
 void __sanitizer_weak_hook_strcmp(void *called_pc, const char *s1,
                                   const char *s2, int result);
+void __sanitizer_weak_hook_strstr(void *called_pc, const char *s1,
+                                  const char *s2, const char *result);
 void __sanitizer_cov_trace_const_cmp8_with_pc(uintptr_t called_pc,
                                               uint64_t arg1, uint64_t arg2);
+void __sanitizer_cov_trace_pc_indir_with_pc(void *caller_pc, uintptr_t callee);
 }
 
 // Record a comparison between two strings in the target that returned unequal.
@@ -41,6 +44,25 @@ void TraceUnequalStrings(const Napi::CallbackInfo &info) {
   __sanitizer_weak_hook_strcmp((void *)id, s1.c_str(), s2.c_str(), 1);
 }
 
+// Record a substring check to find the first occurrence of the byte string
+// needle in the byte string pointed to by haystack
+void TraceStringContainment(const Napi::CallbackInfo &info) {
+  if (info.Length() != 3) {
+    throw Napi::Error::New(
+        info.Env(), "Need three arguments: the trace ID and the two strings");
+  }
+
+  auto id = info[0].As<Napi::Number>().Int64Value();
+  auto needle = info[1].As<Napi::String>().Utf8Value();
+  auto haystack = info[2].As<Napi::String>().Utf8Value();
+
+  // libFuzzer currently ignores the result, which allows us to simply pass a
+  // valid but arbitrary pointer here instead of performing an actual strstr
+  // operation.
+  __sanitizer_weak_hook_strstr((void *)id, needle.c_str(), haystack.c_str(),
+                               needle.c_str());
+}
+
 void TraceIntegerCompare(const Napi::CallbackInfo &info) {
   if (info.Length() != 3) {
     Napi::Error::New(
@@ -55,6 +77,18 @@ void TraceIntegerCompare(const Napi::CallbackInfo &info) {
   __sanitizer_cov_trace_const_cmp8_with_pc(id, arg1, arg2);
 }
 
+void TracePcIndir(const Napi::CallbackInfo &info) {
+  if (info.Length() != 2) {
+    Napi::Error::New(info.Env(),
+                     "Need two arguments: the PC value & the trace ID")
+        .ThrowAsJavaScriptException();
+  }
+
+  auto id = info[0].As<Napi::Number>().Int64Value();
+  auto state = info[1].As<Napi::Number>().Int64Value();
+  __sanitizer_cov_trace_pc_indir_with_pc((void *)id, state);
+}
+
 void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
   exports["registerCoverageMap"] =
       Napi::Function::New<RegisterCoverageMap>(env);
@@ -62,6 +96,9 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
       Napi::Function::New<RegisterNewCounters>(env);
   exports["traceUnequalStrings"] =
       Napi::Function::New<TraceUnequalStrings>(env);
+  exports["traceStringContainment"] =
+      Napi::Function::New<TraceStringContainment>(env);
   exports["traceIntegerCompare"] =
       Napi::Function::New<TraceIntegerCompare>(env);
+  exports["tracePcIndir"] = Napi::Function::New<TracePcIndir>(env);
 }
