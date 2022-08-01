@@ -15,7 +15,7 @@
  */
 
 /* eslint no-empty-function: 0 */
-import { fuzzer, coverageMap } from "./fuzzer";
+import { fuzzer } from "./fuzzer";
 
 describe("compare hooks", () => {
 	it("traceStrCmp supports equals operators", () => {
@@ -28,17 +28,17 @@ describe("compare hooks", () => {
 
 describe("incrementCounter", () => {
 	it("should support the NeverZero policy", () => {
-		expect(coverageMap.readUint8(0)).toBe(0);
+		expect(fuzzer.readCounter(0)).toBe(0);
 		for (let counter = 1; counter <= 512; counter++) {
 			fuzzer.incrementCounter(0);
 			if (counter < 256) {
-				expect(coverageMap.readUint8(0)).toBe(counter);
+				expect(fuzzer.readCounter(0)).toBe(counter);
 			} else if (counter < 511) {
-				expect(coverageMap.readUint8(0)).toBe((counter % 256) + 1);
+				expect(fuzzer.readCounter(0)).toBe((counter % 256) + 1);
 			} else if (counter == 511) {
-				expect(coverageMap.readUint8(0)).toBe(1);
+				expect(fuzzer.readCounter(0)).toBe(1);
 			} else {
-				expect(coverageMap.readUint8(0)).toBe((counter % 256) + 2);
+				expect(fuzzer.readCounter(0)).toBe((counter % 256) + 2);
 			}
 		}
 	});

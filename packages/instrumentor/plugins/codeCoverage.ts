@@ -28,7 +28,7 @@ import {
 	TryStatement,
 } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { nextCounter } from "@jazzer.js/fuzzer";
+import { fuzzer } from "@jazzer.js/fuzzer";
 
 export function codeCoverage(): PluginTarget {
 	return {
@@ -114,6 +114,6 @@ function makeCounterIncStmt(): ExpressionStatement {
 
 function makeCounterIncExpr(): Expression {
 	return types.callExpression(types.identifier("Fuzzer.incrementCounter"), [
-		types.numericLiteral(nextCounter()),
+		types.numericLiteral(fuzzer.nextCounter()),
 	]);
 }

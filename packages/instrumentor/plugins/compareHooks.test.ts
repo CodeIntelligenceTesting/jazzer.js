@@ -156,7 +156,7 @@ describe("compare hooks instrumentation", () => {
 // API function with a jest mock, which can be configured in the test.
 function mockNativeAddonApi() {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const native = require("@jazzer.js/fuzzer");
+	const native = require("@jazzer.js/fuzzer").fuzzer;
 	jest.mock("@jazzer.js/fuzzer");
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
