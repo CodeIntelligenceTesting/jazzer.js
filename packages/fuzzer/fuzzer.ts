@@ -20,7 +20,7 @@ const addon = bind("jazzerjs");
 
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
-export const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
+const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
 
 addon.registerCoverageMap(coverageMap);
 addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
@@ -28,7 +28,7 @@ addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
 let currentNumCounters = INITIAL_NUM_COUNTERS;
 let currentCounter = 0;
 
-export function nextCounter(): number {
+function nextCounter(): number {
 	currentCounter++;
 
 	// Enlarge registered counters if needed
@@ -51,12 +51,16 @@ export function nextCounter(): number {
 	return currentCounter;
 }
 
-export function incrementCounter(id: number) {
+function incrementCounter(id: number) {
 	const counter = coverageMap.readUint8(id);
 	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, id);
 }
 
-export function traceStrCmp(
+function readCounter(id: number): number {
+	return coverageMap.readUint8(id);
+}
+
+function traceStrCmp(
 	s1: string,
 	s2: string,
 	operator: string,
@@ -88,7 +92,7 @@ export function traceStrCmp(
 	return result;
 }
 
-export function traceNumberCmp(
+function traceNumberCmp(
 	n1: number,
 	n2: number,
 	operator: string,
@@ -128,6 +132,7 @@ export interface Fuzzer {
 	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
+	readCounter: typeof readCounter;
 	traceStrCmp: typeof traceStrCmp;
 	traceNumberCmp: typeof traceNumberCmp;
 }
@@ -140,6 +145,7 @@ export const fuzzer: Fuzzer = {
 	) => void,
 	nextCounter,
 	incrementCounter,
+	readCounter,
 	traceStrCmp,
 	traceNumberCmp,
 };

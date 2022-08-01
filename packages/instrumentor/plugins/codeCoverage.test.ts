@@ -18,7 +18,7 @@ import { codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const native = require("@jazzer.js/fuzzer");
+const native = require("@jazzer.js/fuzzer").fuzzer;
 jest.mock("@jazzer.js/fuzzer");
 native.nextCounter.mockReturnValue(0);
 
