@@ -14,7 +14,10 @@
 		{
 			"files": ["*.md"],
 			"parser": "eslint-plugin-markdownlint/parser",
-			"extends": ["plugin:markdownlint/recommended"]
+			"extends": ["plugin:markdownlint/recommended"],
+			"rules": {
+				"markdownlint/md010": "off"
+			}
 		}
 	]
 }
