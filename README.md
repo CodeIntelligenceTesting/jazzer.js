@@ -28,8 +28,8 @@ To use Jazzer.js in your own project follow these few simple steps:
    ```js
    // file "FuzzTarget.js"
    module.exports.fuzz = function (data /*: Buffer */) {
-    const fuzzerData = data.toString();
-    myAwesomeCode(fuzzerData);
+   	const fuzzerData = data.toString();
+   	myAwesomeCode(fuzzerData);
    };
    ```
 
@@ -50,7 +50,7 @@ as fuzz target. A simple example is shown below.
 
 ```js
 module.exports.fuzz = function (data) {
- myAwesomeCode(data.toString());
+	myAwesomeCode(data.toString());
 };
 ```
 
@@ -68,9 +68,9 @@ found in the Node.js
 
 ```js
 module.exports.fuzz = function (data) {
- const intParam = data.readInt32BE(0);
- const stringParam = data.toString("utf-8", 4);
- myAwesomeCode(intParam, stringParam);
+	const intParam = data.readInt32BE(0);
+	const stringParam = data.toString("utf-8", 4);
+	myAwesomeCode(intParam, stringParam);
 };
 ```
 
@@ -120,7 +120,7 @@ flag, so that only the most important ones are discussed here.
 
 ## Documentation
 
-Further documentation is available at [docs/readme.md](docs/readme.md).
+Further documentation is available at [docs/readme.md](docs/README.md).
 
 ## Credit
 

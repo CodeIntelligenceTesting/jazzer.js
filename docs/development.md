@@ -14,10 +14,11 @@ Jazzer.js has the following dependencies when being built from source:
 
 ## Build
 
-To build the project execute `install` in the root directory.
+To build the project execute `install` and `build` in the root directory.
 
 ```shell
 npm install
+npm run build
 ```
 
 This takes care of downloading all dependencies, compiling the TypeScript code
@@ -28,7 +29,7 @@ and building libFuzzer via `cmake-js`.
 All tests can be executed via the `test:all` npm script in the root directory.
 
 ```shell
-npm run test:all
+npm run test
 ```
 
 This executes all [Jest](https://jestjs.io/) unit tests and also all `test`
@@ -38,12 +39,18 @@ scripts in the workspaces.
 
 ## Format and lint
 
-All code has to satisfy the format and linting rules. This is enforced through a
-git pre-commit hook. The `format` npm script in the root directory runs the
-appropriate checks.
+All code and documentation has to satisfy the format and linting rules. This is
+enforced through a git pre-commit hook. The `check` npm script in the root
+directory runs the appropriate checks.
 
 ```shell
-npm run format
+npm run check
+```
+
+`fix` will try to resolve found issues automatically for you.
+
+```shell
+npm run fix
 ```
 
 ## Structure

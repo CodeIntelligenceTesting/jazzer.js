@@ -17,18 +17,17 @@
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git"
 	},
 	"scripts": {
-		"compile:watch": "tsc -p . --incremental --pretty --watch",
-		"build": "tsc -b tsconfig.build.json",
-		"test": "jest",
-		"test:watch": "jest --watch",
-		"test:all": "npm run test && npm run test --ws --if-present",
-		"lint": "eslint .",
-		"lint:fix": "npm run lint -- --fix",
-		"prettier": "prettier --check .",
-		"prettier:fix": "prettier --write .",
-		"format": "npm run prettier:fix && npm run lint:fix",
 		"prepare": "husky install",
-		"install": "npm run build && npm run compile --ws --if-present"
+		"build": "tsc -b tsconfig.build.json && npm run build --ws --if-present",
+		"compile:watch": "tsc -p . --incremental --pretty --watch",
+		"test": "jest && npm run test --ws --if-present",
+		"test:watch": "jest --watch",
+		"lint": "eslint . && npm run lint --ws --if-present",
+		"lint:fix": "eslint . --fix && npm run lint:fix --ws --if-present",
+		"format": "prettier --check . && npm run format --ws --if-present",
+		"format:fix": "prettier --write --ignore-unknown . && npm run format:fix --ws --if-present",
+		"check": "npm run format && npm run lint",
+		"fix": "npm run format:fix && npm run lint:fix"
 	},
 	"devDependencies": {
 		"@types/bindings": "^1.5.1",
@@ -51,7 +50,7 @@
 		"packages/*"
 	],
 	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown --allow-empty"
+		"**/*": "prettier --write --ignore-unknown --allow-empty --loglevel debug"
 	},
 	"engines": {
 		"node": ">= 14.0.0",

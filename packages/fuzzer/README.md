@@ -13,7 +13,7 @@ what users want, so that their JS fuzz target can run in its normal environment.
 
 ## Development
 
-The project can be built with `npm run compile` (which is incremental after the
+The project can be built with `npm run build` (which is incremental after the
 first build); a subsequent `npm test` makes sure that the addon loads cleanly.
 Binaries can be prebuilt with `npm run prebuild` and uploaded with
 `npm run upload`. Please format the code with `clang-format` (or use the format
