@@ -151,6 +151,23 @@ function traceNumberCmp(
 	}
 }
 
+function traceAndReturn(current: unknown, target: unknown, id: number) {
+	switch (typeof target) {
+		case "number":
+			if (typeof current === "number") {
+				if (Number.isInteger(current) && Number.isInteger(target)) {
+					addon.traceNumberCmp(id, current, target);
+				}
+			}
+			break;
+		case "string":
+			if (typeof current === "string") {
+				guideTowardsEquality(current, target, id);
+			}
+	}
+	return target;
+}
+
 /**
  * Instructs the fuzzer to guide its mutations towards making `current` equal to `target`
  *
@@ -220,6 +237,7 @@ export interface Fuzzer {
 	readCounter: typeof readCounter;
 	traceStrCmp: typeof traceStrCmp;
 	traceNumberCmp: typeof traceNumberCmp;
+	traceAndReturn: typeof traceAndReturn;
 }
 
 export const fuzzer: Fuzzer = {
@@ -233,6 +251,7 @@ export const fuzzer: Fuzzer = {
 	readCounter,
 	traceStrCmp,
 	traceNumberCmp,
+	traceAndReturn,
 };
 
 export interface Jazzer {

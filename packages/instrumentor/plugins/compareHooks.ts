@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { BinaryExpression } from "@babel/types";
+import { BinaryExpression, SwitchStatement } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { fakePC } from "./helpers";
+import { fakePC, newIdentifier } from "./helpers";
 
 export function compareHooks(): PluginTarget {
 	return {
@@ -44,6 +44,22 @@ export function compareHooks(): PluginTarget {
 						fakePC(),
 					])
 				);
+			},
+			SwitchStatement(path: NodePath<SwitchStatement>) {
+				const id = newIdentifier("switch");
+				path.node.discriminant = types.sequenceExpression([
+					types.assignmentExpression("=", id, path.node.discriminant),
+					id,
+				]);
+				for (const i in path.node.cases) {
+					const test = path.node.cases[i].test;
+					if (test) {
+						path.node.cases[i].test = types.callExpression(
+							types.identifier("Fuzzer.traceAndReturn"),
+							[id, test, fakePC()]
+						);
+					}
+				}
 			},
 		},
 	};
