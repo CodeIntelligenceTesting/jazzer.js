@@ -16,7 +16,7 @@
 
 import { default as bind } from "bindings";
 
-const addon = bind("jazzerjs");
+export const addon = bind("jazzerjs");
 
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
@@ -105,7 +105,7 @@ function traceStrCmp(
 			break;
 	}
 	if (shouldCallLibfuzzer && s1 && s2) {
-		guideTowardsEquality(s1, s2, id);
+		addon.traceUnequalStrings(id, s1, s2);
 	}
 	return result;
 }
@@ -156,73 +156,16 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 		case "number":
 			if (typeof current === "number") {
 				if (Number.isInteger(current) && Number.isInteger(target)) {
-					addon.traceNumberCmp(id, current, target);
+					addon.traceIntegerCompare(id, current, target);
 				}
 			}
 			break;
 		case "string":
 			if (typeof current === "string") {
-				guideTowardsEquality(current, target, id);
+				addon.traceUnequalStrings(id, current, target);
 			}
 	}
 	return target;
-}
-
-/**
- * Instructs the fuzzer to guide its mutations towards making `current` equal to `target`
- *
- * If the relation between the raw fuzzer input and the value of `current` is relatively
- * complex, running the fuzzer with the argument `-use_value_profile=1` may be necessary to
- * achieve equality.
- *
- * @param current a non-constant string observed during fuzz target execution
- * @param target a string that `current` should become equal to, but currently isn't
- * @param id a (probabilistically) unique identifier for this particular compare hint
- */
-export function guideTowardsEquality(
-	current: string,
-	target: string,
-	id: number
-) {
-	addon.traceUnequalStrings(id, current, target);
-}
-
-/**
- * Instructs the fuzzer to guide its mutations towards making `haystack` contain `needle` as a substring.
- *
- * If the relation between the raw fuzzer input and the value of `haystack` is relatively
- * complex, running the fuzzer with the argument `-use_value_profile=1` may be necessary to
- * satisfy the substring check.
- *
- * @param haystack a non-constant string observed during fuzz target execution
- * @param needle a string that should be contained in `haystack` as a substring, but
- *     currently isn't
- * @param id a (probabilistically) unique identifier for this particular compare hint
- */
-export function guideTowardsContainment(
-	needle: string,
-	haystack: string,
-	id: number
-) {
-	addon.traceStringContainment(id, needle, haystack);
-}
-
-/**
- * Instructs the fuzzer to attain as many possible values for the absolute value of `state`
- * as possible.
- *
- * Call this function from a fuzz target or a hook to help the fuzzer track partial progress
- * (e.g. by passing the length of a common prefix of two lists that should become equal) or
- * explore different values of state that is not directly related to code coverage.
- *
- * Note: This hint only takes effect if the fuzzer is run with the argument
- * `-use_value_profile=1`.
- *
- * @param state a numeric encoding of a state that should be varied by the fuzzer
- * @param id a (probabilistically) unique identifier for this particular state hint
- */
-export function exploreState(state: number, id: number) {
-	addon.tracePcIndir(id, state);
 }
 
 // Re-export everything from the native library.
@@ -252,16 +195,4 @@ export const fuzzer: Fuzzer = {
 	traceStrCmp,
 	traceNumberCmp,
 	traceAndReturn,
-};
-
-export interface Jazzer {
-	guideTowardsEquality: typeof guideTowardsEquality;
-	guideTowardsContainment: typeof guideTowardsContainment;
-	exploreState: typeof exploreState;
-}
-
-export const jazzer: Jazzer = {
-	guideTowardsEquality,
-	guideTowardsContainment,
-	exploreState,
 };

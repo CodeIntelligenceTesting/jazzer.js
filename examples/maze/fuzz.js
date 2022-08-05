@@ -18,7 +18,7 @@
 // https://github.com/CodeIntelligenceTesting/jazzer/blob/8c8e87b22645ba7681e72cef0caaf05bab492b75/examples/src/main/java/com/example/MazeFuzzer.java
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const jazzer = require("@jazzer.js/fuzzer").jazzer;
+const jazzer = require("@jazzer.js/core").jazzer;
 
 const mazeString = [
 	"  ███████████████████",

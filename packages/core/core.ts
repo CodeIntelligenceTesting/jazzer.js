@@ -17,7 +17,7 @@
 import * as fuzzer from "@jazzer.js/fuzzer";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
 
-interface Options {
+export interface Options {
 	fuzzTarget: string;
 	fuzzFunction: string;
 	includes: string[];
@@ -48,3 +48,6 @@ export function startFuzzing(options: Options) {
 	}
 	Fuzzer.startFuzzing(fuzzFn, options.fuzzerOptions);
 }
+
+export { jazzer } from "./jazzer";
+export type { Jazzer } from "./jazzer";

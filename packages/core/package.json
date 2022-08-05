@@ -11,10 +11,10 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git",
-		"directory": "packages/cli"
+		"directory": "packages/core"
 	},
-	"main": "dist/cli.js",
-	"types": "dist/cli.d.ts",
+	"main": "dist/core.js",
+	"types": "dist/core.d.ts",
 	"bin": {
 		"jazzer": "dist/cli.js"
 	},
