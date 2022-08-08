@@ -6,18 +6,18 @@ on:
 
 jobs:
   release:
-    name: 🚀 release
+    name: release
     runs-on: ubuntu-latest
     steps:
-      - name: 📚 checkout
+      - name: checkout
         uses: actions/checkout@v3
-      - name: 🟢 node
+      - name: node
         uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: "npm"
           registry-url: https://registry.npmjs.org
-      - name: 🚀 publish
+      - name: publish to npm
         run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_ACCESS_TOKEN}}
