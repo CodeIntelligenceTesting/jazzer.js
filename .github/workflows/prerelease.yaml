@@ -1,0 +1,53 @@
+name: "🏗️ Prerelease"
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  create_release:
+    name: create release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for creating releases
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: read version
+        id: read-version
+        run: |
+          echo ::set-output name=version::\
+          $(cat ./package.json | jq '.version' | tr -d '"')
+        shell: bash
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.read-version.outputs.version }}
+          body_path: ./.github/release_template.md
+          generate_release_notes: true
+          draft: false # creating drafts conflicts with prebuild
+          prerelease: true # using a prerelease instead
+
+  prebuilds:
+    name: create prebuilds
+    runs-on: ${{ matrix.os }}
+    needs: [create_release]
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # TODO add macos, windows-latest]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+      - name: install dependencies
+        run: npm install --ws=@jazzer.js/fuzzer
+      - name: build and upload prebuilds
+        run: npm run upload --workspace=@jazzer.js/fuzzer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
