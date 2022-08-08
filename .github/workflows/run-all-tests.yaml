@@ -1,4 +1,4 @@
-name: Tests
+name: "🔍 Tests"
 
 on:
   push:
@@ -9,34 +9,40 @@ on:
 
 jobs:
   linting:
+    name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: "npm"
-      - name: Install Dependencies
+      - name: install dependencies
         run: npm install
-      - name: Check formatting for JS/TS
-        run: npm run lint
-      - name: Install dependencies with apt
+      - name: install dependencies with apt
         run: sudo apt-get install --yes clang-tidy
-      - name: Check formatting for C/C++
-        run: npm run lint -w packages/fuzzer
+      - name: check formatting and linting
+        run: npm run check
 
   unit_tests:
+    name: unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # TODO add, windows-latest]
+        os: [ubuntu-latest] # TODO add macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
         with:
           node-version: 16
           cache: "npm"
-      - name: Install Dependencies
+      - name: install dependencies
         run: npm install
-      - name: Run all tests
-        run: npm run test:all
+      - name: build project
+        run: npm run build
+      - name: run all tests
+        run: npm run test
