@@ -3,3 +3,4 @@ build
 coverage
 node_modules
 .idea
+compile_commands.json
