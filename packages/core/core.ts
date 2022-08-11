@@ -16,6 +16,7 @@
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
+import { FuzzFn } from "@jazzer.js/fuzzer";
 
 export interface Options {
 	fuzzTarget: string;
@@ -23,6 +24,7 @@ export interface Options {
 	includes: string[];
 	excludes: string[];
 	dryRun: boolean;
+	sync: boolean;
 	fuzzerOptions: string[];
 }
 
@@ -31,7 +33,7 @@ declare global {
 	var Fuzzer: fuzzer.Fuzzer;
 }
 
-export function startFuzzing(options: Options) {
+function initFuzzing(options: Options): FuzzFn {
 	globalThis.Fuzzer = fuzzer.fuzzer;
 	if (options.dryRun) {
 		options.fuzzerOptions.push("-runs=0");
@@ -46,7 +48,16 @@ export function startFuzzing(options: Options) {
 			`${options.fuzzTarget} does not export function "${options.fuzzFunction}"`
 		);
 	}
+	return fuzzFn;
+}
+export function startFuzzing(options: Options) {
+	const fuzzFn = initFuzzing(options);
 	Fuzzer.startFuzzing(fuzzFn, options.fuzzerOptions);
+}
+
+export async function startFuzzingAsync(options: Options) {
+	const fuzzFn = initFuzzing(options);
+	return Fuzzer.startFuzzingAsync(fuzzFn, options.fuzzerOptions);
 }
 
 export { jazzer } from "./jazzer";

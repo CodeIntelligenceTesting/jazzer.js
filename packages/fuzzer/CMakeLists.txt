@@ -25,7 +25,7 @@ endif()
 # specify the oldest version that we're compatible with, and Node-API's ABI
 # stability guarantees that this version is available in all future Node-API
 # releases.)
-add_definitions(-DNAPI_VERSION=3)
+add_definitions(-DNAPI_VERSION=4)
 
 add_library(${PROJECT_NAME} SHARED
   "addon.cpp"

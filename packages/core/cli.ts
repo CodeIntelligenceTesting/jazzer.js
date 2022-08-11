@@ -17,7 +17,7 @@
 
 import yargs, { Argv } from "yargs";
 import * as path from "path";
-import { startFuzzing } from "./core";
+import { Options, startFuzzing, startFuzzingAsync } from "./core";
 
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
@@ -75,6 +75,12 @@ yargs(process.argv.slice(2))
 				})
 				.hide("fuzzFunction")
 
+				.option("sync", {
+					describe: "Run the fuzz target synchronously.",
+					type: "boolean",
+					default: false,
+					group: "Fuzzer:",
+				})
 				.array("instrumentation_includes")
 				.option("instrumentation_includes", {
 					describe:
@@ -115,35 +121,45 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			try {
-				startFuzzing({
-					fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
-					fuzzFunction: args.fuzzFunction,
-					includes: args.instrumentation_includes.map((include: string) =>
-						// empty string matches every file
-						include === "*" ? "" : include
-					),
-					excludes: args.instrumentation_excludes.map((exclude: string) =>
-						// empty string matches every file
-						exclude === "*" ? "" : exclude
-					),
-					dryRun: args.dry_run,
-					fuzzerOptions: args.corpus.concat(args._),
-				});
-			} catch (e: unknown) {
-				let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
-				if (e instanceof Error) {
-					errorMessage += e.message;
-					console.log(errorMessage);
-					console.log(e.stack);
-				} else if (typeof e === "string" || e instanceof String) {
-					errorMessage += e.toLowerCase();
-					console.log(errorMessage);
-				} else {
-					errorMessage += "unknown";
-					console.log(errorMessage);
+			const opts: Options = {
+				fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
+				fuzzFunction: args.fuzzFunction,
+				includes: args.instrumentation_includes.map((include: string) =>
+					// empty string matches every file
+					include === "*" ? "" : include
+				),
+				excludes: args.instrumentation_excludes.map((exclude: string) =>
+					// empty string matches every file
+					exclude === "*" ? "" : exclude
+				),
+				dryRun: args.dry_run,
+				sync: args.sync,
+				fuzzerOptions: args.corpus.concat(args._),
+			};
+			if (args.sync) {
+				try {
+					startFuzzing(opts);
+				} catch (e: unknown) {
+					printError(e);
 				}
+			} else {
+				startFuzzingAsync(opts).catch((err) => printError(err));
 			}
 		}
 	)
 	.help().argv;
+
+function printError(error: unknown) {
+	let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
+	if (error instanceof Error) {
+		errorMessage += error.message;
+		console.log(errorMessage);
+		console.log(error.stack);
+	} else if (typeof error === "string" || error instanceof String) {
+		errorMessage += error.toLowerCase();
+		console.log(errorMessage);
+	} else {
+		errorMessage += "unknown";
+		console.log(errorMessage);
+	}
+}
