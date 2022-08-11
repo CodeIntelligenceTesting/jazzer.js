@@ -16,7 +16,7 @@
 
 import { BinaryExpression, SwitchStatement } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { fakePC, newIdentifier } from "./helpers";
+import { fakePC } from "./helpers";
 
 export function compareHooks(): PluginTarget {
 	return {
@@ -46,11 +46,10 @@ export function compareHooks(): PluginTarget {
 				);
 			},
 			SwitchStatement(path: NodePath<SwitchStatement>) {
-				const id = newIdentifier("switch");
-				path.node.discriminant = types.sequenceExpression([
-					types.assignmentExpression("=", id, path.node.discriminant),
-					id,
-				]);
+				if (path.node.discriminant.type !== "Identifier") {
+					return;
+				}
+				const id = path.node.discriminant;
 				for (const i in path.node.cases) {
 					const test = path.node.cases[i].test;
 					if (test) {
