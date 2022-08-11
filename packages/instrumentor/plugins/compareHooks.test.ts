@@ -16,12 +16,13 @@
 
 const helpers = mockHelpers();
 import { compareHooks } from "./compareHooks";
-import { instrumentAndEvalWith } from "./testhelpers";
+import { instrumentAndEvalWith, instrumentWith } from "./testhelpers";
 import { types } from "@babel/core";
 
 const native = mockNativeAddonApi();
 
-const expectInstrumentation = instrumentAndEvalWith(compareHooks);
+const expectInstrumentationAndEval = instrumentAndEvalWith(compareHooks);
+const expectInstrumentation = instrumentWith(compareHooks);
 
 describe("compare hooks instrumentation", () => {
 	describe("string compares", () => {
@@ -35,7 +36,7 @@ describe("compare hooks instrumentation", () => {
 			|let a = "a";
 			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "===", 0), "c", "==", 0);`;
 
-			const result = expectInstrumentation<boolean>(input, output);
+			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
 			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
 			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===", 0);
@@ -59,7 +60,7 @@ describe("compare hooks instrumentation", () => {
 			|let a = "a";
 			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "!==", 0), "c", "!=", 0);`;
 
-			const result = expectInstrumentation<boolean>(input, output);
+			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
 			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
 			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==", 0);
@@ -78,7 +79,7 @@ describe("compare hooks instrumentation", () => {
 			const output = `
 			|let a = 10;
 			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "===", 0), 30, "==", 0);`;
-			const result = expectInstrumentation<boolean>(input, output);
+			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
 			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
 			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
@@ -107,7 +108,7 @@ describe("compare hooks instrumentation", () => {
 			const output = `
 			|let a = 10;
 			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "!==", 0), 30, "!=", 0);`;
-			const result = expectInstrumentation<boolean>(input, output);
+			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
 			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
 			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
@@ -136,7 +137,7 @@ describe("compare hooks instrumentation", () => {
 				const output = `
 				|let a = 10;
 				|Fuzzer.traceNumberCmp(a, 20, "${operator}", 0);`;
-				const result = expectInstrumentation<boolean>(input, output);
+				const result = expectInstrumentationAndEval<boolean>(input, output);
 				expect(result).toBe(false);
 				expect(native.traceNumberCmp).toHaveBeenCalledTimes(1);
 				expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
@@ -147,6 +148,82 @@ describe("compare hooks instrumentation", () => {
 					0
 				);
 			});
+		});
+	});
+
+	describe("switch statements", () => {
+		it("intercepts string cases", () => {
+			const input = `
+			|switch(day) {
+			|  case "Monday":
+			|    console.log("monday");
+			|    break;
+			|  case "Tuesday":
+			|    console.log("Tuesday");
+			|    break;			
+			|  case "Friday":
+			|    console.log("Friday");
+			|    break;
+			|  default:
+			|    console.log("Some other day");
+			|    break;				
+			|}`;
+			const output = `
+			|switch (day) {
+            |  case Fuzzer.traceAndReturn(day, "Monday", 0):
+            |    console.log("monday");
+            |    break;
+            |
+            |  case Fuzzer.traceAndReturn(day, "Tuesday", 0):
+            |    console.log("Tuesday");
+            |    break;
+            |
+            |  case Fuzzer.traceAndReturn(day, "Friday", 0):
+            |    console.log("Friday");
+            |    break;
+            |
+            |  default:
+            |    console.log("Some other day");
+            |    break;
+            |}`;
+			expectInstrumentation(input, output);
+		});
+
+		it("intercepts integer cases", () => {
+			const input = `
+			|switch(count) {
+			|  case 1:
+			|    console.log("1");
+			|    break;
+			|  case 2:
+			|    console.log("2");
+			|    break;			
+			|  case 5:
+			|    console.log("5");
+			|    break;
+			|  default:
+			|    console.log("Some other number");
+			|    break;				
+			|}`;
+			const output = `
+			|switch (count) {
+            |  case Fuzzer.traceAndReturn(count, 1, 0):
+            |    console.log("1");
+            |    break;
+            |
+            |  case Fuzzer.traceAndReturn(count, 2, 0):
+            |    console.log("2");
+            |    break;
+            |
+            |  case Fuzzer.traceAndReturn(count, 5, 0):
+            |    console.log("5");
+            |    break;
+            |
+            |  default:
+            |    console.log("Some other number");
+            |    break;
+            |}`;
+			expectInstrumentation(input, output);
 		});
 	});
 });
