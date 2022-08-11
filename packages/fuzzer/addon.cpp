@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <future>
 #include <iostream>
 #include <optional>
@@ -24,9 +25,9 @@
 // Definitions from compiler-rt, including libfuzzer's entrypoint and the
 // sanitizer runtime's initialization function.
 #include <fuzzer/FuzzerDefs.h>
-#include <ubsan/ubsan_init.h>
 
 #include "shared/callbacks.h"
+#include "shared/sanitizer_symbols.h"
 
 namespace {
 
@@ -114,6 +115,12 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   try {
     future.get();
   } catch (std::exception &exception) {
+    gLibfuzzerPrintCrashingInput();
+
+    // We seem to exit too quickly before the JavaScript code has the chance to
+    // react on the rejected promise.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
     // We call exit to immediately terminates the process without performing any
     // cleanup including libfuzzer exit handlers.
     _Exit(kErrorExitCode);
@@ -219,7 +226,6 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
   gFuzzTarget = {};
 }
 
-
 // Start libfuzzer with a JS fuzz target asynchronously.
 //
 // This is a JS-enabled version of libfuzzer main function (see FuzzerMain.cpp
@@ -271,15 +277,6 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
 // Initialize the module by populating its JS exports with pointers to our C++
 // functions.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  // Clang always links the sanitizer runtime when "-fsanitize=fuzzer" is
-  // specified on the command line; the runtime contains functionality for
-  // coverage tracking and crash data collection that the fuzzer needs.
-  // Normally, it self-initializes via an entry in the .preinit_array section of
-  // the ELF binary, but this approach doesn't work in shared objects like our
-  // plugin. We therefore disable the .preinit_array entry in our CMakeLists.txt
-  // and instead call the initialization function here.
-  __ubsan::InitAsStandaloneIfNecessary();
-
   exports["printVersion"] = Napi::Function::New<PrintVersion>(env);
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);

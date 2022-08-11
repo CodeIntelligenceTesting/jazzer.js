@@ -30,8 +30,8 @@ add_definitions(-DNAPI_VERSION=4)
 add_library(${PROJECT_NAME} SHARED
   "addon.cpp"
   "shared/callbacks.cpp"
-  "shared/tracing.cpp"
   "shared/coverage.cpp"
+  "shared/tracing.cpp"
   ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
@@ -58,11 +58,10 @@ ExternalProject_Add(compiler-rt
   CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
-  # shared objects like our Node plugin, disable it here. (We call the
-  # initialization function explicitly in our plugin's initialization code.)
+  # shared objects like our Node plugin, disable it here.
   -DCMAKE_CXX_FLAGS="-DSANITIZER_CAN_USE_PREINIT_ARRAY=0"
   # No need to build all the sanitizers; the UBSan standalone runtime is built
-  # by default, and that's all we need.
+  # by default.
   -DCOMPILER_RT_SANITIZERS_TO_BUILD=""
   # Don't build libc++ into the fuzzer; our own code is C++ as well, so we're
   # going to link against a C++ runtime anyway.
@@ -75,8 +74,7 @@ ExternalProject_Add(compiler-rt
   # external project. Some CMake generators fail if we later depend on the
   # libraries without declaring them here (including ninja).
   BUILD_BYPRODUCTS
-  <BINARY_DIR>/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a
-  <BINARY_DIR>/lib/linux/libclang_rt.ubsan_standalone-x86_64.a)
+  <BINARY_DIR>/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a)
 
 # Make our plugin depend on and link against libfuzzer.
 add_dependencies(${PROJECT_NAME} compiler-rt)
@@ -86,7 +84,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/compiler-rt/lib
 target_link_libraries(${PROJECT_NAME}
   -Wl,--push-state,--whole-archive
   ${BINARY_DIR}/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a
-  ${BINARY_DIR}/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
   -Wl,--pop-state
 
   # We may want to include additional libraries here. For example,
