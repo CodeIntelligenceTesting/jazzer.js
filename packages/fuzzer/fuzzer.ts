@@ -175,6 +175,7 @@ export type FuzzOpts = string[];
 export interface Fuzzer {
 	printVersion: () => void;
 	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
+	startFuzzingAsync: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
 	readCounter: typeof readCounter;
@@ -186,6 +187,7 @@ export interface Fuzzer {
 export const fuzzer: Fuzzer = {
 	printVersion: addon.printVersion,
 	startFuzzing: addon.startFuzzing,
+	startFuzzingAsync: addon.startFuzzingAsync,
 	nextCounter,
 	incrementCounter,
 	readCounter,

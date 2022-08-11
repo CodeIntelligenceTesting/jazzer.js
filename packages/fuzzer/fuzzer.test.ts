@@ -46,7 +46,9 @@ describe("incrementCounter", () => {
 
 describe("libFuzzer integration", () => {
 	it("0 runs", () => {
-		// eslint-disable-next-line @typescript-eslint/no-empty-function
-		expect(() => fuzzer.startFuzzing(() => {}, ["-runs=0"])).not.toThrow();
+		expect(() =>
+			// eslint-disable-next-line @typescript-eslint/no-empty-function
+			fuzzer.startFuzzing(() => {}, ["-runs=0"])
+		).not.toThrow();
 	});
 });
