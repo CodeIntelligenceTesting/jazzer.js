@@ -3,7 +3,8 @@
 	"version": "0.2.0",
 	"description": "An example showing how Jazzer.js handles string comparisons in the code",
 	"scripts": {
-		"fuzz": "jazzer fuzz"
+		"fuzz": "jazzer fuzz --sync",
+		"dryRun": "jazzer fuzz --sync -- -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

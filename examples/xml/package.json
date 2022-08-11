@@ -7,7 +7,8 @@
 		"xml2js": "^0.4.23"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i xml -e nothing"
+		"fuzz": "jazzer fuzz -i xml -e nothing",
+		"dryRun": "jazzer fuzz -i xml -e nothing -- -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

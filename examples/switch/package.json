@@ -1,9 +1,10 @@
 {
-	"name": "jazzerjs-string-compare-example",
+	"name": "jazzerjs-switch-example",
 	"version": "0.2.0",
 	"description": "An example showing how Jazzer.js handles switch statements",
 	"scripts": {
-		"fuzz": "jazzer fuzz"
+		"fuzz": "jazzer fuzz --sync",
+		"dryRun": "jazzer fuzz --sync -- -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
