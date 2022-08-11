@@ -9,7 +9,8 @@
 		"jpeg-js": "^0.4.4"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i jpeg-js -e nothing"
+		"fuzz": "jazzer fuzz -i jpeg-js -e nothing --sync",
+		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -- -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

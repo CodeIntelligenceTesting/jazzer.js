@@ -20,7 +20,7 @@
 		"prepare": "husky install",
 		"build": "tsc -b tsconfig.build.json && npm run build --ws --if-present",
 		"compile:watch": "tsc -p . --incremental --pretty --watch",
-		"test": "jest && npm run test --ws --if-present",
+		"test": "jest && npm run test --ws --if-present && cd examples && bash dry_run.sh",
 		"test:watch": "jest --watch",
 		"lint": "eslint . && npm run lint --ws --if-present",
 		"lint:fix": "eslint . --fix && npm run lint:fix --ws --if-present",

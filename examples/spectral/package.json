@@ -2,7 +2,8 @@
 	"name": "jazzerjs-spectral-example",
 	"version": "0.2.0",
 	"scripts": {
-		"fuzz": "jazzer spectral-example -i spectral -e nothing"
+		"fuzz": "jazzer spectral-example -i spectral -e nothing --sync",
+		"dryRun": "jazzer spectral-example -i spectral -e nothing --sync -- -runs=100"
 	},
 	"dependencies": {
 		"@stoplight/spectral-parsers": "^1.0.1"

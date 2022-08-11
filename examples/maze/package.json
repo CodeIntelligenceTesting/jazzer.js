@@ -1,9 +1,10 @@
 {
-	"name": "jazzerjs-value-profiling-example",
+	"name": "jazzerjs-maze-example",
 	"version": "0.2.0",
 	"description": "An example showing you can give Jazzer.js more feedback signals to reach deep program states",
 	"scripts": {
-		"fuzz": "jazzer fuzz -- -use_value_profile=1"
+		"fuzz": "jazzer fuzz --sync -- -use_value_profile=1",
+		"dryRun": "jazzer fuzz --sync -- -use_value_profile=1 -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
