@@ -12,6 +12,7 @@ instrumentation-powered mutation features to the JavaScript ecosystem.
 Jazzer.js currently supports the following platforms:
 
 - Linux x86_64
+- macOS x86_64 and arm64
 
 ## Quickstart
 

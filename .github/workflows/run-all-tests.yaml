@@ -31,7 +31,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # TODO add macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-11] # TODO add windows-latest]
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -40,6 +40,20 @@ jobs:
         with:
           node-version: 16
           cache: "npm"
+      - name: install dependencies (macos)
+        if: contains(matrix.os, 'macos')
+        run: |
+          brew install cmake llvm@11
+          LLVM_PATH=$(brew --prefix llvm@11)
+          LLVM_VERSION=11.1.0
+          echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
+          echo "CPATH=$LLVM_PATH/lib/clang/$LLVM_VERSION/include/" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$LLVM_PATH/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$LLVM_PATH/include" >> $GITHUB_ENV
+          echo "CC=$LLVM_PATH/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$LLVM_PATH/bin/clang++" >> $GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=$LLVM_PATH/bin/llvm-config" >> $GITHUB_ENV
+          echo "PATH=$PATH:$LLVM_PATH/bin" >> $GITHUB_ENV
       - name: install dependencies
         run: npm install
       - name: build project
