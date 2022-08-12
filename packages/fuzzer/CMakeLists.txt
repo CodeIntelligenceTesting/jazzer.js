@@ -3,6 +3,7 @@ project(jazzerjs)
 
 set(CMAKE_CXX_STANDARD 17)      # mostly supported since GCC 7
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(LLVM_ENABLE_LLD TRUE)
 
 # To help with development, let's write compile_commands.json unconditionally.
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -11,6 +12,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
   # Generate node.lib
   execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF} /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
+endif()
+
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(LIBFUZZER_STATIC_LIB_PATH "lib/linux/libclang_rt.fuzzer_no_main-x86_64.a")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  set(LIBFUZZER_STATIC_LIB_PATH "lib/darwin/libclang_rt.fuzzer_no_main_osx.a")
 endif()
 
 # Enable the functionality of Node-API version 3 and disable everything added
@@ -77,25 +85,31 @@ ExternalProject_Add(compiler-rt
   # external project. Some CMake generators fail if we later depend on the
   # libraries without declaring them here (including ninja).
   BUILD_BYPRODUCTS
-  <BINARY_DIR>/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a)
+  <BINARY_DIR>/${LIBFUZZER_STATIC_LIB_PATH})
 
 # Make our plugin depend on and link against libfuzzer.
 add_dependencies(${PROJECT_NAME} compiler-rt)
 ExternalProject_Get_Property(compiler-rt BINARY_DIR)
 ExternalProject_Get_Property(compiler-rt SOURCE_DIR)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/compiler-rt/lib)
-target_link_libraries(${PROJECT_NAME}
-  -Wl,--push-state,--whole-archive
-  ${BINARY_DIR}/lib/linux/libclang_rt.fuzzer_no_main-x86_64.a
-  -Wl,--pop-state
 
-  # We may want to include additional libraries here. For example,
-  # libclang_rt.fuzzer_interceptors-x86_64.a contains
-  # https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/fuzzer/FuzzerInterceptors.cpp,
-  # i.e., fuzzer-friendly overrides for some common libc functions. However,
-  # there is a challenge with this particular library: we're not in the binary,
-  # so we can't intercept libc.
-  #
-  # Remember to add any libraries mentioned here to the BUILD_BYPRODUCTS of the
-  # external compiler-rt project above.
-  )
+# We may want to include additional libraries here. For example,
+# libclang_rt.fuzzer_interceptors-x86_64.a contains
+# https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/fuzzer/FuzzerInterceptors.cpp,
+# i.e., fuzzer-friendly overrides for some common libc functions. However,
+# there is a challenge with this particular library: we're not in the binary,
+# so we can't intercept libc.
+#
+# Remember to add any libraries mentioned here to the BUILD_BYPRODUCTS of the
+# external compiler-rt project above.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  target_link_libraries(${PROJECT_NAME}
+          -Wl,-whole-archive
+          ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}
+          -Wl,-no-whole-archive)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  target_link_libraries(${PROJECT_NAME}
+          -Wl,-all_load
+          ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}
+          -Wl,-noall_load)
+endif()
