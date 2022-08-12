@@ -17,7 +17,13 @@
 
 import yargs, { Argv } from "yargs";
 import * as path from "path";
-import { Options, startFuzzing, startFuzzingAsync } from "./core";
+import {
+	Options,
+	startFuzzing,
+	startFuzzingAsync,
+	stopFuzzingAsync,
+	printError,
+} from "./core";
 
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
@@ -143,23 +149,11 @@ yargs(process.argv.slice(2))
 					printError(e);
 				}
 			} else {
-				startFuzzingAsync(opts).catch((err) => printError(err));
+				startFuzzingAsync(opts).catch((err) => {
+					printError(err);
+					stopFuzzingAsync();
+				});
 			}
 		}
 	)
 	.help().argv;
-
-function printError(error: unknown) {
-	let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
-	if (error instanceof Error) {
-		errorMessage += error.message;
-		console.log(errorMessage);
-		console.log(error.stack);
-	} else if (typeof error === "string" || error instanceof String) {
-		errorMessage += error.toLowerCase();
-		console.log(errorMessage);
-	} else {
-		errorMessage += "unknown";
-		console.log(errorMessage);
-	}
-}

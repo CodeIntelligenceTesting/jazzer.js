@@ -115,11 +115,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   try {
     future.get();
   } catch (std::exception &exception) {
-    gLibfuzzerPrintCrashingInput();
-
-    // We seem to exit too quickly before the JavaScript code has the chance to
-    // react on the rejected promise.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::cerr << "Unexpected Error: " << exception.what() << std::endl;
 
     // We call exit to immediately terminates the process without performing any
     // cleanup including libfuzzer exit handlers.
@@ -128,6 +124,9 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   return 0;
 }
 
+// This function is the callback that gets executed in the addon's main thread
+// (i.e., the JavaScript event loop thread) and thus we can call the JavaScript
+// code and use the Node API to create JavaScript objects.
 void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                         AsyncFuzzTargetContext *context, DataType *data) {
   if (env != nullptr) {
@@ -144,8 +143,6 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                                  }),
            Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
              context->deferred.Reject(info[0].As<Napi::Error>().Value());
-             data->promise->set_exception(std::make_exception_ptr(
-                 std::runtime_error("Exception is thrown in the fuzz target")));
            })});
     } else {
       data->promise->set_exception(std::make_exception_ptr(
@@ -260,8 +257,9 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
       0,       // Unlimited Queue
       1,       // Only one thread will use this initially
       context, // context
-      [](Napi::Env, FinalizerDataType *, AsyncFuzzTargetContext *ctx) {
+      [](Napi::Env env, FinalizerDataType *, AsyncFuzzTargetContext *ctx) {
         ctx->native_thread.join();
+        ctx->deferred.Resolve(Napi::Boolean::New(env, true));
         delete ctx;
       });
 
@@ -274,12 +272,18 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   return context->deferred.Promise();
 }
 
+void StopFuzzingAsync(const Napi::CallbackInfo &info) {
+  gLibfuzzerPrintCrashingInput();
+  _Exit(kErrorExitCode);
+}
+
 // Initialize the module by populating its JS exports with pointers to our C++
 // functions.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["printVersion"] = Napi::Function::New<PrintVersion>(env);
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);
+  exports["stopFuzzingAsync"] = Napi::Function::New<StopFuzzingAsync>(env);
 
   RegisterCallbackExports(env, exports);
   return exports;
