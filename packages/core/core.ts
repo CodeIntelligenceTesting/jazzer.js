@@ -60,5 +60,24 @@ export async function startFuzzingAsync(options: Options) {
 	return Fuzzer.startFuzzingAsync(fuzzFn, options.fuzzerOptions);
 }
 
+export function stopFuzzingAsync() {
+	Fuzzer.stopFuzzingAsync();
+}
+
+export function printError(error: unknown) {
+	let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
+	if (error instanceof Error) {
+		errorMessage += error.message;
+		console.log(errorMessage);
+		console.log(error.stack);
+	} else if (typeof error === "string" || error instanceof String) {
+		errorMessage += error;
+		console.log(errorMessage);
+	} else {
+		errorMessage += "unknown";
+		console.log(errorMessage);
+	}
+}
+
 export { jazzer } from "./jazzer";
 export type { Jazzer } from "./jazzer";
