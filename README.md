@@ -17,6 +17,7 @@ Jazzer.js currently supports the following platforms:
 
 - Linux x86_64
 - macOS x86_64 and arm64
+- Windows x86_64
 
 ## Quickstart
 

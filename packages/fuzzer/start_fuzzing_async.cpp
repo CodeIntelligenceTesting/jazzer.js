@@ -14,7 +14,14 @@
 
 #include <future>
 #include <iostream>
+
+#ifdef _WIN32
+#include <process.h>
+#define GetPID _getpid
+#else
 #include <unistd.h>
+#define GetPID getpid
+#endif
 
 #include "shared/libfuzzer.h"
 #include "start_fuzzing_async.h"
@@ -68,7 +75,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   try {
     future.get();
   } catch (std::exception &exception) {
-    std::cerr << "==" << (unsigned long)getpid()
+    std::cerr << "==" << (unsigned long)GetPID()
               << "== Jazzer.js: unexpected Error: " << exception.what()
               << std::endl;
     libfuzzer::PrintCrashingInput();

@@ -32,7 +32,7 @@ uint8_t *gCoverageCounters = nullptr;
 // it.
 struct PCTableEntry {
   uintptr_t PC, PCFlags;
-} __attribute__((packed));
+};
 
 // The array of supplementary information for coverage counters. Each entry
 // corresponds to an entry in gCoverageCounters; since we don't know the actual
