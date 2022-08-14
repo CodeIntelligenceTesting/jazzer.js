@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.10) # shipped with Ubuntu 18.04
 project(jazzerjs)
 
+find_package(Patch REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)      # mostly supported since GCC 7
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(LLVM_ENABLE_LLD TRUE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # To help with development, let's write compile_commands.json unconditionally.
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
@@ -20,6 +23,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(LIBFUZZER_TARGET "clang_rt.fuzzer_no_main_osx")
   set(LIBFUZZER_STATIC_LIB_PATH "lib/darwin/lib${LIBFUZZER_TARGET}.a")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MT /EHsc")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /EHsc")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /EHsc")
+  set(LIBFUZZER_TARGET "clang_rt.fuzzer_no_main-x86_64")
+  set(LIBFUZZER_STATIC_LIB_PATH "lib/windows/${LIBFUZZER_TARGET}.lib")
 endif()
 
 # Enable the functionality of Node-API version 4 and disable everything added
@@ -66,8 +75,9 @@ ExternalProject_Add(compiler-rt
   URL_HASH SHA256=8b3cfd7bc695bd6cea0f37f53f0981f34f87496e79e2529874fd03a2f9dd3a8a
   SOURCE_SUBDIR compiler-rt
   PATCH_COMMAND
-        patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/transform_exit_to_return.patch &&
-        patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/add_with_pc_sanitizer_cov_tracing_functions.patch
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/transform_exit_to_return.patch &&
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/add_with_pc_sanitizer_cov_tracing_functions.patch &&
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/fix_cmake_windows.patch
   CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
@@ -81,12 +91,13 @@ ExternalProject_Add(compiler-rt
   -DCOMPILER_RT_USE_LIBCXX=OFF
   # Use the same build type as the parent project.
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+  # We only need libfuzzer from the compiler-rt project.
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target ${LIBFUZZER_TARGET}
   # Skip the install step because it tries to copy files to a hardcoded path in "/usr".
   INSTALL_COMMAND ""
   # Tell CMake about the libfuzzer libraries that are built as part of the
   # external project. Some CMake generators fail if we later depend on the
   # libraries without declaring them here (including ninja).
-  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target ${LIBFUZZER_TARGET}
   BUILD_BYPRODUCTS
   <BINARY_DIR>/${LIBFUZZER_STATIC_LIB_PATH})
 
@@ -115,4 +126,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
           -Wl,-all_load
           ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}
           -Wl,-noall_load)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_libraries(${PROJECT_NAME} "$<LINK_LIBRARY:WHOLE_ARCHIVE,${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}>")
 endif()
