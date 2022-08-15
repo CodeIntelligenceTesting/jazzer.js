@@ -16,7 +16,10 @@
 			"parser": "eslint-plugin-markdownlint/parser",
 			"extends": ["plugin:markdownlint/recommended"],
 			"rules": {
-				"markdownlint/md010": "off"
+				"markdownlint/md010": "off",
+				"markdownlint/md013": "off",
+				"markdownlint/md033": "off",
+				"markdownlint/md041": "off"
 			}
 		}
 	]

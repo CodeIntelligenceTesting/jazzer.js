@@ -1,3 +1,7 @@
+<div style="text-align: center;">
+<img src="https://7466322.fs1.hubspotusercontent-na1.net/hubfs/7466322/Logos/CI%20Logos/Jazzer.js%20logo.png" height=150px alt="Jazzer.js logo">
+</div>
+
 # Jazzer.js
 
 [![NPM](https://img.shields.io/npm/v/@jazzer.js/core)](https://img.shields.io/npm/v/@jazzer.js/core)
@@ -107,8 +111,6 @@ jazzer <fuzzTarget> <fuzzerFlags> [corpus...] [-- <fuzzingEngineFlags>]
 Detailed documentation and some example calls are available using the `--help`
 flag, so that only the most important ones are discussed here.
 
-<!-- markdownlint-disable MD013 -->
-
 | Parameter                                                               | Description                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `<fuzzTarget>`                                                          | Import path to the fuzz target module.                                                                                                                                                                                                                                                                   |
@@ -116,8 +118,6 @@ flag, so that only the most important ones are discussed here.
 | `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                      |
 | `-i`, `--instrumentation_includes` / `-e`, `--instrumentation_excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. |
 | `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                              |
-
-<!-- markdownlint-enable MD013 -->
 
 ## Documentation
 
@@ -129,10 +129,6 @@ Jazzer.js is inspired by its namesake
 [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer), also developed by
 [Code Intelligence](https://www.code-intelligence.com).
 
-<!-- markdownlint-disable MD013 MD033 -->
-
 <p align="center">
 <a href="https://www.code-intelligence.com"><img src="https://www.code-intelligence.com/hubfs/Logos/CI%20Logos/CI_Header_GitHub_quer.jpeg" height=50px alt="Code Intelligence logo"></a>
 </p>
-
-<!-- markdownlint-enable MD013 MD033 -->
