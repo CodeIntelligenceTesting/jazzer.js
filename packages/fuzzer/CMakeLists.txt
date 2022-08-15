@@ -32,6 +32,9 @@ add_library(${PROJECT_NAME} SHARED
   "shared/callbacks.cpp"
   "shared/coverage.cpp"
   "shared/tracing.cpp"
+  "start_fuzzing_sync.cpp"
+  "start_fuzzing_async.cpp"
+  "utils.cpp"
   ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
