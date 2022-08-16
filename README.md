@@ -79,6 +79,28 @@ module.exports.fuzz = function (data) {
 };
 ```
 
+#### Asynchronous fuzz targets
+
+Jazzer.js supports asynchronous fuzz targets out of the box, no special handling
+or configuration is needed.
+
+The resolution of a `Promise` returned by a fuzz target is awaited before the
+next fuzzing input is provided. This enables the fuzzing of `async`/`await`,
+`Promise` and callback based code.
+
+Asynchronous code needs careful synchronization between the
+[Node.js Event Loop](https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/)
+and the fuzzing thread, hence provides a lower throughput compared to
+synchronous fuzzing. Even so, asynchronous fuzzing is the default mode of
+Jazzer.js due to its prevalence in the JavaScript ecosystem and because it works
+for all fuzz targets.
+
+Solely synchronous code can participate in the enhanced performance of
+synchronous fuzzing by setting the `--sync` flag when starting the fuzzer.
+
+An example of a `Promise` based fuzz target can be found at
+[examples/promise/fuzz.js](examples/promise/fuzz.js).
+
 #### Using TypeScript to write fuzz targets
 
 It is also possible to use [TypeScript](https://www.typescriptlang.org), or in
@@ -120,7 +142,10 @@ flag, so that only the most important ones are discussed here.
 | `[corpus...]`                                                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                   |
 | `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                      |
 | `-i`, `--instrumentation_includes` / `-e`, `--instrumentation_excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. |
-| `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                              |
+| `--sync`                                                                | Enables synchronous fuzzing. \*\*                                                                                                                                                                                                                                                                        |
+
+May only be used for entirely synchronous code\*\*. | | `--help` | Detailed help
+message containing all flags. |
 
 ## Documentation
 
