@@ -22,8 +22,8 @@ void __sanitizer_cov_pcs_init(const uintptr_t *pcs_beg,
 }
 
 namespace {
-// We register an array of 8-bit coverage counters with libFuzzer.
-// The array is populated from JavaScript using Buffer.
+// We register an array of 8-bit coverage counters with libFuzzer. The array is
+// populated from JavaScript using Buffer.
 uint8_t *gCoverageCounters = nullptr;
 
 // PC-Table is used by libfuzzer to keep track of program addresses
@@ -47,7 +47,7 @@ void RegisterCoverageMap(const Napi::CallbackInfo &info) {
         .ThrowAsJavaScriptException();
   }
   if (!info[0].IsBuffer()) {
-    Napi::Error::New(info.Env(), "Expected an Buffer")
+    Napi::Error::New(info.Env(), "Expected a Buffer")
         .ThrowAsJavaScriptException();
   }
 

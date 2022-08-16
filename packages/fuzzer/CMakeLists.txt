@@ -14,14 +14,13 @@ if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
   execute_process(COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF} /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
 endif()
 
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(LIBFUZZER_STATIC_LIB_PATH "lib/linux/libclang_rt.fuzzer_no_main-x86_64.a")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(LIBFUZZER_STATIC_LIB_PATH "lib/darwin/libclang_rt.fuzzer_no_main_osx.a")
 endif()
 
-# Enable the functionality of Node-API version 3 and disable everything added
+# Enable the functionality of Node-API version 4 and disable everything added
 # later, so that we don't accidentally break compatibility with older versions
 # of Node (see https://nodejs.org/api/n-api.html#node-api-version-matrix).
 #
