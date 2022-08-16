@@ -14,6 +14,7 @@
 
 #include "start_fuzzing_sync.h"
 #include "utils.h"
+#include <optional>
 
 namespace {
 // Information about a JS fuzz target.
