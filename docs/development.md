@@ -2,12 +2,12 @@
 
 ## Dependencies
 
-Jazzer.js has the following dependencies when being built from source:
+Jazzer.js has the following dependencies when built from source:
 
 - [Node.js 14](https://nodejs.org/)
 - [NPM 7.0](https://www.npmjs.com/)
 - [cmake-js](https://github.com/cmake-js/cmake-js) dependencies
-  - [CMake v7.0.0](https://cmake.org/download/)
+  - [CMake](https://cmake.org/download/) version 3.10 or later
   - C/C++ compiler toolchain of the used platform
     - See cmake-js
       [installation documentation](https://github.com/cmake-js/cmake-js#installation)
