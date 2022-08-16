@@ -69,7 +69,9 @@ export function printError(error: unknown) {
 	if (error instanceof Error) {
 		errorMessage += error.message;
 		console.log(errorMessage);
-		console.log(error.stack);
+		if (error.stack) {
+			console.log(cleanStack(error.stack));
+		}
 	} else if (typeof error === "string" || error instanceof String) {
 		errorMessage += error;
 		console.log(errorMessage);
@@ -77,6 +79,17 @@ export function printError(error: unknown) {
 		errorMessage += "unknown";
 		console.log(errorMessage);
 	}
+}
+
+function cleanStack(stack: string): string {
+	const result: string[] = [];
+	for (const line of stack.split("\n")) {
+		if (line.includes("startFuzzing") && line.includes("jazzer.js")) {
+			break;
+		}
+		result.push(line);
+	}
+	return result.join("\n");
 }
 
 export { jazzer } from "./jazzer";
