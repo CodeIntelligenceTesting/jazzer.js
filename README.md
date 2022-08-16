@@ -81,9 +81,12 @@ module.exports.fuzz = function (data) {
 
 #### Using TypeScript to write fuzz targets
 
-It is also possible to use TypeScript, or in that matter any other language
-transpiling to JavaScript, to write fuzz targets, as long as it generates a
-modules exporting a `fuzz` function.
+It is also possible to use [TypeScript](https://www.typescriptlang.org), or in
+that matter any other language transpiling to JavaScript, to write fuzz targets,
+as long as a modules exporting a `fuzz` function is generated.
+
+An example on how to use TypeScript to fuzz a library can be found at
+[examples/js-yaml/package.json](examples/js-yaml/package.json).
 
 ### Running the fuzzer
 
