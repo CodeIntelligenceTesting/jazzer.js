@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A libFuzzer-registered callback that outputs the crashing input and
-// optionally fuzzing stats, but does not include a stack trace.
-void (*gLibfuzzerPrintCrashingInput)() = nullptr;
+namespace libfuzzer {
+void (*PrintCrashingInput)() = nullptr;
+}
 
 // Used by libFuzzer to set the callback to be called immediately before
 // death on error. The libfuzzer death callback dumps the crashing input
 // and prints final stats.
 extern "C" [[maybe_unused]] void
 __sanitizer_set_death_callback(void (*callback)()) {
-  gLibfuzzerPrintCrashingInput = callback;
+  libfuzzer::PrintCrashingInput = callback;
 }
 
 // Suppress libFuzzer warnings about missing sanitizer methods

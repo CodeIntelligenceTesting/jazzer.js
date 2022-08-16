@@ -39,6 +39,7 @@ add_library(${PROJECT_NAME} SHARED
   "addon.cpp"
   "shared/callbacks.cpp"
   "shared/coverage.cpp"
+  "shared/sanitizer_symbols.cpp"
   "shared/tracing.cpp"
   "start_fuzzing_sync.cpp"
   "start_fuzzing_async.cpp"

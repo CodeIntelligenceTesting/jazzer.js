@@ -14,8 +14,9 @@
 
 #include <future>
 #include <iostream>
+#include <unistd.h>
 
-#include "shared/sanitizer_symbols.h"
+#include "shared/libfuzzer.h"
 #include "start_fuzzing_async.h"
 #include "utils.h"
 
@@ -51,8 +52,6 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
-int kErrorExitCode = 77;
-
 // The libFuzzer callback when fuzzing asynchronously
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
@@ -69,11 +68,13 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   try {
     future.get();
   } catch (std::exception &exception) {
-    std::cerr << "Unexpected Error: " << exception.what() << std::endl;
-
+    std::cerr << "==" << (unsigned long)getpid()
+              << "== Jazzer.js: unexpected Error: " << exception.what()
+              << std::endl;
+    libfuzzer::PrintCrashingInput();
     // We call exit to immediately terminates the process without performing any
     // cleanup including libfuzzer exit handlers.
-    _Exit(kErrorExitCode);
+    _Exit(libfuzzer::ExitErrorCode);
   }
   return 0;
 }
@@ -160,6 +161,11 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
 }
 
 void StopFuzzingAsync(const Napi::CallbackInfo &info) {
-  gLibfuzzerPrintCrashingInput();
-  _Exit(kErrorExitCode);
+  libfuzzer::PrintCrashingInput();
+  // We call _Exit to immediately terminate the process without performing any
+  // cleanup including libfuzzer exit handlers. These handlers print information
+  // about the native libfuzzer target which is neither relevant nor actionable
+  // for JavaScript developers. We provide the relevant crash information
+  // such as the error message and stack trace in Jazzer.js CLI.
+  _Exit(libfuzzer::ExitErrorCode);
 }
