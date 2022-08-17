@@ -34,7 +34,8 @@ void StartLibFuzzer(const std::vector<std::string> &args,
   fuzzer::FuzzerDriver(&argc, &argv, fuzzCallback);
 }
 
-std::vector<std::string> LibFuzzerArgs(Napi::Env env, Napi::Array jsArgs) {
+std::vector<std::string> LibFuzzerArgs(Napi::Env env,
+                                       const Napi::Array &jsArgs) {
   std::vector<std::string> fuzzer_args;
   for (auto [_, fuzzer_arg] : jsArgs) {
     Napi::Value val = fuzzer_arg;

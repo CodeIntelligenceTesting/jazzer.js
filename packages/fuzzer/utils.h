@@ -21,4 +21,5 @@
 
 void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback);
-std::vector<std::string> LibFuzzerArgs(Napi::Env env, Napi::Array jsArgs);
+std::vector<std::string> LibFuzzerArgs(Napi::Env env,
+                                       const Napi::Array &jsArgs);

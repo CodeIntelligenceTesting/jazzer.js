@@ -128,10 +128,11 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
 
 // Start libfuzzer with a JS fuzz target asynchronously.
 //
-// This is a JS-enabled version of libfuzzer main function (see FuzzerMain.cpp
-// in the compiler-rt source). Its only parameter is the fuzz target, which must
-// be a JS function taking a single data argument; the fuzz target's return
-// value is ignored.
+// This is a JS-enabled version of libfuzzer's main function (see FuzzerMain.cpp
+// in the compiler-rt source). It takes the fuzz target, which must be a JS
+// function taking a single data argument, as its first parameter; the fuzz
+// target's return value is ignored. The second argument is an array of
+// (command-line) arguments to pass to libfuzzer.
 //
 // In order not to block JavaScript event loop, we start libfuzzer in a separate
 // thread and use a typed thread-safe function to manage calls to the JavaScript
