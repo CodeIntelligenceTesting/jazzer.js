@@ -56,10 +56,11 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
 
 // Start libfuzzer with a JS fuzz target.
 //
-// This is a JS-enabled version of libfuzzer main function (see FuzzerMain.cpp
-// in the compiler-rt source). Its only parameter is the fuzz target, which must
-// be a JS function taking a single data argument; the fuzz target's return
-// value is ignored.
+// This is a JS-enabled version of libfuzzer's main function (see FuzzerMain.cpp
+// in the compiler-rt source). It takes the fuzz target, which must be a JS
+// function taking a single data argument, as its first parameter; the fuzz
+// target's return value is ignored. The second argument is an array of
+// (command-line) arguments to pass to libfuzzer.
 void StartFuzzing(const Napi::CallbackInfo &info) {
   if (info.Length() != 2 || !info[0].IsFunction() || !info[1].IsArray()) {
     throw Napi::Error::New(info.Env(),
