@@ -64,10 +64,9 @@ void TraceStringContainment(const Napi::CallbackInfo &info) {
 
 void TraceIntegerCompare(const Napi::CallbackInfo &info) {
   if (info.Length() != 3) {
-    Napi::Error::New(
+    throw Napi::Error::New(
         info.Env(),
-        "Need three arguments: the trace ID and the two compared numbers")
-        .ThrowAsJavaScriptException();
+        "Need three arguments: the trace ID and the two compared numbers");
   }
 
   auto id = info[0].As<Napi::Number>().Int64Value();
@@ -78,9 +77,8 @@ void TraceIntegerCompare(const Napi::CallbackInfo &info) {
 
 void TracePcIndir(const Napi::CallbackInfo &info) {
   if (info.Length() != 2) {
-    Napi::Error::New(info.Env(),
-                     "Need two arguments: the PC value & the trace ID")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(info.Env(),
+                           "Need two arguments: the PC value & the trace ID");
   }
 
   auto id = info[0].As<Napi::Number>().Int64Value();

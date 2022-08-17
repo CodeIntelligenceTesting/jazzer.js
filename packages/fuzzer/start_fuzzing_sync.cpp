@@ -62,10 +62,9 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
 // value is ignored.
 void StartFuzzing(const Napi::CallbackInfo &info) {
   if (info.Length() != 2 || !info[0].IsFunction() || !info[1].IsArray()) {
-    Napi::Error::New(info.Env(),
-                     "Need two arguments, which must be the fuzz target "
-                     "function and an array of libfuzzer arguments")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(info.Env(),
+                           "Need two arguments, which must be the fuzz target "
+                           "function and an array of libfuzzer arguments");
   }
 
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
