@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "utils.h"
+#include "napi.h"
 
 void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback) {
@@ -36,13 +37,12 @@ void StartLibFuzzer(const std::vector<std::string> &args,
 std::vector<std::string> LibFuzzerArgs(Napi::Env env, Napi::Array jsArgs) {
   std::vector<std::string> fuzzer_args;
   for (auto [_, fuzzer_arg] : jsArgs) {
-    auto val = static_cast<Napi::Value>(fuzzer_arg);
+    Napi::Value val = fuzzer_arg;
     if (!val.IsString()) {
-      Napi::Error::New(env, "libfuzzer arguments have to be strings")
-          .ThrowAsJavaScriptException();
+      throw Napi::Error::New(env, "libfuzzer arguments have to be strings");
     }
 
     fuzzer_args.push_back(val.As<Napi::String>().Utf8Value());
   }
-  return std::move(fuzzer_args);
+  return fuzzer_args;
 }

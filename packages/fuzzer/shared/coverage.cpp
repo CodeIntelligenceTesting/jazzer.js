@@ -42,13 +42,11 @@ PCTableEntry *gPCEntries = nullptr;
 } // namespace
 void RegisterCoverageMap(const Napi::CallbackInfo &info) {
   if (info.Length() != 1) {
-    Napi::Error::New(info.Env(),
-                     "Need one argument: a pointer to the Buffer object")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(info.Env(),
+                           "Need one argument: a pointer to the Buffer object");
   }
   if (!info[0].IsBuffer()) {
-    Napi::Error::New(info.Env(), "Expected a Buffer")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(info.Env(), "Expected a Buffer");
   }
 
   auto buf = info[0].As<Napi::Buffer<uint8_t>>();
@@ -66,24 +64,21 @@ void RegisterCoverageMap(const Napi::CallbackInfo &info) {
 
 void RegisterNewCounters(const Napi::CallbackInfo &info) {
   if (info.Length() != 2) {
-    Napi::Error::New(info.Env(),
-                     "Need two arguments: the old and new number of counters")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(
+        info.Env(), "Need two arguments: the old and new number of counters");
   }
 
   auto old_num_counters = info[0].As<Napi::Number>().Int64Value();
   auto new_num_counters = info[1].As<Napi::Number>().Int64Value();
 
   if (gCoverageCounters == nullptr) {
-    Napi::Error::New(info.Env(),
-                     "RegisterCoverageMap should have been called first")
-        .ThrowAsJavaScriptException();
+    throw Napi::Error::New(info.Env(),
+                           "RegisterCoverageMap should have been called first");
   }
   if (new_num_counters < old_num_counters) {
-    Napi::Error::New(
+    throw Napi::Error::New(
         info.Env(),
-        "new_num_counters must not be smaller than old_num_counters")
-        .ThrowAsJavaScriptException();
+        "new_num_counters must not be smaller than old_num_counters");
   }
   if (new_num_counters == old_num_counters) {
     return;
