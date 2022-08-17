@@ -20,7 +20,7 @@ export function fuzz(data: Buffer) {
 	try {
 		yaml.load(data.toString());
 	} catch (e: unknown) {
-		if (typeof e === "object" && (e as Error).name !== YAMLException.name) {
+		if (typeof e !== "object" || (e as Error).name !== YAMLException.name) {
 			throw e;
 		}
 	}

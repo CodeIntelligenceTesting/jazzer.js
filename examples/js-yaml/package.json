@@ -4,8 +4,8 @@
 	"description": "An example showing how Jazzer.js integrates with TypeScript to fuzz js-yaml",
 	"scripts": {
 		"build": "tsc",
-		"fuzz": "npm run build && jazzer dist/fuzz -i js-yaml -e nothing --sync -- -use_value_profile=1",
-		"dryRun": "npm run build && jazzer dist/fuzz -i js-yaml -e nothing --sync -- -use_value_profile=1 -runs=100"
+		"fuzz": "npm run build && jazzer dist/fuzz -i js-yaml -e nothing -- -use_value_profile=1",
+		"dryRun": "npm run build && jazzer dist/fuzz -i js-yaml -e nothing -- -use_value_profile=1 -runs=100"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core",
