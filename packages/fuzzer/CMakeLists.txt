@@ -15,9 +15,11 @@ if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set(LIBFUZZER_STATIC_LIB_PATH "lib/linux/libclang_rt.fuzzer_no_main-x86_64.a")
+  set(LIBFUZZER_TARGET "clang_rt.fuzzer_no_main-x86_64")
+  set(LIBFUZZER_STATIC_LIB_PATH "lib/linux/lib${LIBFUZZER_TARGET}.a")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(LIBFUZZER_STATIC_LIB_PATH "lib/darwin/libclang_rt.fuzzer_no_main_osx.a")
+  set(LIBFUZZER_TARGET "clang_rt.fuzzer_no_main_osx")
+  set(LIBFUZZER_STATIC_LIB_PATH "lib/darwin/lib${LIBFUZZER_TARGET}.a")
 endif()
 
 # Enable the functionality of Node-API version 4 and disable everything added
@@ -84,6 +86,7 @@ ExternalProject_Add(compiler-rt
   # Tell CMake about the libfuzzer libraries that are built as part of the
   # external project. Some CMake generators fail if we later depend on the
   # libraries without declaring them here (including ninja).
+  BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target ${LIBFUZZER_TARGET}
   BUILD_BYPRODUCTS
   <BINARY_DIR>/${LIBFUZZER_STATIC_LIB_PATH})
 
