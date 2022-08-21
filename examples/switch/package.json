@@ -4,7 +4,7 @@
 	"description": "An example showing how Jazzer.js handles switch statements",
 	"scripts": {
 		"fuzz": "jazzer fuzz --sync",
-		"dryRun": "jazzer fuzz --sync -- -runs=100"
+		"dryRun": "jazzer fuzz --sync -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

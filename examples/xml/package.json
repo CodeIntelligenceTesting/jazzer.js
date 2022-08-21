@@ -8,7 +8,7 @@
 	},
 	"scripts": {
 		"fuzz": "jazzer fuzz -i xml -e nothing",
-		"dryRun": "jazzer fuzz -i xml -e nothing -- -runs=100"
+		"dryRun": "jazzer fuzz -i xml -e nothing -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

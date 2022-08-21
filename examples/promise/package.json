@@ -4,7 +4,7 @@
 	"description": "An example showing how Jazzer.js handles promise based fuzz targets",
 	"scripts": {
 		"fuzz": "jazzer fuzz",
-		"dryRun": "jazzer fuzz -- -runs=1"
+		"dryRun": "jazzer fuzz -- -runs=1 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
