@@ -3,7 +3,7 @@
 	"version": "0.2.0",
 	"scripts": {
 		"fuzz": "jazzer spectral-example -i spectral -e nothing --sync",
-		"dryRun": "jazzer spectral-example -i spectral -e nothing --sync -- -runs=100"
+		"dryRun": "jazzer spectral-example -i spectral -e nothing --sync -- -runs=100 -seed=123456789"
 	},
 	"dependencies": {
 		"@stoplight/spectral-parsers": "^1.0.1"
