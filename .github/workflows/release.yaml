@@ -17,6 +17,8 @@ jobs:
           node-version: 16
           cache: "npm"
           registry-url: https://registry.npmjs.org
+      - name: install & build
+        run: npm install && npm run build
       - name: publish to npm
         run: npm publish --workspaces --access public
         env:
