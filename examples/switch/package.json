@@ -1,6 +1,6 @@
 {
 	"name": "jazzerjs-switch-example",
-	"version": "0.2.0",
+	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles switch statements",
 	"scripts": {
 		"fuzz": "jazzer fuzz --sync",

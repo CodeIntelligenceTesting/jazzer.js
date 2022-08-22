@@ -143,10 +143,8 @@ flag, so that only the most important ones are discussed here.
 | `[corpus...]`                                                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                   |
 | `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                      |
 | `-i`, `--instrumentation_includes` / `-e`, `--instrumentation_excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. |
-| `--sync`                                                                | Enables synchronous fuzzing. \*\*                                                                                                                                                                                                                                                                        |
-
-May only be used for entirely synchronous code\*\*. | | `--help` | Detailed help
-message containing all flags. |
+| `--sync`                                                                | Enables synchronous fuzzing. **May only be used for entirely synchronous code**.                                                                                                                                                                                                                         |
+| `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                              |
 
 ## Documentation
 

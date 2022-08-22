@@ -5,8 +5,11 @@
 Main focus lies on fuzzing [Node.js](https://nodejs.org) libraries and backend
 applications using [libFuzzer](https://llvm.org/docs/LibFuzzer.html).
 
-- Support for Node.js 14.x+
-- Support for Linux, macOS and Windows to come
+Support for:
+
+- Linux x86_64
+- macOS x86_64 and arm64
+- Windows x86_64
 
 Out of scope:
 
