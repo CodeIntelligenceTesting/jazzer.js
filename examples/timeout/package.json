@@ -1,0 +1,12 @@
+{
+	"name": "jazzerjs-timeout-example",
+	"version": "1.0.0",
+	"description": "An example showing how Jazzer.js handles timeouts",
+	"scripts": {
+		"fuzz": "jazzer fuzz -- -timeout=1",
+		"dryRun": "echo \"skipped\""
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

@@ -1,6 +1,7 @@
 # Fuzzer reports
 crash-*
 oom-*
+timeout-*
 
 # Editors
 .idea

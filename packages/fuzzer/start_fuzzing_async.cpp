@@ -173,6 +173,8 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
         delete ctx;
       });
 
+  // Start the libFuzzer loop in a separate thread in order not to block the
+  // JavaScript event loop
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
         StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);

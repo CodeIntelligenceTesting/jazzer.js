@@ -77,7 +77,8 @@ ExternalProject_Add(compiler-rt
   PATCH_COMMAND
     ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/transform_exit_to_return.patch &&
     ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/add_with_pc_sanitizer_cov_tracing_functions.patch &&
-    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/fix_cmake_windows.patch
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/fix_cmake_windows.patch &&
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/sigalrm_handler.patch
   CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
