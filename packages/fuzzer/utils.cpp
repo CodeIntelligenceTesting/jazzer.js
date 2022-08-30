@@ -29,8 +29,6 @@ void StartLibFuzzer(const std::vector<std::string> &args,
   int argc = fuzzer_arg_pointers.size();
   char **argv = fuzzer_arg_pointers.data();
 
-  // Start the libFuzzer loop in a separate thread in order not to block
-  // JavaScript event loop
   fuzzer::FuzzerDriver(&argc, &argv, fuzzCallback);
 }
 

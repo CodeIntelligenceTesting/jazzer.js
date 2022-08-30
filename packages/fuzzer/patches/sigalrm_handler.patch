@@ -1,0 +1,17 @@
+--- a/compiler-rt/lib/fuzzer/FuzzerLoop.cpp
++++ b/compiler-rt/lib/fuzzer/FuzzerLoop.cpp
+@@ -276,9 +276,11 @@ void Fuzzer::AlarmCallback() {
+   assert(Options.UnitTimeoutSec > 0);
+   // In Windows and Fuchsia, Alarm callback is executed by a different thread.
+   // NetBSD's current behavior needs this change too.
+-#if !LIBFUZZER_WINDOWS && !LIBFUZZER_NETBSD && !LIBFUZZER_FUCHSIA
+-  if (!InFuzzingThread())
+-    return;
++#if !LIBFUZZER_WINDOWS && !LIBFUZZER_NETBSD && !LIBFUZZER_FUCHSIA
++// Signals are received by the first thread, which normally is libFuzzer's
++// "myThread". When executed in a separate thread, as in the async fuzzing
++// case of Jazzer.js, this is not the case anymore and the patched out
++// thread name check prevents proper signal handling.
+ #endif
+   if (!RunningUserCallback)
+     return; // We have not started running units yet.
