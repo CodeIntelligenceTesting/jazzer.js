@@ -1,8 +1,6 @@
 name: "🔍 Tests"
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -69,3 +67,18 @@ jobs:
         run: npm run build
       - name: run all tests
         run: npm run test
+
+  auto-merge:
+    needs:
+      - linting
+      - unit_tests
+    permissions:
+      pull-requests: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v3.0.0
+        with:
+          target: minor
+          merge-method: rebase
+          github-token: ${{ secrets.GITHUB_TOKEN }}
