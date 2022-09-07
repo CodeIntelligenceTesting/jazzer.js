@@ -20,6 +20,7 @@ Jazzer.js currently supports the following platforms:
 - Windows x86_64
 
 ## Live Stream - Introduction to Jazzer.js
+
 We are hosting a live stream where one of the maintainers will demonstrate how
 to get jazzer.js up and running for your own projects. We are happy to address
 all of your open questions there.
