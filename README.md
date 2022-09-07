@@ -26,7 +26,8 @@ all of your open questions there.
 
 The stream will take place this week on **Thursday 8th at 4 PM (CEST)**.
 
-Join the session [here](https://www.code-intelligence.com/webinar/javascript-fuzzing) :)
+Join the session
+[here](https://www.code-intelligence.com/webinar/javascript-fuzzing) :)
 
 ## Quickstart
 
