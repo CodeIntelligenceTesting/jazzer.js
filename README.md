@@ -19,6 +19,13 @@ Jazzer.js currently supports the following platforms:
 - macOS x86_64 and arm64
 - Windows x86_64
 
+## Live Stream - Introduction to Jazzer.js 
+We are hosting a live stream where one of the maintainers will demonstrate how to get jazzer.js up and running for your own projects. We are happy to address all of your open questions there. 
+
+The stream will take place this week on **Thursday 8th at 4 PM (CEST)**.
+
+Join the session [here](https://www.code-intelligence.com/webinar/javascript-fuzzing) :)
+
 ## Quickstart
 
 To use Jazzer.js in your own project follow these few simple steps:
