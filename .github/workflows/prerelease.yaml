@@ -69,6 +69,6 @@ jobs:
       - name: install dependencies
         run: npm install --ws=@jazzer.js/fuzzer
       - name: build and upload prebuilds
-        run: npm run upload --workspace=@jazzer.js/fuzzer
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        run: >
+          npm run upload --workspace=@jazzer.js/fuzzer --
+          ${{secrets.GITHUB_TOKEN}}

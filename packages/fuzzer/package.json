@@ -17,7 +17,7 @@
 	"types": "dist/fuzzer.d.ts",
 	"scripts": {
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
-		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload ${GITHUB_TOKEN}",
+		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload",
 		"install": "prebuild-install --runtime napi || cmake-js rebuild --out build",
 		"build": "cmake-js compile --out build",
 		"format:fix": "clang-format -i *.cpp shared/*.cpp shared/*.h",
