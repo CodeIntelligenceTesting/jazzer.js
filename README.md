@@ -155,8 +155,7 @@ Further documentation is available at [docs/readme.md](docs/README.md).
 We recorded a live demo in which shows how to get Jazzer.js up and running for
 your own projects. If you are just getting started, this might be helpful.
 
-You can watch the recording
-[here](https://youtu.be/KyIhxEiNnfc).
+You can watch the recording [here](https://youtu.be/KyIhxEiNnfc).
 
 ## Credit
 
