@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"@jazzer.js/instrumentor": "*",
+		"@jazzer.js/hooking": "*",
 		"yargs": "^17.6.0"
 	},
 	"devDependencies": {

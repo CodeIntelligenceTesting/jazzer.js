@@ -14,16 +14,40 @@
  * limitations under the License.
  */
 
-import { transformSync } from "@babel/core";
-import { hookRequire } from "istanbul-lib-hook";
+import { PluginItem, transformSync } from "@babel/core";
+import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
+import { functionHooks } from "./plugins/functionHooks";
+import { hookManager } from "@jazzer.js/hooking";
 
 export function registerInstrumentor(includes: string[], excludes: string[]) {
-	hookRequire(shouldInstrument(includes, excludes), instrumentCode);
+	const shouldInstrument = shouldInstrumentFn(includes, excludes);
+	hookRequire(
+		() => true,
+		(code: string, options: TransformerOptions): string => {
+			const transformations: PluginItem[] = [];
+
+			if (shouldInstrument(options.filename)) {
+				transformations.push(codeCoverage, compareHooks);
+			}
+			if (hookManager.hasFunctionsToHook(options.filename)) {
+				transformations.push(functionHooks(options.filename));
+			}
+
+			if (transformations.length === 0) {
+				return code;
+			}
+
+			const output = transformSync(code, {
+				plugins: transformations,
+			});
+			return output?.code || code;
+		}
+	);
 }
 
-export function shouldInstrument(
+export function shouldInstrumentFn(
 	includes: string[],
 	excludes: string[]
 ): (filepath: string) => boolean {
@@ -34,11 +58,4 @@ export function shouldInstrument(
 			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
 		return included && !excluded;
 	};
-}
-
-function instrumentCode(code: string): string {
-	const output = transformSync(code, {
-		plugins: [codeCoverage, compareHooks],
-	});
-	return output?.code || code;
 }

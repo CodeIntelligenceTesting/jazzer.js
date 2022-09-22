@@ -15,8 +15,8 @@
  */
 
 import * as fuzzer from "@jazzer.js/fuzzer";
+import * as hooking from "@jazzer.js/hooking";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
-import { FuzzFn } from "@jazzer.js/fuzzer";
 
 export interface Options {
 	fuzzTarget: string;
@@ -31,10 +31,15 @@ export interface Options {
 declare global {
 	// eslint-disable-next-line no-var
 	var Fuzzer: fuzzer.Fuzzer;
+	// eslint-disable-next-line no-var
+	var HookManager: hooking.HookManager;
 }
 
-function initFuzzing(options: Options): FuzzFn {
+function initFuzzing(options: Options): fuzzer.FuzzFn {
 	globalThis.Fuzzer = fuzzer.fuzzer;
+	//TODO make sure that all sanitizers are registered at this point
+	globalThis.HookManager = hooking.hookManager;
+
 	if (options.dryRun) {
 		options.fuzzerOptions.push("-runs=0");
 	} else {
