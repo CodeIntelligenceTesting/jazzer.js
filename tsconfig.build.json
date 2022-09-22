@@ -3,6 +3,7 @@
 	"references": [
 		{ "path": "packages/core" },
 		{ "path": "packages/fuzzer" },
+		{ "path": "packages/hooking" },
 		{ "path": "packages/instrumentor" }
 	]
 }
