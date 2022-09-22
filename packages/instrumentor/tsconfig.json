@@ -4,5 +4,5 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"references": [{ "path": "../fuzzer" }]
+	"references": [{ "path": "../fuzzer" }, { "path": "../hooking" }]
 }

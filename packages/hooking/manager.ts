@@ -23,7 +23,9 @@ import {
 	AfterHookFn,
 } from "./hook";
 
-export type MatchingHooksResult = { [key in HookType]: Hook[] };
+export type MatchingHooksResult = {
+	[key in HookType]: Hook[];
+};
 
 export class HookManager {
 	private hooks: Hook[] = [];
@@ -35,7 +37,7 @@ export class HookManager {
 		async: boolean,
 		hookFn: HookFn
 	) {
-		const h = new Hook(hookType, target, pkg, [], async, hookFn);
+		const h = new Hook(hookType, target, pkg, async, hookFn);
 		this.hooks.push(h);
 	}
 
@@ -88,9 +90,7 @@ export class HookManager {
 		id: number,
 		thisPtr: object,
 		params: any[],
-		result: any,
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		origFunc: Function
+		resultOrOriginalFunction: any
 	): any {
 		const hook = this.hooks[id];
 		switch (hook.type) {
@@ -98,19 +98,19 @@ export class HookManager {
 				(hook.hookFunction as BeforeHookFn)(thisPtr, params, this.callSiteId());
 				break;
 			case HookType.Replace:
-				(hook.hookFunction as ReplaceHookFn)(
-					origFunc,
+				return (hook.hookFunction as ReplaceHookFn)(
 					thisPtr,
 					params,
-					this.callSiteId()
+					this.callSiteId(),
+					// eslint-disable-next-line @typescript-eslint/ban-types
+					resultOrOriginalFunction as Function
 				);
-				break;
 			case HookType.After:
 				(hook.hookFunction as AfterHookFn)(
 					thisPtr,
 					params,
 					this.callSiteId(),
-					result
+					resultOrOriginalFunction
 				);
 		}
 	}

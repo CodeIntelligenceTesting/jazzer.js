@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { shouldInstrument } from "./instrument";
+import { shouldInstrumentFn } from "./instrument";
 
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
-		const check = shouldInstrument(["include"], ["exclude"]);
+		const check = shouldInstrumentFn(["include"], ["exclude"]);
 		expect(check("include")).toBeTruthy();
 		expect(check("exclude")).toBeFalsy();
 		expect(check("/some/package/include/files")).toBeTruthy();
@@ -27,13 +27,13 @@ describe("shouldInstrument check", () => {
 	});
 
 	it("should include everything with emptystring", () => {
-		const check = shouldInstrument([""], []);
+		const check = shouldInstrumentFn([""], []);
 		expect(check("include")).toBeTruthy();
 		expect(check("/something/else")).toBeTruthy();
 	});
 
 	it("should exclude with precedence", () => {
-		const check = shouldInstrument(["include"], [""]);
+		const check = shouldInstrumentFn(["include"], [""]);
 		expect(check("/some/package/include/files")).toBeFalsy();
 	});
 });

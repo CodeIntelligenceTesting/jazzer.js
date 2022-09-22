@@ -23,11 +23,11 @@ export enum HookType {
 export type BeforeHookFn = (thisPtr: any, params: any[], hookId: number) => any;
 
 export type ReplaceHookFn = (
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	origFn: Function,
 	thisPtr: any,
 	params: any[],
-	hookId: number
+	hookId: number,
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	origFn: Function
 ) => any;
 
 export type AfterHookFn = (
@@ -43,7 +43,6 @@ export class Hook {
 	type: HookType;
 	target: string;
 	pkg: string;
-	parents: string[];
 	async: boolean;
 	hookFunction: HookFn;
 
@@ -51,14 +50,12 @@ export class Hook {
 		type: HookType,
 		target: string,
 		pkg: string,
-		parents: string[],
 		async: boolean,
 		hookFunction: HookFn
 	) {
 		this.type = type;
 		this.target = target;
 		this.pkg = pkg;
-		this.parents = parents;
 		this.async = async;
 		this.hookFunction = hookFunction;
 	}
