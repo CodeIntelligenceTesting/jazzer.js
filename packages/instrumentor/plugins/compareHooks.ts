@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { BinaryExpression, SwitchStatement } from "@babel/types";
+import {
+	BinaryExpression,
+	SwitchStatement,
+	isPrivateName,
+	isIdentifier,
+	isStringLiteral,
+	isNumericLiteral,
+} from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
 import { fakePC } from "./helpers";
 
@@ -23,7 +30,7 @@ export function compareHooks(): PluginTarget {
 		visitor: {
 			BinaryExpression(path: NodePath<BinaryExpression>) {
 				// TODO: Investigate this type, it can not be passed to the call expression
-				if (path.node.left.type == "PrivateName") {
+				if (isPrivateName(path.node.left)) {
 					return;
 				}
 
@@ -46,7 +53,7 @@ export function compareHooks(): PluginTarget {
 				);
 			},
 			SwitchStatement(path: NodePath<SwitchStatement>) {
-				if (path.node.discriminant.type !== "Identifier") {
+				if (!isIdentifier(path.node.discriminant)) {
 					return;
 				}
 				const id = path.node.discriminant;
@@ -67,8 +74,8 @@ export function compareHooks(): PluginTarget {
 function isStringCompare(exp: BinaryExpression): boolean {
 	// One operand has to be a string literal but not both
 	if (
-		(exp.left.type !== "StringLiteral" && exp.right.type !== "StringLiteral") ||
-		(exp.left.type === "StringLiteral" && exp.right.type === "StringLiteral")
+		(!isStringLiteral(exp.left) && !isStringLiteral(exp.right)) ||
+		(isStringLiteral(exp.left) && isStringLiteral(exp.right))
 	) {
 		return false;
 	}
@@ -81,9 +88,8 @@ function isStringCompare(exp: BinaryExpression): boolean {
 function isNumberCompare(exp: BinaryExpression): boolean {
 	// One operand has to be a string literal but not both
 	if (
-		(exp.left.type !== "NumericLiteral" &&
-			exp.right.type !== "NumericLiteral") ||
-		(exp.left.type === "NumericLiteral" && exp.right.type === "NumericLiteral")
+		(!isNumericLiteral(exp.left) && !isNumericLiteral(exp.right)) ||
+		(isNumericLiteral(exp.left) && isNumericLiteral(exp.right))
 	) {
 		return false;
 	}

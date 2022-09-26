@@ -26,6 +26,8 @@ import {
 	Statement,
 	SwitchStatement,
 	TryStatement,
+	isBlockStatement,
+	isLogicalExpression,
 } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
 import { fuzzer } from "@jazzer.js/fuzzer";
@@ -35,7 +37,7 @@ export function codeCoverage(): PluginTarget {
 		visitor: {
 			// eslint-disable-next-line @typescript-eslint/ban-types
 			Function(path: NodePath<Function>) {
-				if (path.node.body.type == "BlockStatement") {
+				if (isBlockStatement(path.node.body)) {
 					const bodyStmt = path.node.body as BlockStatement;
 					if (bodyStmt) {
 						bodyStmt.body.unshift(makeCounterIncStmt());
@@ -67,13 +69,13 @@ export function codeCoverage(): PluginTarget {
 				path.insertAfter(makeCounterIncStmt());
 			},
 			LogicalExpression(path: NodePath<LogicalExpression>) {
-				if (path.node.left.type !== "LogicalExpression") {
+				if (!isLogicalExpression(path.node.left)) {
 					path.node.left = types.sequenceExpression([
 						makeCounterIncExpr(),
 						path.node.left,
 					]);
 				}
-				if (path.node.right.type !== "LogicalExpression") {
+				if (!isLogicalExpression(path.node.right)) {
 					path.node.right = types.sequenceExpression([
 						makeCounterIncExpr(),
 						path.node.right,
@@ -89,7 +91,7 @@ export function codeCoverage(): PluginTarget {
 					makeCounterIncExpr(),
 					path.node.alternate,
 				]);
-				if (path.parent.type === "BlockStatement") {
+				if (isBlockStatement(path.parent)) {
 					path.insertAfter(makeCounterIncStmt());
 				}
 			},
@@ -99,7 +101,7 @@ export function codeCoverage(): PluginTarget {
 
 function addCounterToStmt(stmt: Statement): BlockStatement {
 	const counterStmt = makeCounterIncStmt();
-	if (stmt.type === "BlockStatement") {
+	if (isBlockStatement(stmt)) {
 		const br = stmt as BlockStatement;
 		br.body.unshift(counterStmt);
 		return br;
