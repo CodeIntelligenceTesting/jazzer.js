@@ -42,25 +42,13 @@ export type AfterHookFn = (
 export type HookFn = BeforeHookFn | ReplaceHookFn | AfterHookFn;
 
 export class Hook {
-	public readonly type: HookType;
-	public readonly target: string;
-	public readonly pkg: string;
-	public readonly async: boolean;
-	public readonly hookFunction: HookFn;
-
 	constructor(
-		type: HookType,
-		target: string,
-		pkg: string,
-		async: boolean,
-		hookFunction: HookFn
-	) {
-		this.type = type;
-		this.target = target;
-		this.pkg = pkg;
-		this.async = async;
-		this.hookFunction = hookFunction;
-	}
+		public readonly type: HookType,
+		public readonly target: string,
+		public readonly pkg: string,
+		public readonly async: boolean,
+		public readonly hookFunction: HookFn
+	) {}
 
 	match(pkg: string, target: string): boolean {
 		return pkg.includes(this.pkg) && target == this.target;
