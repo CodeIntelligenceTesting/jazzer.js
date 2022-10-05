@@ -89,9 +89,9 @@ export class HookManager {
 	callHook(
 		id: number,
 		thisPtr: object,
-		params: any[],
-		resultOrOriginalFunction: any
-	): any {
+		params: unknown[],
+		resultOrOriginalFunction: unknown
+	): unknown {
 		const hook = this.hooks[id];
 		switch (hook.type) {
 			case HookType.Before:

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/*eslint @typescript-eslint/no-explicit-any: 0 */
+
 export enum HookType {
 	Before,
 	After,
@@ -40,11 +42,11 @@ export type AfterHookFn = (
 export type HookFn = BeforeHookFn | ReplaceHookFn | AfterHookFn;
 
 export class Hook {
-	type: HookType;
-	target: string;
-	pkg: string;
-	async: boolean;
-	hookFunction: HookFn;
+	public readonly type: HookType;
+	public readonly target: string;
+	public readonly pkg: string;
+	public readonly async: boolean;
+	public readonly hookFunction: HookFn;
 
 	constructor(
 		type: HookType,
