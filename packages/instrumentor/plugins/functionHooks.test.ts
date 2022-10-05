@@ -443,6 +443,8 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.get(0)).toEqual(1);
 			expect(hookCallMap.get(1)).toEqual(1);
 		});
+
+		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("one hook called after an async function", (): any => {
 			hooking.hookManager.clearHooks();
 			const hookCallMap = registerAsyncFunctionHook(
@@ -490,6 +492,8 @@ describe("function hooks instrumentation", () => {
 				}
 			);
 		});
+
+		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("two hooks called after an async function", (): any => {
 			hooking.hookManager.clearHooks();
 			const hookCallMap = registerAsyncFunctionHook(
@@ -629,7 +633,7 @@ describe("function hooks instrumentation", () => {
 			expect(afterHookCallMap.size).toEqual(1);
 			expect(afterHookCallMap.get(0)).toEqual(1);
 		});
-
+		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("one Before and ond After hook for an async function", (): any => {
 			hooking.hookManager.clearHooks();
 			const beforeHookCallMap = registerSyncFunctionHook(
