@@ -15,17 +15,70 @@
  */
 
 import {
-	Hook,
-	HookType,
-	HookFn,
-	BeforeHookFn,
-	ReplaceHookFn,
 	AfterHookFn,
+	BeforeHookFn,
+	Hook,
+	HookFn,
+	HookType,
+	ReplaceHookFn,
 } from "./hook";
 
-export type MatchingHooksResult = {
-	[key in HookType]: Hook[];
-};
+export class MatchingHooksResult {
+	public beforeHooks: Hook[] = [];
+	public replaceHooks: Hook[] = [];
+	public afterHooks: Hook[] = [];
+
+	addHook(h: Hook) {
+		switch (h.type) {
+			case HookType.Before:
+				this.beforeHooks.push(h);
+				break;
+			case HookType.Replace:
+				this.replaceHooks.push(h);
+				break;
+			case HookType.After:
+				this.afterHooks.push(h);
+				break;
+		}
+	}
+
+	verify() {
+		if (this.replaceHooks.length > 1) {
+			throw new Error(
+				`For a given target function, one REPLACE hook can be configured. Found: ${this.replaceHooks.length}`
+			);
+		} else if (
+			this.replaceHooks.length !== 0 &&
+			this.beforeHooks.length + this.afterHooks.length !== 0
+		) {
+			throw new Error(
+				`For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found ${
+					this.replaceHooks.length
+				} REPLACE hooks and ${
+					this.beforeHooks.length + this.afterHooks.length
+				} BEFORE/AFTER hooks`
+			);
+		}
+	}
+
+	hasHooks() {
+		return (
+			this.hasBeforeHooks() || this.hasReplaceHooks() || this.hasAfterHooks()
+		);
+	}
+
+	hasBeforeHooks() {
+		return this.beforeHooks.length !== 0;
+	}
+
+	hasReplaceHooks() {
+		return this.replaceHooks.length !== 0;
+	}
+
+	hasAfterHooks() {
+		return this.afterHooks.length !== 0;
+	}
+}
 
 export class HookManager {
 	private hooks: Hook[] = [];
@@ -37,8 +90,7 @@ export class HookManager {
 		async: boolean,
 		hookFn: HookFn
 	) {
-		const h = new Hook(hookType, target, pkg, async, hookFn);
-		this.hooks.push(h);
+		this.hooks.push(new Hook(hookType, target, pkg, async, hookFn));
 	}
 
 	clearHooks() {
@@ -51,35 +103,18 @@ export class HookManager {
 
 	matchingHooks(target: string, filepath: string): MatchingHooksResult {
 		const matches = this.hooks
-			.filter((h: Hook) => h.match(filepath, target))
+			.filter((hook: Hook) => hook.match(filepath, target))
 			.reduce(
-				(res: MatchingHooksResult, hook: Hook) => {
-					res[hook.type].push(hook);
-					return res;
+				(matches: MatchingHooksResult, hook: Hook) => {
+					matches.addHook(hook);
+					return matches;
 				},
-				{
-					[HookType.Before]: [],
-					[HookType.Replace]: [],
-					[HookType.After]: [],
-				}
+
+				new MatchingHooksResult()
 			);
 
-		if (
-			matches[HookType.Replace].length === 0 ||
-			(matches[HookType.Replace].length === 1 &&
-				matches[HookType.Before].length === 0 &&
-				matches[HookType.After].length === 0)
-		) {
-			return matches;
-		} else {
-			throw new Error(
-				`For a given function, you can either have a single REPLACE hook or BEFORE/AFTER hooks. Found ${
-					matches[HookType.Replace].length
-				} REPLACE hooks and ${
-					matches[HookType.Before].length + matches[HookType.After].length
-				} BEFORE/AFTER hooks`
-			);
-		}
+		matches.verify();
+		return matches;
 	}
 
 	hasFunctionsToHook(filepath: string): boolean {
