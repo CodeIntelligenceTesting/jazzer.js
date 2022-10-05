@@ -47,9 +47,11 @@ export class MatchingHooksResult {
 			throw new Error(
 				`For a given target function, one REPLACE hook can be configured. Found: ${this.replaceHooks.length}`
 			);
-		} else if (
-			this.replaceHooks.length !== 0 &&
-			this.beforeHooks.length + this.afterHooks.length !== 0
+		}
+
+		if (
+			this.hasReplaceHooks() &&
+			(this.hasBeforeHooks() || this.hasAfterHooks())
 		) {
 			throw new Error(
 				`For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found ${
@@ -58,6 +60,17 @@ export class MatchingHooksResult {
 					this.beforeHooks.length + this.afterHooks.length
 				} BEFORE/AFTER hooks`
 			);
+		}
+
+		if (this.hasAfterHooks()) {
+			if (
+				!this.afterHooks.every((h) => h.async) &&
+				!this.afterHooks.every((h) => !h.async)
+			) {
+				throw new Error(
+					"For a given target function, AFTER hooks have to be either all sync or all async."
+				);
+			}
 		}
 	}
 
