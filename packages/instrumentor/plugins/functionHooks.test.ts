@@ -38,26 +38,26 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  HooksManager.callHook(0, this, [arg1, arg2]);
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -71,27 +71,27 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  HooksManager.callHook(0, this, [arg1, arg2]);
-            |  HooksManager.callHook(1, this, [arg1, arg2]);
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  HooksManager.callHook(1, this, [arg1, arg2]);
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(2);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -106,26 +106,26 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |const foo = function (arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|const foo = function (arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |const foo = function (arg1, arg2) {
-            |  HooksManager.callHook(0, this, [arg1, arg2]);
-            |  return arg1 + arg2;
-            |};
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|const foo = function (arg1, arg2) {
+			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  return arg1 + arg2;
+			|};
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -139,49 +139,49 @@ describe("function hooks instrumentation", () => {
 				[2]
 			);
 			const input = `
-            |class A {
-     		|  constructor(a) {
-    		|    this.a = a;
-    		|  }
-    		|
-    		|  foo(x) {
-    		|    return this.a + x;
-          	|  }
-          	| 
-          	|  bar() {
-          	|    return this.a + 1; 
-          	|  }
+			|class A {
+			|  constructor(a) {
+			|    this.a = a;
+			|  }
+			|
+			|  foo(x) {
+			|    return this.a + x;
+			|  }
+			| 
+			|  bar() {
+			|    return this.a + 1; 
+			|  }
 			|}
-            |
-            |const foo = function (arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |const a = new A(1);
-            |a.foo(2);`;
+			|
+			|const foo = function (arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|const a = new A(1);
+			|a.foo(2);`;
 			const output = `
-            |class A {
-     		|  constructor(a) {
-    		|    this.a = a;
-    		|  }
-    		|
-    		|  foo(x) {
-    		|    HooksManager.callHook(0, this, [x]);
-    		|    return this.a + x;
-          	|  }
-          	|
-          	|  bar() {
-          	|    return this.a + 1;
-          	|  }
-          	|
+			|class A {
+			|  constructor(a) {
+			|    this.a = a;
+			|  }
+			|
+			|  foo(x) {
+			|    HooksManager.callHook(0, this, [x]);
+			|    return this.a + x;
+			|  }
+			|
+			|  bar() {
+			|    return this.a + 1;
+			|  }
+			|
 			|}
-            |
-            |const foo = function (arg1, arg2) {
-            |  return arg1 + arg2;
-            |};
-            |
-            |const a = new A(1);
-            |a.foo(2);`;
+			|
+			|const foo = function (arg1, arg2) {
+			|  return arg1 + arg2;
+			|};
+			|
+			|const a = new A(1);
+			|a.foo(2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -195,49 +195,49 @@ describe("function hooks instrumentation", () => {
 				[2]
 			);
 			const input = `
-            |const A = class {
-     		|  constructor(a) {
-    		|    this.a = a;
-    		|  }
-    		|
-    		|  foo(x) {
-    		|    return this.a + x;
-          	|  }
-          	| 
-          	|  bar() {
-          	|    return this.a + 1; 
-          	|  }
+			|const A = class {
+			|  constructor(a) {
+			|    this.a = a;
+			|  }
+			|
+			|  foo(x) {
+			|    return this.a + x;
+			|  }
+			| 
+			|  bar() {
+			|    return this.a + 1; 
+			|  }
 			|}
-            |
-            |const foo = function (arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |const a = new A(1);
-            |a.foo(2);`;
+			|
+			|const foo = function (arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|const a = new A(1);
+			|a.foo(2);`;
 			const output = `
-            |const A = class {
-     		|  constructor(a) {
-    		|    this.a = a;
-    		|  }
-    		|
-    		|  foo(x) {
-    		|    HooksManager.callHook(0, this, [x]);
-    		|    return this.a + x;
-          	|  }
-          	|
-          	|  bar() {
-          	|    return this.a + 1;
-          	|  }
-          	|
+			|const A = class {
+			|  constructor(a) {
+			|    this.a = a;
+			|  }
+			|
+			|  foo(x) {
+			|    HooksManager.callHook(0, this, [x]);
+			|    return this.a + x;
+			|  }
+			|
+			|  bar() {
+			|    return this.a + 1;
+			|  }
+			|
 			|};
-            |
-            |const foo = function (arg1, arg2) {
-            |  return arg1 + arg2;
-            |};
-            |
-            |const a = new A(1);
-            |a.foo(2);`;
+			|
+			|const foo = function (arg1, arg2) {
+			|  return arg1 + arg2;
+			|};
+			|
+			|const a = new A(1);
+			|a.foo(2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -254,31 +254,31 @@ describe("function hooks instrumentation", () => {
 			|const A = {
 			|  a: 1
 			|};
-    		|
-            |A.foo = function (x) {
-            |  return this.a + x;
-            |};
-            |
-            |A.bar = function () {
-            |  return this.a + 1;
-            |};
-            |
-            |A.foo(2);`;
+			|
+			|A.foo = function (x) {
+			|  return this.a + x;
+			|};
+			|
+			|A.bar = function () {
+			|  return this.a + 1;
+			|};
+			|
+			|A.foo(2);`;
 			const output = `
 			|const A = {
 			|  a: 1
-            |};
-            |
-            |A.foo = function (x) {
-    		|  HooksManager.callHook(0, this, [x]);
-            |  return this.a + x;
-            |};
-            |
-            |A.bar = function () {
-            |  return this.a + 1;
-            |};
-            |
-            |A.foo(2);`;
+			|};
+			|
+			|A.foo = function (x) {
+			|  HooksManager.callHook(0, this, [x]);
+			|  return this.a + x;
+			|};
+			|
+			|A.bar = function () {
+			|  return this.a + 1;
+			|};
+			|
+			|A.foo(2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -298,27 +298,27 @@ describe("function hooks instrumentation", () => {
 			|    return this.a + x;
 			|  }
 			|};
-    		|
-            |
-            |obj.bar = function () {
-            |  return this.a + 1;
-            |};
-            |
-            |obj.foo(2);`;
+			|
+			|
+			|obj.bar = function () {
+			|  return this.a + 1;
+			|};
+			|
+			|obj.foo(2);`;
 			const output = `
 			|const obj = {
 			|  a: 1,
-  			|  foo: function (x) {
-    		|    HooksManager.callHook(0, this, [x]);
+			|  foo: function (x) {
+			|    HooksManager.callHook(0, this, [x]);
 			|    return this.a + x;
 			|  }
-            |};
-            |
-            |obj.bar = function () {
-            |  return this.a + 1;
-            |};
-            |
-            |obj.foo(2);`;
+			|};
+			|
+			|obj.bar = function () {
+			|  return this.a + 1;
+			|};
+			|
+			|obj.foo(2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -332,33 +332,33 @@ describe("function hooks instrumentation", () => {
 				[2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  function bar(x) {
-            |    return x + 1;
-            |  }
-            |  return arg1 + bar(arg2);
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  function bar(x) {
+			|    return x + 1;
+			|  }
+			|  return arg1 + bar(arg2);
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  function bar(x) {
-            |    HooksManager.callHook(0, this, [x]);
-            |    return x + 1;
-            |  }
-            |
-            |  return arg1 + bar(arg2);
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  function bar(x) {
+			|    HooksManager.callHook(0, this, [x]);
+			|    return x + 1;
+			|  }
+			|
+			|  return arg1 + bar(arg2);
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(4);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -374,31 +374,31 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2)`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2)`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  const foo_original = (arg1, arg2) => {
-            |    return arg1 + arg2;
-            |  };
-            |
-            |  const foo_original_result = foo_original.call(this, arg1, arg2);
-            |  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
-            |  return foo_original_result;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  const foo_original = (arg1, arg2) => {
+			|    return arg1 + arg2;
+			|  };
+			|
+			|  const foo_original_result = foo_original.call(this, arg1, arg2);
+			|  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|  return foo_original_result;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -412,32 +412,32 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2)`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2)`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  const foo_original = (arg1, arg2) => {
-            |    return arg1 + arg2;
-            |  };
-            |
-            |  const foo_original_result = foo_original.call(this, arg1, arg2);
-            |  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
-            |  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
-            |  return foo_original_result;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  const foo_original = (arg1, arg2) => {
+			|    return arg1 + arg2;
+			|  };
+			|
+			|  const foo_original_result = foo_original.call(this, arg1, arg2);
+			|  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|  return foo_original_result;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(2);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -454,36 +454,36 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return new Promise((resolve, reject) => {
-            |    resolve(arg1 + arg2);
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  return new Promise((resolve, reject) => {
+			|    resolve(arg1 + arg2);
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  const foo_original = (arg1, arg2) => {
-            |    return new Promise((resolve, reject) => {
-            |      resolve(arg1 + arg2);
-            |    });
-            |  };
-            |
-            |  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-            |    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
-            |    return foo_original_result;
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  const foo_original = (arg1, arg2) => {
+			|    return new Promise((resolve, reject) => {
+			|      resolve(arg1 + arg2);
+			|    });
+			|  };
+			|
+			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
+			|    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|    return foo_original_result;
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			return expectInstrumentationEval<Promise<number>>(input, output)?.then(
 				(result: number) => {
 					expect(result).toEqual(3);
@@ -503,39 +503,39 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return new Promise((resolve, reject) => {
-            |    resolve(arg1 + arg2);
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2)`;
+			|function foo(arg1, arg2) {
+			|  return new Promise((resolve, reject) => {
+			|    resolve(arg1 + arg2);
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2)`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  const foo_original = (arg1, arg2) => {
-            |    return new Promise((resolve, reject) => {
-            |      resolve(arg1 + arg2);
-            |    });
-            |  };
-            |
-            |  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-            |    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
-            |    return foo_original_result;
-            |  }).then(function (foo_original_result) {
-            |    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
-            |    return foo_original_result;
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  const foo_original = (arg1, arg2) => {
+			|    return new Promise((resolve, reject) => {
+			|      resolve(arg1 + arg2);
+			|    });
+			|  };
+			|
+			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
+			|    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|    return foo_original_result;
+			|  }).then(function (foo_original_result) {
+			|    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|    return foo_original_result;
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			return expectInstrumentationEval<Promise<number>>(input, output)?.then(
 				(result: number) => {
 					expect(result).toEqual(3);
@@ -556,29 +556,29 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  const foo_original = (arg1, arg2) => {
-            |    return arg1 + arg2;
-            |  };
-            |
-            |  return HooksManager.callHook(0, this, [arg1, arg2], foo_original);
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  const foo_original = (arg1, arg2) => {
+			|    return arg1 + arg2;
+			|  };
+			|
+			|  return HooksManager.callHook(0, this, [arg1, arg2], foo_original);
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
@@ -600,33 +600,33 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return arg1 + arg2;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2)`;
+			|function foo(arg1, arg2) {
+			|  return arg1 + arg2;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2)`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  HooksManager.callHook(0, this, [arg1, arg2]);
-            |
-            |  const foo_original = (arg1, arg2) => {
-            |    return arg1 + arg2;
-            |  };
-            |
-            |  const foo_original_result = foo_original.call(this, arg1, arg2);
-            |  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
-            |  return foo_original_result;
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|
+			|  const foo_original = (arg1, arg2) => {
+			|    return arg1 + arg2;
+			|  };
+			|
+			|  const foo_original_result = foo_original.call(this, arg1, arg2);
+			|  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|  return foo_original_result;
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
 			expect(beforeHookCallMap.size).toEqual(1);
 			expect(beforeHookCallMap.get(0)).toEqual(1);
@@ -649,38 +649,38 @@ describe("function hooks instrumentation", () => {
 				[1, 2]
 			);
 			const input = `
-            |function foo(arg1, arg2) {
-            |  return new Promise((resolve, reject) => {
-            |    resolve(arg1 + arg2);
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  return new Promise((resolve, reject) => {
+			|    resolve(arg1 + arg2);
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			const output = `
-            |function foo(arg1, arg2) {
-            |  HooksManager.callHook(0, this, [arg1, arg2]);
-            |
-            |  const foo_original = (arg1, arg2) => {
-            |    return new Promise((resolve, reject) => {
-            |      resolve(arg1 + arg2);
-            |    });
-            |  };
-            |
-            |  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-            |    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
-            |    return foo_original_result;
-            |  });
-            |}
-            |
-            |function bar(arg1) {
-            |  console.log(arg1);
-            |}
-            |
-            |foo(1, 2);`;
+			|function foo(arg1, arg2) {
+			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|
+			|  const foo_original = (arg1, arg2) => {
+			|    return new Promise((resolve, reject) => {
+			|      resolve(arg1 + arg2);
+			|    });
+			|  };
+			|
+			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
+			|    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|    return foo_original_result;
+			|  });
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|foo(1, 2);`;
 			return expectInstrumentationEval<Promise<number>>(input, output)?.then(
 				(result: number) => {
 					expect(result).toEqual(3);
