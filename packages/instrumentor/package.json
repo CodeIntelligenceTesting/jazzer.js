@@ -25,7 +25,7 @@
 	"devDependencies": {
 		"@types/babel__core": "^7.1.19",
 		"@types/istanbul-lib-hook": "^2.0.1",
-		"@types/node": "^18.8.5"
+		"@types/node": "^18.11.2"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
