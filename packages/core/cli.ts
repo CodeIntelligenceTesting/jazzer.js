@@ -123,6 +123,17 @@ yargs(process.argv.slice(2))
 					alias: "d",
 					group: "Fuzzer:",
 					default: false,
+				})
+				.array("custom_hooks")
+				.option("custom_hooks", {
+					describe:
+						"Allow users to hook functions. This can be used for writing " +
+						"bug detectors, for stubbing, and for writing feedback functions " +
+						"for the fuzzer.",
+					type: "string",
+					alias: "h",
+					group: "Fuzzer:",
+					default: [],
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,6 +152,9 @@ yargs(process.argv.slice(2))
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),
+				customHooks: args.custom_hooks.map((hookFile: string) => {
+					return path.join(process.cwd(), hookFile);
+				}),
 			};
 			if (args.sync) {
 				try {

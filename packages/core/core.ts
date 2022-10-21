@@ -26,6 +26,7 @@ export interface Options {
 	dryRun: boolean;
 	sync: boolean;
 	fuzzerOptions: string[];
+	customHooks: string[];
 }
 
 declare global {
@@ -39,6 +40,10 @@ function initFuzzing(options: Options): fuzzer.FuzzFn {
 	globalThis.Fuzzer = fuzzer.fuzzer;
 	//TODO make sure that all sanitizers are registered at this point
 	globalThis.HookManager = hooking.hookManager;
+	// load each custom hook file
+	options.customHooks.forEach((customHook) => {
+		const hookFn = require(customHook);
+	});
 
 	if (options.dryRun) {
 		options.fuzzerOptions.push("-runs=0");

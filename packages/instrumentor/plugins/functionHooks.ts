@@ -66,7 +66,9 @@ function applyHooks(
 		]);
 	}
 
-	const origFuncName = functionName + "_original";
+	// Bind the original function to <fn name>_original
+	// replace all points by underscores in the function name
+	const origFuncName = functionName.replace(/\./g, "_") + "_original";
 	if (matchesResult.hasReplaceHooks() || matchesResult.hasAfterHooks()) {
 		defineInternalFunctionWithOriginalImplementation(
 			functionNode as FunctionWithBlockBody,
