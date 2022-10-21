@@ -255,7 +255,7 @@ function callHookExpression(
 
 	return types.callExpression(
 		types.memberExpression(
-			types.identifier("HooksManager"),
+			types.identifier("HookManager"),
 			types.identifier("callHook")
 		),
 		hookArgs
