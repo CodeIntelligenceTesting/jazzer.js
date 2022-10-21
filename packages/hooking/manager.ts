@@ -181,3 +181,4 @@ export class HookManager {
 }
 
 export const hookManager = new HookManager();
+export const registerHook = hookManager.registerHook;
