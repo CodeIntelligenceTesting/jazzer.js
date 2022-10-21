@@ -49,7 +49,7 @@ describe("function hooks instrumentation", () => {
 			|foo(1, 2);`;
 			const output = `
 			|function foo(arg1, arg2) {
-			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  HookManager.callHook(0, this, [arg1, arg2]);
 			|  return arg1 + arg2;
 			|}
 			|
@@ -82,8 +82,8 @@ describe("function hooks instrumentation", () => {
 			|foo(1, 2);`;
 			const output = `
 			|function foo(arg1, arg2) {
-			|  HooksManager.callHook(0, this, [arg1, arg2]);
-			|  HooksManager.callHook(1, this, [arg1, arg2]);
+			|  HookManager.callHook(0, this, [arg1, arg2]);
+			|  HookManager.callHook(1, this, [arg1, arg2]);
 			|  return arg1 + arg2;
 			|}
 			|
@@ -117,7 +117,7 @@ describe("function hooks instrumentation", () => {
 			|foo(1, 2);`;
 			const output = `
 			|const foo = function (arg1, arg2) {
-			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  HookManager.callHook(0, this, [arg1, arg2]);
 			|  return arg1 + arg2;
 			|};
 			|
@@ -166,7 +166,7 @@ describe("function hooks instrumentation", () => {
 			|  }
 			|
 			|  foo(x) {
-			|    HooksManager.callHook(0, this, [x]);
+			|    HookManager.callHook(0, this, [x]);
 			|    return this.a + x;
 			|  }
 			|
@@ -222,7 +222,7 @@ describe("function hooks instrumentation", () => {
 			|  }
 			|
 			|  foo(x) {
-			|    HooksManager.callHook(0, this, [x]);
+			|    HookManager.callHook(0, this, [x]);
 			|    return this.a + x;
 			|  }
 			|
@@ -270,7 +270,7 @@ describe("function hooks instrumentation", () => {
 			|};
 			|
 			|A.foo = function (x) {
-			|  HooksManager.callHook(0, this, [x]);
+			|  HookManager.callHook(0, this, [x]);
 			|  return this.a + x;
 			|};
 			|
@@ -309,7 +309,7 @@ describe("function hooks instrumentation", () => {
 			|const obj = {
 			|  a: 1,
 			|  foo: function (x) {
-			|    HooksManager.callHook(0, this, [x]);
+			|    HookManager.callHook(0, this, [x]);
 			|    return this.a + x;
 			|  }
 			|};
@@ -347,7 +347,7 @@ describe("function hooks instrumentation", () => {
 			const output = `
 			|function foo(arg1, arg2) {
 			|  function bar(x) {
-			|    HooksManager.callHook(0, this, [x]);
+			|    HookManager.callHook(0, this, [x]);
 			|    return x + 1;
 			|  }
 			|
@@ -390,7 +390,7 @@ describe("function hooks instrumentation", () => {
 			|  };
 			|
 			|  const foo_original_result = foo_original.call(this, arg1, arg2);
-			|  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|  HookManager.callHook(0, this, [arg1, arg2], foo_original_result);
 			|  return foo_original_result;
 			|}
 			|
@@ -428,8 +428,8 @@ describe("function hooks instrumentation", () => {
 			|  };
 			|
 			|  const foo_original_result = foo_original.call(this, arg1, arg2);
-			|  HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
-			|  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|  HookManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|  HookManager.callHook(1, this, [arg1, arg2], foo_original_result);
 			|  return foo_original_result;
 			|}
 			|
@@ -474,7 +474,7 @@ describe("function hooks instrumentation", () => {
 			|  };
 			|
 			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-			|    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|    HookManager.callHook(0, this, [arg1, arg2], foo_original_result);
 			|    return foo_original_result;
 			|  });
 			|}
@@ -523,10 +523,10 @@ describe("function hooks instrumentation", () => {
 			|  };
 			|
 			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-			|    HooksManager.callHook(0, this, [arg1, arg2], foo_original_result);
+			|    HookManager.callHook(0, this, [arg1, arg2], foo_original_result);
 			|    return foo_original_result;
 			|  }).then(function (foo_original_result) {
-			|    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|    HookManager.callHook(1, this, [arg1, arg2], foo_original_result);
 			|    return foo_original_result;
 			|  });
 			|}
@@ -571,7 +571,7 @@ describe("function hooks instrumentation", () => {
 			|    return arg1 + arg2;
 			|  };
 			|
-			|  return HooksManager.callHook(0, this, [arg1, arg2], foo_original);
+			|  return HookManager.callHook(0, this, [arg1, arg2], foo_original);
 			|}
 			|
 			|function bar(arg1) {
@@ -611,14 +611,14 @@ describe("function hooks instrumentation", () => {
 			|foo(1, 2)`;
 			const output = `
 			|function foo(arg1, arg2) {
-			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  HookManager.callHook(0, this, [arg1, arg2]);
 			|
 			|  const foo_original = (arg1, arg2) => {
 			|    return arg1 + arg2;
 			|  };
 			|
 			|  const foo_original_result = foo_original.call(this, arg1, arg2);
-			|  HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|  HookManager.callHook(1, this, [arg1, arg2], foo_original_result);
 			|  return foo_original_result;
 			|}
 			|
@@ -662,7 +662,7 @@ describe("function hooks instrumentation", () => {
 			|foo(1, 2);`;
 			const output = `
 			|function foo(arg1, arg2) {
-			|  HooksManager.callHook(0, this, [arg1, arg2]);
+			|  HookManager.callHook(0, this, [arg1, arg2]);
 			|
 			|  const foo_original = (arg1, arg2) => {
 			|    return new Promise((resolve, reject) => {
@@ -671,7 +671,7 @@ describe("function hooks instrumentation", () => {
 			|  };
 			|
 			|  return foo_original.call(this, arg1, arg2).then(function (foo_original_result) {
-			|    HooksManager.callHook(1, this, [arg1, arg2], foo_original_result);
+			|    HookManager.callHook(1, this, [arg1, arg2], foo_original_result);
 			|    return foo_original_result;
 			|  });
 			|}
@@ -697,7 +697,7 @@ describe("function hooks instrumentation", () => {
 function registerHookManagerGlobally() {
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
-	global.HooksManager = hooking.hookManager;
+	global.HookManager = hooking.hookManager;
 }
 
 function registerSyncFunctionHook(
