@@ -1,0 +1,16 @@
+{
+	"name": "bug-detector-fuzz",
+	"version": "1.0.0",
+	"main": "fuzz.js",
+	"license": "ISC",
+	"dependencies": {
+		"jpeg-js": "^0.4.4"
+	},
+	"scripts": {
+		"fuzz": "jazzer fuzz -i jpeg-js -e nothing -h custom-hooks",
+		"dryRun": "jazzer fuzz -- -runs=100 -seed=123456789"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

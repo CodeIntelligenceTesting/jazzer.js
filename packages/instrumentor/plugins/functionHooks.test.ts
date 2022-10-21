@@ -583,6 +583,49 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.get(0)).toEqual(1);
 		});
+		it("one hook for a nested function is called instead of the original function", () => {
+			hooking.hookManager.clearHooks();
+			const hookCallMap = registerSyncFunctionHook(
+				"a.foo",
+				hooking.HookType.Replace,
+				1,
+				[]
+			);
+			const input = `
+			|function a(arg1, arg2) {
+			|  function foo() {
+			|  	 return arg1 + arg2;
+			|  }
+			|  return foo();
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|a(1, 2);`;
+			const output = `
+			|function a(arg1, arg2) {
+			|  function foo() {
+			|    const a_foo_original = () => {
+			|      return arg1 + arg2;
+			|    };
+			|
+			|    return HookManager.callHook(0, this, [], a_foo_original);
+			|  }
+			|
+			|  return foo();
+			|}
+			|
+			|function bar(arg1) {
+			|  console.log(arg1);
+			|}
+			|
+			|a(1, 2);`;
+			expect(expectInstrumentationEval<number>(input, output)).toEqual(3);
+			expect(hookCallMap.size).toEqual(1);
+			expect(hookCallMap.get(0)).toEqual(1);
+		});
 	});
 	describe("Before and After hooks", () => {
 		it("one Before and ond After hook for a sync function", function () {
