@@ -2,6 +2,8 @@
 // buildHuffmanTable() gets called quite often and only logs to console from time to time,
 //  skipping the call to the original function
 // copyToImageData() gets called eventually and causes an error
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const hooking = require("@jazzer.js/hooking");
 
 module.exports.buildHuffmanTableHook = hooking.hookManager.registerHook(
