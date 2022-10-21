@@ -42,7 +42,7 @@ function initFuzzing(options: Options): fuzzer.FuzzFn {
 	globalThis.HookManager = hooking.hookManager;
 	// load each custom hook file
 	options.customHooks.forEach((customHook) => {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		require(customHook);
 	});
 
