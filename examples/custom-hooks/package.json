@@ -1,5 +1,5 @@
 {
-	"name": "bug-detector-fuzz",
+	"name": "custom-hooks",
 	"version": "1.0.0",
 	"main": "fuzz.js",
 	"license": "ISC",
@@ -7,8 +7,8 @@
 		"jpeg-js": "^0.4.4"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i jpeg-js -e nothing -h custom-hooks",
-		"dryRun": "jazzer fuzz -- -runs=100 -seed=123456789"
+		"fuzz": "jazzer fuzz -i jpeg-js -e nothing -h custom-hooks --sync",
+		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -h custom-hooks -- -runs=10000 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

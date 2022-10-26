@@ -10,6 +10,7 @@ const jpeg = require("jpeg-js");
  */
 module.exports.fuzz = function (data) {
 	try {
+		// no changes to the fuzz target are necessary when using custom hooks
 		jpeg.decode(data);
 	} catch (error) {
 		// Those are "valid" exceptions. we can't catch them in one line as
@@ -37,4 +38,5 @@ const ignored = [
 	"maxMemoryUsageInMB limit exceeded by at least",
 	"unexpected marker",
 	"marker was not found",
+	"Unsupported color mode",
 ];
