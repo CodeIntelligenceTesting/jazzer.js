@@ -1,40 +1,91 @@
-// This example showcases the custom hooks API
-// buildHuffmanTable() gets called quite often and only logs to console from time to time,
-//  skipping the call to the original function
-// copyToImageData() gets called eventually and causes an error
+/*
+ * Copyright 2022 Code Intelligence GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Examples showcasing the custom hooks API
+ */
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const hooking = require("@jazzer.js/hooking");
+const { registerReplaceHook } = require("@jazzer.js/hooking");
 
-module.exports.buildHuffmanTableHook = hooking.hookManager.registerHook(
-	hooking.HookType.Replace,
-	"JpegImage.jpegImage.buildHuffmanTable",
-	"jpeg-js",
-	false,
-	(() => {
-		var n_executions = 0;
-		return (codeLengths, values) => {
-			if (n_executions % 100 === 0) {
-				console.log(
-					`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable() (${n_executions} executions so far)`
-				);
-				// the original function arguments "codeLengths" and "values" are available
-			}
-			n_executions++;
-		};
-	})()
-);
-
-module.exports.copyToImageDataHook = hooking.hookManager.registerHook(
-	hooking.HookType.Replace,
+/**
+ * An example of a bug detector hook.
+ */
+registerReplaceHook(
 	"JpegImage.jpegImage.constructor.prototype.copyToImageData.copyToImageData",
 	"jpeg-js",
 	false,
+	(thisPtr, params, hookId, origFn) => {
+		if (params[0].data[0] === 0) {
+			// we are only interested in image frames in which data[0] equals zero
+			throw Error(
+				"jpeg-js: copyToImageData() is called; image.data[0] equals 0"
+			);
+		}
+	}
+);
+
+/**
+ * An example of a pass-through hook.
+ * Calls the original function and returns the result without modification.
+ */
+registerReplaceHook(
+	"JpegImage.jpegImage.constructor.prototype.parse.parse.readUint16",
+	"jpeg-js",
+	false,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	(thisPtr, params, hookId, origFn) => {
+		return origFn.apply(null, params);
+	}
+);
+
+/**
+ * An example of a fuzzing-enabling hook.
+ * The original function is never called.
+ * The hook does nothing other than logging.
+ * This can be useful for bypassing the fuzzing blockers to achieve
+ * coverage of more interesting functions.
+ */
+registerReplaceHook(
+	"JpegImage.jpegImage.buildHuffmanTable",
+	"jpeg-js",
+	false,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	() => {
 		console.log(
-			"[jpeg-js] Called hooked function instead of the original function copyToImageData()"
+			`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable()`
 		);
-		// the arguments "codeLengths" and "values" can be accessed to further
-		throw Error("jpeg-js: copyToImageData() is called");
+	}
+);
+
+/**
+ * Another example of a fuzzing-enabling hook.
+ * The hook modifies the input (that is visible in the scope of decode() function),
+ * calls the original function on modified input, and modifies the it again after the original function returns.
+ */
+registerReplaceHook(
+	"JpegImage.jpegImage.constructor.prototype.parse.parse.prepareComponents",
+	"jpeg-js",
+	false,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	(thisPtr, params, hookId, origFn) => {
+		console.log(
+			`[jpeg-js] Called custom hook instead of the original function prepareComponents()`
+		);
+		var frame = params[0]; // our hooked function only has one argument: frame
+		frame.scanLines = 10; // we modify the frame before calling the original function
+		origFn.apply(null, [frame]); // call the original function that mutates the frame and does not return anything
+		frame.scanLines = 1000; // modify the frame once again before returning
 	}
 );
