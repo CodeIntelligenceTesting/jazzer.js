@@ -181,4 +181,14 @@ export class HookManager {
 }
 
 export const hookManager = new HookManager();
-export const registerHook = hookManager.registerHook;
+
+// convenience function to register hooks
+export function registerHook(
+	hookType: HookType,
+	target: string,
+	pkg: string,
+	async: boolean,
+	hookFn: HookFn
+) {
+	hookManager.registerHook(hookType, target, pkg, async, hookFn);
+}

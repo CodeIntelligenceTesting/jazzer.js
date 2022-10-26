@@ -1,19 +1,21 @@
 // This example showcases the custom hooks API
+//
 // buildHuffmanTable() gets called quite often and only logs to console from time to time,
-//  skipping the call to the original function
-// copyToImageData() gets called eventually and causes an error
+// skipping the call to the original function.
+// copyToImageData() gets called eventually and causes an error.
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const hooking = require("@jazzer.js/hooking");
+const { registerHook, HookType } = require("@jazzer.js/hooking");
 
-module.exports.buildHuffmanTableHook = hooking.hookManager.registerHook(
-	hooking.HookType.Replace,
+registerHook(
+	HookType.Replace,
 	"JpegImage.jpegImage.buildHuffmanTable",
 	"jpeg-js",
 	false,
-	(() => {
-		var n_executions = 0;
-		return (codeLengths, values) => {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	(thisPtr, params, hookId, origFn) => {
+		let n_executions = 0;
+		return () => {
 			if (n_executions % 100 === 0) {
 				console.log(
 					`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable() (${n_executions} executions so far)`
@@ -22,11 +24,11 @@ module.exports.buildHuffmanTableHook = hooking.hookManager.registerHook(
 			}
 			n_executions++;
 		};
-	})()
+	}
 );
 
-module.exports.copyToImageDataHook = hooking.hookManager.registerHook(
-	hooking.HookType.Replace,
+registerHook(
+	HookType.Replace,
 	"JpegImage.jpegImage.constructor.prototype.copyToImageData.copyToImageData",
 	"jpeg-js",
 	false,
