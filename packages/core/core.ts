@@ -42,8 +42,7 @@ function initFuzzing(options: Options): fuzzer.FuzzFn {
 	globalThis.HookManager = hooking.hookManager;
 	// load each custom hook file
 	options.customHooks.forEach((customHook) => {
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		require(customHook);
+		importModule(customHook);
 	});
 
 	if (options.dryRun) {
@@ -52,8 +51,7 @@ function initFuzzing(options: Options): fuzzer.FuzzFn {
 		registerInstrumentor(options.includes, options.excludes);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const fuzzFn = require(options.fuzzTarget)[options.fuzzFunction];
+	const fuzzFn = importModule(options.fuzzTarget)[options.fuzzFunction];
 	if (typeof fuzzFn !== "function") {
 		throw new Error(
 			`${options.fuzzTarget} does not export function "${options.fuzzFunction}"`
@@ -101,6 +99,11 @@ function cleanStack(stack: string): string {
 		result.push(line);
 	}
 	return result.join("\n");
+}
+
+function importModule(name: string) {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	return require(name);
 }
 
 export { jazzer } from "./jazzer";
