@@ -182,7 +182,16 @@ export class HookManager {
 
 export const hookManager = new HookManager();
 
-// convenience function to register hooks
+// convenience functions to register hooks
+export function registerBeforeHook(
+	target: string,
+	pkg: string,
+	async: boolean,
+	hookFn: HookFn
+) {
+	hookManager.registerHook(HookType.Before, target, pkg, async, hookFn);
+}
+
 export function registerReplaceHook(
 	target: string,
 	pkg: string,
@@ -190,4 +199,13 @@ export function registerReplaceHook(
 	hookFn: HookFn
 ) {
 	hookManager.registerHook(HookType.Replace, target, pkg, async, hookFn);
+}
+
+export function registerAfterHook(
+	target: string,
+	pkg: string,
+	async: boolean,
+	hookFn: HookFn
+) {
+	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
 }
