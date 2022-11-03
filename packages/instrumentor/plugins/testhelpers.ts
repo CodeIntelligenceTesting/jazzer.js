@@ -41,10 +41,10 @@ function expectInstrumentation(
 	const result = transformSync(removeIndentation(input), {
 		plugins: plugins,
 	});
-	expect(result?.code).toBe(removeIndentation(output));
+	expect(removeIndentation(result?.code)).toBe(removeIndentation(output));
 	return result;
 }
 
-function removeIndentation(text: string): string {
-	return text.replace(/^\s*\|/gm, "");
+function removeIndentation(text?: string | null): string {
+	return text ? text.replace(/^\s*\|/gm, "").replace(/^\s*[\n\r]+/gm, "") : "";
 }
