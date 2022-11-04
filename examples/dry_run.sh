@@ -1,9 +1,12 @@
 #!/bin/sh
 set -e
 
-for dir in $(ls -d */); do
+for dir in */; do
+  echo "--- Executing example in \"${dir}\" -----------------"
   cd "${dir}";
-  npm install
-  npm run dryRun
+  if [ -f "package.json" ]; then
+    npm install
+    npm run dryRun
+  fi
   cd ..
 done

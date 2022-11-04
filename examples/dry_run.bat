@@ -1,8 +1,11 @@
 @ECHO off
 
 FOR /D %%G in ("*") DO (
+  echo --- Executing example in %%G -----------------
   cd %%G
-  npm install
-  npm run dryRun
+  IF EXIST "package.json" (
+    npm install
+    npm run dryRun
+  )
   cd ..
 )
