@@ -16,10 +16,10 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
 	"dependencies": {
-		"@babel/core": "^7.19.6"
+		"@babel/core": "^7.20.2"
 	},
 	"devDependencies": {
-		"@types/babel__core": "^7.1.19"
+		"@types/babel__core": "^7.1.20"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
