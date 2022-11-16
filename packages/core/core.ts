@@ -36,21 +36,25 @@ declare global {
 	var HookManager: hooking.HookManager;
 }
 
-function initFuzzing(options: Options): fuzzer.FuzzFn {
+export function registerGlobals() {
 	globalThis.Fuzzer = fuzzer.fuzzer;
 	//TODO make sure that all sanitizers are registered at this point
 	globalThis.HookManager = hooking.hookManager;
-	// load each custom hook file
+}
+
+export function initFuzzing(options: Options) {
+	registerGlobals();
+
 	options.customHooks.forEach((customHook) => {
 		importModule(customHook);
 	});
 
-	if (options.dryRun) {
-		options.fuzzerOptions.push("-runs=0");
-	} else {
+	if (!options.dryRun) {
 		registerInstrumentor(options.includes, options.excludes);
 	}
+}
 
+function loadFuzzFunction(options: Options): fuzzer.FuzzFn {
 	const fuzzFn = importModule(options.fuzzTarget)[options.fuzzFunction];
 	if (typeof fuzzFn !== "function") {
 		throw new Error(
@@ -59,14 +63,44 @@ function initFuzzing(options: Options): fuzzer.FuzzFn {
 	}
 	return fuzzFn;
 }
+
 export function startFuzzing(options: Options) {
-	const fuzzFn = initFuzzing(options);
-	Fuzzer.startFuzzing(fuzzFn, options.fuzzerOptions);
+	initFuzzing(options);
+	const fuzzFn = loadFuzzFunction(options);
+	startFuzzingNoInit(
+		fuzzFn,
+		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
+	);
+}
+
+export function addFuzzerOptionsForDryRun(
+	opts: string[],
+	shouldDoDryRun: boolean
+): string[] {
+	return shouldDoDryRun ? opts.concat("-runs=0") : opts;
+}
+
+export function startFuzzingNoInit(
+	fuzzFn: fuzzer.FuzzFn,
+	fuzzerOptions: string[]
+) {
+	Fuzzer.startFuzzing(fuzzFn, fuzzerOptions);
 }
 
 export async function startFuzzingAsync(options: Options) {
-	const fuzzFn = initFuzzing(options);
-	return Fuzzer.startFuzzingAsync(fuzzFn, options.fuzzerOptions);
+	initFuzzing(options);
+	const fuzzFn = loadFuzzFunction(options);
+	return startFuzzingAsyncNoInit(
+		fuzzFn,
+		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
+	);
+}
+
+export function startFuzzingAsyncNoInit(
+	fuzzFn: fuzzer.FuzzFn,
+	fuzzerOptions: string[]
+) {
+	return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 }
 
 export function stopFuzzingAsync() {
