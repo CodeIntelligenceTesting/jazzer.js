@@ -8,7 +8,7 @@
 	},
 	"scripts": {
 		"fuzz": "jazzer fuzz -i jpeg-js -e nothing -h custom-hooks --sync",
-		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -h custom-hooks -- -runs=10000 -seed=123456789"
+		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -h custom-hooks -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
