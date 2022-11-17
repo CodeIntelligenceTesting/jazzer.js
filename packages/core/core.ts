@@ -108,3 +108,4 @@ function importModule(name: string) {
 
 export { jazzer } from "./jazzer";
 export type { Jazzer } from "./jazzer";
+export { FuzzedDataProvider } from "./FuzzedDataProvider";
