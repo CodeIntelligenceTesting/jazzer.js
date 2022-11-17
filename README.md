@@ -73,9 +73,12 @@ found in the Node.js
 [documentation](https://nodejs.org/docs/latest-v14.x/api/buffer.html).
 
 ```js
-module.exports.fuzz = function (data) {
-	const intParam = data.readInt32BE(0);
-	const stringParam = data.toString("utf-8", 4);
+const { FuzzedDataProvider } = require("@jazzer.js/core");
+
+module.exports.fuzz = function (fuzzerInputData) {
+	const data = new FuzzedDataProvider(fuzzerInputData);
+	const intParam = data.consumeIntegral(4);
+	const stringParam = data.consumeString(4, "utf-8");
 	myAwesomeCode(intParam, stringParam);
 };
 ```

@@ -17,6 +17,7 @@
 /**
  * @param { Buffer } data
  */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
 module.exports.fuzz = function (fuzzerInputData) {
