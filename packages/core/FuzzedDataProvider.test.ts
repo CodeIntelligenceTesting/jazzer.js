@@ -431,7 +431,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeBoolean()).toBe(true);
 		expect(data.consumeBoolean()).toBe(false);
 		// exhaust the buffer
-		let str = data.consumeString(31337);
+		const str = data.consumeString(31337);
 		expect(str.length).toBe(1014);
 		expect(data.consumeBoolean()).toBe(false);
 
@@ -880,7 +880,7 @@ describe("FuzzedDataProvider checks", () => {
 		const testString =
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 		const byteArray = new TextEncoder().encode(testString);
-		let data = new FuzzedDataProvider(Buffer.from(byteArray));
+		const data = new FuzzedDataProvider(Buffer.from(byteArray));
 		expect(data.consumeString(0)).toBe("");
 		expect(data.remainingBytes).toBe(testString.length);
 		expect(data.consumeString(10, "utf8")).toBe("Lorem ipsu");
