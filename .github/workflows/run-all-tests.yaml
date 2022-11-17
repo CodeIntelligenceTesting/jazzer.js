@@ -22,7 +22,7 @@ jobs:
       - name: install dependencies with apt
         run: sudo apt-get install --yes clang-tidy
       - name: build fuzzer
-        run: npm run build -w=@jazzer.js/fuzzer
+        run: npm run build --workspace=@jazzer.js/fuzzer
       - name: check formatting and linting
         run: npm run check
 
@@ -65,6 +65,8 @@ jobs:
         run: npm install
       - name: build project
         run: npm run build
+      - name: build fuzzer
+        run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
 
