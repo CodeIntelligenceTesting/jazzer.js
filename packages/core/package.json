@@ -19,8 +19,8 @@
 		"jazzer": "dist/cli.js"
 	},
 	"dependencies": {
-		"@jazzer.js/instrumentor": "*",
 		"@jazzer.js/hooking": "*",
+		"@jazzer.js/instrumentor": "*",
 		"yargs": "^17.6.2"
 	},
 	"devDependencies": {
