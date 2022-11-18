@@ -43,12 +43,3 @@ describe("incrementCounter", () => {
 		}
 	});
 });
-
-describe("libFuzzer integration", () => {
-	it("0 runs", () => {
-		expect(() =>
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			fuzzer.startFuzzing(() => {}, ["-runs=0"])
-		).not.toThrow();
-	});
-});
