@@ -1,6 +1,6 @@
 {
 	"name": "@jazzer.js/hooking",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "Jazzer.js hooking framework",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
