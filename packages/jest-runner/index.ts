@@ -57,7 +57,7 @@ class FuzzRunner extends CallbackTestRunner {
 						await onStart(test);
 						const worker = new JazzerWorker();
 
-						worker.run(test, this._globalConfig).then(
+						return worker.run(test, this._globalConfig).then(
 							(result) => onResult(test, result),
 							(error) => onFailure(test, error)
 						);
