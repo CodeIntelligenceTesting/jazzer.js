@@ -23,8 +23,6 @@
 		"test": "run-script-os",
 		"test:jest": "jest && npm run test --ws --if-present",
 		"test:default": "npm run test:jest",
-		"test:linux:darwin": "npm run test:jest && cd examples && bash dry_run.sh",
-		"test:win32": "npm run test:jest && cd examples && .\\dry_run.bat",
 		"test:watch": "jest --watch",
 		"lint": "eslint . && npm run lint --ws --if-present",
 		"lint:fix": "eslint . --fix && npm run lint:fix --ws --if-present",
