@@ -45,10 +45,10 @@ describe("incrementCounter", () => {
 });
 
 describe("libFuzzer integration", () => {
-	it("0 runs", () => {
+	it("1 run", () => {
 		expect(() =>
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			fuzzer.startFuzzing(() => {}, ["-runs=0"])
+			fuzzer.startFuzzing(() => {}, ["-runs=1"])
 		).not.toThrow();
 	});
 });
