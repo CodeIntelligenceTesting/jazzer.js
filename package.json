@@ -19,7 +19,7 @@
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc -b tsconfig.build.json",
-		"compile:watch": "tsc -p . --incremental --pretty --watch",
+		"compile:watch": "tsc -b tsconfig.build.json --incremental --pretty --watch",
 		"test": "run-script-os",
 		"test:jest": "jest && npm run test --ws --if-present",
 		"test:default": "npm run test:jest",
