@@ -44,11 +44,11 @@ describe("incrementCounter", () => {
 	});
 });
 
-describe("libFuzzer integration", () => {
-	it("1 run", () => {
-		expect(() =>
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			fuzzer.startFuzzing(() => {}, ["-runs=1"])
-		).not.toThrow();
-	});
-});
+// describe("libFuzzer integration", () => {
+// 	it("1 run", () => {
+// 		expect(() =>
+// 			// eslint-disable-next-line @typescript-eslint/no-empty-function
+// 			fuzzer.startFuzzing(() => {}, ["-runs=1"])
+// 		).not.toThrow();
+// 	});
+// });
