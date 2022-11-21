@@ -66,11 +66,10 @@ A fuzz target module needs to export a function called `fuzz`, which takes a
 The `Buffer`, a subclass of `Uint8Array`, can be used to create needed
 parameters for the actual code under test, so that the fuzzer can detect the
 usage of parts of the input and mutate them in the next iterations to reach new
-code paths. In this use-case `Buffer` is not the nicest abstraction to work with
-and will be replaced with a more suitable one in the future. An example on how
-to use the `data` parameter is shown below, documentation on `Buffer` can be
-found in the Node.js
-[documentation](https://nodejs.org/docs/latest-v14.x/api/buffer.html).
+code paths. However, `Buffer` is not the nicest abstraction to work with. For
+that reason, Jazzer.js provides a wrapper class `FuzzedDataProvider` that allows
+reading primitive types from the `Buffer`. An example on how to use the `data`
+and the `FuzzedDataProvider` class is shown below.
 
 ```js
 const { FuzzedDataProvider } = require("@jazzer.js/core");
@@ -82,6 +81,12 @@ module.exports.fuzz = function (fuzzerInputData) {
 	myAwesomeCode(intParam, stringParam);
 };
 ```
+
+For more information on how to use the `FuzzedDataProvider` class, please refer
+to the [example](./examples/FuzzedDataProvider/fuzz.js), the
+[documentation](./packages/core/FuzzedDataProvider.ts) of the
+`FuzzedDataProvider` class, and the
+[tests](./packages/core/FuzzedDataProvider.test.ts).
 
 #### Asynchronous fuzz targets
 
