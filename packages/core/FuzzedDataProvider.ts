@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
+/**
+ * Helper class for reading primitive types from the bytes of the raw fuzzer input.
+ * Arrays are read from the beginning of the data buffer, whereas individual elements are read
+ * from the end of the data buffer.
+ * This implementation is based on the FuzzedDataProvider.h from the libFuzzer library
+ * https://github.com/llvm-mirror/compiler-rt/blob/master/include/fuzzer/FuzzedDataProvider.h
+ */
 export class FuzzedDataProvider {
 	private readonly data: Buffer;
 	private dataPtr = -1;
-	#remainingBytes = 0;
+	/** The number of remaining bytes that can be consumed from the fuzzer input data. */
+	_remainingBytes = 0;
 
 	static readonly min_float = -3.4028235e38;
 	static readonly max_float = 3.4028235e38;
@@ -25,16 +33,13 @@ export class FuzzedDataProvider {
 	static readonly max_double = Number.MAX_VALUE;
 
 	/**
-	 * Helper class for reading data from fuzzer input.
-	 * Arrays are read from the beginning of the data buffer.
-	 * Individual elements are read from the end of the data buffer.
 	 * @param data - a buffer containing the fuzzer input
 	 */
 	constructor(data: Buffer) {
 		this.data = data;
 		if (data.length > 0) {
 			this.dataPtr = 0;
-			this.#remainingBytes = data.length;
+			this._remainingBytes = data.length;
 		}
 	}
 
@@ -42,7 +47,7 @@ export class FuzzedDataProvider {
 	 * @returns the number of remaining bytes in the fuzzer input.
 	 */
 	get remainingBytes(): number {
-		return this.#remainingBytes;
+		return this._remainingBytes;
 	}
 
 	/**
@@ -62,12 +67,12 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes an Integral number from the fuzzer input.
-	 * @param nBytes - the maximum number of bytes to consume.
-	 * @param isSigned - whether the number is signed.
+	 * @param maxNumBytes - the maximum number of bytes to consume from the fuzzer input data
+	 * @param isSigned - whether the number is signed
 	 * @returns an integral
 	 */
-	consumeIntegral(nBytes: number, isSigned = false): number {
-		return this.consumeIntegralLEorBE(nBytes, isSigned, true);
+	consumeIntegral(maxNumBytes: number, isSigned = false): number {
+		return this.consumeIntegralLEorBE(maxNumBytes, isSigned, true);
 	}
 
 	/**
@@ -85,12 +90,12 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes a big integral from the fuzzer input.
-	 * @param nBytes - the maximum number of bytes to consume
+	 * @param maxNumBytesToConsume - the maximum number of bytes to consume from the fuzzer input data
 	 * @param isSigned - whether the number is signed
 	 * @returns a big integral
 	 */
-	consumeBigIntegral(nBytes: number, isSigned = false): bigint {
-		return this.consumeBigIntegralLEorBE(nBytes, isSigned, true);
+	consumeBigIntegral(maxNumBytesToConsume: number, isSigned = false): bigint {
+		return this.consumeBigIntegralLEorBE(maxNumBytesToConsume, isSigned, true);
 	}
 
 	/**
@@ -112,24 +117,33 @@ export class FuzzedDataProvider {
 	 * @returns a `number` that may have a special value (e.g. a NaN or infinity)
 	 */
 	consumeNumber(): number {
-		if (this.#remainingBytes == 0) return 0;
-		if (this.#remainingBytes < 8) {
+		if (this._remainingBytes == 0) return 0;
+		if (this._remainingBytes < 8) {
 			// not enough data: copy to a larger buffer
 			const copiedData = Buffer.alloc(8);
 			this.data.copy(
 				copiedData,
-				8 - this.#remainingBytes,
+				8 - this._remainingBytes,
 				this.dataPtr,
-				this.dataPtr + this.#remainingBytes
+				this.dataPtr + this._remainingBytes
 			);
-			this.#remainingBytes = 0;
+			this._remainingBytes = 0;
 			return copiedData.readDoubleLE();
 		}
-		this.#remainingBytes -= 8;
-		return this.data.readDoubleLE(this.dataPtr + this.#remainingBytes);
+		this._remainingBytes -= 8;
+		return this.data.readDoubleLE(this.dataPtr + this._remainingBytes);
 	}
 
-	consumeNumberInRange = this.consumeDoubleInRange;
+	/**
+	 * Consumes at most 9 bytes from fuzzer input and converts them to an
+	 * IEEE-754 number in the range [min, max].
+	 * @param min - lower bound of the range (inclusive)
+	 * @param max - upper bound of the range (inclusive)
+	 * @returns a `number` in the provided range
+	 */
+	consumeNumberInRange(min: number, max: number) {
+		return this.consumeDoubleInRange(min, max);
+	}
 
 	/**
 	 * Consumes a 32-bit `float` from the fuzzer input.
@@ -167,11 +181,11 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes a 64-bit `double` from fuzzer input.
-	 * This is the libfuzzer's approach to get double numbers from the fuzzer input.
+	 * This is the approach used by libFuzzer to get double numbers from the fuzzer input.
 	 * @returns a IEEE-754 `double`
 	 */
 	consumeDouble(): number {
-		return this.consumeNumberInRange(
+		return this.consumeDoubleInRange(
 			FuzzedDataProvider.min_double,
 			FuzzedDataProvider.max_double
 		);
@@ -240,42 +254,45 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes an array of booleans from the fuzzer input.
-	 * Provided the fuzzer input has enough data, the array will have length `maxLength`.
+	 * The array might be shorter than requested `maxLength` if the fuzzer input
+	 * is not sufficiently long.
 	 * @param maxLength - the maximum length of the array
 	 * @returns an array of booleans
 	 */
 	consumeBooleans(maxLength: number): boolean[] {
-		const arrayLength = Math.min(this.#remainingBytes, maxLength);
+		const arrayLength = Math.min(this._remainingBytes, maxLength);
 		const result = new Array<boolean>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
 			result[i] = (this.data[this.dataPtr + i] & 1) == 1;
 		}
-		this.#remainingBytes -= arrayLength;
+		this._remainingBytes -= arrayLength;
 		this.dataPtr += arrayLength;
 		return result;
 	}
 
 	/**
 	 * Consumes an array of integrals from fuzzer data.
-	 * @param maxLen - number of integers to consume
-	 * @param nBytesPerIntegral - number of bytes to consume for each integer
+	 * The array might be shorter than requested `maxLength` if the fuzzer input
+	 * is not sufficiently long.
+	 * @param maxLength - number of integers to consume
+	 * @param numBytesPerIntegral - number of bytes to consume for each integral
 	 * @param isSigned - whether the integrals are signed
 	 * @returns an array of integrals
 	 */
 	consumeIntegrals(
-		maxLen: number,
-		nBytesPerIntegral: number,
+		maxLength: number,
+		numBytesPerIntegral: number,
 		isSigned = false
 	): number[] {
-		const nBytesToRead = Math.min(
-			this.#remainingBytes,
-			maxLen * nBytesPerIntegral
+		const availableBytes = Math.min(
+			this._remainingBytes,
+			maxLength * numBytesPerIntegral
 		);
-		const nIntsToRead = Math.ceil(nBytesToRead / nBytesPerIntegral);
-		const result: number[] = new Array<number>(nIntsToRead);
-		for (let i = 0; i < nIntsToRead; i++) {
+		const arrayLength = Math.ceil(availableBytes / numBytesPerIntegral);
+		const result = new Array<number>(arrayLength);
+		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.consumeIntegralLEorBE(
-				nBytesPerIntegral,
+				numBytesPerIntegral,
 				isSigned,
 				false
 			);
@@ -285,25 +302,27 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes an array of big integrals from fuzzer data.
-	 * @param maxLen - number of integrals to consume
-	 * @param nBytesPerIntegral - number of bytes to consume for each integral
+	 * The array might be shorter than requested `maxLength` if the fuzzer input
+	 * is not sufficiently long.
+	 * @param maxLength - maximum number of integrals to consume
+	 * @param numBytesPerIntegral - number of bytes to consume for each integral
 	 * @param isSigned - whether the integrals are signed
 	 * @returns an array of big integrals
 	 */
 	consumeBigIntegrals(
-		maxLen: number,
-		nBytesPerIntegral: number,
+		maxLength: number,
+		numBytesPerIntegral: number,
 		isSigned = false
 	): bigint[] {
-		const nBytesToRead = Math.min(
-			this.#remainingBytes,
-			maxLen * nBytesPerIntegral
+		const availableBytes = Math.min(
+			this._remainingBytes,
+			maxLength * numBytesPerIntegral
 		);
-		const nIntsToRead = Math.ceil(nBytesToRead / nBytesPerIntegral);
-		const result: bigint[] = new Array<bigint>(nIntsToRead);
-		for (let i = 0; i < nIntsToRead; i++) {
+		const arrayLength = Math.ceil(availableBytes / numBytesPerIntegral);
+		const result: bigint[] = new Array<bigint>(arrayLength);
+		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.consumeBigIntegralLEorBE(
-				nBytesPerIntegral,
+				numBytesPerIntegral,
 				isSigned,
 				false
 			);
@@ -313,17 +332,17 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes an array of numbers from the fuzzer input.
+	 * The array might be shorter than requested `maxLength` if the fuzzer input
+	 * is not sufficiently long.
 	 * @param maxLength the maximum length of the array
 	 * @returns an array of numbers
 	 */
 	consumeNumbers(maxLength: number): number[] {
-		let currentNumber = 0;
-		const nAvailableBytes = Math.min(this.#remainingBytes, maxLength * 8);
-		const nAvailableInts = Math.ceil(nAvailableBytes / 8);
-		const result: number[] = new Array(nAvailableInts);
-		for (let i = 0; i < nAvailableInts; i++) {
-			currentNumber = this.consumeNumberBE();
-			result[i] = currentNumber;
+		const numBytesToConsume = Math.min(this._remainingBytes, maxLength * 8);
+		const arrayLength = Math.ceil(numBytesToConsume / 8);
+		const result: number[] = new Array(arrayLength);
+		for (let i = 0; i < arrayLength; i++) {
+			result[i] = this.consumeNumberBE();
 		}
 		return result;
 	}
@@ -332,16 +351,16 @@ export class FuzzedDataProvider {
 	 * Consumes a byte array from fuzzer input.
 	 * The array might be shorter than requested `maxLength` if the fuzzer input
 	 * is not sufficiently long.
-	 * @param maxLength - the maximum length of the array
+	 * @param maxLength - the maximum length of the output array
 	 * @returns a byte array of length at most `maxLength`
 	 */
 	consumeBytes(maxLength: number): number[] {
-		const arrayLength = Math.min(this.#remainingBytes, maxLength);
+		const arrayLength = Math.min(this._remainingBytes, maxLength);
 		const result = new Array<number>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.data[this.dataPtr + i];
 		}
-		this.#remainingBytes -= arrayLength;
+		this._remainingBytes -= arrayLength;
 		this.dataPtr += arrayLength;
 		return result;
 	}
@@ -349,17 +368,17 @@ export class FuzzedDataProvider {
 	/**
 	 * Consumes the remaining fuzzer input as a byte array.
 	 * Note: After calling this method, further calls to methods of this interface will
-	 *   return fixed values only.
+	 * return fixed values only.
 	 * @returns a `byte` array
 	 */
 	consumeRemainingAsBytes(): number[] {
-		return this.consumeBytes(this.#remainingBytes);
+		return this.consumeBytes(this._remainingBytes);
 	}
 
 	/**
 	 * Consumes a `string` from the fuzzer input.
-	 * The returned string may be of any length between 0 and `maxLength`, even if there is
-	 * more fuzzer input available.
+	 * The array might be shorter than requested `maxLength` if the fuzzer input
+	 * is not sufficiently long.
 	 * @param maxLength the maximum length of the string
 	 * @param encoding the encoding of the string
 	 * @returns a `string` of length between 0 and `maxLength` (inclusive)
@@ -369,49 +388,45 @@ export class FuzzedDataProvider {
 		encoding: BufferEncoding | undefined = "ascii"
 	): string {
 		if (maxLength < 0) throw new Error("maxLength must be non-negative");
-		maxLength = Math.min(maxLength, this.#remainingBytes);
+		const arrayLength = Math.min(maxLength, this._remainingBytes);
 		const result = this.data.toString(
 			encoding,
 			this.dataPtr,
-			this.dataPtr + maxLength
+			this.dataPtr + arrayLength
 		);
-		this.dataPtr += maxLength;
-		this.#remainingBytes -= maxLength;
+		this.dataPtr += arrayLength;
+		this._remainingBytes -= arrayLength;
 		return result;
 	}
 
 	/**
 	 * Consumes the remaining bytes of the fuzzer input as a string.
 	 * @param encoding - the encoding of the string
-	 * @returns a string of length between 0 and `maxLength` (inclusive) with provided
-	 *   encoding
+	 * @returns a string constructed from the remaining bytes of the fuzzer input using the given encoding
 	 */
 	consumeRemainingAsString(
 		encoding: BufferEncoding | undefined = "ascii"
 	): string {
-		return this.consumeString(this.#remainingBytes, encoding);
+		return this.consumeString(this._remainingBytes, encoding);
 	}
 
 	/**
-	 * Picks elements from an array based on the fuzzer input.
+	 * Picks values from an array based on the fuzzer input.
 	 * Indices picked by this method do not repeat for the duration of the function call.
 	 * Note: The distribution of picks is not perfectly uniform.
 	 * @param array the `array` to pick elements from.
-	 * @param numOfElements the number of elements to pick.
-	 * @returns an array of size `numOfElements` from `array` chosen based on the
-	 *     fuzzer input
+	 * @param numValues the number of values to pick.
+	 * @returns an array of size `numValues` from `array` chosen based on the
+	 *    fuzzer input
 	 */
-	pickValues<Type>(array: Array<Type>, numOfElements: number): Array<Type> {
+	pickValues<Type>(array: Array<Type>, numValues: number): Array<Type> {
 		if (array.length == 0) throw new Error("array must not be empty");
-		if (numOfElements < 0)
-			throw new Error("numOfElements must not be negative");
-		if (numOfElements > array.length)
-			throw new Error(
-				"numOfElements must not be greater than the array length"
-			);
-		const result = new Array<Type>(numOfElements);
+		if (numValues < 0) throw new Error("numValues must not be negative");
+		if (numValues > array.length)
+			throw new Error("numValues must not be greater than the array length");
+		const result = new Array<Type>(numValues);
 		const remainingArray = array.slice();
-		for (let i = 0; i < numOfElements; i++) {
+		for (let i = 0; i < numValues; i++) {
 			const index = this.consumeIntegralInRange(0, remainingArray.length - 1);
 			result[i] = remainingArray[index];
 			remainingArray.splice(index, 1);
@@ -431,20 +446,20 @@ export class FuzzedDataProvider {
 	 * @returns a `number`
 	 */
 	private consumeNumberBE(): number {
-		if (this.#remainingBytes == 0) return 0;
+		if (this._remainingBytes == 0) return 0;
 		// check that we have enough data
-		if (this.#remainingBytes < 8) {
+		if (this._remainingBytes < 8) {
 			const copiedData = Buffer.alloc(8);
 			this.data.copy(
 				copiedData,
 				0,
 				this.dataPtr,
-				this.dataPtr + this.#remainingBytes
+				this.dataPtr + this._remainingBytes
 			);
-			this.#remainingBytes = 0;
+			this._remainingBytes = 0;
 			return copiedData.readDoubleBE();
 		}
-		this.#remainingBytes -= 8;
+		this._remainingBytes -= 8;
 		const result = this.data.readDoubleBE(this.dataPtr);
 		this.dataPtr += 8;
 		return result;
@@ -452,24 +467,26 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes an integral from the front of fuzzer input.
-	 * @param nBytes - number of bytes to consume. Must be between 1 and 6.
+	 * @param maxNumBytes - maximum number of bytes to consume. Must be between 0 and 6.
 	 *   For larger numbers, use `consumeBigIntLEorBE`.
 	 * @param isSigned - whether the integer is signed or not
 	 * @param isLittleEndian - whether the integer is little endian or not
 	 * @returns an integral
 	 */
 	private consumeIntegralLEorBE(
-		nBytes: number,
+		maxNumBytes: number,
 		isSigned = false,
 		isLittleEndian = true
 	): number {
-		if (nBytes < 0 || nBytes > 6) {
+		if (maxNumBytes < 0 || maxNumBytes > 6) {
 			throw new Error(
-				"nBytes must be between 0 and 6: use the corresponding *BigIntegral function instead"
+				"maxNumBytes must be between 0 and 6: use the corresponding *BigIntegral function instead"
 			);
 		}
-		const min = isSigned ? -(2 ** (8 * nBytes - 1)) : 0;
-		const max = isSigned ? 2 ** (8 * nBytes - 1) - 1 : 2 ** (8 * nBytes) - 1;
+		const min = isSigned ? -(2 ** (8 * maxNumBytes - 1)) : 0;
+		const max = isSigned
+			? 2 ** (8 * maxNumBytes - 1) - 1
+			: 2 ** (8 * maxNumBytes) - 1;
 		return this.consumeIntegralInRangeLEorBE(min, max, isLittleEndian);
 	}
 
@@ -493,53 +510,56 @@ export class FuzzedDataProvider {
 	): number {
 		if (min == max) return min;
 		if (min > max) throw new Error("min must be less than or equal to max");
-		if (this.#remainingBytes == 0) return min;
+		if (this._remainingBytes == 0) return min;
 		if (max > Number.MAX_SAFE_INTEGER)
 			throw new Error(
 				"max is too large: use the corresponding *BigIntegral function instead"
 			);
 		const range = max - min;
-		const nBytes = Math.ceil(Math.log2(range + 1) / 8);
-		const nBytesAvailable = Math.min(this.#remainingBytes, nBytes);
-		if (nBytesAvailable > 6) {
+		const numBytesToRepresentRange = Math.ceil(Math.log2(range + 1) / 8);
+		const numBytesToConsume = Math.min(
+			this._remainingBytes,
+			numBytesToRepresentRange
+		);
+		if (numBytesToConsume > 6) {
 			throw new Error(
 				"requested range exceeds 2**48-1: use the corresponding *BigIntegral function instead"
 			);
 		}
-		this.#remainingBytes -= nBytesAvailable;
+		this._remainingBytes -= numBytesToConsume;
 		let result: number;
 		if (isLittleEndian) {
 			result = this.data.readUIntLE(
-				this.dataPtr + this.#remainingBytes,
-				nBytesAvailable
+				this.dataPtr + this._remainingBytes,
+				numBytesToConsume
 			);
 		} else {
-			result = this.data.readUIntBE(this.dataPtr, nBytesAvailable);
-			this.dataPtr += nBytesAvailable;
+			result = this.data.readUIntBE(this.dataPtr, numBytesToConsume);
+			this.dataPtr += numBytesToConsume;
 		}
 		return min + (result % (range + 1));
 	}
 
 	/**
 	 * Consumes an integral from the front of fuzzer input.
-	 * @param nBytes - number of bytes to consume. Must be between 1 and 6.
+	 * @param maxNumBytes - maximum number of bytes to consume. Must be between 1 and 6.
 	 *   For larger numbers, use `consumeBigIntLEorBE`.
 	 * @param isSigned - whether the integer is signed or not
 	 * @param isLittleEndian - whether the integer is little endian or not
 	 * @returns an integral
 	 */
 	consumeBigIntegralLEorBE(
-		nBytes: number,
+		maxNumBytes: number,
 		isSigned = false,
 		isLittleEndian = true
 	): bigint {
 		let min, max;
 		if (isSigned) {
-			min = BigInt(-(2 ** (nBytes * 8 - 1)));
-			max = BigInt(2 ** (nBytes * 8 - 1) - 1);
+			min = BigInt(-(2 ** (maxNumBytes * 8 - 1)));
+			max = BigInt(2 ** (maxNumBytes * 8 - 1) - 1);
 		} else {
 			min = BigInt(0);
-			max = (BigInt(1) << BigInt(nBytes * 8)) - BigInt(1);
+			max = (BigInt(1) << BigInt(maxNumBytes * 8)) - BigInt(1);
 		}
 		return this.consumeBigIntegralInRangeLEorBE(min, max, isLittleEndian);
 	}
@@ -568,10 +588,10 @@ export class FuzzedDataProvider {
 		let offset = BigInt(0);
 		let result = BigInt(0);
 		let nextByte: bigint;
-		while (range >> offset > BigInt(0) && this.#remainingBytes > 0) {
-			this.#remainingBytes--;
+		while (range >> offset > BigInt(0) && this._remainingBytes > 0) {
+			this._remainingBytes--;
 			if (isLittleEndian) {
-				nextByte = BigInt(this.data[this.dataPtr + this.#remainingBytes]);
+				nextByte = BigInt(this.data[this.dataPtr + this._remainingBytes]);
 			} else {
 				nextByte = BigInt(this.data[this.dataPtr]);
 				this.dataPtr++;

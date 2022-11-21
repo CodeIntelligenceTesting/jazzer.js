@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-/**
- * @param { Buffer } data
- */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
+/**
+ * @param { Buffer } fuzzerInputData
+ */
 module.exports.fuzz = function (fuzzerInputData) {
 	const data = new FuzzedDataProvider(fuzzerInputData);
 	const s1 = data.consumeString(data.consumeIntegralInRange(1, 20), "utf-8");

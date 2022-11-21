@@ -31,7 +31,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(1019);
 	});
 
-	it("consumeBooleans : ", () => {
+	it("consumeBooleans", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBooleans(5)).toStrictEqual([
 			false,
@@ -63,7 +63,7 @@ describe("FuzzedDataProvider checks", () => {
 		]);
 	});
 
-	it("consumeIntegralInRange : ", () => {
+	it("consumeIntegralInRange", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegralInRange(0, 255)).toBe(0x4a);
 		expect(data.remainingBytes).toBe(1023);
@@ -84,7 +84,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeBigIntegralInRange : ", () => {
+	it("consumeBigIntegralInRange", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegralInRange(BigInt(0), BigInt(255))).toBe(
 			BigInt(0x4a)
@@ -112,7 +112,7 @@ describe("FuzzedDataProvider checks", () => {
 		).toBe(BigInt(0));
 	});
 
-	it("consumeByte : ", () => {
+	it("consumeByte", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegral(1)).toBe(0x4a);
 		expect(data.remainingBytes).toBe(1023);
@@ -142,7 +142,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(1011);
 	});
 
-	it("consumeIntegralInRange : ", () => {
+	it("consumeIntegralInRange", () => {
 		const data = new FuzzedDataProvider(Data);
 		// testing ranges of a byte
 		expect(data.consumeIntegralInRange(0, 255)).toBe(0x4a);
@@ -170,13 +170,13 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(1017);
 	});
 
-	it("consumeIntegrals on the whole array : ", () => {
+	it("consumeIntegrals on the whole array", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegrals(Data.length, 1)).toStrictEqual([...Data]);
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeBytes : ", () => {
+	it("consumeBytes", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBytes(4)).toStrictEqual([0x8a, 0x19, 0x0d, 0x44]);
 		expect(data.remainingBytes).toBe(1020);
@@ -190,7 +190,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeRemainingBytes : ", () => {
+	it("consumeRemainingBytes", () => {
 		const data = new FuzzedDataProvider(Data);
 		data.consumeBytes(1014);
 		expect(data.remainingBytes).toBe(10);
@@ -202,7 +202,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeIntegralss : ", () => {
+	it("consumeIntegrals", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegrals(2, 1)).toStrictEqual([0x8a, 0x19]);
 		expect(data.remainingBytes).toBe(1022);
@@ -229,7 +229,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(959);
 	});
 
-	it("consumeIntegrals boundaries : ", () => {
+	it("consumeIntegrals boundaries", () => {
 		// testing boundaries
 		let data = new FuzzedDataProvider(Data);
 		data.consumeBytes(1020);
@@ -256,7 +256,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeIntegrals signed : ", () => {
+	it("consumeIntegrals signed", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegrals(4, 1, true)).toStrictEqual([
 			0x8a - 128,
@@ -289,7 +289,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeBigIntegrals : ", () => {
+	it("consumeBigIntegrals", () => {
 		let data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegrals(2, 1)).toStrictEqual([
 			BigInt(0x8a),
@@ -333,7 +333,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeBigIntegrals(1, 4)).toStrictEqual([BigInt(0xcf3d294a)]);
 	});
 
-	it("consumeBigIntegrals signed : ", () => {
+	it("consumeBigIntegrals signed", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegrals(4, 1, true)).toStrictEqual(
 			[0x8a - 128, 0x19 - 128, 0x0d - 128, 0x44 - 128].map(BigInt)
@@ -365,7 +365,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeBytes (tests from libfuzzer) : ", () => {
+	it("consumeBytes (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBytes(1)).toStrictEqual([0x8a]);
 		expect(data.consumeBytes(10)).toStrictEqual([
@@ -380,7 +380,7 @@ describe("FuzzedDataProvider checks", () => {
 		]);
 	});
 
-	it("consumeIntInRange (tests from libfuzzer) : ", () => {
+	it("consumeIntInRange (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegralInRange(10, 30)).toBe(21);
 		expect(data.consumeIntegralInRange(1337, 1337)).toBe(1337);
@@ -395,7 +395,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeIntegralInRange(123456789, 987654321)).toBe(123456789);
 	});
 
-	it("consumeIntegral (tests from libfuzzer) : ", () => {
+	it("consumeIntegral (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegral(4, true)).toBe(-903266865);
 		expect(data.remainingBytes).toBe(1020);
@@ -418,7 +418,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeBoolean (tests from libfuzzer) : ", () => {
+	it("consumeBoolean (tests from libfuzzer)", () => {
 		let data = new FuzzedDataProvider(Data);
 		expect(data.consumeBoolean()).toBe(false);
 		expect(data.consumeBoolean()).toBe(true);
@@ -479,7 +479,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeProbability (tests from libfuzzer) : ", () => {
+	it("consumeProbability (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeProbabilityFloat()).toBe(0.28969179449828614);
 		expect(data.remainingBytes).toBe(1020);
@@ -500,7 +500,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("pickValue : ", () => {
+	it("pickValue", () => {
 		const data = new FuzzedDataProvider(Data);
 		const array: boolean[] = [true, false, false, true, true];
 		expect(data.pickValue(array)).toBe(true);
@@ -521,7 +521,7 @@ describe("FuzzedDataProvider checks", () => {
 		}).toThrow();
 	});
 
-	it("pickValue (tests from libfuzzer) : ", () => {
+	it("pickValue (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
 		const array = [1, 2, 3, 4, 5];
 		expect(data.pickValue(array)).toBe(5);
@@ -575,7 +575,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("pickValues : ", () => {
+	it("pickValues", () => {
 		let data = new FuzzedDataProvider(Data);
 		let array = [5, 2, 3, 4, 1];
 		expect(data.pickValues(array, 1)).toStrictEqual([1]);
@@ -630,7 +630,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(1009);
 	});
 
-	it("consumeFloat (libfuzzer tests) : ", () => {
+	it("consumeFloat (libfuzzer tests)", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeFloat()).toBe(-2.8546307457582937e38);
 		expect(data.remainingBytes).toBe(1019);
@@ -666,7 +666,43 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 	});
 
-	it("consumeDouble : ", () => {
+	it("consumeFloat and consumeDoubleInRange (libfuzzer tests)", () => {
+		const data = new FuzzedDataProvider(Data);
+		expect(data.consumeFloat()).toBe(-2.8546307457582937e38);
+		expect(data.remainingBytes).toBe(1019);
+		expect(data.consumeDouble()).toBe(8.0940194040236032e307);
+		expect(data.remainingBytes).toBe(1010);
+		expect(data.consumeFloatInRange(123.0, 777.0)).toBe(271.4908334916669);
+		expect(data.remainingBytes).toBe(1006);
+		expect(data.consumeDoubleInRange(13.37, 31.337)).toBe(30.859126145478349);
+		expect(data.remainingBytes).toBe(998);
+		expect(data.consumeFloatInRange(-999.9999, -777.77)).toBe(
+			-903.4772913756137
+		);
+		expect(data.remainingBytes).toBe(994);
+		expect(data.consumeDoubleInRange(-13.37, 31.337)).toBe(24.561393182922771);
+		expect(data.remainingBytes).toBe(986);
+		expect(data.consumeFloatInRange(1.0, 1.0)).toBe(1.0);
+		expect(data.remainingBytes).toBe(986);
+		expect(data.consumeDoubleInRange(1.0, 1.0)).toBe(1.0);
+		expect(data.remainingBytes).toBe(986);
+		// exhaust the buffer
+		const str = data.consumeString(31337);
+		expect(data.remainingBytes).toBe(0);
+		expect(str.length).toBe(Data.length - 38);
+		expect(data.consumeProbabilityFloat()).toBe(0.0);
+		expect(data.remainingBytes).toBe(0);
+		expect(data.consumeProbabilityDouble()).toBe(0.0);
+		expect(data.remainingBytes).toBe(0);
+		expect(data.consumeFloat()).toBe(FuzzedDataProvider.min_float);
+		expect(data.remainingBytes).toBe(0);
+		expect(data.consumeFloatInRange(123.0, 777.0)).toBe(123.0);
+		expect(data.remainingBytes).toBe(0);
+		expect(data.consumeDoubleInRange(-13.37, 31.337)).toBe(-13.37);
+		expect(data.remainingBytes).toBe(0);
+	});
+
+	it("consumeDouble", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeDouble()).toBe(-1.5080858863606644e308);
 		expect(data.remainingBytes).toBe(1015);
@@ -676,7 +712,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(997);
 	});
 
-	it("consumeNumber : ", () => {
+	it("consumeNumber", () => {
 		// some tests are from https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 		let data = new FuzzedDataProvider(
 			Buffer.from([0, 0, 0, 0, 0, 0, 0xf0, 0x3f])
@@ -810,7 +846,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(numbers[numbers.length - 1]).toBe(86572714983330980);
 	});
 
-	it("edge cases for when consuming integers : ", () => {
+	it("edge cases for when consuming integers", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeIntegral(1)).toBe(0x4a);
 		expect(data.remainingBytes).toBe(1023);
@@ -876,7 +912,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeIntegral(2, true)).toBe(0xf930 - 2 ** 15);
 		expect(data.consumeIntegral(1, true)).toBe(0xeb - 2 ** 7);
 	});
-	it("consumeString : ", () => {
+	it("consumeString", () => {
 		const testString =
 			"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 		const byteArray = new TextEncoder().encode(testString);
