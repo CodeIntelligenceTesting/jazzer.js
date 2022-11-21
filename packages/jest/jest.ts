@@ -3,7 +3,10 @@
 import { Global } from "@jest/types";
 import * as core from "@jazzer.js/core";
 import { FuzzFn } from "@jazzer.js/fuzzer";
+import * as circus from "jest-circus";
 import { loadConfig } from "@jazzer.js/jest-runner";
+import * as fs from "fs";
+import * as path from "path";
 
 // Use jests global object definition
 type Global = Global.Global;
@@ -25,19 +28,61 @@ export type FuzzTest = (
 
 const install = (g: Global) => {
 	const test: FuzzTest = (title, fuzzTest, timeout) => {
-		const testFn: Global.TestCallback = () => {
-			const config = loadConfig();
-			const fuzzerOptions = core.addFuzzerOptionsForDryRun(
-				config.fuzzerOptions,
-				config.dryRun
-			);
-			return core.startFuzzingAsyncNoInit(fuzzTest, fuzzerOptions);
-		};
-		g.test(title, testFn, timeout);
+		const fuzzingConfig = loadConfig();
+		const fuzzerOptions = core.addFuzzerOptionsForDryRun(
+			fuzzingConfig.fuzzerOptions,
+			fuzzingConfig.dryRun
+		);
+		const inputDir = inputsDirectory(title as string, fuzzingConfig);
+		fs.mkdirSync(inputDir, { recursive: true });
+
+		if (fuzzingConfig.dryRun) {
+			const files = fs.readdirSync(inputDir);
+
+			g.describe(title, () => {
+				for (const file of files) {
+					const runOptions = fuzzerOptions.concat(path.join(inputDir, file));
+					const testFn: Global.TestCallback = () => {
+						return core.startFuzzingNoInit(fuzzTest, runOptions);
+					};
+					g.test(file, testFn, timeout);
+				}
+			});
+		} else {
+			fuzzerOptions.unshift(inputDir);
+			fuzzerOptions.push("-artifact_prefix=" + inputDir + path.sep);
+			console.log(fuzzerOptions);
+			const testFn: Global.TestCallback = () => {
+				return core.startFuzzingNoInit(fuzzTest, fuzzerOptions);
+			};
+			g.test(title, testFn, timeout);
+		}
 	};
 
 	return { test };
 };
+
+function inputsDirectory(test: string, options: core.Options): string {
+	const root = path.parse(options.fuzzTarget);
+	const testElements = fullPathElements(test);
+	return path.join(root.root, root.dir, root.name, ...testElements);
+}
+
+function fullPathElements(test: string): string[] {
+	const elements = [test];
+	let describeBlock = circus.getState().currentDescribeBlock;
+	while (describeBlock !== circus.getState().rootDescribeBlock) {
+		elements.unshift(describeBlock.name);
+		if (describeBlock.parent) {
+			describeBlock = describeBlock.parent;
+		}
+	}
+	return elements.map((s) => replaceSpacesWithUnderscore(s));
+}
+
+function replaceSpacesWithUnderscore(s: string): string {
+	return s.replace(/ /g, "_");
+}
 
 const g = globalThis as unknown as Global;
 const fuzz = install(g);
