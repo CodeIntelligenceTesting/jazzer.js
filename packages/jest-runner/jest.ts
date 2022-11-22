@@ -4,9 +4,9 @@ import { Global } from "@jest/types";
 import * as core from "@jazzer.js/core";
 import { FuzzFn } from "@jazzer.js/fuzzer";
 import * as circus from "jest-circus";
-import { loadConfig } from "@jazzer.js/jest-runner";
 import * as fs from "fs";
 import * as path from "path";
+import { loadConfig } from "./config";
 
 // Use jests global object definition
 type Global = Global.Global;
@@ -84,12 +84,12 @@ function replaceSpacesWithUnderscore(s: string): string {
 	return s.replace(/ /g, "_");
 }
 
-const g = globalThis as unknown as Global;
-const fuzz = install(g);
+export function registerFuzzExtension() {
+	const g = globalThis as unknown as Global;
+	const fuzz = install(g);
 
-// @ts-ignore
-g.it.fuzz = fuzz.test;
-// @ts-ignore
-g.test.fuzz = fuzz.test;
-
-export { fuzz };
+	// @ts-ignore
+	g.it.fuzz = fuzz.test;
+	// @ts-ignore
+	g.test.fuzz = fuzz.test;
+}

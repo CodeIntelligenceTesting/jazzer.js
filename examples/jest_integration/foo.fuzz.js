@@ -1,5 +1,4 @@
 /* eslint no-undef: 0 */
-require("@jazzer.js/jest");
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const foo = require("./foo");
