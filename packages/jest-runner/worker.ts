@@ -1,13 +1,44 @@
+/*
+ * Copyright 2022 Code Intelligence GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Test } from "jest-runner";
-import { Config, Circus, Global } from "@jest/types";
+import { Circus, Config } from "@jest/types";
 import { TestResult } from "@jest/test-result";
 import { performance } from "perf_hooks";
 import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { inspect } from "util";
+import { fuzz } from "./fuzz";
 
-import { registerFuzzExtension } from "./jest";
+type JazzerTestStatus = {
+	failures: number;
+	passes: number;
+	pending: number;
+	start: number;
+	end: number;
+};
+
+type JazzerTestResult = {
+	ancestors: string[];
+	title: string;
+	skipped: boolean;
+	errors: Error[];
+	duration?: number;
+};
 
 export class JazzerWorker {
 	static #workerInitialized = false;
@@ -27,7 +58,7 @@ export class JazzerWorker {
 		this.#testResults = [];
 	}
 
-	static currentTestPath(): string {
+	static get currentTestPath(): string {
 		return this.#currentTestPath;
 	}
 
@@ -56,7 +87,11 @@ export class JazzerWorker {
 		// @ts-ignore
 		globalThis.test = circus.test;
 		// @ts-ignore
+		globalThis.test.fuzz = fuzz;
+		// @ts-ignore
 		globalThis.it = circus.it;
+		// @ts-ignore
+		globalThis.it.fuzz = fuzz;
 		// @ts-ignore
 		globalThis.describe = circus.describe;
 		// @ts-ignore
@@ -67,8 +102,6 @@ export class JazzerWorker {
 		globalThis.beforeEach = circus.beforeEach;
 		// @ts-ignore
 		globalThis.afterEach = circus.afterEach;
-
-		registerFuzzExtension();
 	}
 
 	async run(test: Test, config: Config.GlobalConfig) {
@@ -81,7 +114,7 @@ export class JazzerWorker {
 		await this.runDescribeBlock(
 			state.rootDescribeBlock,
 			state.hasFocusedTests,
-			config.testNamePattern ? config.testNamePattern : ""
+			config.testNamePattern ?? ""
 		);
 		this.#testSummary.end = performance.now();
 
@@ -100,30 +133,16 @@ export class JazzerWorker {
 		testNamePattern: string,
 		ancestors: string[] = []
 	) {
-		// Intellij interprets our fuzz extension as a test and thus appends a dollar sign
-		// to the fuzz test pattern when started from the IDE. This is fine for the fuzzing mode
-		// where we register a normal test. However, in the regression mode, we register a describe
-		// block. This results in the child tests being skipped
-		let adjustedTestPattern = testNamePattern;
-		if (
-			testNamePattern.endsWith("$") &&
-			this.doesMatch(this.fullTestPath(ancestors), testNamePattern)
-		) {
-			adjustedTestPattern = this.trimDollarSignIfExists(testNamePattern);
-		}
+		const adjustedPattern = this.adjustTestPattern(ancestors, testNamePattern);
 
 		await this.runHooks("beforeAll", block, ancestors);
 
 		for (const child of block.children) {
 			const nextAncestors = ancestors.concat(child.name);
-
 			if (
 				child.mode === "skip" ||
 				(child.type === "test" &&
-					this.shouldSkipTest(
-						this.fullTestPath(nextAncestors),
-						adjustedTestPattern
-					))
+					this.shouldSkipTest(nextAncestors, adjustedPattern))
 			) {
 				this.#testSummary.pending++;
 				this.#testResults.push({
@@ -159,16 +178,17 @@ export class JazzerWorker {
 		});
 
 		const errors = [];
-		// @ts-ignore
-		await this.callAsync(testEntry.fn).catch((error) => {
-			errors.push(error);
-		});
+		await Promise.resolve()
+			// @ts-ignore
+			.then(testEntry.fn)
+			.catch((error) => {
+				errors.push(error);
+			});
 
 		// Get suppressed errors from ``jest-matchers`` that weren't thrown during
 		// test execution and add them to the test result, potentially failing
 		// a passing test.
 		const state = expect.getState();
-		expect.setState({ suppressedErrors: [] });
 		if (state.suppressedErrors.length > 0) {
 			errors.unshift(...state.suppressedErrors);
 		}
@@ -182,7 +202,7 @@ export class JazzerWorker {
 			ancestors,
 			title: testEntry.name,
 			skipped: false,
-			errors: errors,
+			errors,
 		});
 	}
 
@@ -192,24 +212,7 @@ export class JazzerWorker {
 		ancestors: string[],
 		shouldRunInAncestors = false
 	) {
-		//
-	}
-
-	private callAsync(fn: Global.TestFn) {
-		if (fn.length >= 1) {
-			// return new Promise((resolve, reject) => {
-			// 	fn((err, result) => {
-			// 		if (err) {
-			// 			reject(err);
-			// 		} else {
-			// 			resolve(result);
-			// 		}
-			// 	});
-			// });
-		} else {
-			// @ts-ignore
-			return Promise.resolve().then(fn);
-		}
+		// TODO: Implement
 	}
 
 	private testResult(test: Test): TestResult {
@@ -278,39 +281,41 @@ export class JazzerWorker {
 		);
 	}
 
+	/**
+	 *  If we always remove the dollar sign, then the runner will run all tests matching to a test name.
+	 *  For that reason, we only remove the dollar sign if the test name matches exactly.
+	 */
+	private adjustTestPattern(
+		ancestors: string[],
+		testNamePattern: string
+	): string {
+		// IntelliJ interprets our fuzz extension as a test and thus appends a dollar sign
+		// to the fuzz test pattern when started from the IDE. This is fine for the fuzzing mode
+		// where we register a normal test. However, in the regression mode, we register a describe
+		// block. This results in the child tests being skipped.
+		if (
+			testNamePattern.endsWith("$") &&
+			this.doesMatch(ancestors, testNamePattern)
+		) {
+			return testNamePattern.slice(0, -1);
+		}
+		return testNamePattern;
+	}
+
+	private shouldSkipTest(ancestors: string[], testNamePattern: string) {
+		return !this.doesMatch(ancestors, testNamePattern);
+	}
+
 	private fullTestPath(elements: string[]): string {
 		return elements.join(" ");
 	}
 
-	private trimDollarSignIfExists(s: string): string {
-		return s.endsWith("$") ? s.slice(0, -1) : s;
-	}
-
-	private shouldSkipTest(testName: string, testNamePattern: string) {
-		return !this.doesMatch(testName, testNamePattern);
-	}
-
-	private doesMatch(testName: string, testNamePattern: string) {
+	private doesMatch(ancestors: string[], testNamePattern: string) {
+		const testPath = this.fullTestPath(ancestors);
 		if (testNamePattern === "") {
 			return true;
 		}
 		const testNamePatternRE = new RegExp(testNamePattern, "i");
-		return testNamePatternRE.test(testName);
+		return testNamePatternRE.test(testPath);
 	}
 }
-
-type JazzerTestStatus = {
-	failures: number;
-	passes: number;
-	pending: number;
-	start: number;
-	end: number;
-};
-
-type JazzerTestResult = {
-	ancestors: string[];
-	title: string;
-	skipped: boolean;
-	errors: Error[];
-	duration?: number;
-};
