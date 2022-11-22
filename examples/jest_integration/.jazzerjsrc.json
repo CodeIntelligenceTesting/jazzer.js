@@ -1,0 +1,5 @@
+{
+	"includes": ["target"],
+	"excludes": ["node_modules"],
+	"fuzzerOptions": ["-runs=-1", "-rss_limit_mb=16000"]
+}

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 Code Intelligence GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import { Global } from "@jest/types";
@@ -7,6 +23,7 @@ import * as circus from "jest-circus";
 import * as fs from "fs";
 import * as path from "path";
 import { loadConfig } from "./config";
+import { JazzerWorker } from "./worker";
 
 // Use jests global object definition
 type Global = Global.Global;
@@ -33,7 +50,12 @@ const install = (g: Global) => {
 			fuzzingConfig.fuzzerOptions,
 			fuzzingConfig.dryRun
 		);
-		const inputDir = inputsDirectory(title as string, fuzzingConfig);
+
+		// Request current fuzz target file from worker to create seed directory hierarchy,
+		// no other means to get the filename available.
+		const fuzzTarget = JazzerWorker.currentTestPath();
+
+		const inputDir = inputsDirectory(title as string, fuzzTarget);
 		fs.mkdirSync(inputDir, { recursive: true });
 
 		if (fuzzingConfig.dryRun) {
@@ -62,8 +84,8 @@ const install = (g: Global) => {
 	return { test };
 };
 
-function inputsDirectory(test: string, options: core.Options): string {
-	const root = path.parse(options.fuzzTarget);
+function inputsDirectory(test: string, fuzzTarget: string): string {
+	const root = path.parse(fuzzTarget);
 	const testElements = fullPathElements(test);
 	return path.join(root.root, root.dir, root.name, ...testElements);
 }
