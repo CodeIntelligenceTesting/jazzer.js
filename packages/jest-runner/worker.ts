@@ -10,6 +10,7 @@ import { inspect } from "util";
 
 export class JazzerWorker {
 	static #workerInitialized = false;
+	static #currentTestPath = "";
 
 	#testSummary: JazzerTestStatus;
 	#testResults: JazzerTestResult[];
@@ -23,6 +24,10 @@ export class JazzerWorker {
 			end: 0,
 		};
 		this.#testResults = [];
+	}
+
+	static currentTestPath(): string {
+		return this.#currentTestPath;
 	}
 
 	private async initialize(test: Test) {
@@ -64,6 +69,7 @@ export class JazzerWorker {
 	}
 
 	async run(test: Test, config: Config.GlobalConfig) {
+		JazzerWorker.#currentTestPath = test.path;
 		await this.initialize(test);
 
 		const testNamePattern =
