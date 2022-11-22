@@ -1,5 +1,6 @@
 import { cosmiconfigSync } from "cosmiconfig";
 import { Options } from "@jazzer.js/core";
+import { JazzerWorker } from "./worker";
 
 const defaultOptions: Options = {
 	dryRun: true,
@@ -31,6 +32,8 @@ export function loadConfig(): Options {
 	if (process.env.JAZZER_FUZZ) {
 		config.dryRun = false;
 	}
+
+	config.fuzzTarget = JazzerWorker.currentTestPath();
 
 	return config;
 }
