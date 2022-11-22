@@ -284,12 +284,8 @@ export class FuzzedDataProvider {
 		numBytesPerIntegral: number,
 		isSigned = false
 	): number[] {
-		const availableBytes = Math.min(
-			this._remainingBytes,
-			maxLength * numBytesPerIntegral
-		);
-		const arrayLength = Math.ceil(availableBytes / numBytesPerIntegral);
-		const result = new Array<number>(arrayLength);
+		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
+		const result = new Array<number>();
 		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.consumeIntegralLEorBE(
 				numBytesPerIntegral,
@@ -314,11 +310,7 @@ export class FuzzedDataProvider {
 		numBytesPerIntegral: number,
 		isSigned = false
 	): bigint[] {
-		const availableBytes = Math.min(
-			this._remainingBytes,
-			maxLength * numBytesPerIntegral
-		);
-		const arrayLength = Math.ceil(availableBytes / numBytesPerIntegral);
+		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
 		const result: bigint[] = new Array<bigint>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.consumeBigIntegralLEorBE(
@@ -338,8 +330,7 @@ export class FuzzedDataProvider {
 	 * @returns an array of numbers
 	 */
 	consumeNumbers(maxLength: number): number[] {
-		const numBytesToConsume = Math.min(this._remainingBytes, maxLength * 8);
-		const arrayLength = Math.ceil(numBytesToConsume / 8);
+		const arrayLength = this.computeArrayLength(maxLength, 8);
 		const result: number[] = new Array(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
 			result[i] = this.consumeNumberBE();
@@ -600,5 +591,23 @@ export class FuzzedDataProvider {
 			offset += BigInt(8);
 		}
 		return (result % (range + BigInt(1))) + min;
+	}
+
+	/**
+	 * Computes how many elements (defined by the number of bytes per element) can be read
+	 * from the fuzzer input data.
+	 * @param maxLength - maximum number of elements to read
+	 * @param numBytesPerElement - number of bytes used by each element
+	 * @returns number of elements that can be read
+	 */
+	private computeArrayLength(
+		maxLength: number,
+		numBytesPerElement: number
+	): number {
+		const numAvailableBytes = Math.min(
+			this._remainingBytes,
+			maxLength * numBytesPerElement
+		);
+		return Math.ceil(numAvailableBytes / numBytesPerElement);
 	}
 }
