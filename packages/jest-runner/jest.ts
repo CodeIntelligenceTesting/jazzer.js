@@ -43,45 +43,43 @@ export type FuzzTest = (
 	timeout?: number
 ) => void;
 
-const install = (g: Global) => {
-	const test: FuzzTest = (title, fuzzTest, timeout) => {
-		const fuzzingConfig = loadConfig();
-		const fuzzerOptions = core.addFuzzerOptionsForDryRun(
-			fuzzingConfig.fuzzerOptions,
-			fuzzingConfig.dryRun
-		);
+const g = globalThis as unknown as Global;
 
-		// Request current fuzz target file from worker to create seed directory hierarchy,
-		// no other means to get the filename available.
-		const fuzzTarget = JazzerWorker.currentTestPath();
+export const fuzz: FuzzTest = (title, fuzzTest, timeout) => {
+	const fuzzingConfig = loadConfig();
+	const fuzzerOptions = core.addFuzzerOptionsForDryRun(
+		fuzzingConfig.fuzzerOptions,
+		fuzzingConfig.dryRun
+	);
 
-		const inputDir = inputsDirectory(title as string, fuzzTarget);
-		fs.mkdirSync(inputDir, { recursive: true });
+	// Request current fuzz target file from worker to create seed directory hierarchy,
+	// no other means to get the filename available.
+	const fuzzTarget = JazzerWorker.currentTestPath;
 
-		if (fuzzingConfig.dryRun) {
-			const files = fs.readdirSync(inputDir);
+	const inputDir = inputsDirectory(title as string, fuzzTarget);
+	fs.mkdirSync(inputDir, { recursive: true });
 
-			g.describe(title, () => {
-				for (const file of files) {
-					const runOptions = fuzzerOptions.concat(path.join(inputDir, file));
-					const testFn: Global.TestCallback = () => {
-						return core.startFuzzingNoInit(fuzzTest, runOptions);
-					};
-					g.test(file, testFn, timeout);
-				}
-			});
-		} else {
-			fuzzerOptions.unshift(inputDir);
-			fuzzerOptions.push("-artifact_prefix=" + inputDir + path.sep);
-			console.log(fuzzerOptions);
-			const testFn: Global.TestCallback = () => {
-				return core.startFuzzingNoInit(fuzzTest, fuzzerOptions);
-			};
-			g.test(title, testFn, timeout);
-		}
-	};
+	if (fuzzingConfig.dryRun) {
+		const files = fs.readdirSync(inputDir);
 
-	return { test };
+		g.describe(title, () => {
+			for (const file of files) {
+				const runOptions = fuzzerOptions.concat(path.join(inputDir, file));
+				const testFn: Global.TestCallback = () => {
+					return core.startFuzzingNoInit(fuzzTest, runOptions);
+				};
+				g.test(file, testFn, timeout);
+			}
+		});
+	} else {
+		fuzzerOptions.unshift(inputDir);
+		fuzzerOptions.push("-artifact_prefix=" + inputDir + path.sep);
+		console.log(fuzzerOptions);
+		const testFn: Global.TestCallback = () => {
+			return core.startFuzzingNoInit(fuzzTest, fuzzerOptions);
+		};
+		g.test(title, testFn, timeout);
+	}
 };
 
 function inputsDirectory(test: string, fuzzTarget: string): string {
@@ -104,14 +102,4 @@ function fullPathElements(test: string): string[] {
 
 function replaceSpacesWithUnderscore(s: string): string {
 	return s.replace(/ /g, "_");
-}
-
-export function registerFuzzExtension() {
-	const g = globalThis as unknown as Global;
-	const fuzz = install(g);
-
-	// @ts-ignore
-	g.it.fuzz = fuzz.test;
-	// @ts-ignore
-	g.test.fuzz = fuzz.test;
 }

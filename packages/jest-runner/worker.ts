@@ -1,13 +1,28 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Test } from "jest-runner";
-import { Config, Circus, Global } from "@jest/types";
+import { Circus, Config, Global } from "@jest/types";
 import { TestResult } from "@jest/test-result";
 import { performance } from "perf_hooks";
 import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { inspect } from "util";
+import { fuzz } from "./jest";
 
-import { registerFuzzExtension } from "./jest";
+type JazzerTestStatus = {
+	failures: number;
+	passes: number;
+	pending: number;
+	start: number;
+	end: number;
+};
+
+type JazzerTestResult = {
+	ancestors: string[];
+	title: string;
+	skipped: boolean;
+	errors: Error[];
+	duration?: number;
+};
 
 export class JazzerWorker {
 	static #workerInitialized = false;
@@ -27,7 +42,7 @@ export class JazzerWorker {
 		this.#testResults = [];
 	}
 
-	static currentTestPath(): string {
+	static get currentTestPath(): string {
 		return this.#currentTestPath;
 	}
 
@@ -68,7 +83,10 @@ export class JazzerWorker {
 		// @ts-ignore
 		globalThis.afterEach = circus.afterEach;
 
-		registerFuzzExtension();
+		// @ts-ignore
+		globalThis.it.fuzz = fuzz;
+		// @ts-ignore
+		globalThis.test.fuzz = fuzz;
 	}
 
 	async run(test: Test, config: Config.GlobalConfig) {
@@ -298,19 +316,3 @@ export class JazzerWorker {
 		return testNamePatternRE.test(testName);
 	}
 }
-
-type JazzerTestStatus = {
-	failures: number;
-	passes: number;
-	pending: number;
-	start: number;
-	end: number;
-};
-
-type JazzerTestResult = {
-	ancestors: string[];
-	title: string;
-	skipped: boolean;
-	errors: Error[];
-	duration?: number;
-};
