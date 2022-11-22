@@ -75,18 +75,13 @@ export class JazzerWorker {
 		JazzerWorker.#currentTestPath = test.path;
 		await this.initialize(test);
 
-		const testNamePattern =
-			config.testNamePattern != null
-				? new RegExp(config.testNamePattern, "i")
-				: undefined;
-
 		const state = await this.loadTests(test);
 
 		this.#testSummary.start = performance.now();
 		await this.runDescribeBlock(
 			state.rootDescribeBlock,
 			state.hasFocusedTests,
-			testNamePattern
+			config.testNamePattern ? config.testNamePattern : ""
 		);
 		this.#testSummary.end = performance.now();
 
@@ -102,9 +97,21 @@ export class JazzerWorker {
 	private async runDescribeBlock(
 		block: Circus.DescribeBlock,
 		hasFocusedTests: boolean,
-		testNamePattern?: RegExp,
+		testNamePattern: string,
 		ancestors: string[] = []
 	) {
+		// Intellij interprets our fuzz extension as a test and thus appends a dollar sign
+		// to the fuzz test pattern when started from the IDE. This is fine for the fuzzing mode
+		// where we register a normal test. However, in the regression mode, we register a describe
+		// block. This results in the child tests being skipped
+		let adjustedTestPattern = testNamePattern;
+		if (
+			testNamePattern.endsWith("$") &&
+			this.doesMatch(this.fullTestPath(ancestors), testNamePattern)
+		) {
+			adjustedTestPattern = this.trimDollarSignIfExists(testNamePattern);
+		}
+
 		await this.runHooks("beforeAll", block, ancestors);
 
 		for (const child of block.children) {
@@ -115,7 +122,7 @@ export class JazzerWorker {
 				(child.type === "test" &&
 					this.shouldSkipTest(
 						this.fullTestPath(nextAncestors),
-						testNamePattern
+						adjustedTestPattern
 					))
 			) {
 				this.#testSummary.pending++;
@@ -275,8 +282,20 @@ export class JazzerWorker {
 		return elements.join(" ");
 	}
 
-	private shouldSkipTest(testName: string, testNamePatternRE?: RegExp) {
-		return testNamePatternRE && !testNamePatternRE.test(testName);
+	private trimDollarSignIfExists(s: string): string {
+		return s.endsWith("$") ? s.slice(0, -1) : s;
+	}
+
+	private shouldSkipTest(testName: string, testNamePattern: string) {
+		return !this.doesMatch(testName, testNamePattern);
+	}
+
+	private doesMatch(testName: string, testNamePattern: string) {
+		if (testNamePattern === "") {
+			return true;
+		}
+		const testNamePatternRE = new RegExp(testNamePattern, "i");
+		return testNamePatternRE.test(testName);
 	}
 }
 
