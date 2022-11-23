@@ -1,6 +1,8 @@
 # Jest Fuzz Runner
 
-Custom runner that executes fuzz tests in regression or fuzzing mode.
+Custom runner that executes fuzz tests in regression or fuzzing mode. This
+package also augments the available [Jest](https://jestjs.io/) test functions
+with a `fuzz` extension.
 
 ## Idea
 
@@ -41,3 +43,8 @@ Custom runner that executes fuzz tests in regression or fuzzing mode.
 - [Create Jest Runner](https://github.com/jest-community/create-jest-runner)  
   Wrapper to create test runners, probably not powerful enough
 - [Test Result Type](https://github.com/facebook/jest/blob/main/packages/jest-types/src/TestResult.ts)
+- [Jest each](https://github.com/facebook/jest/tree/main/packages/jest-each)  
+  The fuzz extension works similar to `each`.
+- [VS Code Jest extension](https://github.com/jest-community/vscode-jest)  
+  This extension can be used to investigate how the IDE integration of Jest
+  tests work.
