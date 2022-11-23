@@ -16,15 +16,17 @@
 
 import { defaultOptions, loadConfig } from "./config";
 
-describe("loadConfig", () => {
-	it("returns default configuration if nothing found", () => {
-		expect(loadConfig()).toEqual(defaultOptions);
-	});
+describe("Config", () => {
+	describe("loadConfig", () => {
+		it("returns default configuration if nothing found", () => {
+			expect(loadConfig()).toEqual(defaultOptions);
+		});
 
-	it("merges found and default options", () => {
-		const config = loadConfig("test-jazzerjs");
-		expect(config).not.toEqual(defaultOptions);
-		expect(config.includes).toContain("target");
-		expect(config.excludes).toContain("nothing");
+		it("merges found and default options", () => {
+			const config = loadConfig("test-jazzerjs");
+			expect(config).not.toEqual(defaultOptions);
+			expect(config.includes).toContain("target");
+			expect(config.excludes).toContain("nothing");
+		});
 	});
 });
