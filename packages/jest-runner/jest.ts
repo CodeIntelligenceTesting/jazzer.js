@@ -19,77 +19,74 @@
 import { Global } from "@jest/types";
 import * as core from "@jazzer.js/core";
 import { FuzzFn } from "@jazzer.js/fuzzer";
-import * as circus from "jest-circus";
-import * as fs from "fs";
-import * as path from "path";
 import { loadConfig } from "./config";
 import { JazzerWorker } from "./worker";
+import { Corpus } from "./corpus";
+import * as circus from "jest-circus";
 
 // Use jests global object definition
-type Global = Global.Global;
+const g = globalThis as unknown as Global.Global;
 
-// Define own types for Jest integration
-// TODO: Inject these types into Global to allow IDE completion
-export type FuzzData = Buffer;
+export type FuzzTest = (name: Global.TestNameLike, fn: FuzzFn) => void;
 
-type FuzzTargetFn = (
-	fuzzData: FuzzData,
-	done?: Global.DoneFn
-) => Global.TestReturnValue;
-
-export type FuzzTest = (
-	name: string | Global.NameLike,
-	fn: FuzzFn,
-	timeout?: number
-) => void;
-
-const g = globalThis as unknown as Global;
-
-export const fuzz: FuzzTest = (title, fuzzTest, timeout) => {
+export const fuzz: FuzzTest = (title, fuzzTest) => {
 	const fuzzingConfig = loadConfig();
 	const fuzzerOptions = core.addFuzzerOptionsForDryRun(
 		fuzzingConfig.fuzzerOptions,
 		fuzzingConfig.dryRun
 	);
 
-	// Request current fuzz target file from worker to create seed directory hierarchy,
-	// no other means to get the filename available.
-	const fuzzTarget = JazzerWorker.currentTestPath;
+	const testName = toTestName(title);
 
-	const inputDir = inputsDirectory(title as string, fuzzTarget);
-	fs.mkdirSync(inputDir, { recursive: true });
+	// Request the current test file path from the worker to create appropriate
+	// corpus directory hierarchies. It is set by the worker that imports the
+	// actual test file and changes during execution of multiple test files.
+	const testFile = JazzerWorker.currentTestPath;
+
+	// Build up the names of test block elements (describe, test, it) pointing
+	// to the currently executed fuzz function, based on the circus runner state.
+	// The used state changes during test file import but, at this point,
+	// points to the element containing the fuzz function.
+	const testStatePath = currentTestStatePath(testName);
+
+	const corpus = new Corpus(testFile, testStatePath);
 
 	if (fuzzingConfig.dryRun) {
-		const files = fs.readdirSync(inputDir);
-
 		g.describe(title, () => {
-			for (const file of files) {
-				const runOptions = fuzzerOptions.concat(path.join(inputDir, file));
-				const testFn: Global.TestCallback = () => {
+			corpus.inputPaths().forEach(([name, path]) => {
+				const runOptions = fuzzerOptions.concat(path);
+				const testFn: Global.TestFn = () => {
 					return core.startFuzzingNoInit(fuzzTest, runOptions);
 				};
-				g.test(file, testFn, timeout);
-			}
+				g.test(name, testFn);
+			});
 		});
 	} else {
-		fuzzerOptions.unshift(inputDir);
-		fuzzerOptions.push("-artifact_prefix=" + inputDir + path.sep);
-		console.log(fuzzerOptions);
-		const testFn: Global.TestCallback = () => {
+		fuzzerOptions.unshift(corpus.inputDirectory);
+		fuzzerOptions.push("-artifact_prefix=" + corpus.outputDirectory);
+		const testFn: Global.TestFn = () => {
 			return core.startFuzzingNoInit(fuzzTest, fuzzerOptions);
 		};
-		g.test(title, testFn, timeout);
+		g.test(title, testFn);
 	}
 };
 
-function inputsDirectory(test: string, fuzzTarget: string): string {
-	const root = path.parse(fuzzTarget);
-	const testElements = fullPathElements(test);
-	return path.join(root.root, root.dir, root.name, ...testElements);
-}
+const toTestName = (title: Global.TestNameLike): string => {
+	switch (typeof title) {
+		case "string":
+			return title;
+		case "number":
+			return `${title}`;
+		case "function":
+			if (title.name) {
+				return title.name;
+			}
+	}
+	throw new Error(`Invalid test name "${title}"`);
+};
 
-function fullPathElements(test: string): string[] {
-	const elements = [test];
+const currentTestStatePath = (testName: string): string[] => {
+	const elements = [testName];
 	let describeBlock = circus.getState().currentDescribeBlock;
 	while (describeBlock !== circus.getState().rootDescribeBlock) {
 		elements.unshift(describeBlock.name);
@@ -97,9 +94,5 @@ function fullPathElements(test: string): string[] {
 			describeBlock = describeBlock.parent;
 		}
 	}
-	return elements.map((s) => replaceSpacesWithUnderscore(s));
-}
-
-function replaceSpacesWithUnderscore(s: string): string {
-	return s.replace(/ /g, "_");
-}
+	return elements;
+};
