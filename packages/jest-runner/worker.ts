@@ -2,11 +2,12 @@
 import { Test } from "jest-runner";
 import { Config, Circus, Global } from "@jest/types";
 import { TestResult } from "@jest/test-result";
-
 import { performance } from "perf_hooks";
 import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { inspect } from "util";
+
+import { registerFuzzExtension } from "./jest";
 
 export class JazzerWorker {
 	static #workerInitialized = false;
@@ -66,6 +67,8 @@ export class JazzerWorker {
 		globalThis.beforeEach = circus.beforeEach;
 		// @ts-ignore
 		globalThis.afterEach = circus.afterEach;
+
+		registerFuzzExtension();
 	}
 
 	async run(test: Test, config: Config.GlobalConfig) {

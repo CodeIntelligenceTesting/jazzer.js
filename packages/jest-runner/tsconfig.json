@@ -4,5 +4,5 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"references": [{ "path": "../jest" }]
+	"references": [{ "path": "../core" }, { "path": "../fuzzer" }]
 }

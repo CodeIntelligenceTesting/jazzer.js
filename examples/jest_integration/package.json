@@ -7,8 +7,6 @@
 		"dryRun": "jest"
 	},
 	"devDependencies": {
-		"@jazzer.js/instrumentor": "file:../../packages/instrumentor",
-		"@jazzer.js/jest": "file:../../packages/jest",
 		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",
 		"eslint-plugin-jest": "^27.1.3",
 		"@types/babel__core": "^7.1.19",
@@ -31,7 +29,8 @@
 			"nothing"
 		],
 		"fuzzerOptions": [
-			"-runs=100"
+			"-runs=-1",
+			"-rss_limit_mb=16000"
 		]
 	}
 }
