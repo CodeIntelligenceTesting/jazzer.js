@@ -17,53 +17,78 @@
 import { Corpus } from "./corpus";
 import * as tmp from "tmp";
 import path from "path";
+import fs from "fs";
 
 // Cleanup created files on exit
 tmp.setGracefulCleanup();
 
 describe("Corpus", () => {
-	let tmpFile: tmp.FileResult;
+	describe("inputsDirectory", () => {
+		it("creates dir based on test name", () => {
+			const fuzzTest = mockFuzzTest();
 
-	beforeEach(() => {
-		tmpFile = tmp.fileSync({ postfix: ".js" });
-	});
+			const corpus = new Corpus(fuzzTest, []);
 
-	describe("inputDirectory", () => {
-		it("based on test name", () => {
-			const testFile = path.parse(tmpFile.name);
-
-			const corpus = new Corpus(tmpFile.name, []);
-
-			const inputDir = path.parse(corpus.inputDirectory);
-			expect(inputDir.name).toEqual(testFile.name);
-			expect(inputDir.dir).toEqual(testFile.dir);
-			expect(inputDir.ext).toBeFalsy();
+			const testFile = path.parse(fuzzTest);
+			const inputsDir = path.parse(corpus.inputsDirectory);
+			expect(inputsDir.name).toEqual(testFile.name);
+			expect(inputsDir.dir).toEqual(testFile.dir);
+			expect(inputsDir.ext).toBeFalsy();
+			expect(fs.existsSync(corpus.inputsDirectory)).toBeTruthy();
 		});
 
-		it("based on test state elements", () => {
-			const testFile = path.parse(tmpFile.name);
+		it("creates dir based on Jest path elements", () => {
+			const fuzzTest = mockFuzzTest();
 
-			const corpus = new Corpus(tmpFile.name, ["describe", "sub", "fuzz"]);
+			const corpus = new Corpus(fuzzTest, ["describe", "sub", "fuzz"]);
 
-			const inputDir = path.parse(corpus.inputDirectory);
-			expect(inputDir.name).toEqual("fuzz");
-			expect(inputDir.dir).toEqual(
-				testFile.dir +
-					path.sep +
-					testFile.name +
-					path.sep +
-					"describe" +
-					path.sep +
-					"sub"
+			const testFile = path.parse(fuzzTest);
+			const inputsDir = path.parse(corpus.inputsDirectory);
+			expect(inputsDir.name).toEqual("fuzz");
+			expect(inputsDir.dir).toEqual(
+				[testFile.dir, testFile.name, "describe", "sub"].join(path.sep)
 			);
-			expect(inputDir.ext).toBeFalsy();
+			expect(inputsDir.ext).toBeFalsy();
+			expect(fs.existsSync(corpus.inputsDirectory)).toBeTruthy();
 		});
 	});
 
-	describe("outputDirectory", () => {
-		it("same as input", () => {
-			const corpus = new Corpus(tmpFile.name, []);
-			expect(corpus.inputDirectory + path.sep).toEqual(corpus.outputDirectory);
+	describe("inputsPaths", () => {
+		it("list all files in inputs directory", () => {
+			const manualSeedFiles = 5;
+			const fuzzTest = mockFuzzTest({ seedFiles: manualSeedFiles });
+
+			const corpus = new Corpus(fuzzTest, []);
+
+			expect(corpus.inputsPaths()).toHaveLength(manualSeedFiles);
+		});
+
+		it("ignores subdirectories", () => {
+			const fuzzTest = mockFuzzTest({ subDirs: 2 });
+
+			const corpus = new Corpus(fuzzTest, []);
+
+			expect(corpus.inputsPaths()).toHaveLength(0);
 		});
 	});
 });
+
+function mockFuzzTest({ seedFiles = 0, subDirs = 0 } = {}) {
+	const tmpDir = tmp.dirSync({ unsafeCleanup: true }).name;
+	const fuzzTestName = "fuzztest";
+	const fuzzTestFile = path.join(tmpDir, fuzzTestName + ".js");
+	fs.writeFileSync(fuzzTestFile, "");
+	if (seedFiles > 0 || subDirs > 0) {
+		fs.mkdirSync(path.join(tmpDir, fuzzTestName));
+	}
+	for (let i = 0; i < seedFiles; i++) {
+		fs.writeFileSync(
+			path.join(tmpDir, fuzzTestName, i.toString()),
+			i.toString()
+		);
+	}
+	for (let i = 0; i < subDirs; i++) {
+		fs.mkdirSync(path.join(tmpDir, fuzzTestName, i.toString()));
+	}
+	return fuzzTestFile;
+}

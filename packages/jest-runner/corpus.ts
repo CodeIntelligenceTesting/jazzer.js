@@ -18,49 +18,44 @@ import path from "path";
 import fs from "fs";
 
 export class Corpus {
-	private readonly _inputDirectory: string;
-	private readonly _outputDirectory: string;
+	private readonly _inputsDirectory: string;
 
-	constructor(testPath: string, testStateElements: string[]) {
-		this._inputDirectory = this.buildInputDirectory(
-			testPath,
-			testStateElements
+	constructor(testSourceFilePath: string, testJestPathElements: string[]) {
+		this._inputsDirectory = buildInputsDirectory(
+			testSourceFilePath,
+			testJestPathElements
 		);
-		this._outputDirectory = this.buildOutputDirectory(this._inputDirectory);
-		fs.mkdirSync(this._inputDirectory, { recursive: true });
-		fs.mkdirSync(this._outputDirectory, { recursive: true });
+		this.createMissingDirectories();
 	}
 
-	get inputDirectory(): string {
-		return this._inputDirectory;
+	get inputsDirectory(): string {
+		return this._inputsDirectory;
 	}
 
-	get outputDirectory(): string {
-		return this._outputDirectory;
+	inputsPaths(): [string, string][] {
+		return fs
+			.readdirSync(this._inputsDirectory)
+			.filter(
+				(entry) =>
+					!fs.lstatSync(path.join(this.inputsDirectory, entry)).isDirectory()
+			)
+			.map((file) => [file, path.join(this._inputsDirectory, file)]);
 	}
 
-	inputPaths(): [string, string][] {
-		return fs.readdirSync(this._inputDirectory).map((file) => {
-			return [file, path.join(this._inputDirectory, file)];
-		});
-	}
-
-	private buildOutputDirectory(inputDirectory: string): string {
-		return inputDirectory + path.sep;
-	}
-
-	private buildInputDirectory(
-		testPath: string,
-		testStateElements: string[]
-	): string {
-		const root = path.parse(testPath);
-		const testElements = testStateElements.map(
-			this.replaceSpacesWithUnderscore
-		);
-		return path.join(root.dir, root.name, ...testElements);
-	}
-
-	private replaceSpacesWithUnderscore(s: string): string {
-		return s.replace(/ /g, "_");
+	private createMissingDirectories() {
+		fs.mkdirSync(this._inputsDirectory, { recursive: true });
 	}
 }
+
+const buildInputsDirectory = (
+	testSourceFilePath: string,
+	testJestPathElements: string[]
+): string => {
+	const root = path.parse(testSourceFilePath);
+	const pathElements = testJestPathElements.map(replaceSpacesWithUnderscore);
+	return path.join(root.dir, root.name, ...pathElements) + path.sep;
+};
+
+const replaceSpacesWithUnderscore = (s: string): string => {
+	return s.replace(/ /g, "_");
+};
