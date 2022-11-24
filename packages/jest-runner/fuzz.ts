@@ -56,7 +56,7 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 			corpus.inputPaths().forEach(([name, path]) => {
 				const runOptions = fuzzerOptions.concat(path);
 				const testFn: Global.TestFn = () => {
-					return core.startFuzzingNoInit(fuzzTest, runOptions);
+					return core.startFuzzingAsyncNoInit(fuzzTest, runOptions);
 				};
 				g.test(name, testFn);
 			});
@@ -65,7 +65,7 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 		fuzzerOptions.unshift(corpus.inputDirectory);
 		fuzzerOptions.push("-artifact_prefix=" + corpus.outputDirectory);
 		const testFn: Global.TestFn = () => {
-			return core.startFuzzingNoInit(fuzzTest, fuzzerOptions);
+			return core.startFuzzingAsyncNoInit(fuzzTest, fuzzerOptions);
 		};
 		g.test(title, testFn);
 	}

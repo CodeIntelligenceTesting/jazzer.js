@@ -36,7 +36,7 @@ struct AsyncFuzzTargetContext {
       : deferred(Napi::Promise::Deferred::New(env)){};
   std::thread native_thread;
   Napi::Promise::Deferred deferred;
-
+  bool is_resolved = false;
   AsyncFuzzTargetContext() = delete;
 };
 
@@ -50,6 +50,9 @@ struct DataType {
 
   DataType() = delete;
 };
+
+// Exception for catching crashes in the JavaScript callback function
+class JSException : public std::exception {};
 
 void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                         AsyncFuzzTargetContext *context, DataType *data);
@@ -74,6 +77,8 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   // Wait until the JavaScript fuzz target has finished
   try {
     future.get();
+  } catch (JSException &exception) {
+    throw;
   } catch (std::exception &exception) {
     std::cerr << "==" << (unsigned long)GetPID()
               << "== Jazzer.js: unexpected Error: " << exception.what()
@@ -100,6 +105,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
       auto result = jsFuzzCallback.Call({buffer});
+
       // Register callbacks on returned promise to await its resolution before
       // resolving the fuzzer promise and continue fuzzing. Otherwise, resolve
       // and continue directly.
@@ -113,7 +119,12 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                                      data->promise->set_value(nullptr);
                                    }),
              Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
+               // This is the only way to pass an exception from JavaScript
+               // through C++ back to calling JavaScript code.
                context->deferred.Reject(info[0].As<Napi::Error>().Value());
+               context->is_resolved = true;
+               data->promise->set_exception(
+                   std::make_exception_ptr(JSException()));
              })});
       } else {
         data->promise->set_value(nullptr);
@@ -124,10 +135,14 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
     }
   } catch (const Napi::Error &error) {
     context->deferred.Reject(error.Value());
+    context->is_resolved = true;
+    data->promise->set_exception(std::make_exception_ptr(JSException()));
   } catch (const std::exception &exception) {
     auto message =
         std::string("Internal fuzzer error - ").append(exception.what());
     context->deferred.Reject(Napi::Error::New(env, message).Value());
+    context->is_resolved = true;
+    data->promise->set_exception(std::make_exception_ptr(JSException()));
   }
 }
 
@@ -169,7 +184,9 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
       context, // context
       [](Napi::Env env, FinalizerDataType *, AsyncFuzzTargetContext *ctx) {
         ctx->native_thread.join();
-        ctx->deferred.Resolve(Napi::Boolean::New(env, true));
+        if (!ctx->is_resolved) {
+          ctx->deferred.Resolve(Napi::Boolean::New(env, true));
+        }
         delete ctx;
       });
 
@@ -177,10 +194,14 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   // JavaScript event loop
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
-        StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
+        try {
+          StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
+        } catch (const JSException &exception) {
+        }
         gTSFN.Release();
       },
       std::move(fuzzer_args), context);
+
   return context->deferred.Promise();
 }
 
