@@ -20,11 +20,7 @@
 const target = require("./target");
 
 describe("My describe", () => {
-	it.fuzz("My fuzz test", (data) => {
-		target.fuzzMe(data);
-	});
-
-	it.fuzz("My other fuzz test", (data) => {
+	it.fuzz("My regression tests", async (data) => {
 		target.fuzzMe(data);
 	});
 });
