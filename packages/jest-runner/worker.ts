@@ -16,6 +16,7 @@
 
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Test } from "jest-runner";
+import * as core from "@jazzer.js/core";
 import { Circus, Config } from "@jest/types";
 import { TestResult } from "@jest/test-result";
 import { performance } from "perf_hooks";
@@ -182,6 +183,7 @@ export class JazzerWorker {
 			// @ts-ignore
 			.then(testEntry.fn)
 			.catch((error) => {
+				// @ts-ignore
 				errors.push(error);
 			});
 
