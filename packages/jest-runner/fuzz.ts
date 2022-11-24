@@ -53,7 +53,16 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 
 	if (fuzzingConfig.dryRun) {
 		g.describe(title, () => {
-			corpus.inputPaths().forEach(([name, path]) => {
+			const inputsPaths = corpus.inputsPaths();
+			// Mark fuzz tests with empty inputs as skipped to suppress
+			// Jest error.
+			if (inputsPaths.length === 0) {
+				g.test.skip(title, () => {
+					return;
+				});
+				return;
+			}
+			inputsPaths.forEach(([name, path]) => {
 				const runOptions = fuzzerOptions.concat(path);
 				const testFn: Global.TestFn = () => {
 					return core.startFuzzingAsyncNoInit(fuzzTest, runOptions);
@@ -62,8 +71,8 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 			});
 		});
 	} else {
-		fuzzerOptions.unshift(corpus.inputDirectory);
-		fuzzerOptions.push("-artifact_prefix=" + corpus.outputDirectory);
+		fuzzerOptions.unshift(corpus.inputsDirectory);
+		fuzzerOptions.push("-artifact_prefix=" + corpus.inputsDirectory);
 		const testFn: Global.TestFn = () => {
 			return core.startFuzzingAsyncNoInit(fuzzTest, fuzzerOptions);
 		};
