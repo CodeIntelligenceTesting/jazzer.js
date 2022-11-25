@@ -52,8 +52,6 @@ jobs:
           echo "CPPFLAGS=-I$LLVM_PATH/include" >> $GITHUB_ENV
           echo "CC=$LLVM_PATH/bin/clang" >> $GITHUB_ENV
           echo "CXX=$LLVM_PATH/bin/clang++" >> $GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=$LLVM_PATH/bin/llvm-config" >> $GITHUB_ENV
-          echo "PATH=$PATH:$LLVM_PATH/bin" >> $GITHUB_ENV
       - name: install dependencies (windows)
         if: contains(matrix.os, 'windows')
         run: |
