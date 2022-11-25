@@ -1,3 +1,6 @@
+// noinspection JSUnusedLocalSymbols
+/* eslint-disable @typescript-eslint/no-var-requires,@typescript-eslint/no-unused-vars */
+
 /*
  * Copyright 2022 Code Intelligence GmbH
  *
@@ -15,13 +18,12 @@
  *
  * Examples showcasing the custom hooks API
  */
-/* eslint-disable @typescript-eslint/no-var-requires */
+
 const {
 	registerBeforeHook,
 	registerReplaceHook,
 	registerAfterHook,
 } = require("@jazzer.js/hooking");
-/* eslint-enable @typescript-eslint/no-var-requires */
 
 /**
  * An example of a bug detector hook.
@@ -48,7 +50,6 @@ registerReplaceHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.readUint16",
 	"jpeg-js",
 	false,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	(thisPtr, params, hookId, origFn) => {
 		return origFn.apply(null, params);
 	}
@@ -75,18 +76,17 @@ registerReplaceHook(
 /**
  * Another example of a fuzzing-enabling hook.
  * The hook modifies the input (that is visible in the scope of decode() function),
- * calls the original function on modified input, and modifies the it again after the original function returns.
+ * calls the original function on modified input, and modifies it again after the original function returns.
  */
 registerReplaceHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.prepareComponents",
 	"jpeg-js",
 	false,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	(thisPtr, params, hookId, origFn) => {
 		console.log(
 			`[jpeg-js] Called custom hook instead of the original function prepareComponents()`
 		);
-		var frame = params[0]; // our hooked function only has one argument: frame
+		const frame = params[0]; // our hooked function only has one argument: frame
 		frame.scanLines = 10; // we modify the frame before calling the original function
 		origFn.apply(null, [frame]); // call the original function that mutates the frame and does not return anything
 		frame.scanLines = 1000; // modify the frame once again before returning
@@ -101,7 +101,6 @@ registerBeforeHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.readDataBlock",
 	"jpeg-js",
 	false,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	(thisPtr, params, hookId) => {
 		console.log(
 			`[jpeg-js] [before] Called hooked function before calling resetMaxMemoryUsage()`
@@ -118,7 +117,6 @@ registerAfterHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.readDataBlock",
 	"jpeg-js",
 	false,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	(thisPtr, params, hookId, origFnResult) => {
 		console.log(
 			`[jpeg-js] [after] Called hooked function after calling resetMaxMemoryUsage() with original result ${origFnResult}`

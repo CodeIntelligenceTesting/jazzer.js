@@ -100,13 +100,7 @@ function registerHook(
 ) {
 	switch (hookType) {
 		case HookType.Before:
-			hookManager.registerHook(
-				HookType.Before,
-				target,
-				pkg,
-				isAsync,
-				function (thisPtr: undefined, params: number[], hookId: number) {}
-			);
+			hookManager.registerHook(HookType.Before, target, pkg, isAsync, () => {});
 			break;
 		case HookType.Replace:
 			hookManager.registerHook(
@@ -114,26 +108,10 @@ function registerHook(
 				target,
 				pkg,
 				isAsync,
-				function (
-					thisPtr: undefined,
-					params: number[],
-					hookId: number,
-					originalFunction: Function
-				) {}
+				() => {}
 			);
 			break;
 		case HookType.After:
-			hookManager.registerHook(
-				HookType.After,
-				target,
-				pkg,
-				isAsync,
-				function (
-					thisPtr: undefined,
-					params: number[],
-					hookId: number,
-					result: undefined
-				) {}
-			);
+			hookManager.registerHook(HookType.After, target, pkg, isAsync, () => {});
 	}
 }

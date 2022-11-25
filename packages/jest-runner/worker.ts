@@ -15,8 +15,8 @@
  */
 
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { Test } from "jest-runner";
-import * as core from "@jazzer.js/core";
 import { Circus, Config } from "@jest/types";
 import { TestResult } from "@jest/test-result";
 import { performance } from "perf_hooks";
@@ -208,10 +208,12 @@ export class JazzerWorker {
 		});
 	}
 
+	// noinspection JSUnusedLocalSymbols
 	private async runHooks(
 		hookType: string,
 		block: Circus.DescribeBlock | Circus.TestEntry,
 		ancestors: string[],
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		shouldRunInAncestors = false
 	) {
 		// TODO: Implement
@@ -293,8 +295,8 @@ export class JazzerWorker {
 	): string {
 		// IntelliJ interprets our fuzz extension as a test and thus appends a dollar sign
 		// to the fuzz test pattern when started from the IDE. This is fine for the fuzzing mode
-		// where we register a normal test. However, in the regression mode, we register a describe
-		// block. This results in the child tests being skipped.
+		// where we register a normal test. However, in the regression mode, we register a
+		// describe-block. This results in the child tests being skipped.
 		if (
 			testNamePattern.endsWith("$") &&
 			this.doesMatch(ancestors, testNamePattern)
