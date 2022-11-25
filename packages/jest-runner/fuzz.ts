@@ -24,19 +24,25 @@ import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
 
-// Use jests global object definition
+// Globally track when the fuzzer is started in fuzzing mode.
+let fuzzerStarted = false;
+
+// Error indicating that the fuzzer was already started.
+export class FuzzerStartError extends Error {}
+
+// Use Jests global object definition.
 const g = globalThis as unknown as Global.Global;
 
 export type FuzzTest = (name: Global.TestNameLike, fn: FuzzFn) => void;
 
-export const fuzz: FuzzTest = (title, fuzzTest) => {
+export const fuzz: FuzzTest = (name, fn) => {
 	const fuzzingConfig = loadConfig();
 	const fuzzerOptions = core.addFuzzerOptionsForDryRun(
 		fuzzingConfig.fuzzerOptions,
 		fuzzingConfig.dryRun
 	);
 
-	const testName = toTestName(title);
+	const testName = toTestName(name);
 
 	// Request the current test file path from the worker to create appropriate
 	// corpus directory hierarchies. It is set by the worker that imports the
@@ -52,46 +58,72 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 	const corpus = new Corpus(testFile, testStatePath);
 
 	if (fuzzingConfig.dryRun) {
-		g.describe(title, () => {
-			const inputsPaths = corpus.inputsPaths();
-			// Mark fuzz tests with empty inputs as skipped to suppress
-			// Jest error.
-			if (inputsPaths.length === 0) {
-				g.test.skip(title, () => {
-					return;
-				});
-				return;
-			}
-			inputsPaths.forEach(([name, path]) => {
-				const runOptions = fuzzerOptions.concat(path);
-				const testFn: Global.TestFn = () => {
-					return core.startFuzzingAsyncNoInit(fuzzTest, runOptions);
-				};
-				g.test(name, testFn);
-			});
-		});
+		runInRegressionMode(name, fn, corpus, fuzzerOptions);
 	} else {
-		fuzzerOptions.unshift(corpus.inputsDirectory);
-		fuzzerOptions.push("-artifact_prefix=" + corpus.inputsDirectory);
-		const testFn: Global.TestFn = () => {
-			return core.startFuzzingAsyncNoInit(fuzzTest, fuzzerOptions);
-		};
-		g.test(title, testFn);
+		runInFuzzingMode(name, fn, corpus, fuzzerOptions);
 	}
 };
 
-const toTestName = (title: Global.TestNameLike): string => {
-	switch (typeof title) {
+export const runInRegressionMode = (
+	name: Global.TestNameLike,
+	fn: FuzzFn,
+	corpus: Corpus,
+	fuzzerOptions: string[]
+) => {
+	g.describe(name, () => {
+		const inputsPaths = corpus.inputsPaths();
+		// Mark fuzz tests with empty inputs as skipped to suppress Jest error.
+		if (inputsPaths.length === 0) {
+			g.test.skip(name, () => {
+				return;
+			});
+			return;
+		}
+		inputsPaths.forEach(([seed, path]) => {
+			const runOptions = fuzzerOptions.concat(path);
+			g.test(seed, () => {
+				return core.startFuzzingAsyncNoInit(fn, runOptions);
+			});
+		});
+	});
+};
+
+export const runInFuzzingMode = (
+	name: Global.TestNameLike,
+	fn: FuzzFn,
+	corpus: Corpus,
+	fuzzerOptions: string[]
+) => {
+	fuzzerOptions.unshift(corpus.inputsDirectory);
+	fuzzerOptions.push("-artifact_prefix=" + corpus.inputsDirectory);
+	g.test(name, () => {
+		// Fuzzing is only allowed to start once in a single nodejs instance.
+		if (fuzzerStarted) {
+			const message = `Fuzzer already started. Please provide single fuzz test using --testNamePattern. Skipping test "${toTestName(
+				name
+			)}"`;
+			const error = new FuzzerStartError(message);
+			// Remove stack trace as it is shown in the CLI / IDE and points to internal code.
+			error.stack = undefined;
+			throw error;
+		}
+		fuzzerStarted = true;
+		return core.startFuzzingAsyncNoInit(fn, fuzzerOptions);
+	});
+};
+
+const toTestName = (name: Global.TestNameLike): string => {
+	switch (typeof name) {
 		case "string":
-			return title;
+			return name;
 		case "number":
-			return `${title}`;
+			return `${name}`;
 		case "function":
-			if (title.name) {
-				return title.name;
+			if (name.name) {
+				return name.name;
 			}
 	}
-	throw new Error(`Invalid test name "${title}"`);
+	throw new Error(`Invalid test name "${name}"`);
 };
 
 const currentTestStatePath = (testName: string): string[] => {
