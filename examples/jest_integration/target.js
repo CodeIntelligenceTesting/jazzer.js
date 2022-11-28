@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-module.exports.fuzzMe = function (data) {
+const fuzzMe = function (data) {
 	const s = data.toString();
 	if (s.length !== 16) {
 		return;
@@ -27,3 +27,22 @@ module.exports.fuzzMe = function (data) {
 		throw Error("Welcome to Awesome Fuzzing!");
 	}
 };
+
+const callbackFuzzMe = function (data, done) {
+	// Use setImmediate here to unblock the event loop but still have better
+	// performance compared to setTimeout.
+	setImmediate(() => {
+		fuzzMe(data);
+		done();
+	});
+};
+
+const asyncFuzzMe = function (data) {
+	return new Promise((resolve) => {
+		callbackFuzzMe(data, resolve);
+	});
+};
+
+module.exports.fuzzMe = fuzzMe;
+module.exports.callbackFuzzMe = callbackFuzzMe;
+module.exports.asyncFuzzMe = asyncFuzzMe;

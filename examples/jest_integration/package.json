@@ -4,7 +4,7 @@
 	"description": "An example showing how Jazzer.js integrates with Jest",
 	"scripts": {
 		"test": "jest",
-		"dryRun": "echo \"disabled\"",
+		"dryRun": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest"
 	},
 	"devDependencies": {
