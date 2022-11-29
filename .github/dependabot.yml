@@ -4,15 +4,4 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "/packages/core"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "/packages/fuzzer"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "/packages/instrumentor"
-    schedule:
-      interval: "daily"
+    versioning-strategy: increase
