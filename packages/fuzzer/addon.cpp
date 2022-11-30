@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include <iostream>
+#include <dlfcn.h>
 
 #include "start_fuzzing_async.h"
 #include "start_fuzzing_sync.h"
 
 #include "shared/callbacks.h"
+#include "shared/sanitizer_symbols.h"
 
 // A basic sanity check: ask the Node API for version information and print it.
 void PrintVersion(const Napi::CallbackInfo &info) {
@@ -27,6 +29,22 @@ void PrintVersion(const Napi::CallbackInfo &info) {
             << " using Node-API version " << napi_version << std::endl;
 }
 
+// Write fuzzer output to provided file
+void RedirectFuzzerLogs(const Napi::CallbackInfo &info) {
+  auto napi_version = Napi::VersionManagement::GetNapiVersion(info.Env());
+  auto node_version = Napi::VersionManagement::GetNodeVersion(info.Env());
+  std::cout << "\n\nJazzer.js running on Node " << node_version->major
+            << " using Node-API version " << napi_version << std::endl;
+  printf("\n\n--------------------------------------------------------- redirecting logs\n");
+  auto env = info.Env();
+  if (info.Length() != 1 || !info[0].IsString()) {
+    Napi::TypeError::New(env, "Expected filename as argument")
+        .ThrowAsJavaScriptException();
+    return;
+  }
+  setLogFile(info[0].As<Napi::String>().Utf8Value());
+}
+
 // Initialize the module by populating its JS exports with pointers to our C++
 // functions.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -34,8 +52,10 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);
   exports["stopFuzzingAsync"] = Napi::Function::New<StopFuzzingAsync>(env);
+  exports["redirectFuzzerLogs"] = Napi::Function::New<RedirectFuzzerLogs>(env);
 
   RegisterCallbackExports(env, exports);
+
   return exports;
 }
 

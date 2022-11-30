@@ -140,6 +140,11 @@ function importModule(name: string) {
 	return require(name);
 }
 
+export function redirectFuzzerLogs(filepath: string) {
+	console.log("JS .redirecting");
+	Fuzzer.redirectFuzzerLogs(filepath);
+}
+
 export { jazzer } from "./jazzer";
 export type { Jazzer } from "./jazzer";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";

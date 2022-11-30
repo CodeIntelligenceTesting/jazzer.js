@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <unistd.h>
+#include <stdio.h>
+#include <iostream>
+#include "sanitizer_symbols.h"
+
+
 namespace libfuzzer {
 void (*PrintCrashingInput)() = nullptr;
 }
@@ -24,6 +30,21 @@ __sanitizer_set_death_callback(void (*callback)()) {
   libfuzzer::PrintCrashingInput = callback;
 }
 
+// TODO: on Windows use "nul" instead
+std::string LogFile("/dev/null");
+
+void setLogFile(std::string logFile) {
+  LogFile = logFile;
+}
+
 // Suppress libFuzzer warnings about missing sanitizer methods
 extern "C" [[maybe_unused]] int __sanitizer_acquire_crash_state() { return 1; }
 extern "C" [[maybe_unused]] void __sanitizer_print_stack_trace() {}
+extern "C" [[maybe_unused]] void __sanitizer_set_report_fd(void* fd) {
+  std::cout << "\n\n---------------------------------------------------------------------------Log file: " << LogFile << std::endl;
+  printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++: %s\n\n\n", LogFile.data());
+  FILE* Temp = fopen(LogFile.data(), "w");
+  if (!Temp)
+    return;
+  dup2(fileno(Temp), reinterpret_cast<unsigned long>(fd));
+  }

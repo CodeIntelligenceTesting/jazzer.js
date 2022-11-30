@@ -50,6 +50,10 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 	const testStatePath = currentTestStatePath(testName);
 
 	const corpus = new Corpus(testFile, testStatePath);
+	console.log(
+		"*****************************************************************************"
+	);
+	core.redirectFuzzerLogs("/home/peter/test");
 
 	if (fuzzingConfig.dryRun) {
 		g.describe(title, () => {

@@ -177,6 +177,7 @@ export interface Fuzzer {
 	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
 	startFuzzingAsync: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => Promise<void>;
 	stopFuzzingAsync: () => void;
+	redirectFuzzerLogs: (logFile: string) => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
 	readCounter: typeof readCounter;
@@ -190,6 +191,7 @@ export const fuzzer: Fuzzer = {
 	startFuzzing: addon.startFuzzing,
 	startFuzzingAsync: addon.startFuzzingAsync,
 	stopFuzzingAsync: addon.stopFuzzingAsync,
+	redirectFuzzerLogs: addon.redirectFuzzerLogs,
 	nextCounter,
 	incrementCounter,
 	readCounter,
