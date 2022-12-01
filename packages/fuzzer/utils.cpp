@@ -26,9 +26,6 @@ void StartLibFuzzer(const std::vector<std::string> &args,
   for (auto &arg : args)
     fuzzer_arg_pointers.push_back((char *)arg.data());
 
-  std::string mute{"-close_fd_mask=3"};
-  fuzzer_arg_pointers.push_back(mute.data());
-
   int argc = fuzzer_arg_pointers.size();
   char **argv = fuzzer_arg_pointers.data();
 

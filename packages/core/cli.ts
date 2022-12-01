@@ -134,6 +134,15 @@ yargs(process.argv.slice(2))
 					alias: "h",
 					group: "Fuzzer:",
 					default: [],
+				})
+
+				.option("log_file", {
+					describe:
+						"Path to the log file. If not given, the log is written to " +
+						"stdout.",
+					type: "string",
+					alias: "l",
+					group: "Fuzzer:",
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -155,6 +164,7 @@ yargs(process.argv.slice(2))
 				customHooks: args.custom_hooks.map((hookFile: string) => {
 					return path.join(process.cwd(), hookFile);
 				}),
+				logFile: args.log_file,
 			};
 			if (args.sync) {
 				try {

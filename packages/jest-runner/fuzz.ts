@@ -51,9 +51,14 @@ export const fuzz: FuzzTest = (title, fuzzTest) => {
 
 	const corpus = new Corpus(testFile, testStatePath);
 	console.log(
-		"*****************************************************************************"
+		"JEST-------------------------------------------------------------------"
 	);
-	core.redirectFuzzerLogs("/home/peter/test");
+	core.redirectFuzzerLogs("/dev/null");
+	fuzzerOptions.push("-close_fd_mask=2");
+	if (fuzzingConfig.logFile !== "") {
+		console.log("JEST: redirecting fuzzing output to", fuzzingConfig.logFile);
+	}
+	//console.log("JEST: all options: ", fuzzerOptions);
 
 	if (fuzzingConfig.dryRun) {
 		g.describe(title, () => {

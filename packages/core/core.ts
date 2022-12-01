@@ -27,6 +27,7 @@ export interface Options {
 	sync: boolean;
 	fuzzerOptions: string[];
 	customHooks: string[];
+	logFile: string;
 }
 
 declare global {
@@ -141,7 +142,6 @@ function importModule(name: string) {
 }
 
 export function redirectFuzzerLogs(filepath: string) {
-	console.log("JS .redirecting");
 	Fuzzer.redirectFuzzerLogs(filepath);
 }
 

@@ -41,8 +41,7 @@ void setLogFile(std::string logFile) {
 extern "C" [[maybe_unused]] int __sanitizer_acquire_crash_state() { return 1; }
 extern "C" [[maybe_unused]] void __sanitizer_print_stack_trace() {}
 extern "C" [[maybe_unused]] void __sanitizer_set_report_fd(void* fd) {
-  std::cout << "\n\n---------------------------------------------------------------------------Log file: " << LogFile << std::endl;
-  printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++: %s\n\n\n", LogFile.data());
+  std::cout << "---------------------------------------------------------------------------Log file: " << LogFile << std::endl;
   FILE* Temp = fopen(LogFile.data(), "w");
   if (!Temp)
     return;

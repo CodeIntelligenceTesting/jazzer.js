@@ -31,11 +31,6 @@ void PrintVersion(const Napi::CallbackInfo &info) {
 
 // Write fuzzer output to provided file
 void RedirectFuzzerLogs(const Napi::CallbackInfo &info) {
-  auto napi_version = Napi::VersionManagement::GetNapiVersion(info.Env());
-  auto node_version = Napi::VersionManagement::GetNodeVersion(info.Env());
-  std::cout << "\n\nJazzer.js running on Node " << node_version->major
-            << " using Node-API version " << napi_version << std::endl;
-  printf("\n\n--------------------------------------------------------- redirecting logs\n");
   auto env = info.Env();
   if (info.Length() != 1 || !info[0].IsString()) {
     Napi::TypeError::New(env, "Expected filename as argument")
