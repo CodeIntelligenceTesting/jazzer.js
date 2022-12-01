@@ -96,8 +96,9 @@ export const runInFuzzingMode = (
 	corpus: Corpus,
 	fuzzerOptions: string[]
 ) => {
-	fuzzerOptions.unshift(corpus.inputsDirectory);
-	fuzzerOptions.push("-artifact_prefix=" + corpus.inputsDirectory);
+	fuzzerOptions.unshift(corpus.seedInputsDirectory);
+	fuzzerOptions.unshift(corpus.generatedInputsDirectory);
+	fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
 	g.test(name, () => {
 		// Fuzzing is only allowed to start once in a single nodejs instance.
 		if (fuzzerStarted) {

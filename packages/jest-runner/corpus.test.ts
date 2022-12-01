@@ -30,11 +30,11 @@ describe("Corpus", () => {
 			const corpus = new Corpus(fuzzTest, []);
 
 			const testFile = path.parse(fuzzTest);
-			const inputsDir = path.parse(corpus.inputsDirectory);
+			const inputsDir = path.parse(corpus.seedInputsDirectory);
 			expect(inputsDir.name).toEqual(testFile.name);
 			expect(inputsDir.dir).toEqual(testFile.dir);
 			expect(inputsDir.ext).toBeFalsy();
-			expect(fs.existsSync(corpus.inputsDirectory)).toBeTruthy();
+			expect(fs.existsSync(corpus.seedInputsDirectory)).toBeTruthy();
 		});
 
 		it("creates dir based on Jest path elements", () => {
@@ -43,13 +43,13 @@ describe("Corpus", () => {
 			const corpus = new Corpus(fuzzTest, ["describe", "sub", "fuzz"]);
 
 			const testFile = path.parse(fuzzTest);
-			const inputsDir = path.parse(corpus.inputsDirectory);
+			const inputsDir = path.parse(corpus.seedInputsDirectory);
 			expect(inputsDir.name).toEqual("fuzz");
 			expect(inputsDir.dir).toEqual(
 				[testFile.dir, testFile.name, "describe", "sub"].join(path.sep)
 			);
 			expect(inputsDir.ext).toBeFalsy();
-			expect(fs.existsSync(corpus.inputsDirectory)).toBeTruthy();
+			expect(fs.existsSync(corpus.seedInputsDirectory)).toBeTruthy();
 		});
 	});
 
@@ -71,13 +71,37 @@ describe("Corpus", () => {
 			expect(corpus.inputsPaths()).toHaveLength(0);
 		});
 	});
+
+	describe("corpusDirectory", () => {
+		it("make sure a corpus directory is created", () => {
+			const fuzzTest = mockFuzzTest();
+			const corpus = new Corpus(fuzzTest, []);
+			const testFile = path.parse(fuzzTest);
+			expect(corpus.generatedInputsDirectory).toEqual(
+				path.join(testFile.dir, ".cifuzz-corpus", testFile.name, path.sep)
+			);
+			expect(fs.existsSync(corpus.generatedInputsDirectory)).toBeTruthy();
+		});
+
+		it("throw error if no package.json was found", () => {
+			const fuzzTest = mockFuzzTest({ generatePackageJson: false });
+			expect(() => new Corpus(fuzzTest, [])).toThrowError();
+		});
+	});
 });
 
-function mockFuzzTest({ seedFiles = 0, subDirs = 0 } = {}) {
+function mockFuzzTest({
+	seedFiles = 0,
+	subDirs = 0,
+	generatePackageJson = true,
+} = {}) {
 	const tmpDir = tmp.dirSync({ unsafeCleanup: true }).name;
 	const fuzzTestName = "fuzztest";
 	const fuzzTestFile = path.join(tmpDir, fuzzTestName + ".js");
 	fs.writeFileSync(fuzzTestFile, "");
+	if (generatePackageJson) {
+		fs.writeFileSync(path.join(tmpDir, "package.json"), "");
+	}
 	if (seedFiles > 0 || subDirs > 0) {
 		fs.mkdirSync(path.join(tmpDir, fuzzTestName));
 	}
