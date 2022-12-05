@@ -68,6 +68,9 @@ function loadFuzzFunction(options: Options): fuzzer.FuzzFn {
 export function startFuzzing(options: Options) {
 	initFuzzing(options);
 	const fuzzFn = loadFuzzFunction(options);
+	redirectFuzzerLogs("/dev/null");
+	red;
+	options.fuzzerOptions.push("-close_fd_mask=2");
 	startFuzzingNoInit(
 		fuzzFn,
 		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
