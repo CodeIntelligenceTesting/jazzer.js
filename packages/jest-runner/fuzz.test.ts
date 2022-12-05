@@ -34,8 +34,14 @@ jest.mock("@jazzer.js/core", () => {
 	};
 });
 
+import fs from "fs";
+import * as tmp from "tmp";
 import { Global } from "@jest/types";
 import { Corpus } from "./corpus";
+
+// Cleanup created files on exit
+tmp.setGracefulCleanup();
+
 import {
 	FuzzerStartError,
 	runInFuzzingMode,
@@ -48,50 +54,49 @@ describe("fuzz", () => {
 	});
 
 	describe("runInFuzzingMode", () => {
-		it("executes only one fuzz target function", () => {
+		it("executes only one fuzz target function", async () => {
 			const testFn = jest.fn();
 			const corpus: Corpus = new Corpus("", []);
 			const fuzzerOptions: string[] = [];
-			withMockTest(() => {
-				// First call should start the fuzzer
-				runInFuzzingMode("first", testFn, corpus, fuzzerOptions);
-				expect(startFuzzingMock).toBeCalledTimes(1);
 
-				// Should fail to start the fuzzer a second time
-				expect(() => {
-					runInFuzzingMode("second", testFn, corpus, fuzzerOptions);
-				}).toThrow(FuzzerStartError);
-				expect(startFuzzingMock).toBeCalledTimes(1);
+			// First call should start the fuzzer
+			await withMockTest(() => {
+				runInFuzzingMode("first", testFn, corpus, fuzzerOptions);
 			});
+			expect(startFuzzingMock).toBeCalledTimes(1);
+
+			// Should fail to start the fuzzer a second time
+			await expect(
+				withMockTest(async () => {
+					runInFuzzingMode("second", testFn, corpus, fuzzerOptions);
+				})
+			).rejects.toThrow(FuzzerStartError);
+			expect(startFuzzingMock).toBeCalledTimes(1);
 		});
 	});
 
 	describe("runInRegressionMode", () => {
-		it("Executes one test per seed file", () => {
-			const filePaths = [
-				["a", "/a"],
-				["b", "/b"],
-			];
-			inputsPathsMock.mockReturnValue(filePaths);
+		it("executes one test per seed file", async () => {
+			const inputPaths = mockInputPaths("file1", "file2");
 			const testFn = jest.fn();
 			const corpus: Corpus = new Corpus("", []);
-			const fuzzerOptions: string[] = [];
-			withMockTest(() => {
-				runInRegressionMode("first", testFn, corpus, fuzzerOptions);
-				expect(startFuzzingMock).toBeCalledTimes(filePaths.length);
+			await withMockTest(() => {
+				runInRegressionMode("fuzz", testFn, corpus);
+			});
+			inputPaths.forEach(([name]) => {
+				expect(testFn).toHaveBeenCalledWith(Buffer.from(name));
 			});
 		});
 
-		it("Skips tests without seed files", () => {
-			inputsPathsMock.mockReturnValue([]);
+		it("skips tests without seed files", async () => {
+			mockInputPaths();
 			const testFn = jest.fn();
 			const corpus: Corpus = new Corpus("", []);
-			const fuzzerOptions: string[] = [];
-			withMockTest(() => {
-				runInRegressionMode("first", testFn, corpus, fuzzerOptions);
-				expect(startFuzzingMock).not.toBeCalled();
-				expect(skipMock).toHaveBeenCalled();
+			await withMockTest(() => {
+				runInRegressionMode("fuzz", testFn, corpus);
 			});
+			expect(testFn).not.toBeCalled();
+			expect(skipMock).toHaveBeenCalled();
 		});
 	});
 });
@@ -99,30 +104,49 @@ describe("fuzz", () => {
 // Executing tests in tests is not allowed, hence we temporarily swap the
 // implementation of test and describe to directly invoke their lambdas.
 // Also register a mock at test.skipMock to check if it's invoked.
-const withMockTest = (block: () => void) => {
+const withMockTest = async (block: () => void): Promise<unknown> => {
 	const tmpTest = globalThis.test;
 	const tmpDescribe = globalThis.describe;
+	// Variable to store the registered fuzz tests for later execution.
+	const testFn: Global.TestFn[] = [];
 	try {
-		// Ignore missing properties. We know how "test" is called in the
-		// invoked fuzz function.
+		// Directly invoke describe as there are currently no async describe tests.
+		// @ts-ignore
+		globalThis.describe = (name: Global.TestNameLike, fn: Global.TestFn) => {
+			// @ts-ignore
+			fn();
+		};
+
+		// Mock test with version that stores the registered test. Ignore missing
+		// properties, as those are not needed in the tests.
 		// @ts-ignore
 		globalThis.test = (name: Global.TestNameLike, fn: Global.TestFn) => {
-			// Directly execute passed in test function, as it will not be
-			// executed by jest anymore.
-			if (fn) {
-				// Also don't bother with setting up a test contex.
-				// @ts-ignore
-				fn();
-			}
+			testFn.push(fn);
 		};
 		// @ts-ignore
 		globalThis.test.skip = skipMock;
-		// Directly invoke describe as well.
-		// @ts-ignore
-		globalThis.describe = globalThis.test;
+
+		// Execute given block so that the test functions are actually registered.
 		block();
+		// Chain execution of the stored test functions.
+		let promise: Promise<unknown> = Promise.resolve();
+		testFn.forEach((t) => {
+			// @ts-ignore
+			promise = promise.then(t);
+		});
+		return promise;
 	} finally {
 		globalThis.test = tmpTest;
 		globalThis.describe = tmpDescribe;
 	}
+};
+
+const mockInputPaths = (...inputPaths: string[]) => {
+	const mockInputPaths = inputPaths.map((p) => {
+		const path = tmp.fileSync().name;
+		fs.writeFileSync(path, p);
+		return [p, path];
+	});
+	inputsPathsMock.mockReturnValue(mockInputPaths);
+	return mockInputPaths;
 };
