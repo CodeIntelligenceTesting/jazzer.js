@@ -23,6 +23,7 @@ import { loadConfig } from "./config";
 import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
+import * as fs from "fs";
 
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
@@ -36,12 +37,6 @@ const g = globalThis as unknown as Global.Global;
 export type FuzzTest = (name: Global.TestNameLike, fn: FuzzFn) => void;
 
 export const fuzz: FuzzTest = (name, fn) => {
-	const fuzzingConfig = loadConfig();
-	const fuzzerOptions = core.addFuzzerOptionsForDryRun(
-		fuzzingConfig.fuzzerOptions,
-		fuzzingConfig.dryRun
-	);
-
 	const testName = toTestName(name);
 
 	// Request the current test file path from the worker to create appropriate
@@ -57,9 +52,14 @@ export const fuzz: FuzzTest = (name, fn) => {
 
 	const corpus = new Corpus(testFile, testStatePath);
 
+	const fuzzingConfig = loadConfig();
 	if (fuzzingConfig.dryRun) {
-		runInRegressionMode(name, fn, corpus, fuzzerOptions);
+		runInRegressionMode(name, fn, corpus);
 	} else {
+		const fuzzerOptions = core.addFuzzerOptionsForDryRun(
+			fuzzingConfig.fuzzerOptions,
+			fuzzingConfig.dryRun
+		);
 		runInFuzzingMode(name, fn, corpus, fuzzerOptions);
 	}
 };
@@ -67,8 +67,7 @@ export const fuzz: FuzzTest = (name, fn) => {
 export const runInRegressionMode = (
 	name: Global.TestNameLike,
 	fn: FuzzFn,
-	corpus: Corpus,
-	fuzzerOptions: string[]
+	corpus: Corpus
 ) => {
 	g.describe(name, () => {
 		const inputsPaths = corpus.inputsPaths();
@@ -79,10 +78,13 @@ export const runInRegressionMode = (
 			});
 			return;
 		}
+		// Execute the fuzz test with each input file as no libFuzzer is required.
+		// Custom hooks are already registered via the jest-runner.
 		inputsPaths.forEach(([seed, path]) => {
-			const runOptions = fuzzerOptions.concat(path);
-			g.test(seed, () => {
-				return core.startFuzzingAsyncNoInit(fn, runOptions);
+			g.test(seed, async () => {
+				const content = await fs.promises.readFile(path);
+				// Support sync and async fuzz tests.
+				return Promise.resolve().then(() => fn(content));
 			});
 		});
 	});
