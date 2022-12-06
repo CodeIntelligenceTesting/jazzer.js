@@ -66,14 +66,17 @@ ExternalProject_Add(compiler-rt
   URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
   URL_HASH SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
   SOURCE_SUBDIR compiler-rt
+  PATCH_COMMAND
+    ${Patch_EXECUTABLE} -p1 < ${CMAKE_CURRENT_LIST_DIR}/patches/compile_with_sanitizer_common.patch
   CMAKE_ARGS
   # compiler-rt usually initializes the sanitizer runtime by means of a pointer
   # in the .preinit_array section; since .preinit_array isn't supported for
   # shared objects like our Node plugin, disable it here.
   -DCMAKE_CXX_FLAGS="-DSANITIZER_CAN_USE_PREINIT_ARRAY=0"
+  -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="x86_64-any-linux-gnu"
   # No need to build all the sanitizers; the UBSan standalone runtime is built
   # by default.
-  -DCOMPILER_RT_SANITIZERS_TO_BUILD=""
+  -DCOMPILER_RT_SANITIZERS_TO_BUILD="0"
   # Don't build libc++ into the fuzzer; our own code is C++ as well, so we're
   # going to link against a C++ runtime anyway.
   -DCOMPILER_RT_USE_LIBCXX=OFF
@@ -87,7 +90,8 @@ ExternalProject_Add(compiler-rt
   # external project. Some CMake generators fail if we later depend on the
   # libraries without declaring them here (including ninja).
   BUILD_BYPRODUCTS
-  <BINARY_DIR>/${LIBFUZZER_STATIC_LIB_PATH})
+  <BINARY_DIR>/${LIBFUZZER_STATIC_LIB_PATH}
+  )
 
 # Make our plugin depend on and link against libfuzzer.
 add_dependencies(${PROJECT_NAME} compiler-rt)
@@ -108,7 +112,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_link_libraries(${PROJECT_NAME}
           -Wl,-whole-archive
           ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}
-          -Wl,-no-whole-archive)
+          -Wl,-no-whole-archive
+          )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(${PROJECT_NAME}
           -Wl,-all_load

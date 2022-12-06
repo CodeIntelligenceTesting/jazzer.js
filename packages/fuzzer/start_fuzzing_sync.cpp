@@ -15,6 +15,14 @@
 #include "start_fuzzing_sync.h"
 #include "utils.h"
 #include <optional>
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+extern "C" {
+void __sanitizer_set_report_fd(void *fd);
+
+}
 
 namespace {
 // Information about a JS fuzz target.
@@ -31,6 +39,19 @@ std::optional<FuzzTargetInfo> gFuzzTarget;
 
 // The libFuzzer callback when fuzzing synchronously
 int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
+  /* auto sanitizer_set_report_fd =
+      (void (*)(void *))dlsym(RTLD_DEFAULT, "__sanitizer_set_report_fd");
+ */
+
+/* FILE* Temp = fopen("/home/peter/test.txt", "a");
+  if (!Temp)
+    return 1;
+
+  if (!__sanitizer_set_report_fd) {
+    printf("SANITIZER NOT FOUND!\n");
+    return 1;
+  }
+  __sanitizer_set_report_fd(reinterpret_cast<void *>(fileno(Temp))); */
   // Create a new active scope so that handles for the buffer objects created in
   // this function will be associated with it. This makes sure that these
   // handles are only held live through the lifespan of this scope and gives

@@ -13,13 +13,22 @@
 // limitations under the License.
 
 #include <iostream>
-#include <dlfcn.h>
+
 
 #include "start_fuzzing_async.h"
 #include "start_fuzzing_sync.h"
 
 #include "shared/callbacks.h"
 #include "shared/sanitizer_symbols.h"
+
+#include "shared/tracing.h"
+
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+//extern "C" int __sanitizer_set_report_path(const char* path);
+//extern "C" void __sanitizer_set_report_fd(void* fd);
 
 // A basic sanity check: ask the Node API for version information and print it.
 void PrintVersion(const Napi::CallbackInfo &info) {
@@ -38,6 +47,31 @@ void RedirectFuzzerLogs(const Napi::CallbackInfo &info) {
     return;
   }
   setLogFile(info[0].As<Napi::String>().Utf8Value());
+
+  FILE* Temp = fopen("/home/peter/test.txt", "w");
+  if (!Temp)
+    return;
+
+  auto sanitizer_set_report_fd =
+      (void (*)(void *))dlsym(RTLD_DEFAULT, "__sanitizer_set_report_fd");
+
+  if (!sanitizer_set_report_fd) {
+    printf("SANITIZER NOT FOUND!\n");
+    return;
+  }
+
+  //__sanitizer_set_report_path("/home/peter/test.123.txt");
+  //sanitizer_set_report_fd(reinterpret_cast<void *> (fileno(Temp)));
+  /* dup2(fileno(Temp), STDERR_FILENO);
+  dup2(fileno(Temp), STDOUT_FILENO); */
+  /* auto cifuzz_set_report_fd =
+      (void (*)(int))dlsym(RTLD_DEFAULT, "cifuzz_set_report_fd");
+  if (cifuzz_set_report_fd) {
+    cifuzz_set_report_fd(fileno(Temp));
+  } */
+
+
+
 }
 
 // Initialize the module by populating its JS exports with pointers to our C++

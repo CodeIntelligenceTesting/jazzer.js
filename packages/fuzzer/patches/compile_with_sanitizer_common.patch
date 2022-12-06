@@ -1,0 +1,12 @@
+index a9a10f7..b0cc65b 100644
+--- a/compiler-rt/lib/fuzzer/CMakeLists.txt
++++ b/compiler-rt/lib/fuzzer/CMakeLists.txt
+@@ -123,7 +123,7 @@ add_compiler_rt_runtime(clang_rt.fuzzer_no_main
+   STATIC
+   OS ${FUZZER_SUPPORTED_OS}
+   ARCHS ${FUZZER_SUPPORTED_ARCH}
+-  OBJECT_LIBS RTfuzzer
++  OBJECT_LIBS RTfuzzer RTSanitizerCommon RTSanitizerCommonNoLibc
+   CFLAGS ${LIBFUZZER_CFLAGS}
+   PARENT_TARGET fuzzer)
+

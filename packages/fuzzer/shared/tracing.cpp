@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <dlfcn.h>
 #include "tracing.h"
 
 // We expect these symbols to exist in the current plugin, provided either by
@@ -24,8 +25,21 @@ void __sanitizer_weak_hook_strstr(void *called_pc, const char *s1,
 void __sanitizer_cov_trace_const_cmp8_with_pc(uintptr_t called_pc,
                                               uint64_t arg1, uint64_t arg2);
 void __sanitizer_cov_trace_pc_indir_with_pc(void *caller_pc, uintptr_t callee);
+
 }
 
+/* void sanitizer_set_report_fd (void* fd) {
+  auto set_report_fd = (void (*) (void *)) dlsym(RTLD_DEFAULT, "__sanitizer_set_report_fd");
+  if (set_report_fd) {
+    printf("Setting report fd to %p", fd);
+  printf("******************************************************************\n");
+  printf("******************************************************************\n");
+  printf("******************************************************************\n");
+  printf("******************************************************************\n");
+  set_report_fd(fd);
+    }
+}
+ */
 // Record a comparison between two strings in the target that returned unequal.
 void TraceUnequalStrings(const Napi::CallbackInfo &info) {
   if (info.Length() != 3) {

@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "napi.h"
 
+
 void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback) {
   // Prepare a fake command line and start the fuzzer. This is made
@@ -28,6 +29,9 @@ void StartLibFuzzer(const std::vector<std::string> &args,
 
   int argc = fuzzer_arg_pointers.size();
   char **argv = fuzzer_arg_pointers.data();
+
+  
+
 
   fuzzer::FuzzerDriver(&argc, &argv, fuzzCallback);
 }

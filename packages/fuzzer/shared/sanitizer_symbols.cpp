@@ -22,28 +22,27 @@ namespace libfuzzer {
 void (*PrintCrashingInput)() = nullptr;
 }
 
+extern "C" FILE* GetOutputFile();
+
 // Used by libFuzzer to set the callback to be called immediately before
 // death on error. The libfuzzer death callback dumps the crashing input
 // and prints final stats.
-extern "C" [[maybe_unused]] void
-__sanitizer_set_death_callback(void (*callback)()) {
-  libfuzzer::PrintCrashingInput = callback;
-}
 
 // TODO: on Windows use "nul" instead
 std::string LogFile("/dev/null");
 
 void setLogFile(std::string logFile) {
+  printf("%p\n", GetOutputFile());
   LogFile = logFile;
 }
 
 // Suppress libFuzzer warnings about missing sanitizer methods
-extern "C" [[maybe_unused]] int __sanitizer_acquire_crash_state() { return 1; }
 extern "C" [[maybe_unused]] void __sanitizer_print_stack_trace() {}
-extern "C" [[maybe_unused]] void __sanitizer_set_report_fd(void* fd) {
+/* extern "C" [[maybe_unused]] void __sanitizer_set_report_fd(void* fd) {
   std::cout << "---------------------------------------------------------------------------Log file: " << LogFile << std::endl;
   FILE* Temp = fopen(LogFile.data(), "w");
   if (!Temp)
     return;
   dup2(fileno(Temp), reinterpret_cast<unsigned long>(fd));
   }
+ */
