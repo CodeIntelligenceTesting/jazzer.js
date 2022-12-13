@@ -5,7 +5,7 @@
 	"scripts": {
 		"test": "jest",
 		"dryRun": "jest",
-		"fuzz": "JAZZER_FUZZ=1 jest"
+		"fuzz": "JAZZER_FUZZ=1 jest --testNamePattern=\"My describe\""
 	},
 	"devDependencies": {
 		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",

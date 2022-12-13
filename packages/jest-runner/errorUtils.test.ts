@@ -17,10 +17,14 @@
 import {
 	removeTopFrames,
 	removeBottomFrames,
-	cleanupJestRunner,
+	cleanupJestError,
+	cleanupJestRunnerStack,
+	removeTopFramesFromError,
+	removeBottomFramesFromError,
 } from "./errorUtils";
 
 describe("ErrorUtils", () => {
+	const error = new Error();
 	const stack = `Error:
     at /home/norbert/Code-Intelligence/jazzer.js/examples/jest_integration/integration.fuzz.js:27:3
     at doneCallbackPromise (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
@@ -31,31 +35,72 @@ describe("ErrorUtils", () => {
     at fulfilled (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
 `;
 
-	it("clean up jest runner frames", () => {
-		expect(cleanupJestRunner(stack)).toEqual(`Error:
+	beforeEach(() => {
+		error.stack = stack;
+	});
+
+	describe("clean up Jest runner frames", () => {
+		it("in errors", () => {
+			expect(cleanupJestError(undefined)).toBeUndefined();
+			const cleanedUp = cleanupJestError(error);
+			expect((cleanedUp || {}).stack).toEqual(`Error:
     at /home/norbert/Code-Intelligence/jazzer.js/examples/jest_integration/integration.fuzz.js:27:3
 `);
+		});
+
+		it("in stacks", () => {
+			expect(cleanupJestRunnerStack(undefined)).toBeUndefined();
+			expect(cleanupJestRunnerStack(stack)).toEqual(`Error:
+    at /home/norbert/Code-Intelligence/jazzer.js/examples/jest_integration/integration.fuzz.js:27:3
+`);
+		});
 	});
 
 	describe("remove stack frames", () => {
-		it("on top", () => {
-			expect(removeTopFrames(undefined, 1)).toBeUndefined();
-			expect(removeTopFrames(stack, 3)).toEqual(`Error:
+		describe("in errors", () => {
+			it("on top", () => {
+				expect(removeTopFramesFromError(undefined, 1)).toBeUndefined();
+				const cleanedUp = removeTopFramesFromError(error, 3);
+				expect((cleanedUp || {}).stack).toEqual(`Error:
     at new Promise (<anonymous>)
     at /home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:162:16
     at Generator.next (<anonymous>)
     at fulfilled (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
 `);
-		});
+			});
 
-		it("on bottom", () => {
-			expect(removeBottomFrames(undefined, 1)).toBeUndefined();
-			expect(removeBottomFrames(stack, 3)).toEqual(`Error:
+			it("on bottom", () => {
+				expect(removeBottomFramesFromError(undefined, 1)).toBeUndefined();
+				const cleanedUp = removeBottomFramesFromError(error, 3);
+				expect((cleanedUp || {}).stack).toEqual(`Error:
     at /home/norbert/Code-Intelligence/jazzer.js/examples/jest_integration/integration.fuzz.js:27:3
     at doneCallbackPromise (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
     at Promise.then._a (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:169:20)
     at new Promise (<anonymous>)
 `);
+			});
+		});
+
+		describe("in stacks", () => {
+			it("on top", () => {
+				expect(removeTopFrames(undefined, 1)).toBeUndefined();
+				expect(removeTopFrames(stack, 3)).toEqual(`Error:
+    at new Promise (<anonymous>)
+    at /home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:162:16
+    at Generator.next (<anonymous>)
+    at fulfilled (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
+`);
+			});
+
+			it("on bottom", () => {
+				expect(removeBottomFrames(undefined, 1)).toBeUndefined();
+				expect(removeBottomFrames(stack, 3)).toEqual(`Error:
+    at /home/norbert/Code-Intelligence/jazzer.js/examples/jest_integration/integration.fuzz.js:27:3
+    at doneCallbackPromise (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
+    at Promise.then._a (/home/norbert/Code-Intelligence/jazzer.js/packages/jest-runner/dist/fuzz.js:169:20)
+    at new Promise (<anonymous>)
+`);
+			});
 		});
 	});
 });
