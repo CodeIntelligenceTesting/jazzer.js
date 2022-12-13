@@ -29,6 +29,7 @@ import { Config } from "@jest/types";
 import { JazzerWorker } from "./worker";
 import { registerGlobals, initFuzzing } from "@jazzer.js/core";
 import { loadConfig } from "./config";
+import { cleanupJestRunnerStack } from "./errorUtils";
 
 class FuzzRunner extends CallbackTestRunner {
 	constructor(globalConfig: Config.GlobalConfig, context: TestRunnerContext) {
@@ -70,7 +71,10 @@ class FuzzRunner extends CallbackTestRunner {
 				const worker = new JazzerWorker();
 				return worker.run(test, this._globalConfig).then(
 					(result) => onResult(test, result),
-					(error) => onFailure(test, error)
+					(error) => {
+						error.stack = cleanupJestRunnerStack(error.stack);
+						onFailure(test, error);
+					}
 				);
 			});
 		}, Promise.resolve());
