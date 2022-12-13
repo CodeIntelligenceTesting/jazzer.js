@@ -36,6 +36,12 @@ const g = globalThis as unknown as Global.Global;
 
 export type FuzzTest = (name: Global.TestNameLike, fn: FuzzFn) => void;
 
+export const skip: FuzzTest = (name) => {
+	g.test.skip(toTestName(name), () => {
+		return;
+	});
+};
+
 export const fuzz: FuzzTest = (name, fn) => {
 	const testName = toTestName(name);
 
