@@ -23,7 +23,7 @@ import { performance } from "perf_hooks";
 import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { inspect } from "util";
-import { fuzz, FuzzerStartError } from "./fuzz";
+import { fuzz, skip, FuzzerStartError } from "./fuzz";
 
 type JazzerTestStatus = {
 	failures: number;
@@ -90,9 +90,13 @@ export class JazzerWorker {
 		// @ts-ignore
 		globalThis.test.fuzz = fuzz;
 		// @ts-ignore
+		globalThis.test.skip.fuzz = skip;
+		// @ts-ignore
 		globalThis.it = circus.it;
 		// @ts-ignore
 		globalThis.it.fuzz = fuzz;
+		// @ts-ignore
+		globalThis.it.skip.fuzz = skip;
 		// @ts-ignore
 		globalThis.describe = circus.describe;
 		// @ts-ignore
@@ -185,10 +189,9 @@ export class JazzerWorker {
 			.then(testEntry.fn)
 			.catch((error) => {
 				// Mark fuzzer tests as skipped and not as error.
-				if (error == FuzzerStartError) {
+				if (error instanceof FuzzerStartError) {
 					skipTest = true;
 				}
-				// @ts-ignore
 				errors.push(error);
 			});
 
