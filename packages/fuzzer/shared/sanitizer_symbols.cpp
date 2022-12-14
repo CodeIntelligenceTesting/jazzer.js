@@ -20,7 +20,7 @@ void (*PrintCrashingInput)() = nullptr;
 // death on error. The libfuzzer death callback dumps the crashing input
 // and prints final stats.
 extern "C" [[maybe_unused]] void
-__sanitizer_set_death_callback(void (*callback)()) {
+__jazzer_set_death_callback(void (*callback)()) {
   libfuzzer::PrintCrashingInput = callback;
 }
 
