@@ -38,15 +38,15 @@ import fs from "fs";
 import * as tmp from "tmp";
 import { Global } from "@jest/types";
 import { Corpus } from "./corpus";
-
-// Cleanup created files on exit
-tmp.setGracefulCleanup();
-
 import {
+	FuzzerError,
 	FuzzerStartError,
 	runInFuzzingMode,
 	runInRegressionMode,
 } from "./fuzz";
+
+// Cleanup created files on exit
+tmp.setGracefulCleanup();
 
 describe("fuzz", () => {
 	beforeEach(() => {
@@ -54,9 +54,9 @@ describe("fuzz", () => {
 	});
 
 	describe("runInFuzzingMode", () => {
-		it("executes only one fuzz target function", async () => {
+		it("execute only one fuzz target function", async () => {
 			const testFn = jest.fn();
-			const corpus: Corpus = new Corpus("", []);
+			const corpus = new Corpus("", []);
 			const fuzzerOptions: string[] = [];
 
 			// First call should start the fuzzer
@@ -67,7 +67,7 @@ describe("fuzz", () => {
 
 			// Should fail to start the fuzzer a second time
 			await expect(
-				withMockTest(async () => {
+				withMockTest(() => {
 					runInFuzzingMode("second", testFn, corpus, fuzzerOptions);
 				})
 			).rejects.toThrow(FuzzerStartError);
@@ -76,24 +76,100 @@ describe("fuzz", () => {
 	});
 
 	describe("runInRegressionMode", () => {
-		it("executes one test per seed file", async () => {
+		it("execute one test per seed file", async () => {
 			const inputPaths = mockInputPaths("file1", "file2");
+			const corpus = new Corpus("", []);
 			const testFn = jest.fn();
-			const corpus: Corpus = new Corpus("", []);
 			await withMockTest(() => {
-				runInRegressionMode("fuzz", testFn, corpus);
+				runInRegressionMode("fuzz", testFn, corpus, 1000);
 			});
 			inputPaths.forEach(([name]) => {
 				expect(testFn).toHaveBeenCalledWith(Buffer.from(name));
 			});
 		});
 
+		it("support done callback fuzz test functions", async () => {
+			let called = false;
+			await withMockTest(() => {
+				runInRegressionMode(
+					"fuzz",
+					(data: Buffer, done: (e?: Error) => void) => {
+						called = true;
+						done();
+					},
+					mockDefaultCorpus(),
+					1000
+				);
+			});
+			expect(called).toBeTruthy();
+		});
+
+		it("support async fuzz test functions", async () => {
+			let called = false;
+			await withMockTest(() => {
+				runInRegressionMode(
+					"fuzz",
+					async () => {
+						called = true;
+						return new Promise((resolve) => {
+							setTimeout(() => {
+								resolve("result");
+							}, 100);
+						});
+					},
+					mockDefaultCorpus(),
+					1000
+				);
+			});
+			expect(called).toBeTruthy();
+		});
+
+		it("fail on timeout", async () => {
+			const rejects = await expect(
+				withMockTest(() => {
+					runInRegressionMode(
+						"fuzz",
+						() => {
+							return new Promise(() => {
+								// do nothing to trigger timeout
+							});
+						},
+						mockDefaultCorpus(),
+						100
+					);
+				})
+			).rejects;
+			await rejects.toThrow(FuzzerError);
+			await rejects.toThrowError(new RegExp(".*Timeout.*"));
+		});
+
+		it("fail on done callback with async result", async () => {
+			const rejects = await expect(
+				withMockTest(() => {
+					runInRegressionMode(
+						"fuzz",
+						// Parameters needed to pass in done callback.
+						// eslint-disable-next-line @typescript-eslint/no-unused-vars
+						(ignored: Buffer, ignored2: (e?: Error) => void) => {
+							return new Promise(() => {
+								// promise is ignored due to done callback
+							});
+						},
+						mockDefaultCorpus(),
+						100
+					);
+				})
+			).rejects;
+			await rejects.toThrow(FuzzerError);
+			await rejects.toThrowError(new RegExp(".*async or done.*"));
+		});
+
 		it("skips tests without seed files", async () => {
 			mockInputPaths();
-			const testFn = jest.fn();
 			const corpus: Corpus = new Corpus("", []);
+			const testFn = jest.fn();
 			await withMockTest(() => {
-				runInRegressionMode("fuzz", testFn, corpus);
+				runInRegressionMode("fuzz", testFn, corpus, 1000);
 			});
 			expect(testFn).not.toBeCalled();
 			expect(skipMock).toHaveBeenCalled();
@@ -149,4 +225,9 @@ const mockInputPaths = (...inputPaths: string[]) => {
 	});
 	inputsPathsMock.mockReturnValue(mockInputPaths);
 	return mockInputPaths;
+};
+
+const mockDefaultCorpus = () => {
+	mockInputPaths("seed");
+	return new Corpus("", []);
 };

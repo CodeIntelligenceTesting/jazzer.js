@@ -18,7 +18,7 @@
 
 import { Global } from "@jest/types";
 import * as core from "@jazzer.js/core";
-import { FuzzFn } from "@jazzer.js/fuzzer";
+import { FuzzFn, FuzzFnAsyncOrValue, FuzzFnCallback } from "@jazzer.js/fuzzer";
 import { loadConfig } from "./config";
 import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
@@ -28,8 +28,11 @@ import * as fs from "fs";
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
 
+// Indicate that something went wrong executing the fuzzer.
+export class FuzzerError extends Error {}
+
 // Error indicating that the fuzzer was already started.
-export class FuzzerStartError extends Error {}
+export class FuzzerStartError extends FuzzerError {}
 
 // Use Jests global object definition.
 const g = globalThis as unknown as Global.Global;
@@ -56,44 +59,24 @@ export const fuzz: FuzzTest = (name, fn) => {
 	// points to the element containing the fuzz function.
 	const testStatePath = currentTestStatePath(testName);
 
+	// The timeout setting is extracted from the test state and defaults to 5s.
+	// Setting timeouts on this level is necessary, as they apply to the
+	// individual inputs and not the whole run.
+	const timeout = currentTimeout();
+
 	const corpus = new Corpus(testFile, testStatePath);
 
 	const fuzzingConfig = loadConfig();
 	if (fuzzingConfig.dryRun) {
-		runInRegressionMode(name, fn, corpus);
+		runInRegressionMode(name, fn, corpus, timeout);
 	} else {
 		const fuzzerOptions = core.addFuzzerOptionsForDryRun(
 			fuzzingConfig.fuzzerOptions,
-			fuzzingConfig.dryRun
+			fuzzingConfig.dryRun,
+			timeout
 		);
 		runInFuzzingMode(name, fn, corpus, fuzzerOptions);
 	}
-};
-
-export const runInRegressionMode = (
-	name: Global.TestNameLike,
-	fn: FuzzFn,
-	corpus: Corpus
-) => {
-	g.describe(name, () => {
-		const inputsPaths = corpus.inputsPaths();
-		// Mark fuzz tests with empty inputs as skipped to suppress Jest error.
-		if (inputsPaths.length === 0) {
-			g.test.skip(name, () => {
-				return;
-			});
-			return;
-		}
-		// Execute the fuzz test with each input file as no libFuzzer is required.
-		// Custom hooks are already registered via the jest-runner.
-		inputsPaths.forEach(([seed, path]) => {
-			g.test(seed, async () => {
-				const content = await fs.promises.readFile(path);
-				// Support sync and async fuzz tests.
-				return Promise.resolve().then(() => fn(content));
-			});
-		});
-	});
 };
 
 export const runInFuzzingMode = (
@@ -121,6 +104,88 @@ export const runInFuzzingMode = (
 	});
 };
 
+export const runInRegressionMode = (
+	name: Global.TestNameLike,
+	fn: FuzzFn,
+	corpus: Corpus,
+	timeout: number
+) => {
+	g.describe(name, () => {
+		const inputsPaths = corpus.inputsPaths();
+
+		// Mark fuzz tests with empty inputs as skipped to suppress Jest error.
+		if (inputsPaths.length === 0) {
+			g.test.skip(name, () => {
+				return;
+			});
+			return;
+		}
+
+		// Execute the fuzz test with each input file as no libFuzzer is required.
+		// Custom hooks are already registered via the jest-runner.
+		inputsPaths.forEach(([seed, path]) => {
+			g.test(seed, async () => {
+				const content = await fs.promises.readFile(path);
+				let timeoutID: NodeJS.Timeout;
+				return new Promise((resolve, reject) => {
+					// Register a timeout for every fuzz test function invocation.
+					timeoutID = setTimeout(() => {
+						reject(new FuzzerError(`Timeout reached ${timeout}`));
+					}, timeout);
+
+					// Fuzz test expects a done callback, if more than one parameter is specified.
+					if (fn.length > 1) {
+						return doneCallbackPromise(fn, content, resolve, reject);
+					} else {
+						// Support sync and async fuzz tests.
+						return Promise.resolve()
+							.then(() => (fn as FuzzFnAsyncOrValue)(content))
+							.then(resolve, reject);
+					}
+				}).then(
+					(value: unknown) => {
+						// Remove timeout to enable clean shutdown.
+						timeoutID?.unref?.();
+						clearTimeout(timeoutID);
+						return value;
+					},
+					(error: unknown) => {
+						// Remove timeout to enable clean shutdown.
+						timeoutID?.unref?.();
+						clearTimeout(timeoutID);
+						throw error;
+					}
+				);
+			});
+		});
+	});
+};
+
+const doneCallbackPromise = (
+	fn: FuzzFnCallback,
+	content: Buffer,
+	resolve: (value: unknown) => void,
+	reject: (reason?: unknown) => void
+) => {
+	try {
+		const doneCallback = (e?: unknown) => (e ? reject(e) : resolve(undefined));
+		const result = fn(content, doneCallback);
+		// Expecting a done callback, but returning a promise, is invalid. This is
+		// already prevented by TypeScript, but we should still check for this
+		// situation due to untyped JavaScript fuzz tests.
+		// @ts-ignore
+		if (result && typeof result.then === "function") {
+			reject(
+				new FuzzerError(
+					"Either async or done callback based fuzz tests allowed"
+				)
+			);
+		}
+	} catch (e: unknown) {
+		reject(e);
+	}
+};
+
 const toTestName = (name: Global.TestNameLike): string => {
 	switch (typeof name) {
 		case "string":
@@ -132,7 +197,7 @@ const toTestName = (name: Global.TestNameLike): string => {
 				return name.name;
 			}
 	}
-	throw new Error(`Invalid test name "${name}"`);
+	throw new FuzzerError(`Invalid test name "${name}"`);
 };
 
 const currentTestStatePath = (testName: string): string[] => {
@@ -145,4 +210,8 @@ const currentTestStatePath = (testName: string): string[] => {
 		}
 	}
 	return elements;
+};
+
+const currentTimeout = (): number => {
+	return circus.getState().testTimeout || 5000;
 };

@@ -75,9 +75,21 @@ export function startFuzzing(options: Options) {
 
 export function addFuzzerOptionsForDryRun(
 	opts: string[],
-	shouldDoDryRun: boolean
+	shouldDoDryRun: boolean,
+	timeout = 5000
 ): string[] {
-	return shouldDoDryRun ? opts.concat("-runs=0") : opts;
+	const containsParameter = (params: string[], param: string): boolean => {
+		return params.some((curr) => curr.startsWith(param));
+	};
+	// Last occurrence of a parameter is used.
+	if (shouldDoDryRun) {
+		opts = opts.concat("-runs=0");
+	}
+	if (!containsParameter(opts, "-timeout")) {
+		const inSeconds = timeout / 1000;
+		opts = opts.concat(`-timeout=${inSeconds}`);
+	}
+	return opts;
 }
 
 export function startFuzzingNoInit(
