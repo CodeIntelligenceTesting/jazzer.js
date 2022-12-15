@@ -30,13 +30,14 @@
 namespace {
 
 // The context of the typed thread-safe function we use to call the JavaScript
-// fuzz target
+// fuzz target.
 struct AsyncFuzzTargetContext {
   explicit AsyncFuzzTargetContext(Napi::Env env)
       : deferred(Napi::Promise::Deferred::New(env)){};
   std::thread native_thread;
   Napi::Promise::Deferred deferred;
   bool is_resolved = false;
+  bool is_done_called = false;
   AsyncFuzzTargetContext() = delete;
 };
 
@@ -51,7 +52,7 @@ struct DataType {
   DataType() = delete;
 };
 
-// Exception for catching crashes in the JavaScript callback function
+// Exception for catching crashes in the JavaScript callback function.
 class JSException : public std::exception {};
 
 void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
@@ -62,7 +63,7 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
-// The libFuzzer callback when fuzzing asynchronously
+// The libFuzzer callback when fuzzing asynchronously.
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
   auto input = DataType{Data, Size, &promise};
@@ -74,7 +75,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
         "FuzzCallbackAsync",
         "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
   }
-  // Wait until the JavaScript fuzz target has finished
+  // Wait until the JavaScript fuzz target has finished.
   try {
     future.get();
   } catch (JSException &exception) {
@@ -104,6 +105,63 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   try {
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
+
+      auto parameterCount = jsFuzzCallback.As<Napi::Object>()
+                                .Get("length")
+                                .As<Napi::Number>()
+                                .Int32Value();
+      // In case more than one parameter is expected, the second one is
+      // considered to be a done callback to indicate finished execution.
+      if (parameterCount > 1) {
+        context->is_done_called = false;
+        auto done =
+            Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
+              // If the done callback based fuzz target also returned a promise,
+              // is_resolved could been set and there's nothing to do anymore.
+              // As the done callback is executed on the main event loop, no
+              // synchronization for is_resolved is needed.
+              if (context->is_resolved) {
+                return;
+              }
+              // Mark if the done callback is invoked, to be able to check for
+              // wrongly returned promises.
+              context->is_done_called = true;
+
+              auto hasError = !(info[0].IsNull() || info[0].IsUndefined());
+              if (hasError) {
+                context->deferred.Reject(info[0].As<Napi::Error>().Value());
+                context->is_resolved = true;
+                data->promise->set_exception(
+                    std::make_exception_ptr(JSException()));
+              } else {
+                data->promise->set_value(nullptr);
+              }
+            });
+        auto result = jsFuzzCallback.Call({buffer, done});
+        if (result.IsPromise()) {
+          // If the fuzz target received a done callback, but also returned a
+          // promise, the callback could already have been called. In that case
+          // is_done_called is already set. If is_resolved is also set, the
+          // callback was invoked with an error and already propagated that. If
+          // not, an appropriate error, describing the illegal return value,
+          // can be set. As everything is executed on the main event loop, no
+          // synchronization is needed.
+          if (context->is_resolved) {
+            return;
+          }
+          if (!context->is_done_called) {
+            data->promise->set_exception(
+                std::make_exception_ptr(JSException()));
+          }
+          context->deferred.Reject(
+              Napi::Error::New(env, "Internal fuzzer error - Either async or "
+                                    "done callback based fuzz tests allowed.")
+                  .Value());
+          context->is_resolved = true;
+        }
+        return;
+      }
+
       auto result = jsFuzzCallback.Call({buffer});
 
       // Register callbacks on returned promise to await its resolution before
@@ -170,8 +228,8 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
 
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
 
-  // Store the JS fuzz target and corresponding environment globally, so that
-  // our C++ fuzz target can use them to call back into JS.
+  // Store the JS fuzz target and corresponding environment, so that our C++
+  // fuzz target can use them to call back into JS.
   auto *context = new AsyncFuzzTargetContext(info.Env());
 
   gTSFN = TSFN::New(
@@ -183,6 +241,9 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
       1,       // Only one thread will use this initially
       context, // context
       [](Napi::Env env, FinalizerDataType *, AsyncFuzzTargetContext *ctx) {
+        // This finalizer is executed in the main event loop context and hence
+        // has access to the JavaScript environment. It's only invoked if no
+        // issue was found.
         ctx->native_thread.join();
         if (!ctx->is_resolved) {
           ctx->deferred.Resolve(Napi::Boolean::New(env, true));
@@ -191,7 +252,7 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
       });
 
   // Start the libFuzzer loop in a separate thread in order not to block the
-  // JavaScript event loop
+  // JavaScript event loop.
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
         try {
