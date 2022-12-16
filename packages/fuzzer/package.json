@@ -15,31 +15,8 @@
 	},
 	"main": "dist/fuzzer.js",
 	"types": "dist/fuzzer.d.ts",
-	"scripts": {
-		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
-		"upload": "prebuild --runtime napi --backend cmake-js --all --strip --upload",
-		"install": "prebuild-install --runtime napi || cmake-js rebuild --out build",
-		"build": "cmake-js compile --out build",
-		"format:fix": "clang-format -i *.cpp shared/*.cpp shared/*.h",
-		"lint": "find . -path ./build -prune -type f -o -iname '*.h' -o -iname '*.cpp' | xargs clang-tidy"
-	},
-	"binary": {
-		"napi_versions": [
-			4
-		]
-	},
-	"dependencies": {
-		"bindings": "^1.5.0",
-		"cmake-js": "^7.1.1",
-		"node-addon-api": "^5.0.0",
-		"prebuild-install": "^7.1.1"
-	},
-	"devDependencies": {
-		"@types/bindings": "^1.5.1",
-		"@types/node": "^18.11.15",
-		"clang-format": "^1.8.0",
-		"prebuild": "^11.0.4"
-	},
+	"dependencies": {},
+	"devDependencies": {},
 	"engines": {
 		"node": ">= 14.0.0",
 		"npm": ">= 7.0.0"

@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-import { default as bind } from "bindings";
-
-export const addon = bind("jazzerjs");
-
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
 const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
 
-addon.registerCoverageMap(coverageMap);
-addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
+//addon.registerCoverageMap(coverageMap);
+//addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
 
 let currentNumCounters = INITIAL_NUM_COUNTERS;
 let currentCounter = 0;
@@ -46,7 +42,7 @@ function nextCounter(): number {
 
 	// Register new counters if enlarged
 	if (newNumCounters > currentNumCounters) {
-		addon.registerNewCounters(currentNumCounters, newNumCounters);
+		//addon.registerNewCounters(currentNumCounters, newNumCounters);
 		currentNumCounters = newNumCounters;
 		console.log(`INFO: New number of coverage counters ${currentNumCounters}`);
 	}
@@ -105,7 +101,7 @@ function traceStrCmp(
 			break;
 	}
 	if (shouldCallLibfuzzer && s1 && s2) {
-		addon.traceUnequalStrings(id, s1, s2);
+		//addon.traceUnequalStrings(id, s1, s2);
 	}
 	return result;
 }
@@ -127,7 +123,7 @@ function traceNumberCmp(
 	id: number
 ): boolean {
 	if (Number.isInteger(n1) && Number.isInteger(n2)) {
-		addon.traceIntegerCompare(id, n1, n2);
+		//addon.traceIntegerCompare(id, n1, n2);
 	}
 	switch (operator) {
 		case "==":
@@ -156,13 +152,13 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 		case "number":
 			if (typeof current === "number") {
 				if (Number.isInteger(current) && Number.isInteger(target)) {
-					addon.traceIntegerCompare(id, current, target);
+					//addon.traceIntegerCompare(id, current, target);
 				}
 			}
 			break;
 		case "string":
 			if (typeof current === "string") {
-				addon.traceUnequalStrings(id, current, target);
+				//addon.traceUnequalStrings(id, current, target);
 			}
 	}
 	return target;
@@ -185,11 +181,27 @@ export interface Fuzzer {
 	traceAndReturn: typeof traceAndReturn;
 }
 
+function printVersion() {
+	//addon.printVersion();
+}
+
+function startFuzzing(fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) {
+	//addon.startFuzzing(fuzzFn, fuzzOpts);
+}
+
+async function startFuzzingAsync(fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) {
+	//await addon.startFuzzingAsync(fuzzFn, fuzzOpts);
+}
+
+async function stopFuzzingAsync() {
+	//await addon.stopFuzzingAsync();
+}
+
 export const fuzzer: Fuzzer = {
-	printVersion: addon.printVersion,
-	startFuzzing: addon.startFuzzing,
-	startFuzzingAsync: addon.startFuzzingAsync,
-	stopFuzzingAsync: addon.stopFuzzingAsync,
+	printVersion: printVersion,
+	startFuzzing: startFuzzing,
+	startFuzzingAsync: startFuzzingAsync,
+	stopFuzzingAsync: stopFuzzingAsync,
 	nextCounter,
 	incrementCounter,
 	readCounter,
