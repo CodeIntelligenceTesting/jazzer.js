@@ -16,9 +16,17 @@
 
 /* eslint no-undef: 0 */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 describe("My describe", () => {
 	it("My normal Jest test", () => {
+		expect(1).toEqual(1);
+	});
+
+	it("My done callback Jest test", (done) => {
+		expect(1).toEqual(1);
+		done();
+	});
+
+	it("My async Jest test", async () => {
 		expect(1).toEqual(1);
 	});
 });

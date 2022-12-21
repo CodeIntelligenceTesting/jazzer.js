@@ -123,8 +123,26 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
               if (context->is_resolved) {
                 return;
               }
+
+              // Raise an error if the done callback is called multiple times.
+              if (context->is_done_called) {
+                context->deferred.Reject(
+                    Napi::Error::New(env, "Expected done to be called once, "
+                                          "but it was called multiple times.")
+                        .Value());
+                context->is_resolved = true;
+                // We can not pass an exception in data->promise to break out of
+                // the fuzzer loop, as it was already resolved in the last
+                // invocation of the done callback. Probably the best thing to
+                // do is print an error message and await the timeout.
+                std::cerr << "Expected done to be called once, but it was "
+                             "called multiple times."
+                          << std::endl;
+                return;
+              }
+
               // Mark if the done callback is invoked, to be able to check for
-              // wrongly returned promises.
+              // wrongly returned promises and multiple invocations.
               context->is_done_called = true;
 
               auto hasError = !(info[0].IsNull() || info[0].IsUndefined());
