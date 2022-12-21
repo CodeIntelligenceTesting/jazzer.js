@@ -22,8 +22,10 @@ import { TestResult } from "@jest/test-result";
 import { performance } from "perf_hooks";
 import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
+import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
 import { fuzz, skip, FuzzerStartError } from "./fuzz";
+import { cleanupJestRunner } from "./errorUtils";
 
 type JazzerTestStatus = {
 	failures: number;
@@ -123,7 +125,14 @@ export class JazzerWorker {
 		);
 		this.#testSummary.end = performance.now();
 
-		return this.testResult(test);
+		const result = this.testResult(test);
+		result.failureMessage = formatResultsErrors(
+			result.testResults,
+			test.context.config,
+			config,
+			test.path
+		);
+		return result;
 	}
 
 	private async loadTests(test: Test): Promise<circus.State> {
@@ -183,7 +192,7 @@ export class JazzerWorker {
 		});
 
 		let skipTest = false;
-		const errors = [];
+		let errors = [];
 		await Promise.resolve()
 			// @ts-ignore
 			.then(testEntry.fn)
@@ -202,6 +211,13 @@ export class JazzerWorker {
 		if (state.suppressedErrors.length > 0) {
 			errors.unshift(...state.suppressedErrors);
 		}
+
+		errors = errors.map((e) => {
+			if (e && e.stack) {
+				e.stack = cleanupJestRunner(e.stack);
+			}
+			return e;
+		});
 
 		if (skipTest) {
 			this.#testSummary.pending++;
@@ -286,12 +302,9 @@ export class JazzerWorker {
 
 	private failureToString(result: JazzerTestResult) {
 		return (
-			result.ancestors.concat(result.title).join(" > ") +
-			"\n" +
 			result.errors
 				.map((error) => inspect(error).replace(/^/gm, "    "))
-				.join("\n") +
-			"\n"
+				.join("\n") + "\n"
 		);
 	}
 

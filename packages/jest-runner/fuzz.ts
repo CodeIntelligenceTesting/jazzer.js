@@ -24,6 +24,7 @@ import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
 import * as fs from "fs";
+import { removeTopFrames } from "./errorUtils";
 
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
@@ -179,7 +180,14 @@ const doneCallbackPromise = (
 				);
 			}
 			doneCalled = true;
-			e ? reject(e) : resolve(undefined);
+			let error;
+			if (typeof e === "string") {
+				error = new Error(e);
+				error.stack = removeTopFrames(error.stack, 1);
+			} else {
+				error = e;
+			}
+			error ? reject(error) : resolve(undefined);
 		};
 		const result = fn(content, doneCallback);
 		// Expecting a done callback, but returning a promise, is invalid. This is
