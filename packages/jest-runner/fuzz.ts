@@ -168,7 +168,19 @@ const doneCallbackPromise = (
 	reject: (reason?: unknown) => void
 ) => {
 	try {
-		const doneCallback = (e?: unknown) => (e ? reject(e) : resolve(undefined));
+		let doneCalled = false;
+		const doneCallback = (e?: unknown) => {
+			if (doneCalled) {
+				// As the promise was already resolved in the last invocation, and
+				// there could be quite some time until this one, there is not much we
+				// can do besides printing an error message.
+				console.error(
+					"Expected done to be called once, but it was called multiple times."
+				);
+			}
+			doneCalled = true;
+			e ? reject(e) : resolve(undefined);
+		};
 		const result = fn(content, doneCallback);
 		// Expecting a done callback, but returning a promise, is invalid. This is
 		// already prevented by TypeScript, but we should still check for this

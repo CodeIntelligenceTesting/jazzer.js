@@ -34,6 +34,9 @@ jest.mock("@jazzer.js/core", () => {
 	};
 });
 
+// Mock console error logs
+const consoleErrorMock = jest.spyOn(console, "error").mockImplementation();
+
 import fs from "fs";
 import * as tmp from "tmp";
 import { Global } from "@jest/types";
@@ -164,6 +167,28 @@ describe("fuzz", () => {
 			await rejects.toThrowError(new RegExp(".*async or done.*"));
 		});
 
+		it("print error on multiple calls to done callback", async () => {
+			await new Promise((resolve) => {
+				expect(
+					withMockTest(() => {
+						runInRegressionMode(
+							"fuzz",
+							// eslint-disable-next-line @typescript-eslint/no-unused-vars
+							(ignored: Buffer, done: (e?: Error) => void) => {
+								done();
+								done();
+								// Use another promise to stop test from finishing too fast.
+								resolve("done called multiple times");
+							},
+							mockDefaultCorpus(),
+							100
+						);
+					})
+				);
+			});
+			expect(consoleErrorMock).toHaveBeenCalledTimes(1);
+		});
+
 		it("skips tests without seed files", async () => {
 			mockInputPaths();
 			const corpus: Corpus = new Corpus("", []);
@@ -184,7 +209,7 @@ const withMockTest = async (block: () => void): Promise<unknown> => {
 	const tmpTest = globalThis.test;
 	const tmpDescribe = globalThis.describe;
 	// Variable to store the registered fuzz tests for later execution.
-	const testFn: Global.TestFn[] = [];
+	const testFns: Global.TestFn[] = [];
 	try {
 		// Directly invoke describe as there are currently no async describe tests.
 		// @ts-ignore
@@ -197,7 +222,7 @@ const withMockTest = async (block: () => void): Promise<unknown> => {
 		// properties, as those are not needed in the tests.
 		// @ts-ignore
 		globalThis.test = (name: Global.TestNameLike, fn: Global.TestFn) => {
-			testFn.push(fn);
+			testFns.push(fn);
 		};
 		// @ts-ignore
 		globalThis.test.skip = skipMock;
@@ -206,7 +231,7 @@ const withMockTest = async (block: () => void): Promise<unknown> => {
 		block();
 		// Chain execution of the stored test functions.
 		let promise: Promise<unknown> = Promise.resolve();
-		testFn.forEach((t) => {
+		testFns.forEach((t) => {
 			// @ts-ignore
 			promise = promise.then(t);
 		});
