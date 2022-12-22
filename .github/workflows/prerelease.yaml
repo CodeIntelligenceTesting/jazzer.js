@@ -59,10 +59,6 @@ jobs:
           echo "CXX=$LLVM_PATH/bin/clang++" >> $GITHUB_ENV
           echo "LLVM_CONFIG_PATH=$LLVM_PATH/bin/llvm-config" >> $GITHUB_ENV
           echo "PATH=$PATH:$LLVM_PATH/bin" >> $GITHUB_ENV
-      - name: install dependencies (windows)
-        if: contains(matrix.os, 'windows')
-        run: |
-          choco install cmake python3
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
         if: contains(matrix.os, 'windows')
