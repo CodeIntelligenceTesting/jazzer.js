@@ -6,6 +6,6 @@
 
 ## Internal Documentation
 
-- [Development](development.md)
+- [Development](../CONTRIBUTING.md)
 - [Release](release.md)
 - [Architecture](architecture.md)
