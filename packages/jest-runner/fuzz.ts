@@ -18,7 +18,11 @@
 
 import { Global } from "@jest/types";
 import * as core from "@jazzer.js/core";
-import { FuzzFn, FuzzFnAsyncOrValue, FuzzFnCallback } from "@jazzer.js/fuzzer";
+import {
+	FuzzTarget,
+	FuzzTargetAsyncOrValue,
+	FuzzTargetCallback,
+} from "@jazzer.js/fuzzer";
 import { loadConfig } from "./config";
 import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
@@ -38,7 +42,7 @@ export class FuzzerStartError extends FuzzerError {}
 // Use Jests global object definition.
 const g = globalThis as unknown as Global.Global;
 
-export type FuzzTest = (name: Global.TestNameLike, fn: FuzzFn) => void;
+export type FuzzTest = (name: Global.TestNameLike, fn: FuzzTarget) => void;
 
 export const skip: FuzzTest = (name) => {
 	g.test.skip(toTestName(name), () => {
@@ -82,7 +86,7 @@ export const fuzz: FuzzTest = (name, fn) => {
 
 export const runInFuzzingMode = (
 	name: Global.TestNameLike,
-	fn: FuzzFn,
+	fn: FuzzTarget,
 	corpus: Corpus,
 	fuzzerOptions: string[]
 ) => {
@@ -107,7 +111,7 @@ export const runInFuzzingMode = (
 
 export const runInRegressionMode = (
 	name: Global.TestNameLike,
-	fn: FuzzFn,
+	fn: FuzzTarget,
 	corpus: Corpus,
 	timeout: number
 ) => {
@@ -140,7 +144,7 @@ export const runInRegressionMode = (
 					} else {
 						// Support sync and async fuzz tests.
 						return Promise.resolve()
-							.then(() => (fn as FuzzFnAsyncOrValue)(content))
+							.then(() => (fn as FuzzTargetAsyncOrValue)(content))
 							.then(resolve, reject);
 					}
 				}).then(
@@ -163,7 +167,7 @@ export const runInRegressionMode = (
 };
 
 const doneCallbackPromise = (
-	fn: FuzzFnCallback,
+	fn: FuzzTargetCallback,
 	content: Buffer,
 	resolve: (value: unknown) => void,
 	reject: (reason?: unknown) => void

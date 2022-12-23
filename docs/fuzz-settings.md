@@ -54,7 +54,7 @@ configuration in package.json:
 
 ```json
 "scripts": {
-	"fuzz": "jazzer fuzz ... -h <path_to_file_with_custom_hooks>.js"
+ "fuzz": "jazzer fuzz ... -h <path_to_file_with_custom_hooks>.js"
 }
 ```
 
@@ -80,10 +80,10 @@ hook function:
 
 ```typescript
 function register<Before|Replace|After>Hook(
-	target: string, // target function name that we want to hook
-	pkg: string,    // the name of the target library
-	async: boolean, // the hook function will be run in async (true) or sync (false) mode?
-	hookFn: HookFn  // custom hook function
+ target: string, // target function name that we want to hook
+ pkg: string,    // the name of the target library
+ async: boolean, // the hook function will be run in async (true) or sync (false) mode?
+ hookFn: HookFn  // custom hook function
 );
 ```
 
