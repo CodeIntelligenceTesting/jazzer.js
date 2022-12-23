@@ -4,7 +4,7 @@
 
 Jazzer.js has the following dependencies when built from source:
 
-- [Node.js 14](https://nodejs.org/)
+- [Node.js 16](https://nodejs.org/)
 - [NPM 7.0](https://www.npmjs.com/)
 - [cmake-js](https://github.com/cmake-js/cmake-js) dependencies
   - [CMake](https://cmake.org/download/) version 3.10 or later
@@ -26,20 +26,22 @@ and building libFuzzer via `cmake-js`.
 
 ## Test
 
-All tests can be executed via the `test:all` npm script in the root directory.
+All tests can be executed via the `test` npm script in the root directory.
+Please make sure that you build the newest version with the commands mentioned
+above.
 
 ```shell
 npm run test
 ```
 
 This executes all [Jest](https://jestjs.io/) unit tests and also all `test`
-scripts in the workspaces.
+scripts in the workspaces, plus a `dryRun` of all example projects.
 
 **Note**: Please make sure to provide test cases for all code changes.
 
 ## Format and lint
 
-All code and documentation has to satisfy the format and linting rules. This is
+All code and documentation have to satisfy format and linting rules. This is
 enforced through a git pre-commit hook. The `check` npm script in the root
 directory runs the appropriate checks.
 

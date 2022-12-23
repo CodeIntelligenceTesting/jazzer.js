@@ -44,7 +44,7 @@ Jazzer.js currently supports the following platforms:
 
 To use Jazzer.js in your own project follow these few simple steps:
 
-1. Add the `@jazzer.js/core` dev-dependency
+1. Add the `@jazzer.js/core` `dev-dependency`
 
    ```shell
    npm install --save-dev @jazzer.js/core
@@ -76,143 +76,53 @@ To use Jazzer.js in your own project follow these few simple steps:
 
 ## Usage
 
-### Creating a fuzz target
+Jazzer.js can be used in two ways: Creating dedicated fuzz targets, as shown in
+the `Quickstart` section, or integrated into the Jest test framework.
 
-Jazzer.js requires an entry point for the fuzzer, this is commonly referred to
-as fuzz target. A simple example is shown below.
+### Using test framework integration
+
+To use fuzzing in your normal development workflow a tight integration with the
+[Jest test framework](https://jestjs.io/) is provided. This coupling allows the
+execution of fuzz tests alongside your normal unit tests and seamlessly detect
+problems on your local machine or in your CI, enabling you to check that found
+bugs stay resolved forever.
+
+Furthermore, the Jest integration enables great IDE support, so that individual
+inputs can be run or even debugged, similar to what you would expect from normal
+Jest tests.
+
+**Note**: Detailed explanation on how to use the Jest integration can be found
+at [docs/jest-integration.md](docs/jest-integration.md).
+
+A fuzz test in Jest looks similar to the following example:
 
 ```js
-module.exports.fuzz = function (data) {
-	myAwesomeCode(data.toString());
+describe("My function", () => {
+	it.fuzz("can be fuzzed", (data) => {
+		target.fuzzMe(data);
+	});
+});
+```
+
+### Using fuzz targets
+
+Creating fuzz targets and executing those via CLI commands is straightforward
+and similar to what you would expect from other fuzzers. This approach offers
+the most control and can easily be integrated in your CI pipelines via
+`npm`/`npx` commands.
+
+**Note**: Detailed explanation on how to create and use fuzz targets can be
+found at [docs/fuzz-targets.md](docs/fuzz-targets.md).
+
+A fuzz target can look as simple as this example:
+
+```js
+// file "FuzzTarget.js"
+module.exports.fuzz = function (data /*: Buffer */) {
+	const fuzzerData = data.toString();
+	myAwesomeCode(fuzzerData);
 };
 ```
-
-A fuzz target module needs to export a function called `fuzz`, which takes a
-`Buffer` parameter and executes the actual code under test.
-
-The `Buffer`, a subclass of `Uint8Array`, can be used to create needed
-parameters for the actual code under test, so that the fuzzer can detect the
-usage of parts of the input and mutate them in the next iterations to reach new
-code paths. However, `Buffer` is not the nicest abstraction to work with. For
-that reason, Jazzer.js provides a wrapper class `FuzzedDataProvider` that allows
-reading primitive types from the `Buffer`. An example on how to use the `data`
-and the `FuzzedDataProvider` class is shown below.
-
-```js
-const { FuzzedDataProvider } = require("@jazzer.js/core");
-
-module.exports.fuzz = function (fuzzerInputData) {
-	const data = new FuzzedDataProvider(fuzzerInputData);
-	const intParam = data.consumeIntegral(4);
-	const stringParam = data.consumeString(4, "utf-8");
-	myAwesomeCode(intParam, stringParam);
-};
-```
-
-For more information on how to use the `FuzzedDataProvider` class, please refer
-to the [example](./examples/FuzzedDataProvider/fuzz.js), the
-[documentation](./packages/core/FuzzedDataProvider.ts) of the
-`FuzzedDataProvider` class, and the
-[tests](./packages/core/FuzzedDataProvider.test.ts).
-
-#### Asynchronous fuzz targets
-
-Jazzer.js supports asynchronous fuzz targets out of the box, no special handling
-or configuration is needed.
-
-The resolution of a `Promise` returned by a fuzz target is awaited before the
-next fuzzing input is provided. This enables the fuzzing of `async`/`await`,
-`Promise` and callback based code.
-
-Asynchronous code needs careful synchronization between the
-[Node.js Event Loop](https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/)
-and the fuzzing thread, hence provides a lower throughput compared to
-synchronous fuzzing. Even so, asynchronous fuzzing is the default mode of
-Jazzer.js due to its prevalence in the JavaScript ecosystem and because it works
-for all fuzz targets.
-
-Solely synchronous code can participate in the enhanced performance of
-synchronous fuzzing by setting the `--sync` flag when starting the fuzzer.
-
-An example of a `Promise` based fuzz target can be found at
-[examples/promise/fuzz.js](examples/promise/fuzz.js).
-
-#### Using TypeScript to write fuzz targets
-
-It is also possible to use [TypeScript](https://www.typescriptlang.org), or in
-that matter any other language transpiling to JavaScript, to write fuzz targets,
-as long as a modules exporting a `fuzz` function is generated.
-
-An example on how to use TypeScript to fuzz a library can be found at
-[examples/js-yaml/package.json](examples/js-yaml/package.json).
-
-#### ⚠️ Using Jazzer.js on pure ESM projects ⚠️
-
-ESM bring a couple of challenges to the table, which are currently not fully
-solved. Jazzer.js does have general ESM support as in your project should be
-loaded properly. If your project internally still relies on calls to
-`require()`, all of these dependencies will be hooked. However, _pure_
-ECMAScript projects will currently not be instrumented!
-
-One such example that Jazzer.js can handle just fine can be found at
-[examples/protobufjs/fuzz.js](examples/protobufjs/fuzz.js):
-
-```js
-import proto from "protobufjs";
-import { temporaryWriteSync } from "tempy";
-
-export function fuzz(data: Buffer) {
-	try {
-		// Fuzz logic
-	} catch (e) {
-		// Handle expected error ogic here
-	}
-}
-```
-
-You also have to adapt your `package.json` accordingly, by adding:
-
-```json
-{
-	"type": "module"
-}
-```
-
-### Running the fuzzer
-
-After adding `@jazzer.js/core` as dev-dependency to a project the fuzzer can be
-executed using the `jazzer` npm command. To do so use `npx`:
-
-```shell
-npx jazzer <fuzzer parameters>
-```
-
-Or add a new script to your `package.json`:
-
-```json
-"scripts": {
-"fuzz": "jazzer <fuzzer parameters>"
-}
-```
-
-The general command format is:
-
-```text
-jazzer <fuzzTarget> <fuzzerFlags> [corpus...] [-- <fuzzingEngineFlags>]
-```
-
-Detailed documentation and some example calls are available using the `--help`
-flag, so that only the most important ones are discussed here.
-
-| Parameter                                                               | Description                                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<fuzzTarget>`                                                          | Import path to the fuzz target module.                                                                                                                                                                                                                                                                   |
-| `[corpus...]`                                                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                   |
-| `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                      |
-| `-i`, `--instrumentation_includes` / `-e`, `--instrumentation_excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. |
-| `--sync`                                                                | Enables synchronous fuzzing. **May only be used for entirely synchronous code**.                                                                                                                                                                                                                         |
-| `-h`, `--custom_hooks`                                                  | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](docs/fuzz-settings.md).                                                                                                                                                                 |
-| `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                              |
 
 ## Documentation
 
@@ -220,8 +130,8 @@ Further documentation is available at [docs/readme.md](docs/README.md).
 
 ### Demo Video - Introduction to Jazzer.js
 
-We recorded a live demo in which shows how to get Jazzer.js up and running for
-your own projects. If you are just getting started, this might be helpful.
+We recorded a live demo which shows how to get Jazzer.js up and running for your
+own projects. If you are just getting started, this might be helpful.
 
 You can watch the recording [here](https://youtu.be/KyIhxEiNnfc).
 
