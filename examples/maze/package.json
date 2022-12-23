@@ -1,5 +1,6 @@
 {
 	"name": "jazzerjs-maze-example",
+	"type": "module",
 	"version": "1.0.0",
 	"description": "An example showing you can give Jazzer.js more feedback signals to reach deep program states",
 	"scripts": {

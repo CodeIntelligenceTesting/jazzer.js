@@ -22,7 +22,7 @@ export const defaultOptions: Options = {
 	includes: ["*"],
 	excludes: ["node_modules"],
 	fuzzFunction: "",
-	fuzzTarget: "",
+	fuzzEntryPoint: "",
 	customHooks: [],
 	fuzzerOptions: [],
 	sync: false,

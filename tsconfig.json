@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
-		"target": "es2015",
-		"module": "commonjs",
-		"moduleResolution": "node",
+		"target": "ES2022",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"baseUrl": "./",
 		"allowJs": true,
 		"checkJs": true,
@@ -12,6 +12,8 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"declaration": true,
-		"composite": true
+		"composite": true,
+		"alwaysStrict": true,
+		"sourceMap": true
 	}
 }

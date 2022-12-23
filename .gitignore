@@ -5,6 +5,7 @@ timeout-*
 
 # Editors
 .idea
+.vscode
 
 # Build dir
 dist

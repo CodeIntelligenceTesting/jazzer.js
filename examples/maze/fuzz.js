@@ -17,8 +17,7 @@
 // This example is inspired by the MazeFuzzer Example in Jazzer. See:
 // https://github.com/CodeIntelligenceTesting/jazzer/blob/8c8e87b22645ba7681e72cef0caaf05bab492b75/examples/src/main/java/com/example/MazeFuzzer.java
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const jazzer = require("@jazzer.js/core").jazzer;
+import { jazzer } from "@jazzer.js/core";
 
 const mazeString = [
 	"  ███████████████████",
@@ -50,7 +49,7 @@ mazeString.forEach((line) => maze.push(line.split("")));
 /**
  * @param { Buffer } commands
  */
-module.exports.fuzz = function (commands) {
+export function fuzz(commands) {
 	executeCommands(commands, (x, y, won) => {
 		if (won) {
 			throw "Jazzer.js has found the treasure";
@@ -65,7 +64,7 @@ module.exports.fuzz = function (commands) {
 			printMaze();
 		}
 	});
-};
+}
 
 function executeCommands(commands, executeAndCheckResult) {
 	let x = 0;

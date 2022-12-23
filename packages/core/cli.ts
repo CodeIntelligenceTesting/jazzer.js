@@ -25,6 +25,13 @@ import {
 	printError,
 } from "./core";
 
+function ensureSuffix(filePath: string): string {
+	const fullPath = path.join(process.cwd(), filePath);
+	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
+		? fullPath
+		: fullPath + ".js";
+}
+
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
 	.parserConfiguration({
@@ -34,21 +41,21 @@ yargs(process.argv.slice(2))
 		"greedy-arrays": false,
 	})
 	.example(
-		"$0 package/fuzzTarget -i packages/foo -i packages/bar",
-		'Start a fuzzing run using the "fuzz" function exported by "fuzzTarget" ' +
+		"$0 package/fuzzEntryPoint -i packages/foo -i packages/bar",
+		'Start a fuzzing run using the "fuzz" function exported by "fuzzEntryPoint" ' +
 			'and only instrument code in the "packages/a" and "packages/b" modules.'
 	)
 	.example(
-		"$0 package/fuzzTarget corpus -- -max_total_time=60",
-		'Start a fuzzing run using the "fuzz" function exported by "fuzzTarget" ' +
+		"$0 package/fuzzEntryPoint corpus -- -max_total_time=60",
+		'Start a fuzzing run using the "fuzz" function exported by "fuzzEntryPoint" ' +
 			'and use the directory "corpus" to store newly generated inputs. ' +
 			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
 			"(libFuzzer) to stop the fuzzing run after 60 seconds."
 	)
 	.command(
-		"$0 <fuzzTarget> [corpus..]",
+		"$0 <fuzzEntryPoint> [corpus..]",
 		"Coverage-guided, in-process fuzzer for the Node.js platform. \n\n" +
-			'The "fuzzTarget" module has to export a function "fuzz" which accepts ' +
+			'The "fuzzEntryPoint" module has to export a function "fuzz" which accepts ' +
 			"a byte array as first parameter and uses that to invoke the actual " +
 			"function to fuzz.\n\n" +
 			'The "corpus" directory is optional and can be used to provide initial ' +
@@ -59,11 +66,11 @@ yargs(process.argv.slice(2))
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
 			yargs
-				.positional("fuzzTarget", {
+				.positional("fuzzEntryPoint", {
 					describe: "Name of the module that exports the fuzz target function.",
 					type: "string",
 				})
-				.demandOption("fuzzTarget")
+				.demandOption("fuzzEntryPoint")
 
 				.array("corpus")
 				.positional("corpus", {
@@ -139,7 +146,7 @@ yargs(process.argv.slice(2))
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
 			const opts: Options = {
-				fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
+				fuzzEntryPoint: ensureSuffix(args.fuzzEntryPoint),
 				fuzzFunction: args.fuzzFunction,
 				includes: args.instrumentation_includes.map((include: string) =>
 					// empty string matches every file
@@ -152,22 +159,13 @@ yargs(process.argv.slice(2))
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),
-				customHooks: args.custom_hooks.map((hookFile: string) => {
-					return path.join(process.cwd(), hookFile);
-				}),
+				customHooks: args.custom_hooks.map(ensureSuffix),
 			};
-			if (args.sync) {
-				try {
-					startFuzzing(opts);
-				} catch (e: unknown) {
-					printError(e);
-				}
-			} else {
-				startFuzzingAsync(opts).catch((err) => {
-					printError(err);
-					stopFuzzingAsync();
-				});
-			}
+			const fuzzing = args.sync ? startFuzzing(opts) : startFuzzingAsync(opts);
+			fuzzing.catch((err: Error) => {
+				printError(err);
+				stopFuzzingAsync();
+			});
 		}
 	)
 	.help().argv;
