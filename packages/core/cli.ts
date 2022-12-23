@@ -145,10 +145,9 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			const fT = path.join(process.cwd(), args.fuzzTarget);
 			const opts: Options = {
 				fuzzTarget: ensureSuffix(args.fuzzTarget),
-				fuzzFunction: args.fuzzFunction,
+				fuzzEntryPoint: args.fuzzFunction,
 				includes: args.instrumentation_includes.map((include: string) =>
 					// empty string matches every file
 					include === "*" ? "" : include

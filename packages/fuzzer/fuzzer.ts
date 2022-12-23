@@ -169,15 +169,18 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 }
 
 // Re-export everything from the native library.
-export type FuzzFnAsyncOrValue = (data: Buffer) => void | Promise<void>;
-export type FuzzFnCallback = (data: Buffer, done: (e?: Error) => void) => void;
-export type FuzzFn = FuzzFnAsyncOrValue | FuzzFnCallback;
+export type FuzzTargetAsyncOrValue = (data: Buffer) => void | Promise<void>;
+export type FuzzTargetCallback = (
+	data: Buffer,
+	done: (e?: Error) => void
+) => void;
+export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
 export type FuzzOpts = string[];
 
 export interface Fuzzer {
 	printVersion: () => void;
-	startFuzzing: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => void;
-	startFuzzingAsync: (fuzzFn: FuzzFn, fuzzOpts: FuzzOpts) => Promise<void>;
+	startFuzzing: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => void;
+	startFuzzingAsync: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => Promise<void>;
 	stopFuzzingAsync: () => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
