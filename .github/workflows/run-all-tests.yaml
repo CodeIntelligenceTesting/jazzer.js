@@ -1,10 +1,8 @@
-name: "🔍 Tests"
-
+name: "\U0001F50D Tests"
 on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 jobs:
   linting:
     name: lint
@@ -25,7 +23,6 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: check formatting and linting
         run: npm run check
-
   unit_tests:
     name: unit tests
     runs-on: ${{ matrix.os }}
@@ -63,7 +60,6 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
-
   auto-merge:
     needs:
       - linting
