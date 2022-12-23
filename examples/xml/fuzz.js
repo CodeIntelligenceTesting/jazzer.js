@@ -8,13 +8,13 @@ const xml2js = require("xml2js");
 /**
  * @param { Buffer } data
  */
-async function fuzz(data) {
+module.exports.fuzz = async function (data) {
 	try {
 		await xml2js.parseStringPromise(data.toString(), {});
 	} catch (error) {
 		if (!ignoredError(error)) throw error;
 	}
-}
+};
 
 function ignoredError(error) {
 	return !!ignored.find((message) => error.message.startsWith(message));
@@ -36,5 +36,3 @@ const ignored = [
 	"No whitespace between attributes",
 	"Unexpected close tag",
 ];
-
-module.exports.fuzz = fuzz;

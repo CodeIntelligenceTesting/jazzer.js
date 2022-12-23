@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/**
+ * @param { Buffer } data
+ * @param { Function } done
+ */
 module.exports.fuzz = function (data, done) {
 	if (data.length < 3) {
 		done();

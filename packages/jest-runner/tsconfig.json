@@ -4,5 +4,12 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"references": [{ "path": "../core" }, { "path": "../fuzzer" }]
+	"references": [
+		{
+			"path": "../core"
+		},
+		{
+			"path": "../fuzzer"
+		}
+	]
 }

@@ -4,5 +4,12 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"references": [{ "path": "../instrumentor" }]
+	"references": [
+		{
+			"path": "../instrumentor"
+		},
+		{
+			"path": "../hooking"
+		}
+	]
 }
