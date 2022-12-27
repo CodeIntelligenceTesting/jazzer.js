@@ -54,7 +54,7 @@ type JazzerTestResult = {
 export class JazzerWorker {
 	static #workerInitialized = false;
 	static #currentTestPath = "";
-	readonly defaultTimeout = 5000;
+	readonly defaultTimeout = 5000; // Default Jest timeout
 
 	#testSummary: JazzerTestStatus;
 	#testResults: JazzerTestResult[];
