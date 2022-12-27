@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-export const cleanupJestRunner = (
+export const cleanupJestError = (
+	error: Error | undefined
+): Error | undefined => {
+	if (error == undefined) {
+		return error;
+	}
+	error.stack = cleanupJestRunnerStack(error.stack);
+	return error;
+};
+
+export const cleanupJestRunnerStack = (
 	stack: string | undefined
 ): string | undefined => {
 	if (!stack) {
@@ -33,6 +43,17 @@ export const cleanupJestRunner = (
 	return stack.endsWith("\n") ? newStack + "\n" : newStack;
 };
 
+export const removeTopFramesFromError = (
+	error: Error | undefined,
+	drop: number
+): Error | undefined => {
+	if (error == undefined) {
+		return error;
+	}
+	error.stack = removeTopFrames(error.stack, drop);
+	return error;
+};
+
 export const removeTopFrames = (
 	stack: string | undefined,
 	drop: number
@@ -43,6 +64,17 @@ export const removeTopFrames = (
 	const frames = stack.split("\n");
 	frames.splice(1, drop);
 	return frames.join("\n");
+};
+
+export const removeBottomFramesFromError = (
+	error: Error | undefined,
+	drop: number
+): Error | undefined => {
+	if (error == undefined) {
+		return error;
+	}
+	error.stack = removeBottomFrames(error.stack, drop);
+	return error;
 };
 
 export const removeBottomFrames = (

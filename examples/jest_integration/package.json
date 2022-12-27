@@ -1,12 +1,11 @@
 {
 	"name": "jazzerjs-jest-integration-example",
 	"version": "1.0.0",
-	"type": "module",
 	"description": "An example showing how Jazzer.js integrates with Jest",
 	"scripts": {
 		"test": "jest",
 		"dryRun": "jest",
-		"fuzz": "JAZZER_FUZZ=1 jest"
+		"fuzz": "JAZZER_FUZZ=1 jest --testNamePattern=\"My describe\""
 	},
 	"devDependencies": {
 		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",

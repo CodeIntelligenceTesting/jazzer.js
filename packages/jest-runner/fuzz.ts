@@ -28,7 +28,7 @@ import { JazzerWorker } from "./worker";
 import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
 import * as fs from "fs";
-import { removeTopFrames } from "./errorUtils";
+import { removeTopFramesFromError } from "./errorUtils";
 
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
@@ -186,8 +186,7 @@ const doneCallbackPromise = (
 			doneCalled = true;
 			let error;
 			if (typeof e === "string") {
-				error = new Error(e);
-				error.stack = removeTopFrames(error.stack, 1);
+				error = removeTopFramesFromError(new Error(e), 1);
 			} else {
 				error = e;
 			}

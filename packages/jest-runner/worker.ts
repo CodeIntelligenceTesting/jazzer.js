@@ -24,8 +24,16 @@ import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
-import { fuzz, skip, FuzzerStartError } from "./fuzz";
-import { cleanupJestRunner } from "./errorUtils";
+import { fuzz, FuzzerStartError, skip } from "./fuzz";
+import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
+
+function isGeneratorFunction(obj?: unknown): boolean {
+	return (
+		!!obj &&
+		typeof (obj as Generator).next === "function" &&
+		typeof (obj as Generator)[Symbol.iterator] === "function"
+	);
+}
 
 type JazzerTestStatus = {
 	failures: number;
@@ -46,6 +54,7 @@ type JazzerTestResult = {
 export class JazzerWorker {
 	static #workerInitialized = false;
 	static #currentTestPath = "";
+	readonly defaultTimeout = 5000; // Default Jest timeout
 
 	#testSummary: JazzerTestStatus;
 	#testResults: JazzerTestResult[];
@@ -149,7 +158,7 @@ export class JazzerWorker {
 	) {
 		const adjustedPattern = this.adjustTestPattern(ancestors, testNamePattern);
 
-		await this.runHooks("beforeAll", block, ancestors);
+		await this.runHooks("beforeAll", block);
 
 		for (const child of block.children) {
 			const nextAncestors = ancestors.concat(child.name);
@@ -166,20 +175,22 @@ export class JazzerWorker {
 					skipped: true,
 				});
 			} else if (child.type === "describeBlock") {
+				await this.runHooks("beforeEach", block, true);
 				await this.runDescribeBlock(
 					child,
 					hasFocusedTests,
 					testNamePattern,
 					nextAncestors
 				);
+				await this.runHooks("afterEach", block, true);
 			} else if (child.type === "test") {
-				await this.runHooks("beforeEach", block, nextAncestors, true);
+				await this.runHooks("beforeEach", block, true);
 				await this.runTestEntry(child, ancestors);
-				await this.runHooks("afterEach", block, nextAncestors, true);
+				await this.runHooks("afterEach", block, true);
 			}
 		}
 
-		await this.runHooks("afterAll", block, ancestors);
+		await this.runHooks("afterAll", block);
 	}
 
 	private async runTestEntry(
@@ -214,7 +225,7 @@ export class JazzerWorker {
 
 		errors = errors.map((e) => {
 			if (e && e.stack) {
-				e.stack = cleanupJestRunner(e.stack);
+				e.stack = cleanupJestRunnerStack(e.stack);
 			}
 			return e;
 		});
@@ -234,15 +245,125 @@ export class JazzerWorker {
 		});
 	}
 
-	// noinspection JSUnusedLocalSymbols
 	private async runHooks(
 		hookType: string,
-		block: Circus.DescribeBlock | Circus.TestEntry,
-		ancestors: string[],
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		block: Circus.DescribeBlock,
 		shouldRunInAncestors = false
 	) {
-		// TODO: Implement
+		const hooks =
+			shouldRunInAncestors && block.parent ? block.parent.hooks : block.hooks;
+		for (const hook of hooks.filter((hook) => hook.type === hookType)) {
+			const timeout = hook.timeout ?? this.defaultTimeout;
+			await this.runHook(block, hook, timeout);
+		}
+	}
+
+	private async runHook(
+		block: Circus.DescribeBlock,
+		hook: Circus.Hook,
+		timeout: number
+	) {
+		let timeoutID: NodeJS.Timeout;
+		return new Promise((resolve, reject) => {
+			timeoutID = setTimeout(() => {
+				reject(
+					removeTopFramesFromError(
+						new Error(
+							`Exceeded timeout of ${timeout} ms for "${hook.type}" of "${block.name}".\nIncrease the timeout value, if this is a long-running test.`
+						),
+						1
+					)
+				);
+			}, timeout);
+			this.executeHook(block, hook, resolve, reject);
+		}).then(
+			(value: unknown) => {
+				// Remove timeout to enable clean shutdown.
+				timeoutID?.unref?.();
+				clearTimeout(timeoutID);
+				return value;
+			},
+			(error: unknown) => {
+				// Remove timeout to enable clean shutdown.
+				timeoutID?.unref?.();
+				clearTimeout(timeoutID);
+				throw error;
+			}
+		);
+	}
+
+	private executeHook(
+		block: Circus.DescribeBlock,
+		hook: Circus.Hook,
+		resolve: (value: unknown) => void,
+		reject: (reason?: unknown) => void
+	) {
+		let result;
+		if (hook.fn.length > 0) {
+			result = new Promise((resolve, reject) => {
+				let doneCalled = false;
+				const done = (doneMsg?: string | Error) => {
+					if (doneCalled) {
+						// As the promise was already resolved in the last invocation, and
+						// there could be quite some time until this one, there is not much we
+						// can do besides printing an error message.
+						console.error(
+							`Expected done to be called once, but it was called multiple times in "${hook.type}" of "${block.name}".`
+						);
+					}
+					doneCalled = true;
+					if (typeof doneMsg === "string") {
+						reject(
+							removeTopFramesFromError(new Error(`Failed: ${doneMsg}`), 1)
+						);
+					} else if (doneMsg) {
+						reject(doneMsg);
+					} else {
+						resolve(undefined);
+					}
+				};
+				const hookResult = hook.fn(done);
+				// These checks are executed before the callback, hence rejecting
+				// the promise is still possible.
+				if (hookResult instanceof Promise) {
+					reject(
+						removeTopFramesFromError(
+							new Error(
+								`Using done callback in async "${hook.type}" hook of "${block.name}" is not allowed.`
+							),
+							1
+						)
+					);
+				} else if (isGeneratorFunction(hookResult)) {
+					reject(
+						removeTopFramesFromError(
+							new Error(
+								`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`
+							),
+							1
+						)
+					);
+				}
+			});
+		} else {
+			// @ts-ignore
+			result = hook.fn();
+		}
+
+		if (result instanceof Promise) {
+			result.then(resolve, reject);
+		} else if (isGeneratorFunction(result)) {
+			reject(
+				removeTopFramesFromError(
+					new Error(
+						`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`
+					),
+					1
+				)
+			);
+		} else {
+			resolve(result);
+		}
 	}
 
 	private testResult(test: Test): TestResult {
