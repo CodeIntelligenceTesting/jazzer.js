@@ -19,8 +19,10 @@ import * as hooking from "@jazzer.js/hooking";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
 
 export interface Options {
+	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
+	// that is resolved by `fuzzEntryPoint`.
 	fuzzTarget: string;
-	fuzzFunction: string;
+	fuzzEntryPoint: string;
 	includes: string[];
 	excludes: string[];
 	dryRun: boolean;
@@ -29,10 +31,13 @@ export interface Options {
 	customHooks: string[];
 }
 
+interface FuzzModule {
+	[fuzzEntryPoint: string]: fuzzer.FuzzTarget;
+}
+
+/* eslint no-var: 0 */
 declare global {
-	// eslint-disable-next-line no-var
 	var Fuzzer: fuzzer.Fuzzer;
-	// eslint-disable-next-line no-var
 	var HookManager: hooking.HookManager;
 }
 
@@ -42,31 +47,35 @@ export function registerGlobals() {
 	globalThis.HookManager = hooking.hookManager;
 }
 
-export function initFuzzing(options: Options) {
+export async function initFuzzing(options: Options) {
 	registerGlobals();
 
-	options.customHooks.forEach((customHook) => {
-		importModule(customHook);
-	});
+	await Promise.all(options.customHooks.map(importModule));
 
 	if (!options.dryRun) {
 		registerInstrumentor(options.includes, options.excludes);
 	}
 }
 
-function loadFuzzFunction(options: Options): fuzzer.FuzzFn {
-	const fuzzFn = importModule(options.fuzzTarget)[options.fuzzFunction];
+async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
+	const fuzzTarget = await importModule(options.fuzzTarget);
+	if (!fuzzTarget) {
+		throw new Error(
+			`${options.fuzzTarget} could not be imported successfully"`
+		);
+	}
+	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.fuzzEntryPoint];
 	if (typeof fuzzFn !== "function") {
 		throw new Error(
-			`${options.fuzzTarget} does not export function "${options.fuzzFunction}"`
+			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`
 		);
 	}
 	return fuzzFn;
 }
 
-export function startFuzzing(options: Options) {
-	initFuzzing(options);
-	const fuzzFn = loadFuzzFunction(options);
+export async function startFuzzing(options: Options) {
+	await initFuzzing(options);
+	const fuzzFn: fuzzer.FuzzTarget = await loadFuzzFunction(options);
 	startFuzzingNoInit(
 		fuzzFn,
 		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
@@ -93,15 +102,15 @@ export function addFuzzerOptionsForDryRun(
 }
 
 export function startFuzzingNoInit(
-	fuzzFn: fuzzer.FuzzFn,
+	fuzzFn: fuzzer.FuzzTarget,
 	fuzzerOptions: string[]
 ) {
 	Fuzzer.startFuzzing(fuzzFn, fuzzerOptions);
 }
 
 export async function startFuzzingAsync(options: Options) {
-	initFuzzing(options);
-	const fuzzFn = loadFuzzFunction(options);
+	await initFuzzing(options);
+	const fuzzFn: fuzzer.FuzzTarget = await loadFuzzFunction(options);
 	return startFuzzingAsyncNoInit(
 		fuzzFn,
 		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
@@ -109,7 +118,7 @@ export async function startFuzzingAsync(options: Options) {
 }
 
 export function startFuzzingAsyncNoInit(
-	fuzzFn: fuzzer.FuzzFn,
+	fuzzFn: fuzzer.FuzzTarget,
 	fuzzerOptions: string[]
 ) {
 	return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
@@ -147,9 +156,8 @@ function cleanStack(stack: string): string {
 	return result.join("\n");
 }
 
-function importModule(name: string) {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	return require(name);
+async function importModule(name: string): Promise<FuzzModule | void> {
+	return import(name);
 }
 
 export { jazzer } from "./jazzer";

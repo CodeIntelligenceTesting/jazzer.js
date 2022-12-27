@@ -25,6 +25,13 @@ import {
 	printError,
 } from "./core";
 
+function ensureSuffix(filePath: string): string {
+	const fullPath = path.join(process.cwd(), filePath);
+	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
+		? fullPath
+		: fullPath + ".js";
+}
+
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
 	.parserConfiguration({
@@ -139,8 +146,8 @@ yargs(process.argv.slice(2))
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
 			const opts: Options = {
-				fuzzTarget: path.join(process.cwd(), args.fuzzTarget),
-				fuzzFunction: args.fuzzFunction,
+				fuzzTarget: ensureSuffix(args.fuzzTarget),
+				fuzzEntryPoint: args.fuzzFunction,
 				includes: args.instrumentation_includes.map((include: string) =>
 					// empty string matches every file
 					include === "*" ? "" : include
@@ -152,22 +159,13 @@ yargs(process.argv.slice(2))
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),
-				customHooks: args.custom_hooks.map((hookFile: string) => {
-					return path.join(process.cwd(), hookFile);
-				}),
+				customHooks: args.custom_hooks.map(ensureSuffix),
 			};
-			if (args.sync) {
-				try {
-					startFuzzing(opts);
-				} catch (e: unknown) {
-					printError(e);
-				}
-			} else {
-				startFuzzingAsync(opts).catch((err) => {
-					printError(err);
-					stopFuzzingAsync();
-				});
-			}
+			const fuzzing = args.sync ? startFuzzing(opts) : startFuzzingAsync(opts);
+			fuzzing.catch((err: Error) => {
+				printError(err);
+				stopFuzzingAsync();
+			});
 		}
 	)
 	.help().argv;

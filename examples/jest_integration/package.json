@@ -1,6 +1,7 @@
 {
 	"name": "jazzerjs-jest-integration-example",
 	"version": "1.0.0",
+	"type": "module",
 	"description": "An example showing how Jazzer.js integrates with Jest",
 	"scripts": {
 		"test": "jest",

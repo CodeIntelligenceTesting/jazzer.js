@@ -1,11 +1,29 @@
-<div style="text-align: center;">
-<img src="https://7466322.fs1.hubspotusercontent-na1.net/hubfs/7466322/Logos/CI%20Logos/Jazzer.js%20logo.png" height=150px alt="Jazzer.js logo">
+<div align="center">
+  <h1>Jazzer.js</h1>
+  <div style="text-align: center">
+    <img
+      src="https://7466322.fs1.hubspotusercontent-na1.net/hubfs/7466322/Logos/CI%20Logos/Jazzer.js%20logo.png"
+      height="150px"
+      alt="Jazzer.js logo"
+    />
+  </div>
+  <hr />
+  <a href="https://img.shields.io/npm/v/@jazzer.js/core">
+    <img src="https://img.shields.io/npm/v/@jazzer.js/core"/>
+  </a>
+  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml">
+    <img src="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml/badge.svg?branch=main"/>
+  </a>
+  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/CodeIntelligenceTesting/jazzer.js"/>
+  </a>
+  <br />
+
+<a href="https://www.code-intelligence.com/" target="_blank">Website</a> |
+<a href="https://www.code-intelligence.com/blog" target="_blank">Blog</a> |
+<a href="https://twitter.com/CI_Fuzz" target="_blank">Twitter</a>
+
 </div>
-
-# Jazzer.js
-
-[![NPM](https://img.shields.io/npm/v/@jazzer.js/core)](https://img.shields.io/npm/v/@jazzer.js/core)
-![GitHub Actions](https://github.com/CodeIntelligenceTesting/jazzer.js/workflows/Tests/badge.svg)
 
 Jazzer.js is a coverage-guided, in-process fuzzer for the
 [Node.js](https://nodejs.org) platform developed by
@@ -37,6 +55,12 @@ To use Jazzer.js in your own project follow these few simple steps:
    	const fuzzerData = data.toString();
    	myAwesomeCode(fuzzerData);
    };
+
+   // Alternatively, using ES6 syntax is also possible
+   export function fuzz(data /*: Buffer */) {
+   	const fuzzerData = data.toString();
+   	myAwesomeCode(fuzzerData);
+   }
    ```
 
 3. Start the fuzzer using the fuzz target
@@ -118,6 +142,38 @@ as long as a modules exporting a `fuzz` function is generated.
 
 An example on how to use TypeScript to fuzz a library can be found at
 [examples/js-yaml/package.json](examples/js-yaml/package.json).
+
+#### ⚠️ Using Jazzer.js on pure ESM projects ⚠️
+
+ESM bring a couple of challenges to the table, which are currently not fully
+solved. Jazzer.js does have general ESM support as in your project should be
+loaded properly. If your project internally still relies on calls to
+`require()`, all of these dependencies will be hooked. However, _pure_
+ECMAScript projects will currently not be instrumented!
+
+One such example that Jazzer.js can handle just fine can be found at
+[examples/protobufjs/fuzz.js](examples/protobufjs/fuzz.js):
+
+```js
+import proto from "protobufjs";
+import { temporaryWriteSync } from "tempy";
+
+export function fuzz(data: Buffer) {
+	try {
+		// Fuzz logic
+	} catch (e) {
+		// Handle expected error ogic here
+	}
+}
+```
+
+You also have to adapt your `package.json` accordingly, by adding:
+
+```json
+{
+	"type": "module"
+}
+```
 
 ### Running the fuzzer
 
