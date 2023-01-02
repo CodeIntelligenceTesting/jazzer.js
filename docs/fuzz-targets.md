@@ -6,7 +6,7 @@ described in detail in the following sections.
 
 ## Setting up Jazzer.js
 
-Before you can use Jazzer.js you have to add the required dependency
+Before you can use Jazzer.js, you have to add the required dependency
 `@jazzer.js/core` to your project. To do so, execute the following command in
 your project root directory.
 
@@ -74,9 +74,9 @@ If the fuzz target takes a callback function as second parameter, the fuzzer
 will await its invocation before providing the next input.
 
 Invoking the callback function without a parameter indicates a successful
-execution whereas invoking it with a parameter indicates a failure. In the error
-case, the passed in object is normally of type `string` or `Error` and used
-during reporting of the test execution.
+execution, whereas invoking it with a parameter indicates a failure. In the
+error case, the passed in object is normally of type `string` or `Error` and
+used during reporting of the test execution.
 
 An example of a done callback based fuzz target can be found at
 [examples/done_callback/fuzz.js](../examples/done_callback/fuzz.js).
@@ -85,7 +85,7 @@ An example of a done callback based fuzz target can be found at
 
 Asynchronous code needs careful synchronization between the
 [Node.js Event Loop](https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/)
-and the fuzzing thread, hence provides a lower throughput compared to
+and the fuzzing thread, hence, provides a lower throughput compared to
 synchronous fuzzing. Despite that, asynchronous fuzzing is the default mode of
 Jazzer.js due to its prevalence in the JavaScript ecosystem and because it works
 for all fuzz targets.
@@ -97,7 +97,7 @@ synchronous fuzzing by setting the `--sync` flag when starting the fuzzer.
 
 It is also possible to use [TypeScript](https://www.typescriptlang.org), or in
 that matter any other language transpiling to JavaScript, to write fuzz targets,
-as long as a modules exporting a `fuzz` function is generated.
+as long as a module exporting a `fuzz` function is generated.
 
 An example on how to use TypeScript to fuzz a library can be found at
 [examples/js-yaml/package.json](../examples/js-yaml/package.json).
@@ -136,8 +136,8 @@ You also have to adapt your `package.json` accordingly, by adding:
 
 ## Running the fuzz target
 
-After adding `@jazzer.js/core` as a `dev-dependency` to a project the fuzzer can
-execute a fuzz target using the `jazzer` npm command. To do so use `npx`:
+After adding `@jazzer.js/core` as a `dev-dependency` to a project, the fuzzer
+can execute a fuzz target using the `jazzer` npm command. To do so, use `npx`:
 
 ```shell
 npx jazzer <fuzzer parameters>

@@ -2,6 +2,56 @@
 
 This page describes advanced fuzzing settings.
 
+## Corpus
+
+Jazzer.js generates meaningful inputs to a fuzz target based on coverage and
+comparison feedback. If a new input can reach new code paths, it is saved in a
+dedicated directory, called corpus, and used for further mutations to the guide
+the fuzzer during the following iterations.
+
+Also, existing inputs in the corpus directory, called seeds, are executed on
+startup, so that new fuzzing runs can start off where previous ones stopped.
+
+One or more corpus directories can be specified as the last entry/entries in the
+CLI parameter list, as described in the `--help` command. The first corpus
+directory will be used to save interesting new inputs, whereas seeds from all
+directories are executed during startup.
+
+**Example invocation:**
+
+```shell
+npx jazzer fuzzTarget corpusDir otherCorupsDir
+```
+
+## Reproducing errors
+
+Once Jazzer.js finds a problematic input, it stores it in the current working
+directory using a problem prefix like `crash-`, `mem-`, `timeout-` or the like.
+
+This input can then be used to reproduce the issue by specifying it as last
+parameter in the CLI call:
+
+```shell
+npx jazzer fuzzTarget crash-abcdef0123456789
+```
+
+## Value profile
+
+Jazzer.js provides coverage and comparison feedback to the internally used
+libFuzzer instance. By setting the libFuzzer flag `-use_value_profile=1` via the
+CLI, new values in intercepted compares are treated as new coverage. This has
+the potential to discover many additional inputs, which would not be detected
+otherwise, but may reduce runtime performance significantly.
+
+An example of using value profiling can be found at
+[examples/value_profiling/fuzz.js](../examples/value_profiling/fuzz.js).
+
+**Example invocation:**
+
+```shell
+npx jazzer fuzzTarget -- -use_value_profile=1
+```
+
 ## Timeout
 
 Invocations of fuzz targets, which take longer than the configured timeout, will
@@ -13,13 +63,13 @@ seconds is preconfigured, but can be changed using the `-timeout` fuzzer flag.
 
 Timeouts work in the sync- and asynchronous fuzzing mode.
 
-Example invocation:
+**Example invocation:**
 
 ```shell
 npx jazzer fuzzTarget -- -timeout=10
 ```
 
-Example output:
+**Example output:**
 
 ```text
 ALARM: working on the last Unit for 10 seconds
@@ -116,7 +166,7 @@ registering function:
   original function like this:
   `hookFn(thisPtr, params, hookId, originalFnResult)`
 
-The parameters ot the `hookFn` are as follows:
+The parameters of the `hookFn` are as follows:
 
 - `thisPtr` - points to the object in which the original function was defined,
 - `params` - the parameters of the original function,
