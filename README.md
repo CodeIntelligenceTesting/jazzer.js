@@ -81,7 +81,7 @@ the `Quickstart` section, or integrated into the Jest test framework.
 
 ### Using test framework integration
 
-To use fuzzing in your normal development workflow a tight integration with the
+To use fuzzing in your normal development workflow, a tight integration with the
 [Jest test framework](https://jestjs.io/) is provided. This coupling allows the
 execution of fuzz tests alongside your normal unit tests and seamlessly detect
 problems on your local machine or in your CI, enabling you to check that found

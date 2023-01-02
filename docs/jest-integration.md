@@ -19,11 +19,11 @@ detail further down on this page.
 
 ## Setting up the Jazzer.js Jest integration
 
-Jest enables the execution of tests by third party tools through custom test
+Jest enables the execution of tests by third-party tools through custom test
 runners. Jazzer.js provides such a runner in the `@jazzer.js/jest-runner`
 package.
 
-To use the integration add a `dev-dependency` to `@jazzer.js/jest-runner` to
+To use the integration, add a `dev-dependency` to `@jazzer.js/jest-runner` to
 your project. To do so, execute the following command in your project root
 directory.
 
@@ -87,9 +87,10 @@ which can be specified through the CLI client.
 
 ## Writing a Jest fuzz tests
 
-To create a fuzz test the `fuzz` function on Jest's `test` and `it` can be used.
+To create a fuzz test, the `fuzz` function on Jest's `test` and `it` can be
+used.
 
-`fuzz` expects similar parameters as normal Jest tests but provides fuzzer
+`fuzz` expects similar parameters as normal Jest tests, but provides fuzzer
 generated input as a first parameter to the test function. As expected, the
 input generation is guided by coverage and other execution feedback, which is
 possible due to code instrumentation.
@@ -161,7 +162,7 @@ This includes `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
 
 ## Executing Jest fuzz tests
 
-As mentioned, above the Jazzer.js fuzz test runner provides two modes of
+As mentioned above, the Jazzer.js fuzz test runner provides two modes of
 execution: fuzzing mode and regression mode.
 
 ### Fuzzing mode
@@ -186,14 +187,14 @@ structure. For example, an issue found in the `test` "My fuzz test" in the
 `describe` block "My describe" in the test file `fuzztests.fuzz.js` would end up
 in the directory `./fuzztest.fuzz/My_describe/My_fuzz_test`. Files in these
 directories will be used in the regression mode to verify that the underlying
-issues have been fixed.
+issues have been resolved.
 
 Furthermore, as fuzzing is a time-consuming task, interesting intermediate
 inputs are stored in a similar directory structure located in `.cifuzz-corpus`
 at the project root. These inputs are used by the fuzzer to speed up the next
 run by reusing the already discovered inputs.
 
-Executing fuzz tests in the fuzzing mode on the command line could look like the
+Executing fuzz tests in fuzzing mode on the command line could look like the
 following snippet. This output may differ depending on the used Jest reporter.
 
 ```shell
@@ -248,10 +249,10 @@ Ran all test suites
 The regression mode is the default execution mode and verifies that once found
 issues are resolved and stay that way.
 
-In this mode the previously found problematic inputs are used to invoke the fuzz
-tests and verify that no error is generated anymore. If the described directory
-structure does not contain inputs for a given test, it will be skipped by the
-runner.
+In this mode, the previously found problematic inputs are used to invoke the
+fuzz tests and verify that no error is generated anymore. If the described
+directory structure does not contain inputs for a given test, it will be skipped
+by the runner.
 
 The file name of every input is used to generate a dedicated test entry in the
 overall Jest report.
@@ -310,4 +311,4 @@ reimplemented.
 - Mock functions
 - Coverage generation
 - Isolated workers
-- Test based timeouts (third parameter to `test` functions)
+- Test-based timeouts (third parameter to `test` functions)
