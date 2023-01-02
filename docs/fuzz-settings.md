@@ -44,7 +44,7 @@ the potential to discover many additional inputs, which would not be detected
 otherwise, but may reduce runtime performance significantly.
 
 An example of using value profiling can be found at
-[examples/value_profiling/fuzz.js](../examples/value_profiling/fuzz.js).
+[tests/value_profiling/fuzz.js](../tests/value_profiling/fuzz.js).
 
 **Example invocation:**
 

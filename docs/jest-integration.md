@@ -129,7 +129,7 @@ describe("My describe", () => {
 ```
 
 For more information on how to use the `FuzzedDataProvider` class, please refer
-to the [example](../examples/FuzzedDataProvider/fuzz.js), the
+to the [example](../tests/FuzzedDataProvider/fuzz.js), the
 [tests](../packages/core/FuzzedDataProvider.test.ts), and the
 [implementation](../packages/core/FuzzedDataProvider.ts) of the
 `FuzzedDataProvider` class.
