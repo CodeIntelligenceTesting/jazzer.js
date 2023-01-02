@@ -17,6 +17,9 @@
   <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/CodeIntelligenceTesting/jazzer.js"/>
   </a>
+ <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/CONTRIBUTING.md">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" />
+  </a>
   <br />
 
 <a href="https://www.code-intelligence.com/" target="_blank">Website</a> |
