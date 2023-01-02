@@ -1,7 +1,7 @@
 # Fuzzer reports
-crash-*
-oom-*
-timeout-*
+**/crash-*
+**/oom-*
+**/timeout-*
 
 # Editors
 .idea

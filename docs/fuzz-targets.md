@@ -49,7 +49,7 @@ module.exports.fuzz = function (fuzzerInputData) {
 ```
 
 For more information on how to use the `FuzzedDataProvider` class, please refer
-to the [example](../examples/FuzzedDataProvider/fuzz.js), the
+to the [example](../tests/FuzzedDataProvider/fuzz.js), the
 [tests](../packages/core/FuzzedDataProvider.test.ts), and the
 [implementation](../packages/core/FuzzedDataProvider.ts) of the
 `FuzzedDataProvider` class.
@@ -66,7 +66,7 @@ next fuzzing input is provided. This enables the fuzzing of `async`/`await` and
 `Promise` based code.
 
 An example of a `Promise` based fuzz target can be found at
-[examples/promise/fuzz.js](../examples/promise/fuzz.js).
+[tests/promise/fuzz.js](../tests/promise/fuzz.js).
 
 #### Done callback based execution
 
@@ -79,7 +79,7 @@ error case, the passed in object is normally of type `string` or `Error` and
 used during reporting of the test execution.
 
 An example of a done callback based fuzz target can be found at
-[examples/done_callback/fuzz.js](../examples/done_callback/fuzz.js).
+[tests/done_callback/fuzz.js](../tests/done_callback/fuzz.js).
 
 #### Synchronous execution
 
