@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles integer comparisons in the code",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync -- -use_value_profile=1",
+		"fuzz": "jazzer fuzz --sync -x Error -- -max_total_time=60 -use_value_profile=1",
 		"dryRun": "jazzer fuzz --sync -- -use_value_profile=1 -runs=100 -seed=123456789"
 	},
 	"devDependencies": {

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-let invocationCount = 1;
+let lastInvocationCount = 0;
+let invocationCount = lastInvocationCount + 1;
 
 /**
  * @param { Buffer } data
@@ -40,7 +41,11 @@ module.exports.fuzz = function (data) {
 			}
 		}, 10);
 	}).then((value) => {
-		// Sequential output of the invocations
-		console.log("Invocation number: " + value);
+		if (value !== lastInvocationCount + 1) {
+			throw new Error(
+				`Invalid invocation order, received ${value} but last invocation was ${lastInvocationCount}.`
+			);
+		}
+		lastInvocationCount = value;
 	});
 };
