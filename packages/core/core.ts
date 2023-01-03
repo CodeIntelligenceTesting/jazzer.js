@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
+import path from "path";
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
+
+// libFuzzer uses exit code 77 in case of a crash, so use a similar one for
+// failed error expectations.
+const ERROR_EXPECTED_CODE = 0;
+const ERROR_UNEXPECTED_CODE = 78;
 
 export interface Options {
 	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
@@ -29,6 +35,7 @@ export interface Options {
 	sync: boolean;
 	fuzzerOptions: string[];
 	customHooks: string[];
+	expectedErrors: string[];
 }
 
 interface FuzzModule {
@@ -41,94 +48,109 @@ declare global {
 	var HookManager: hooking.HookManager;
 }
 
+export async function initFuzzing(options: Options) {
+	registerGlobals();
+	await Promise.all(options.customHooks.map(importModule));
+	if (!options.dryRun) {
+		registerInstrumentor(options.includes, options.excludes);
+	}
+}
+
 export function registerGlobals() {
 	globalThis.Fuzzer = fuzzer.fuzzer;
 	//TODO make sure that all sanitizers are registered at this point
 	globalThis.HookManager = hooking.hookManager;
 }
 
-export async function initFuzzing(options: Options) {
-	registerGlobals();
-
-	await Promise.all(options.customHooks.map(importModule));
-
-	if (!options.dryRun) {
-		registerInstrumentor(options.includes, options.excludes);
-	}
-}
-
-async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
-	const fuzzTarget = await importModule(options.fuzzTarget);
-	if (!fuzzTarget) {
-		throw new Error(
-			`${options.fuzzTarget} could not be imported successfully"`
-		);
-	}
-	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.fuzzEntryPoint];
-	if (typeof fuzzFn !== "function") {
-		throw new Error(
-			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`
-		);
-	}
-	return fuzzFn;
-}
-
-export async function startFuzzing(options: Options) {
-	await initFuzzing(options);
-	const fuzzFn: fuzzer.FuzzTarget = await loadFuzzFunction(options);
-	startFuzzingNoInit(
-		fuzzFn,
-		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
+export function startFuzzing(options: Options) {
+	const fuzzing = options.sync
+		? startFuzzingSync(options)
+		: startFuzzingAsync(options);
+	fuzzing.then(
+		() => {
+			stopFuzzing(undefined, options.expectedErrors);
+		},
+		(err: unknown) => {
+			stopFuzzing(err, options.expectedErrors);
+		}
 	);
 }
 
-export function addFuzzerOptionsForDryRun(
-	opts: string[],
-	shouldDoDryRun: boolean,
-	timeout = 5000
-): string[] {
-	const containsParameter = (params: string[], param: string): boolean => {
-		return params.some((curr) => curr.startsWith(param));
-	};
-	// Last occurrence of a parameter is used.
-	if (shouldDoDryRun) {
-		opts = opts.concat("-runs=0");
-	}
-	if (!containsParameter(opts, "-timeout")) {
-		const inSeconds = timeout / 1000;
-		opts = opts.concat(`-timeout=${inSeconds}`);
-	}
-	return opts;
-}
-
-export function startFuzzingNoInit(
-	fuzzFn: fuzzer.FuzzTarget,
-	fuzzerOptions: string[]
-) {
+export async function startFuzzingSync(options: Options) {
+	await initFuzzing(options);
+	const fuzzFn = await loadFuzzFunction(options);
+	const fuzzerOptions = addFuzzerOptionsForDryRun(
+		options.fuzzerOptions,
+		options.dryRun
+	);
 	Fuzzer.startFuzzing(fuzzFn, fuzzerOptions);
 }
 
 export async function startFuzzingAsync(options: Options) {
 	await initFuzzing(options);
-	const fuzzFn: fuzzer.FuzzTarget = await loadFuzzFunction(options);
+	const fuzzFn = await loadFuzzFunction(options);
 	return startFuzzingAsyncNoInit(
 		fuzzFn,
 		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
 	);
 }
 
-export function startFuzzingAsyncNoInit(
+export async function startFuzzingAsyncNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	fuzzerOptions: string[]
 ) {
 	return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 }
 
-export function stopFuzzingAsync() {
+function stopFuzzing(err: unknown, expectedErrors: string[]) {
+	// No error found, check if one is expected.
+	if (!err) {
+		if (expectedErrors.length) {
+			console.error(
+				`ERROR: Received no error, but expected one of [${expectedErrors}].`
+			);
+			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+		}
+		return;
+	}
+
+	// Error found and expected, check if it's one of the expected ones.
+	if (expectedErrors.length) {
+		const name = errorName(err);
+		if (expectedErrors.includes(name)) {
+			console.error(`INFO: Received expected error "${name}".`);
+			Fuzzer.stopFuzzingAsync(ERROR_EXPECTED_CODE);
+		} else {
+			printError(err);
+			console.error(
+				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`
+			);
+			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+		}
+		return;
+	}
+
+	// Error found, but no specific one expected. This case is used for normal
+	// fuzzing runs, so no dedicated exit code is given to the stop fuzzing function.
+	printError(err);
 	Fuzzer.stopFuzzingAsync();
 }
 
-export function printError(error: unknown) {
+function errorName(error: unknown): string {
+	if (error instanceof Error) {
+		// error objects
+		return error.name;
+	} else if (typeof error !== "object") {
+		// primitive types
+		return String(error);
+	} else {
+		// Arrays and objects can not be converted to a proper name and so
+		// not be stated as expected error.
+		return "unknown";
+	}
+}
+
+function printError(error: unknown) {
 	let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
 	if (error instanceof Error) {
 		errorMessage += error.message;
@@ -156,10 +178,53 @@ function cleanStack(stack: string): string {
 	return result.join("\n");
 }
 
+export function addFuzzerOptionsForDryRun(
+	opts: string[],
+	shouldDoDryRun: boolean,
+	timeout = 5000
+): string[] {
+	const containsParameter = (params: string[], param: string): boolean => {
+		return params.some((curr) => curr.startsWith(param));
+	};
+	// Last occurrence of a parameter is used.
+	if (shouldDoDryRun) {
+		opts = opts.concat("-runs=0");
+	}
+	if (!containsParameter(opts, "-timeout")) {
+		const inSeconds = timeout / 1000;
+		opts = opts.concat(`-timeout=${inSeconds}`);
+	}
+	return opts;
+}
+
+async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
+	const fuzzTarget = await importModule(options.fuzzTarget);
+	if (!fuzzTarget) {
+		throw new Error(
+			`${options.fuzzTarget} could not be imported successfully"`
+		);
+	}
+	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.fuzzEntryPoint];
+	if (typeof fuzzFn !== "function") {
+		throw new Error(
+			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`
+		);
+	}
+	return fuzzFn;
+}
+
 async function importModule(name: string): Promise<FuzzModule | void> {
 	return import(name);
 }
 
-export { jazzer } from "./jazzer";
+export function ensureFilepath(filePath: string): string {
+	// file: schema is required on Windows
+	const fullPath = "file://" + path.join(process.cwd(), filePath);
+	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
+		? fullPath
+		: fullPath + ".js";
+}
+
 export type { Jazzer } from "./jazzer";
+export { jazzer } from "./jazzer";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";

@@ -81,14 +81,14 @@ export class JazzerWorker {
 		JazzerWorker.#workerInitialized = true;
 
 		for (const file of test.context.config.setupFiles) {
-			const { default: setup } = await import(file);
+			const { default: setup } = await this.importFile(file);
 			setup();
 		}
 
 		JazzerWorker.setupGlobal();
 
 		for (const file of test.context.config.setupFilesAfterEnv) {
-			const { default: setup } = await import(file);
+			const { default: setup } = await this.importFile(file);
 			setup();
 		}
 	}
@@ -146,7 +146,7 @@ export class JazzerWorker {
 
 	private async loadTests(test: Test): Promise<circus.State> {
 		circus.resetState();
-		await import(test.path);
+		await this.importFile(test.path);
 		return circus.getState();
 	}
 
@@ -465,5 +465,13 @@ export class JazzerWorker {
 		}
 		const testNamePatternRE = new RegExp(testNamePattern, "i");
 		return testNamePatternRE.test(testPath);
+	}
+
+	private async importFile(file: string) {
+		// file: schema is required on Windows
+		if (!file.startsWith("file://")) {
+			file = "file://" + file;
+		}
+		return await import(file);
 	}
 }

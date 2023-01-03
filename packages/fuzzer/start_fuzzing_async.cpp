@@ -285,11 +285,20 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
 }
 
 void StopFuzzingAsync(const Napi::CallbackInfo &info) {
-  libfuzzer::PrintCrashingInput();
+  int exitCode = libfuzzer::ExitErrorCode;
+
+  if (info[0].IsNumber()) {
+    exitCode = info[0].As<Napi::Number>().Int32Value();
+  } else {
+    // If a dedicated status code is provided, the run is executed as internal
+    // test and the crashing input does not need to be printed/saved.
+    libfuzzer::PrintCrashingInput();
+  }
+
   // We call _Exit to immediately terminate the process without performing any
   // cleanup including libfuzzer exit handlers. These handlers print information
   // about the native libfuzzer target which is neither relevant nor actionable
   // for JavaScript developers. We provide the relevant crash information
   // such as the error message and stack trace in Jazzer.js CLI.
-  _Exit(libfuzzer::ExitErrorCode);
+  _Exit(exitCode);
 }

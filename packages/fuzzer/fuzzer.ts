@@ -181,7 +181,7 @@ export interface Fuzzer {
 	printVersion: () => void;
 	startFuzzing: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => void;
 	startFuzzingAsync: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => Promise<void>;
-	stopFuzzingAsync: () => void;
+	stopFuzzingAsync: (status?: number) => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
 	readCounter: typeof readCounter;

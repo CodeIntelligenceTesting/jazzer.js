@@ -16,21 +16,7 @@
  */
 
 import yargs, { Argv } from "yargs";
-import * as path from "path";
-import {
-	Options,
-	startFuzzing,
-	startFuzzingAsync,
-	stopFuzzingAsync,
-	printError,
-} from "./core";
-
-function ensureSuffix(filePath: string): string {
-	const fullPath = path.join(process.cwd(), filePath);
-	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
-		? fullPath
-		: fullPath + ".js";
-}
+import { startFuzzing, ensureFilepath } from "./core";
 
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
@@ -141,12 +127,26 @@ yargs(process.argv.slice(2))
 					alias: "h",
 					group: "Fuzzer:",
 					default: [],
-				});
+				})
+				.array("expected_errors")
+				.option("expected_errors", {
+					describe:
+						"Expected errors can be specified as the class name of the " +
+						"thrown error object or value of a thrown string. If expected " +
+						"errors are defined, but none, or none of the expected ones are " +
+						"raised during execution, the test execution fails." +
+						'Examples: -x Error -x "My thrown error string"',
+					type: "string",
+					alias: "x",
+					group: "Fuzzer:",
+					default: [],
+				})
+				.hide("expected_errors");
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			const opts: Options = {
-				fuzzTarget: ensureSuffix(args.fuzzTarget),
+			startFuzzing({
+				fuzzTarget: ensureFilepath(args.fuzzTarget),
 				fuzzEntryPoint: args.fuzzFunction,
 				includes: args.instrumentation_includes.map((include: string) =>
 					// empty string matches every file
@@ -159,12 +159,8 @@ yargs(process.argv.slice(2))
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),
-				customHooks: args.custom_hooks.map(ensureSuffix),
-			};
-			const fuzzing = args.sync ? startFuzzing(opts) : startFuzzingAsync(opts);
-			fuzzing.catch((err: Error) => {
-				printError(err);
-				stopFuzzingAsync();
+				customHooks: args.custom_hooks.map(ensureFilepath),
+				expectedErrors: args.expected_errors,
 			});
 		}
 	)
