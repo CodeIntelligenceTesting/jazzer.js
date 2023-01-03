@@ -15,6 +15,9 @@
  */
 
 /**
+ * Timeouts are directly handled by libFuzzer and can not be intercepted.
+ * Due to this, the example is not executed during the test phase.
+ *
  * @param { Buffer } data
  */
 module.exports.fuzz = function (data) {

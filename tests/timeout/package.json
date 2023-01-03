@@ -3,7 +3,8 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles timeouts",
 	"scripts": {
-		"fuzz": "jazzer fuzz -- -timeout=1",
+		"timeout": "jazzer fuzz -- -timeout=1",
+		"fuzz": "echo \"skipped\"",
 		"dryRun": "echo \"skipped\""
 	},
 	"devDependencies": {
