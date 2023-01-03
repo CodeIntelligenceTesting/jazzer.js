@@ -26,6 +26,7 @@ export const defaultOptions: Options = {
 	customHooks: [],
 	fuzzerOptions: [],
 	sync: false,
+	expectedErrors: [],
 };
 
 // Looks up Jazzer.js options via the `jazzer-runner` configuration from
