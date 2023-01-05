@@ -14,34 +14,28 @@
  * limitations under the License.
  */
 
-import { BabelFileResult, PluginTarget, transformSync } from "@babel/core";
-
-export function instrumentWith(...plugins: PluginTarget[]) {
-	return (input: string, output: string) => {
-		expectInstrumentation(plugins, input, output);
-		return undefined;
-	};
-}
+import { PluginTarget } from "@babel/core";
+import { transform } from "../instrument";
 
 export function instrumentAndEvalWith(...plugins: PluginTarget[]) {
-	return <T>(input: string, output: string): T | undefined => {
-		const result = expectInstrumentation(plugins, input, output);
-		if (result?.code) {
-			return eval(result.code) as T;
-		}
-		return undefined;
-	};
+	const instrument = instrumentWith(plugins);
+	return <T>(input: string, output: string): T =>
+		eval(instrument(input, output)) as T;
+}
+
+export function instrumentWith(...plugins: PluginTarget[]) {
+	return (input: string, output: string): string =>
+		expectInstrumentation(plugins, input, output);
 }
 
 function expectInstrumentation(
 	plugins: PluginTarget[],
 	input: string,
 	output: string
-): BabelFileResult | null {
-	const result = transformSync(removeIndentation(input), {
-		plugins: plugins,
-	});
-	expect(removeIndentation(result?.code)).toBe(removeIndentation(output));
+): string {
+	const code = removeIndentation(input);
+	const result = transform("test.js", code, plugins)?.code || code;
+	expect(removeIndentation(result)).toBe(removeIndentation(output));
 	return result;
 }
 
