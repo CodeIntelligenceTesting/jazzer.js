@@ -27,6 +27,7 @@ export const defaultOptions: Options = {
 	fuzzerOptions: [],
 	sync: false,
 	expectedErrors: [],
+	timeout: 5000, // default Jest timeout
 };
 
 // Looks up Jazzer.js options via the `jazzer-runner` configuration from
