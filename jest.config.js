@@ -19,4 +19,6 @@ module.exports = {
 	preset: "ts-jest",
 	testEnvironment: "node",
 	modulePathIgnorePatterns: ["dist", "packages/fuzzer/build"],
+	collectCoverageFrom: ["packages/**/*.ts"],
+	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
 };

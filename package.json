@@ -22,6 +22,7 @@
 		"compile:watch": "tsc -b tsconfig.build.json --incremental --pretty --watch",
 		"test": "run-script-os",
 		"test:jest": "jest && npm run test --ws --if-present",
+		"test:coverage": "jest --coverage",
 		"test:default": "npm run test:jest",
 		"test:linux:darwin": "npm run test:jest && cd examples && sh ../scripts/run_all.sh dryRun && cd ../tests && sh ../scripts/run_all.sh fuzz",
 		"test:win32": "npm run test:jest && cd examples && ..\\scripts\\run_all.bat dryRun && cd ..\\tests && ..\\scripts\\run_all.bat fuzz",
