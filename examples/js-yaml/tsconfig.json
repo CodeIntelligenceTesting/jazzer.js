@@ -12,6 +12,7 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"declaration": true,
-		"composite": true
+		"composite": true,
+		"sourceMap": true
 	}
 }

@@ -14,41 +14,63 @@
  * limitations under the License.
  */
 
-import { PluginItem, transformSync } from "@babel/core";
+import sms from "source-map-support";
+import { RawSourceMap } from "source-map";
+import {
+	BabelFileResult,
+	PluginItem,
+	TransformOptions,
+	transformSync,
+} from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { hookManager } from "@jazzer.js/hooking";
 
-export function registerInstrumentor(includes: string[], excludes: string[]) {
-	const shouldInstrument = shouldInstrumentFn(includes, excludes);
+interface SourceMaps {
+	[file: string]: RawSourceMap;
+}
 
+const sourceMaps: SourceMaps = {};
+
+/* Installs source-map-support handlers and returns a reset function */
+export function installSourceMapSupport(): () => void {
+	// Use the source-map-support library to enable in-memory source maps of
+	// transformed code and error stack rewrites.
+	// As there is no way to populate the source map cache of source-map-support,
+	// an additional buffer is used to pass on the source maps from babel to the
+	// library. This could be memory intensive and should be replaced by
+	// tmp source map files, if it really becomes a problem.
+	sms.install({
+		hookRequire: true,
+		retrieveSourceMap: (source) => {
+			if (sourceMaps[source]) {
+				return {
+					map: sourceMaps[source],
+					url: source,
+				};
+			}
+			return null;
+		},
+	});
+	return sms.resetRetrieveHandlers;
+}
+
+export type FilePredicate = (filepath: string) => boolean;
+
+export function registerInstrumentor(includes: string[], excludes: string[]) {
+	installSourceMapSupport();
 	if (includes.includes("jazzer.js")) {
 		unloadInternalModules();
 	}
 
+	const shouldInstrument = shouldInstrumentFn(includes, excludes);
+	const shouldHook = hookManager.hasFunctionsToHook.bind(hookManager);
 	hookRequire(
 		() => true,
-		(code: string, options: TransformerOptions): string => {
-			const transformations: PluginItem[] = [];
-
-			if (shouldInstrument(options.filename)) {
-				transformations.push(codeCoverage, compareHooks);
-			}
-			if (hookManager.hasFunctionsToHook(options.filename)) {
-				transformations.push(functionHooks(options.filename));
-			}
-
-			if (transformations.length === 0) {
-				return code;
-			}
-
-			const output = transformSync(code, {
-				plugins: transformations,
-			});
-			return output?.code || code;
-		}
+		(code: string, options: TransformerOptions): string =>
+			instrument(code, options.filename, shouldInstrument, shouldHook)
 	);
 }
 
@@ -70,7 +92,7 @@ function unloadInternalModules() {
 export function shouldInstrumentFn(
 	includes: string[],
 	excludes: string[]
-): (filepath: string) => boolean {
+): FilePredicate {
 	return (filepath: string) => {
 		const included =
 			includes.find((include) => filepath.includes(include)) !== undefined;
@@ -78,4 +100,49 @@ export function shouldInstrumentFn(
 			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
 		return included && !excluded;
 	};
+}
+
+function instrument(
+	code: string,
+	filename: string,
+	shouldInstrument: FilePredicate,
+	shouldHook: FilePredicate
+) {
+	const transformations: PluginItem[] = [];
+	if (shouldInstrument(filename)) {
+		transformations.push(codeCoverage, compareHooks);
+	}
+	if (shouldHook(filename)) {
+		transformations.push(functionHooks(filename));
+	}
+	return transform(filename, code, transformations)?.code || code;
+}
+
+export function transform(
+	filename: string,
+	code: string,
+	plugins: PluginItem[],
+	options: TransformOptions = {}
+): BabelFileResult | null {
+	if (plugins.length === 0) {
+		return null;
+	}
+	const result = transformSync(code, {
+		filename: filename,
+		sourceFileName: filename,
+		sourceMaps: true,
+		plugins: plugins,
+		...options,
+	});
+	if (result?.map) {
+		const sourceMap = result.map;
+		sourceMaps[filename] = {
+			version: sourceMap.version.toString(),
+			sources: sourceMap.sources ?? [],
+			names: sourceMap.names,
+			sourcesContent: sourceMap.sourcesContent,
+			mappings: sourceMap.mappings,
+		};
+	}
+	return result;
 }

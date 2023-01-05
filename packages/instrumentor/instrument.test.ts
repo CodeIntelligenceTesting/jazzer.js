@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
-import { shouldInstrumentFn } from "./instrument";
+/* eslint @typescript-eslint/ban-ts-comment:0 */
+
+import {
+	installSourceMapSupport,
+	shouldInstrumentFn,
+	transform,
+} from "./instrument";
+import { codeCoverage } from "./plugins/codeCoverage";
 
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
@@ -37,3 +44,58 @@ describe("shouldInstrument check", () => {
 		expect(check("/some/package/include/files")).toBeFalsy();
 	});
 });
+
+describe("transform", () => {
+	it("should use source maps to correct error stack traces", () => {
+		withSourceMap(() => {
+			const sourceFileName = "sourcemap-test.js";
+			const errorLocation = sourceFileName + ":5:13";
+			const content = ` 
+					module.exports.functionThrowingAnError = function foo () {
+					// eslint-disable-next-line no-constant-condition
+					if (1 < 2) {
+						throw Error("Expected test error"); // error thrown at ${errorLocation}
+					}
+				};
+				// sourceURL is required for the snippet to reference a filename during
+				// eval and so be able to lookup the appropriate source map later on.
+				// This is only necessary for this test and not when using normal 
+				// import/require without eval.
+				//@ sourceURL=${sourceFileName}`;
+			try {
+				// Use the codeCoverage plugin to add additional lines, so that the
+				// resulting error stack does not match the original code anymore.
+				const result = transform(sourceFileName, content, [codeCoverage()]);
+				const fn = eval(result?.code || "");
+				fn();
+				fail("Error expected but not thrown.");
+			} catch (e: unknown) {
+				if (!(e instanceof Error && e.stack)) {
+					throw e;
+				}
+				// Verify that the received error was corrected via a source map
+				// by checking the original error location.
+				expect(e.stack).toContain(errorLocation);
+			}
+		});
+	});
+});
+
+function withSourceMap(fn: () => void) {
+	// @ts-ignore
+	const oldFuzzer = globalThis.Fuzzer;
+	// @ts-ignore
+	globalThis.Fuzzer = {
+		incrementCounter: () => {
+			// ignore
+		},
+	};
+	const resetSourceMapHandlers = installSourceMapSupport();
+	try {
+		fn();
+	} finally {
+		resetSourceMapHandlers();
+		// @ts-ignore
+		globalThis.Fuzzer = oldFuzzer;
+	}
+}
