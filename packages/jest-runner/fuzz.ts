@@ -17,7 +17,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import { Global } from "@jest/types";
-import * as core from "@jazzer.js/core";
 import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
@@ -29,6 +28,7 @@ import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
 import * as fs from "fs";
 import { removeTopFramesFromError } from "./errorUtils";
+import { Options, startFuzzingNoInit } from "@jazzer.js/core";
 
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
@@ -72,15 +72,12 @@ export const fuzz: FuzzTest = (name, fn) => {
 	const corpus = new Corpus(testFile, testStatePath);
 
 	const fuzzingConfig = loadConfig();
+	fuzzingConfig.timeout = timeout;
+
 	if (fuzzingConfig.dryRun) {
 		runInRegressionMode(name, fn, corpus, timeout);
 	} else {
-		const fuzzerOptions = core.addFuzzerOptionsForDryRun(
-			fuzzingConfig.fuzzerOptions,
-			fuzzingConfig.dryRun,
-			timeout
-		);
-		runInFuzzingMode(name, fn, corpus, fuzzerOptions);
+		runInFuzzingMode(name, fn, corpus, fuzzingConfig);
 	}
 };
 
@@ -88,11 +85,11 @@ export const runInFuzzingMode = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
-	fuzzerOptions: string[]
+	config: Options
 ) => {
-	fuzzerOptions.unshift(corpus.seedInputsDirectory);
-	fuzzerOptions.unshift(corpus.generatedInputsDirectory);
-	fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
+	config.fuzzerOptions.unshift(corpus.seedInputsDirectory);
+	config.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
+	config.fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
 	g.test(name, () => {
 		// Fuzzing is only allowed to start once in a single nodejs instance.
 		if (fuzzerStarted) {
@@ -105,7 +102,7 @@ export const runInFuzzingMode = (
 			throw error;
 		}
 		fuzzerStarted = true;
-		return core.startFuzzingAsyncNoInit(fn, fuzzerOptions);
+		return startFuzzingNoInit(fn, config);
 	});
 };
 

@@ -36,6 +36,7 @@ export interface Options {
 	fuzzerOptions: string[];
 	customHooks: string[];
 	expectedErrors: string[];
+	timeout?: number;
 }
 
 interface FuzzModule {
@@ -62,11 +63,10 @@ export function registerGlobals() {
 	globalThis.HookManager = hooking.hookManager;
 }
 
-export function startFuzzing(options: Options) {
-	const fuzzing = options.sync
-		? startFuzzingSync(options)
-		: startFuzzingAsync(options);
-	fuzzing.then(
+export async function startFuzzing(options: Options) {
+	await initFuzzing(options);
+	const fuzzFn = await loadFuzzFunction(options);
+	await startFuzzingNoInit(fuzzFn, options).then(
 		() => {
 			stopFuzzing(undefined, options.expectedErrors);
 		},
@@ -76,30 +76,17 @@ export function startFuzzing(options: Options) {
 	);
 }
 
-export async function startFuzzingSync(options: Options) {
-	await initFuzzing(options);
-	const fuzzFn = await loadFuzzFunction(options);
-	const fuzzerOptions = addFuzzerOptionsForDryRun(
-		options.fuzzerOptions,
-		options.dryRun
-	);
-	Fuzzer.startFuzzing(fuzzFn, fuzzerOptions);
-}
-
-export async function startFuzzingAsync(options: Options) {
-	await initFuzzing(options);
-	const fuzzFn = await loadFuzzFunction(options);
-	return startFuzzingAsyncNoInit(
-		fuzzFn,
-		addFuzzerOptionsForDryRun(options.fuzzerOptions, options.dryRun)
-	);
-}
-
-export async function startFuzzingAsyncNoInit(
+export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
-	fuzzerOptions: string[]
+	options: Options
 ) {
-	return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+	const fuzzerOptions = buildFuzzerOptions(options);
+	const fuzzerFn = options.sync
+		? Fuzzer.startFuzzing
+		: Fuzzer.startFuzzingAsync;
+	// Wrap the potentially sync fuzzer call, so that resolve and exception
+	// handlers are always executed.
+	return Promise.resolve().then(() => fuzzerFn(fuzzFn, fuzzerOptions));
 }
 
 function stopFuzzing(err: unknown, expectedErrors: string[]) {
@@ -178,20 +165,17 @@ function cleanStack(stack: string): string {
 	return result.join("\n");
 }
 
-export function addFuzzerOptionsForDryRun(
-	opts: string[],
-	shouldDoDryRun: boolean,
-	timeout = 5000
-): string[] {
-	const containsParameter = (params: string[], param: string): boolean => {
-		return params.some((curr) => curr.startsWith(param));
-	};
+function buildFuzzerOptions(options: Options): string[] {
+	if (!options || !options.fuzzerOptions) {
+		return [];
+	}
 	// Last occurrence of a parameter is used.
-	if (shouldDoDryRun) {
+	let opts = options.fuzzerOptions;
+	if (options.dryRun) {
 		opts = opts.concat("-runs=0");
 	}
-	if (!containsParameter(opts, "-timeout")) {
-		const inSeconds = timeout / 1000;
+	if (options.timeout != undefined) {
+		const inSeconds = options.timeout / 1000;
 		opts = opts.concat(`-timeout=${inSeconds}`);
 	}
 	return opts;

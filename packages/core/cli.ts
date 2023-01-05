@@ -145,6 +145,7 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
+			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing({
 				fuzzTarget: ensureFilepath(args.fuzzTarget),
 				fuzzEntryPoint: args.fuzzFunction,

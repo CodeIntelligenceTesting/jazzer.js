@@ -30,7 +30,7 @@ const startFuzzingMock = jest.fn();
 const skipMock = jest.fn();
 jest.mock("@jazzer.js/core", () => {
 	return {
-		startFuzzingAsyncNoInit: startFuzzingMock,
+		startFuzzingNoInit: startFuzzingMock,
 	};
 });
 
@@ -47,6 +47,7 @@ import {
 	runInFuzzingMode,
 	runInRegressionMode,
 } from "./fuzz";
+import { defaultOptions } from "./config";
 
 // Cleanup created files on exit
 tmp.setGracefulCleanup();
@@ -60,18 +61,17 @@ describe("fuzz", () => {
 		it("execute only one fuzz target function", async () => {
 			const testFn = jest.fn();
 			const corpus = new Corpus("", []);
-			const fuzzerOptions: string[] = [];
 
 			// First call should start the fuzzer
 			await withMockTest(() => {
-				runInFuzzingMode("first", testFn, corpus, fuzzerOptions);
+				runInFuzzingMode("first", testFn, corpus, defaultOptions);
 			});
 			expect(startFuzzingMock).toBeCalledTimes(1);
 
 			// Should fail to start the fuzzer a second time
 			await expect(
 				withMockTest(() => {
-					runInFuzzingMode("second", testFn, corpus, fuzzerOptions);
+					runInFuzzingMode("second", testFn, corpus, defaultOptions);
 				})
 			).rejects.toThrow(FuzzerStartError);
 			expect(startFuzzingMock).toBeCalledTimes(1);
