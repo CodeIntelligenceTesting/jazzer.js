@@ -23,6 +23,11 @@ import { hookManager } from "@jazzer.js/hooking";
 
 export function registerInstrumentor(includes: string[], excludes: string[]) {
 	const shouldInstrument = shouldInstrumentFn(includes, excludes);
+
+	if (includes.includes("jazzer.js")) {
+		unloadInternalModules();
+	}
+
 	hookRequire(
 		() => true,
 		(code: string, options: TransformerOptions): string => {
@@ -45,6 +50,21 @@ export function registerInstrumentor(includes: string[], excludes: string[]) {
 			return output?.code || code;
 		}
 	);
+}
+
+function unloadInternalModules() {
+	console.log(
+		"DEBUG: Unloading internal Jazzer.js modules for instrumentation..."
+	);
+	[
+		"@jazzer.js/core",
+		"@jazzer.js/fuzzer",
+		"@jazzer.js/hooking",
+		"@jazzer.js/instrumentor",
+		"@jazzer.js/jest-runner",
+	].forEach((module) => {
+		delete require.cache[require.resolve(module)];
+	});
 }
 
 export function shouldInstrumentFn(
