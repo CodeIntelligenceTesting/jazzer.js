@@ -21,10 +21,10 @@ describe("core", () => {
 	describe("ensuresFilepath", () => {
 		it("adds .js suffix if none or unsupported one is present", () => {
 			expect(ensureFilepath("filename")).toMatch(/.*filename.js$/);
-			expect(ensureFilepath("filename.xyz")).toMatch(/.*filename.xyz.js$/);
-			expect(ensureFilepath("filename.js")).toMatch(/.*filename.js$/);
-			expect(ensureFilepath("filename.mjs")).toMatch(/.*filename.mjs$/);
-			expect(ensureFilepath("filename.cjs")).toMatch(/.*filename.cjs$/);
+			expect(ensureFilepath("filename.xyz")).toMatch(/.*filename\.xyz\.js$/);
+			expect(ensureFilepath("filename.js")).toMatch(/.*filename\.js$/);
+			expect(ensureFilepath("filename.mjs")).toMatch(/.*filename\.mjs$/);
+			expect(ensureFilepath("filename.cjs")).toMatch(/.*filename\.cjs$/);
 		});
 		it("adds file schema", () => {
 			expect(ensureFilepath("filename.js")).toMatch(/^file:\/\/.*/);

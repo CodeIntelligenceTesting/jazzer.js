@@ -1,4 +1,4 @@
 {
-	"fuzzerOptions": ["-use_value_profile=1", "-max_total_time=10"],
+	"fuzzerOptions": ["-use_value_profile=1", "-max_total_time=30"],
 	"includes": ["jazzer.js"]
 }
