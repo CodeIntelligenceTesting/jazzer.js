@@ -14,31 +14,27 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
+/* eslint-disable no-undef, @typescript-eslint/no-var-requires */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { shouldInstrumentFn } = require("@jazzer.js/instrumentor");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
 describe("instrument", () => {
 	it.fuzz("shouldInstrumentFn", (data) => {
-		if (!data) return;
 		const provider = new FuzzedDataProvider(data);
-		const includes = consumeStringArray(
-			provider,
+		const includes = provider.consumeStringArray(
 			provider.consumeIntegralInRange(0, 10),
 			5
 		);
-		const excludes = consumeStringArray(
-			provider,
+		const excludes = provider.consumeStringArray(
 			provider.consumeIntegralInRange(0, 10),
 			5
 		);
 
 		const check = shouldInstrumentFn(includes, excludes);
 
-		let includeAll = includes.some((e) => e === "");
-		let excludeAll = excludes.some((e) => e === "");
+		const includeAll = includes.some((e) => e === "");
+		const excludeAll = excludes.some((e) => e === "");
 
 		if (excludeAll) {
 			expect(check).toBeFalsy();
@@ -49,14 +45,3 @@ describe("instrument", () => {
 		}
 	});
 });
-
-function consumeStringArray(provider, maxArrayLength, maxStringLength) {
-	const strs = [];
-	while (strs.length < maxArrayLength && provider.remainingBytes > 0) {
-		let str = provider.consumeString(maxStringLength, "ascii");
-		if (str) {
-			strs.push(str);
-		}
-	}
-	return strs;
-}

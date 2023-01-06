@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
+/* eslint-disable no-undef, @typescript-eslint/no-var-requires */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { fuzzer } = require("@jazzer.js/fuzzer");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
@@ -26,7 +25,7 @@ describe("fuzzer", () => {
 		let a = provider.consumeString(10);
 		let b = provider.consumeString(10);
 		let op = provider.consumeString(5);
-		expect(fuzzer.traceStrCmp(a, b, op, 0));
+		expect(fuzzer.traceStrCmp(a, b, op, 0)).toBeDefined();
 	});
 
 	it.fuzz("use never zero policy", (data) => {

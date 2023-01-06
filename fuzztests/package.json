@@ -4,7 +4,6 @@
 	"description": "Fuzz parts of the fuzzer itself",
 	"scripts": {
 		"test": "jest",
-		"dryRun": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest"
 	},
 	"devDependencies": {
