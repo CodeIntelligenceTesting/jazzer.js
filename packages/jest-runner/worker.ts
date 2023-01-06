@@ -388,7 +388,7 @@ export class JazzerWorker {
 				runtime: Math.round(runtime), // ms precision
 				slow: runtime / 1000 > test.context.config.slowTestThreshold,
 			},
-			skipped: false,
+			skipped: this.#testResults.every((t) => t.skipped),
 			snapshot: {
 				added: 0,
 				fileDeleted: false,
