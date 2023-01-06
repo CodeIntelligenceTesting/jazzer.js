@@ -3,10 +3,26 @@
 	"version": "1.0.0",
 	"description": "Fuzz parts of the fuzzer itself",
 	"scripts": {
-		"fuzz": "jazzer fuzzedDataProvider -- -use_value_profile=1 -max_total_time=60",
-		"dryRun": "jazzer fuzzedDataProvider -- -runs=1 -seed=123456789"
+		"test": "jest",
+		"dryRun": "jest",
+		"fuzz": "JAZZER_FUZZ=1 jest"
 	},
 	"devDependencies": {
-		"@jazzer.js/core": "file:../../packages/core"
+		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",
+		"eslint-plugin-jest": "^27.1.3"
+	},
+	"jest": {
+		"projects": [
+			{
+				"runner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
 	}
 }

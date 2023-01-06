@@ -14,36 +14,34 @@
  * limitations under the License.
  */
 
+/* eslint-disable no-undef */
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { FuzzedDataProvider, jazzer } = require("@jazzer.js/core");
 
-const usedHashes = [];
+describe("FuzzedDataProvider", () => {
+	// In this fuzz test we try to guide the fuzzer to use as many functions on
+	// FuzzedDataProvider as possible, before invoking a terminating one
+	// like consumeRemainingXY. Strange combinations of functions could produce a
+	// one off error.
+	it.fuzz("consumes the provided input", (data) => {
+		const provider = new FuzzedDataProvider(data);
+		const properties = Object.getOwnPropertyNames(
+			Object.getPrototypeOf(provider)
+		);
+		const methodNames = properties
+			.filter((p) => provider[p] instanceof Function)
+			.filter((m) => provider[m].length === 0);
 
-// FuzzedDataProvider in itself can not be instrumented, as it's already loaded
-// by the core module for re-export. In this test we try to guide the fuzzer to
-// use as many functions on it as possible, before invoking a terminating one
-// like consumeRemainingXY.
-module.exports.fuzz = (data) => {
-	const provider = new FuzzedDataProvider(data);
-	const properties = Object.getOwnPropertyNames(
-		Object.getPrototypeOf(provider)
-	);
-	const methodNames = properties
-		.filter((p) => provider[p] instanceof Function)
-		.filter((m) => provider[m].length === 0);
-
-	let usedMethods = "";
-	while (provider.remainingBytes > 0) {
-		const methodName = rndElementOf(methodNames);
-		provider[methodName].call(provider);
-		usedMethods += methodName;
-	}
-	let state = hash(usedMethods);
-	if (usedHashes.indexOf(state) === -1) {
-		usedHashes.push(state);
-	}
-	jazzer.exploreState(state, 31);
-};
+		let usedMethods = "";
+		while (provider.remainingBytes > 0) {
+			const methodName = rndElementOf(methodNames);
+			provider[methodName].call(provider);
+			usedMethods += methodName;
+		}
+		jazzer.exploreState(hash(usedMethods), 31);
+	});
+});
 
 const rndElementOf = (array) => {
 	return array[Math.floor(Math.random() * array.length)];
