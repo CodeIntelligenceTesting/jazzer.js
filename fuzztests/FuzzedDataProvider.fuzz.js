@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
+/* eslint-disable no-undef, @typescript-eslint/no-var-requires */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { FuzzedDataProvider, jazzer } = require("@jazzer.js/core");
 
 describe("FuzzedDataProvider", () => {
@@ -35,17 +34,13 @@ describe("FuzzedDataProvider", () => {
 
 		let usedMethods = "";
 		while (provider.remainingBytes > 0) {
-			const methodName = rndElementOf(methodNames);
+			const methodName = provider.pickValue(methodNames);
 			provider[methodName].call(provider);
 			usedMethods += methodName;
 		}
 		jazzer.exploreState(hash(usedMethods), 31);
 	});
 });
-
-const rndElementOf = (array) => {
-	return array[Math.floor(Math.random() * array.length)];
-};
 
 const hash = (str) => {
 	let hash = 0;
