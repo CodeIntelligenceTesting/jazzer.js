@@ -202,6 +202,9 @@ async function importModule(name: string): Promise<FuzzModule | void> {
 }
 
 export function ensureFilepath(filePath: string): string {
+	if (!filePath) {
+		throw Error("Empty filepath provided");
+	}
 	// file: schema is required on Windows
 	const fullPath = "file://" + path.join(process.cwd(), filePath);
 	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
