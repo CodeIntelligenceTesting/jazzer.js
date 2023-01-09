@@ -933,6 +933,18 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(0);
 		expect(data.consumeString(1000)).toBe("");
 	});
+	it("consumeStringArray", () => {
+		const testString = "Lorem ipsum dolor sit amet";
+		const byteArray = new TextEncoder().encode(testString);
+		const data = new FuzzedDataProvider(Buffer.from(byteArray));
+		const strings = data.consumeStringArray(5, 5);
+		expect(strings).toHaveLength(5);
+		expect(strings).toContain("Lorem");
+		expect(strings).toContain(" ipsu");
+		expect(strings).toContain("m dol");
+		expect(strings).toContain("or si");
+		expect(strings).toContain("t ame");
+	});
 });
 
 const Data = Buffer.from([
