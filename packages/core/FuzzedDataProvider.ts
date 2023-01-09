@@ -402,6 +402,30 @@ export class FuzzedDataProvider {
 	}
 
 	/**
+	 * Consumes an array of `string`s from the fuzzer input.
+	 * The array and the `string`s might be shorter than requested `maxArrayLength` and `maxStringLength`,
+	 * if the fuzzer input is not sufficiently long.
+	 * @param maxArrayLength the maximum length of the array
+	 * @param maxStringLength the maximum length of the strings
+	 * @param encoding the encoding of the strings
+	 * @returns an array containing strings constructed from the remaining bytes of the fuzzer input using the given encoding
+	 */
+	consumeStringArray(
+		maxArrayLength: number,
+		maxStringLength: number,
+		encoding: BufferEncoding | undefined = "ascii"
+	) {
+		const strs = [];
+		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
+			const str = this.consumeString(maxStringLength, encoding);
+			if (str) {
+				strs.push(str);
+			}
+		}
+		return strs;
+	}
+
+	/**
 	 * Picks values from an array based on the fuzzer input.
 	 * Indices picked by this method do not repeat for the duration of the function call.
 	 * Note: The distribution of picks is not perfectly uniform.
