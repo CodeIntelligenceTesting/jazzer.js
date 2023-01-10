@@ -33,14 +33,23 @@ describe("shouldInstrument check", () => {
 		expect(check("/something/else")).toBeFalsy();
 	});
 
-	it("should include everything with emptystring", () => {
-		const check = shouldInstrumentFn([""], []);
+	it("should include everything with *", () => {
+		const check = shouldInstrumentFn(["*"], []);
 		expect(check("include")).toBeTruthy();
 		expect(check("/something/else")).toBeTruthy();
 	});
 
+	it("should include nothing with emtpy string", () => {
+		const emtpyInclude = shouldInstrumentFn(["include", ""], []);
+		expect(emtpyInclude("include")).toBeTruthy();
+		expect(emtpyInclude("/something/else")).toBeFalsy();
+		const emtpyExclude = shouldInstrumentFn(["include"], [""]);
+		expect(emtpyExclude("include")).toBeTruthy();
+		expect(emtpyExclude("/something/else")).toBeFalsy();
+	});
+
 	it("should exclude with precedence", () => {
-		const check = shouldInstrumentFn(["include"], [""]);
+		const check = shouldInstrumentFn(["include"], ["*"]);
 		expect(check("/some/package/include/files")).toBeFalsy();
 	});
 });

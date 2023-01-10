@@ -33,8 +33,8 @@ describe("instrument", () => {
 
 		const check = shouldInstrumentFn(includes, excludes);
 
-		const includeAll = includes.some((e) => e === "");
-		const excludeAll = excludes.some((e) => e === "");
+		const includeAll = includes.some((e) => e === "*");
+		const excludeAll = excludes.some((e) => e === "*");
 
 		if (excludeAll) {
 			expect(check).toBeFalsy();
