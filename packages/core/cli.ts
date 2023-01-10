@@ -141,10 +141,21 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					default: [],
 				})
-				.hide("expected_errors");
+				.hide("expected_errors")
+				.boolean("verbose")
+				.option("verbose", {
+					describe: "Enable verbose debugging logs.",
+					type: "boolean",
+					alias: "v",
+					group: "Fuzzer:",
+					default: false,
+				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
+			if (args.verbose) {
+				process.env.JAZZER_DEBUG = "1";
+			}
 			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing({
 				fuzzTarget: ensureFilepath(args.fuzzTarget),

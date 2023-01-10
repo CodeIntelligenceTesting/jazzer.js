@@ -74,6 +74,10 @@ export class MatchingHooksResult {
 		}
 	}
 
+	hooks() {
+		return this.beforeHooks.concat(this.afterHooks, this.replaceHooks);
+	}
+
 	hasHooks() {
 		return (
 			this.hasBeforeHooks() || this.hasReplaceHooks() || this.hasAfterHooks()
@@ -94,7 +98,7 @@ export class MatchingHooksResult {
 }
 
 export class HookManager {
-	private hooks: Hook[] = [];
+	private _hooks: Hook[] = [];
 
 	registerHook(
 		hookType: HookType,
@@ -102,20 +106,26 @@ export class HookManager {
 		pkg: string,
 		async: boolean,
 		hookFn: HookFn
-	) {
-		this.hooks.push(new Hook(hookType, target, pkg, async, hookFn));
+	): Hook {
+		const hook = new Hook(hookType, target, pkg, async, hookFn);
+		this._hooks.push(hook);
+		return hook;
+	}
+
+	get hooks() {
+		return this._hooks;
 	}
 
 	clearHooks() {
-		this.hooks = [];
+		this._hooks = [];
 	}
 
 	hookIndex(hook: Hook): number {
-		return this.hooks.indexOf(hook);
+		return this._hooks.indexOf(hook);
 	}
 
 	matchingHooks(target: string, filepath: string): MatchingHooksResult {
-		const matches = this.hooks
+		const matches = this._hooks
 			.filter((hook: Hook) => hook.match(filepath, target))
 			.reduce(
 				(matches: MatchingHooksResult, hook: Hook) => {
@@ -131,7 +141,9 @@ export class HookManager {
 	}
 
 	hasFunctionsToHook(filepath: string): boolean {
-		return this.hooks.find((hook) => filepath.includes(hook.pkg)) !== undefined;
+		return (
+			this._hooks.find((hook) => filepath.includes(hook.pkg)) !== undefined
+		);
 	}
 
 	callHook(
@@ -140,7 +152,7 @@ export class HookManager {
 		params: unknown[],
 		resultOrOriginalFunction: unknown
 	): unknown {
-		const hook = this.hooks[id];
+		const hook = this._hooks[id];
 		switch (hook.type) {
 			case HookType.Before:
 				(hook.hookFunction as BeforeHookFn)(thisPtr, params, this.callSiteId());

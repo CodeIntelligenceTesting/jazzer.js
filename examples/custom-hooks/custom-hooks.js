@@ -123,3 +123,14 @@ registerAfterHook(
 		);
 	}
 );
+
+/**
+ * An example of a hook that is not registered due to the target function being non-existent
+ */
+registerReplaceHook(
+	"JpegImage.jpegImage.constructor.prototype.parse.parse.NonExistingFunc",
+	"jpeg-js",
+	false,
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	() => {}
+);

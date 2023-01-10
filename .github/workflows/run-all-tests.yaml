@@ -1,4 +1,4 @@
-name: "\U0001F50D Tests"
+name: "🔍 Tests"
 on:
   pull_request:
     branches: [main]
@@ -38,9 +38,9 @@ jobs:
       - name: install dependencies (macos)
         if: contains(matrix.os, 'macos')
         run: |
-          brew install cmake llvm@11
-          LLVM_PATH=$(brew --prefix llvm@11)
-          LLVM_VERSION=11.1.0
+          brew install cmake llvm@14
+          LLVM_PATH=$(brew --prefix llvm@14)
+          LLVM_VERSION=14.0.6
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
           echo "CPATH=$LLVM_PATH/lib/clang/$LLVM_VERSION/include/" >> $GITHUB_ENV
           echo "LDFLAGS=-L$LLVM_PATH/lib" >> $GITHUB_ENV
