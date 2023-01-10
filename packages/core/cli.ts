@@ -160,14 +160,8 @@ yargs(process.argv.slice(2))
 			startFuzzing({
 				fuzzTarget: ensureFilepath(args.fuzzTarget),
 				fuzzEntryPoint: args.fuzzFunction,
-				includes: args.instrumentation_includes.map((include: string) =>
-					// empty string matches every file
-					include === "*" ? "" : include
-				),
-				excludes: args.instrumentation_excludes.map((exclude: string) =>
-					// empty string matches every file
-					exclude === "*" ? "" : exclude
-				),
+				includes: args.instrumentation_includes,
+				excludes: args.instrumentation_excludes,
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),

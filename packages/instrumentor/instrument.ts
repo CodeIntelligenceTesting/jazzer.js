@@ -93,11 +93,19 @@ export function shouldInstrumentFn(
 	includes: string[],
 	excludes: string[]
 ): FilePredicate {
+	const cleanup = (settings: string[]) =>
+		settings
+			.filter((setting) => setting)
+			.map((setting) => (setting === "*" ? "" : setting)); // empty string matches every file
+	const cleanedIncludes = cleanup(includes);
+	const cleanedExcludes = cleanup(excludes);
 	return (filepath: string) => {
 		const included =
-			includes.find((include) => filepath.includes(include)) !== undefined;
+			cleanedIncludes.find((include) => filepath.includes(include)) !==
+			undefined;
 		const excluded =
-			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
+			cleanedExcludes.find((exclude) => filepath.includes(exclude)) !==
+			undefined;
 		return included && !excluded;
 	};
 }
