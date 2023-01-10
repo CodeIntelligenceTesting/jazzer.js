@@ -1,5 +1,5 @@
 {
 	"includes": ["target"],
 	"excludes": ["nothing"],
-	"fuzzerOptions": ["-runs=-1", "-rss_limit_mb=16000"]
+	"fuzzerOptions": ["-rss_limit_mb=16000"]
 }

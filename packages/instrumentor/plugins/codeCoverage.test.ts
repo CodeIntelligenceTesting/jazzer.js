@@ -199,6 +199,9 @@ describe("code coverage instrumentation", () => {
 			const instrumentor = new Instrumentor(
 				["*"],
 				["do_not_instrument"],
+				[],
+				false,
+				false,
 				new FileSyncIdStrategy(idSyncFile.name)
 			);
 

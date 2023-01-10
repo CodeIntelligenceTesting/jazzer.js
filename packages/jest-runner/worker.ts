@@ -370,7 +370,7 @@ export class JazzerWorker {
 		const runtime = this.#testSummary.end - this.#testSummary.start;
 
 		return {
-			// coverage: globalThis.__coverage__,
+			coverage: globalThis.__coverage__,
 			console: undefined,
 			failureMessage: this.#testResults
 				.filter((t) => t.errors.length > 0)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-/** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-module.exports = {
-	preset: "ts-jest",
-	testEnvironment: "node",
-	modulePathIgnorePatterns: [
-		"dist",
-		"packages/fuzzer/build",
-		"tests/code_coverage",
-	],
-	collectCoverageFrom: ["packages/**/*.ts"],
-	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
-};
+/* eslint no-undef: 0, no-constant-condition: 0, @typescript-eslint/no-var-requires:0 */
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const target = require("./fuzz.js");
+
+describe("My describe", () => {
+	it.fuzz("My fuzz test", (data) => {
+		target.fuzz(data);
+	});
+});

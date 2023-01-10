@@ -30,10 +30,15 @@ import { JazzerWorker } from "./worker";
 import { registerGlobals, initFuzzing } from "@jazzer.js/core";
 import { loadConfig } from "./config";
 import { cleanupJestRunnerStack } from "./errorUtils";
+import * as reports from "istanbul-reports";
 
 class FuzzRunner extends CallbackTestRunner {
+	shouldCollectCoverage: boolean;
+	coverageReporters: Config.CoverageReporters;
 	constructor(globalConfig: Config.GlobalConfig, context: TestRunnerContext) {
 		super(globalConfig, context);
+		this.shouldCollectCoverage = globalConfig.collectCoverage;
+		this.coverageReporters = globalConfig.coverageReporters;
 		registerGlobals();
 	}
 
@@ -46,7 +51,10 @@ class FuzzRunner extends CallbackTestRunner {
 		options: TestRunnerOptions // eslint-disable-line @typescript-eslint/no-unused-vars
 	): Promise<void> {
 		const config = loadConfig();
-		initFuzzing(config);
+		config.coverage = this.shouldCollectCoverage;
+		config.coverageReporters = this.coverageReporters as reports.ReportType[];
+
+		await initFuzzing(config);
 		return this.#runTestsInBand(tests, watcher, onStart, onResult, onFailure);
 	}
 

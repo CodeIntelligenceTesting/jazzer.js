@@ -161,6 +161,26 @@ yargs(process.argv.slice(2))
 					alias: "v",
 					group: "Fuzzer:",
 					default: false,
+				})
+				.boolean("coverage")
+				.option("coverage", {
+					describe: "Enable code coverage.",
+					type: "boolean",
+					group: "Fuzzer:",
+					default: false,
+				})
+				.option("coverageDirectory", {
+					describe: "Directory for storing coverage reports.",
+					type: "string",
+					default: "coverage",
+					group: "Fuzzer:",
+				})
+				.array("coverageReporters")
+				.option("coverageReporters", {
+					describe: "A list of reporter names for writing coverage reports.",
+					type: "string",
+					group: "Fuzzer:",
+					default: ["json", "text", "lcov", "clover"],
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -177,9 +197,12 @@ yargs(process.argv.slice(2))
 				dryRun: args.dry_run,
 				sync: args.sync,
 				fuzzerOptions: args.corpus.concat(args._),
-				customHooks: args.custom_hooks.map(ensureFilepath),
+				customHooks: args.custom_hooks,
 				expectedErrors: args.expected_errors,
 				idSyncFile: args.id_sync_file,
+				coverage: args.coverage,
+				coverageDirectory: args.coverageDirectory,
+				coverageReporters: args.coverageReporters,
 			});
 		}
 	)

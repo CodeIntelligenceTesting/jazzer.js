@@ -47,7 +47,8 @@ runner.
 	"name": "jest-integration-example",
 	"scripts": {
 		"test": "jest",
-		"fuzz": "JAZZER_FUZZ=1 jest"
+		"fuzz": "JAZZER_FUZZ=1 jest",
+		"coverage": "jest --coverage"
 	},
 	"devDependencies": {
 		"@jazzer.js/jest-runner": "1.1.0",
@@ -283,6 +284,22 @@ Time:        0.335 s, estimated 1 s
 Ran all test suites.
 ```
 
+### Coverage report generation
+
+To generate a coverage report, run jest with the `--coverage` flag:
+
+```shell
+npx jest --coverage
+```
+
+Additional options for coverage report generation are described in the
+[fuzz targets documentation](./fuzz-targets.md#coverage-report-generation).
+
+The desired report format can be set by the flag `--coverageReports`, which by
+default is set to `--coverageReports clover json lcov text`. See
+[here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
+for a list of supported coverage reporters.
+
 ## IDE Integration
 
 As the Jest test framework foundations are used by the Jazzer.js fuzz test
@@ -309,6 +326,5 @@ offer good extension points and common test framework features have to be
 reimplemented.
 
 - Mock functions
-- Coverage generation
 - Isolated workers
 - Test-based timeouts (third parameter to `test` functions)
