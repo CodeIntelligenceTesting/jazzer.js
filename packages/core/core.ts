@@ -18,6 +18,7 @@ import path from "path";
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
+import { trackedHooks } from "@jazzer.js/hooking";
 
 // libFuzzer uses exit code 77 in case of a crash, so use a similar one for
 // failed error expectations.
@@ -90,6 +91,10 @@ export async function startFuzzingNoInit(
 }
 
 function stopFuzzing(err: unknown, expectedErrors: string[]) {
+	if (process.env.JAZZER_DEBUG) {
+		trackedHooks.categorizeUnknown(HookManager.hooks).print();
+	}
+
 	// No error found, check if one is expected.
 	if (!err) {
 		if (expectedErrors.length) {

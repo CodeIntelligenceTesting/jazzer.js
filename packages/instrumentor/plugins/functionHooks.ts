@@ -17,7 +17,26 @@
 import * as babel from "@babel/types";
 import generate from "@babel/generator";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { hookManager, Hook, MatchingHooksResult } from "@jazzer.js/hooking";
+import {
+	hookManager,
+	Hook,
+	MatchingHooksResult,
+	HookType,
+	trackedHooks,
+} from "@jazzer.js/hooking";
+
+function logHooks(matchedHooks: MatchingHooksResult) {
+	matchedHooks.hooks().forEach((hook) => {
+		if (process.env.JAZZER_DEBUG) {
+			console.log(
+				`DEBUG: Applied %s-hook in %s#%s`,
+				HookType[hook.type],
+				hook.pkg,
+				hook.target
+			);
+		}
+	});
+}
 
 export function functionHooks(filepath: string): () => PluginTarget {
 	return () => {
@@ -26,12 +45,9 @@ export function functionHooks(filepath: string): () => PluginTarget {
 				Function(path: NodePath<babel.Function>) {
 					if (path.node.params.every((param) => babel.isIdentifier(param))) {
 						const target = targetPath(path);
-						const applied = applyHooks(
-							target,
-							path.node,
-							hookManager.matchingHooks(target, filepath)
-						);
-						if (applied) {
+						const matchedHooks = hookManager.matchingHooks(target, filepath);
+						if (applyHooks(target, path.node, matchedHooks)) {
+							logHooks(matchedHooks);
 							path.skip();
 						}
 					}
@@ -48,13 +64,16 @@ function applyHooks(
 	functionNode: babel.Function,
 	matchesResult: MatchingHooksResult
 ): boolean {
-	if (!matchesResult.hasHooks()) {
-		return false;
-	}
-
 	// We currently only handle hooking functions with identifiers as parameters.
 	if (!functionNode.params.every((p) => babel.isIdentifier(p))) {
 		return false;
+	}
+
+	if (!matchesResult.hasHooks()) {
+		trackedHooks.available.add(functionName);
+		return false;
+	} else {
+		trackedHooks.applied.add(functionName);
 	}
 
 	// For arrow functions, the body can a single expression representing the value to be returned.

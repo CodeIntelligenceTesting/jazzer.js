@@ -16,6 +16,45 @@
 
 /*eslint @typescript-eslint/no-explicit-any: 0 */
 
+class hookTracker {
+	public applied: Set<string> = new Set();
+	public available: Set<string> = new Set();
+	public notApplied: Set<string> = new Set();
+
+	print() {
+		console.log("DEBUG: [Hook] Summary:");
+		console.log("DEBUG: [Hook]    Not applied:");
+		[...this.notApplied].sort().forEach((hook) => {
+			console.log(`DEBUG: [Hook]      ${hook}`);
+		});
+		console.log("DEBUG: [Hook]    Applied:");
+		[...this.applied].sort().forEach((hook) => {
+			console.log(`DEBUG: [Hook]      ${hook}`);
+		});
+		console.log("DEBUG: [Hook]    Available:");
+		[...this.available].sort().forEach((hook) => {
+			console.log(`DEBUG: [Hook]      ${hook}`);
+		});
+	}
+
+	categorizeUnknown(requestedHooks: Hook[]): this {
+		requestedHooks.forEach((hook) => {
+			if (!this.applied.has(hook.target) && !this.available.has(hook.target)) {
+				this.notApplied.add(hook.target);
+			}
+		});
+		return this;
+	}
+
+	clear() {
+		this.applied.clear();
+		this.notApplied.clear();
+		this.available.clear();
+	}
+}
+
+export const trackedHooks = new hookTracker();
+
 export enum HookType {
 	Before,
 	After,

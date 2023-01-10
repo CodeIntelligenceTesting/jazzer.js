@@ -100,7 +100,7 @@ level, custom hooks in Jazzer.js allow the user to
 To enable custom hooks in Jazzer.js, add either
 `-h <path_to_file_with_custom_hooks>.js` or
 `--custom_hooks <path_to_file_with_custom_hooks>.js` to the project
-configuration in package.json:
+configuration in `package.json`:
 
 ```json
 "scripts": {
@@ -182,3 +182,18 @@ The parameters of the `hookFn` are as follows:
 
 Several examples showcasing the custom hooks can be found
 [here](../examples/custom-hooks/custom-hooks.js).
+
+### Debugging hooks
+
+Debugging custom hooks can be tedious, hence the verbose logging option in
+Jazzer.js allows an insight into which hooks were applied, which hooking options
+are available in general, and which hooks could not be applied (e.g. due to the
+hooking point not being available). Check the section
+[Verbose logging](#verbose-logging) for information on how to enable this
+option.
+
+## Verbose logging
+
+To enable verbose logging in Jazzer.js, add either `-v`, or `--verbose` to the
+project configuration in the respective `package.json`. Currently, this only
+prints extra debug information on custom hooks (if provided).
