@@ -1,0 +1,29 @@
+{
+	"name": "Jazzer.js code coverage tests",
+	"version": "1.0.0",
+	"description": "",
+	"scripts": {
+		"test": "jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../../packages/core",
+		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner"
+	},
+	"jest": {
+		"projects": [
+			{
+				"displayName": "test"
+			},
+			{
+				"runner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
+	}
+}

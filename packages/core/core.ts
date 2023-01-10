@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import path from "path";
 import * as process from "process";
 import * as tmp from "tmp";
 import * as fs from "fs";
+
+import * as libCoverage from "istanbul-lib-coverage";
+import * as libReport from "istanbul-lib-report";
+import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
@@ -51,6 +54,9 @@ export interface Options {
 	expectedErrors: string[];
 	timeout?: number;
 	idSyncFile?: string;
+	coverage: boolean; // Enables source code coverage report generation.
+	coverageDirectory: string;
+	coverageReporters: reports.ReportType[];
 }
 
 interface FuzzModule {
@@ -61,23 +67,24 @@ interface FuzzModule {
 declare global {
 	var Fuzzer: fuzzer.Fuzzer;
 	var HookManager: hooking.HookManager;
+	var __coverage__: libCoverage.CoverageMapData;
 }
 
 export async function initFuzzing(options: Options) {
 	registerGlobals();
-	await Promise.all(options.customHooks.map(importModule));
-	if (!options.dryRun) {
-		registerInstrumentor(
-			new Instrumentor(
-				options.includes,
-				options.excludes,
-
-				options.idSyncFile !== undefined
-					? new FileSyncIdStrategy(options.idSyncFile)
-					: new MemorySyncIdStrategy()
-			)
-		);
-	}
+	registerInstrumentor(
+		new Instrumentor(
+			options.includes,
+			options.excludes,
+			options.customHooks,
+			options.coverage,
+			options.dryRun,
+			options.idSyncFile !== undefined
+				? new FileSyncIdStrategy(options.idSyncFile)
+				: new MemorySyncIdStrategy()
+		)
+	);
+	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 }
 
 export function registerGlobals() {
@@ -91,10 +98,20 @@ export async function startFuzzing(options: Options) {
 	const fuzzFn = await loadFuzzFunction(options);
 	await startFuzzingNoInit(fuzzFn, options).then(
 		() => {
-			stopFuzzing(undefined, options.expectedErrors);
+			stopFuzzing(
+				undefined,
+				options.expectedErrors,
+				options.coverageDirectory,
+				options.coverageReporters
+			);
 		},
 		(err: unknown) => {
-			stopFuzzing(err, options.expectedErrors);
+			stopFuzzing(
+				err,
+				options.expectedErrors,
+				options.coverageDirectory,
+				options.coverageReporters
+			);
 		}
 	);
 }
@@ -165,9 +182,27 @@ ${jazzerArgs.map((s) => '"' + s + '"').join(" ")} -- ${isWindows ? "%*" : "$@"}
 	return scriptTempFile.name;
 }
 
-function stopFuzzing(err: unknown, expectedErrors: string[]) {
+function stopFuzzing(
+	err: unknown,
+	expectedErrors: string[],
+	coverageDirectory: string,
+	coverageReporters: reports.ReportType[]
+) {
 	if (process.env.JAZZER_DEBUG) {
 		trackedHooks.categorizeUnknown(HookManager.hooks).print();
+	}
+	// Generate a coverage report in fuzzing mode (non-jest). The coverage report for our jest-runner is generated
+	// by jest internally (as long as '--coverage' is set).
+	if (global.__coverage__) {
+		const coverageMap = libCoverage.createCoverageMap(global.__coverage__);
+		const context = libReport.createContext({
+			dir: coverageDirectory,
+			watermarks: {},
+			coverageMap: coverageMap,
+		});
+		coverageReporters.forEach((reporter) =>
+			reports.create(reporter).execute(context)
+		);
 	}
 
 	// No error found, check if one is expected.
@@ -249,9 +284,10 @@ function buildFuzzerOptions(options: Options): string[] {
 	if (!options || !options.fuzzerOptions) {
 		return [];
 	}
-	// Last occurrence of a parameter is used.
+
 	let opts = options.fuzzerOptions;
 	if (options.dryRun) {
+		// the last provided option takes precedence
 		opts = opts.concat("-runs=0");
 	}
 	if (options.timeout != undefined) {

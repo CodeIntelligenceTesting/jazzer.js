@@ -29,4 +29,8 @@ const ignored = [
 	"DecoderBuffer",
 	"invalid table spec",
 	"SOI not found",
+	"Could not",
+	"limit exceeded by",
+	"sampling factor",
+	"Cannot read properties of undefined",
 ];

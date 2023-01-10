@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-/** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-module.exports = {
-	preset: "ts-jest",
-	testEnvironment: "node",
-	modulePathIgnorePatterns: [
-		"dist",
-		"packages/fuzzer/build",
-		"tests/code_coverage",
-	],
-	collectCoverageFrom: ["packages/**/*.ts"],
-	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const lib = require("./lib");
+
+/**
+ * @param { Buffer } data
+ */
+module.exports.fuzz = function (data) {
+	console.log("DATA: " + data.toString());
+	if (data.length < 3) {
+		return;
+	}
+	lib.foo(data[0]);
 };

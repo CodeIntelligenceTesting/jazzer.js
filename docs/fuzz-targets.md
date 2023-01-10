@@ -173,3 +173,39 @@ flag, so that only the most important parameters are discussed here.
 | `-h`, `--custom_hooks`                                                  | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](fuzz-settings.md).                                                                                                                                                                      |
 | `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                              |
 | `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                      |
+
+## Coverage report generation
+
+To generate a coverage report, add the `--coverage` flag to the Jazzer.js CLI.
+In this example, the `--coverage` flag is combined with the dry run flag `-d`
+that disables internal instrumentation used by the fuzzer.
+
+```shell
+npx jazzer -d <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>
+```
+
+Alternatively, you can add a new script to your package.json:
+
+```json
+"scripts": {
+	"coverage": "jazzer -d -i target -i another_target -e nothing <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>"
+}
+```
+
+Files matched by the flags `--include` or `--custom_hooks`, and not matched by
+the flag `--exclude` will be included in the coverage report. It is recommended
+to disable coverage report generation during fuzzing, because of a substantial
+overhead that it adds.
+
+### Coverage report directory
+
+By default, the coverage reports can be found in the `./coverage` directory.
+This default directory can be changed by setting the flag
+`--coverageDirectory=<another coverage directory>`.
+
+### Coverage reporters
+
+The desired report format can be set by the flag `--coverageReports`, which by
+default is set to `--coverageReports clover json lcov text`. See
+[here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
+for a list of supported coverage reporters.

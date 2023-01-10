@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-/** @type {import('ts-jest/dist/types').InitialOptionsTsJest} */
-module.exports = {
-	preset: "ts-jest",
-	testEnvironment: "node",
-	modulePathIgnorePatterns: [
-		"dist",
-		"packages/fuzzer/build",
-		"tests/code_coverage",
-	],
-	collectCoverageFrom: ["packages/**/*.ts"],
-	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
-};
+import { PluginTarget } from "@babel/core";
+import { programVisitor, VisitorOptions } from "istanbul-lib-instrument";
+
+export function sourceCodeCoverage(
+	filename?: string,
+	opts: Partial<VisitorOptions> = {}
+): PluginTarget {
+	return ({ types }) => {
+		const ee = programVisitor(types, filename, opts);
+		return {
+			visitor: {
+				Program: {
+					enter: ee.enter,
+					exit(path: string) {
+						ee.exit(path);
+					},
+				},
+			},
+		};
+	};
+}

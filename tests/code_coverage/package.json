@@ -1,0 +1,11 @@
+{
+	"name": "jazzerjs-source-code-coverage-tests",
+	"version": "1.0.0",
+	"description": "Unit tests for source code coverage.",
+	"scripts": {
+		"fuzz": "jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

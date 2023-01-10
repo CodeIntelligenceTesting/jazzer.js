@@ -40,6 +40,6 @@ function expectInstrumentation(
 	return result;
 }
 
-function removeIndentation(text?: string | null): string {
+export function removeIndentation(text?: string | null): string {
 	return text ? text.replace(/^\s*\|/gm, "").replace(/^\s*[\n\r]+/gm, "") : "";
 }

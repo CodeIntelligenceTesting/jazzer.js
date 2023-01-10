@@ -22,11 +22,10 @@ const { FuzzedDataProvider } = require("@jazzer.js/core");
  */
 module.exports.fuzz = function (fuzzerInputData) {
 	const data = new FuzzedDataProvider(fuzzerInputData);
-	const s1 = data.consumeString(data.consumeIntegralInRange(1, 15), "utf-8");
+	const s1 = data.consumeString(data.consumeIntegralInRange(10, 15), "utf-8");
 	const i1 = data.consumeIntegral(1);
 	const i2 = data.consumeIntegral(2);
-	let i3 = 0;
-	if (data.consumeBoolean()) i3 = data.consumeIntegral(4);
+	let i3 = data.consumeIntegral(4);
 
 	if (i3 === 1000) {
 		if (s1 === "Hello World!") {

@@ -28,6 +28,9 @@ export const defaultOptions: Options = {
 	sync: false,
 	expectedErrors: [],
 	timeout: 5000, // default Jest timeout
+	coverage: false,
+	coverageDirectory: "coverage",
+	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
 };
 
 // Looks up Jazzer.js options via the `jazzer-runner` configuration from
