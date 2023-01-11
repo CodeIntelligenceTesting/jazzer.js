@@ -121,7 +121,7 @@ export function fuzz(data: Buffer) {
 	try {
 		// Fuzz logic
 	} catch (e) {
-		// Handle expected error ogic here
+		// Handle expected error logic here
 	}
 }
 ```
