@@ -54,7 +54,7 @@ jobs:
           echo "LDFLAGS=$($LLVM_CONFIG_PATH --ldflags)" >> $GITHUB_ENV
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
       - name: MSVC (windows)
-        uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
+        uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
       - name: install dependencies
         run: npm install
