@@ -6,7 +6,7 @@ on:
 jobs:
   linting:
     name: lint
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-11]
+        os: [ubuntu-20.04, windows-2019, macos-11]
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -66,7 +66,7 @@ jobs:
         run: npm run test
   fuzz_tests:
     name: fuzz tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -91,7 +91,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: fastify/github-action-merge-dependabot@v3.0.0
         with:
