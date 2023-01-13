@@ -48,17 +48,16 @@ jobs:
       - name: install dependencies (macos)
         if: contains(matrix.os, 'macos')
         run: |
-          brew install cmake llvm@11
-          LLVM_PATH=$(brew --prefix llvm@11)
-          LLVM_VERSION=11.1.0
+          brew install cmake llvm@14
+          LLVM_PATH=$(brew --prefix llvm@14)
+          LLVM_CONFIG_PATH=$LLVM_PATH/bin/llvm-config
+          echo "CC=$($LLVM_CONFIG_PATH --bindir)/clang" >> $GITHUB_ENV
+          echo "CXX=$($LLVM_CONFIG_PATH --bindir)/clang++" >> $GITHUB_ENV
+          echo "CFLAGS=$($LLVM_CONFIG_PATH --cflags)" >> $GITHUB_ENV 
+          echo "CXXFLAGS=$($LLVM_CONFIG_PATH --cxxflags)" >> $GITHUB_ENV 
+          echo "LDFLAGS=$($LLVM_CONFIG_PATH --ldflags)" >> $GITHUB_ENV
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
-          echo "CPATH=$LLVM_PATH/lib/clang/$LLVM_VERSION/include/" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$LLVM_PATH/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$LLVM_PATH/include" >> $GITHUB_ENV
-          echo "CC=$LLVM_PATH/bin/clang" >> $GITHUB_ENV
-          echo "CXX=$LLVM_PATH/bin/clang++" >> $GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=$LLVM_PATH/bin/llvm-config" >> $GITHUB_ENV
-          echo "PATH=$PATH:$LLVM_PATH/bin" >> $GITHUB_ENV
+          echo "PATH=$PATH:$($LLVM_CONFIG_PATH --bindir)" >> $GITHUB_ENV
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@d8610e2b41c6d0f0c3b4c46dad8df0fd826c68e1
         if: contains(matrix.os, 'windows')
