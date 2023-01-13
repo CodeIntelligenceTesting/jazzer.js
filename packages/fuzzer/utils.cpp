@@ -17,12 +17,7 @@
 
 void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback) {
-  // Prepare a fake command line and start the fuzzer. This is made
-  // slightly awkward by the fact that libfuzzer requires the string data
-  // to be mutable and expects a C-style array of pointers.
-  std::string progname{"jazzer"};
   std::vector<char *> fuzzer_arg_pointers;
-  fuzzer_arg_pointers.push_back(progname.data());
   for (auto &arg : args)
     fuzzer_arg_pointers.push_back((char *)arg.data());
 

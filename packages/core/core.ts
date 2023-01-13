@@ -19,6 +19,12 @@ import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import { registerInstrumentor } from "@jazzer.js/instrumentor";
 import { trackedHooks } from "@jazzer.js/hooking";
+import * as process from "process";
+import * as tmp from "tmp";
+import * as fs from "fs";
+
+// Remove temporary files on exit
+tmp.setGracefulCleanup();
 
 // libFuzzer uses exit code 77 in case of a crash, so use a similar one for
 // failed error expectations.
@@ -88,6 +94,49 @@ export async function startFuzzingNoInit(
 	// Wrap the potentially sync fuzzer call, so that resolve and exception
 	// handlers are always executed.
 	return Promise.resolve().then(() => fuzzerFn(fuzzFn, fuzzerOptions));
+}
+
+function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
+	// When we run in a libFuzzer mode that spawns subprocesses, we create a wrapper script
+	// that can be used as libFuzzer's argv[0]. In the fork mode, the main libFuzzer process
+	// uses argv[0] to spawn further processes that perform the actual fuzzing.
+	const libFuzzerSpawnsProcess = fuzzerOptions.some(
+		(flag) =>
+			flag.startsWith("-fork=") ||
+			flag.startsWith("-jobs=") ||
+			flag.startsWith("-merge=")
+	);
+
+	if (!libFuzzerSpawnsProcess) {
+		// Return a fake argv[0] to start the fuzzer if libFuzzer does not spawn new processes.
+		return "unused_arg0_report_a_bug_if_you_see_this";
+	} else {
+		// Create a wrapper script and return its path.
+		return createWrapperScript(fuzzerOptions);
+	}
+}
+
+function createWrapperScript(fuzzerOptions: string[]) {
+	const jazzerArgs = process.argv.filter(
+		(arg) => arg !== "--" && fuzzerOptions.indexOf(arg) === -1
+	);
+
+	const isWindows = process.platform === "win32";
+
+	const scriptContent = `${isWindows ? "@echo off" : "#!/usr/bin/env sh"}
+cd "${process.cwd()}"
+${jazzerArgs.map((s) => '"' + s + '"').join(" ")} -- ${isWindows ? "%*" : "$@"}
+`;
+
+	const scriptTempFile = tmp.fileSync({
+		mode: 0o700,
+		prefix: "jazzer.js",
+		postfix: "libfuzzer" + (isWindows ? ".bat" : ".sh"),
+	});
+	fs.writeFileSync(scriptTempFile.name, scriptContent);
+	fs.closeSync(scriptTempFile.fd);
+
+	return scriptTempFile.name;
 }
 
 function stopFuzzing(err: unknown, expectedErrors: string[]) {
@@ -183,7 +232,8 @@ function buildFuzzerOptions(options: Options): string[] {
 		const inSeconds = options.timeout / 1000;
 		opts = opts.concat(`-timeout=${inSeconds}`);
 	}
-	return opts;
+
+	return [prepareLibFuzzerArg0(opts), ...opts];
 }
 
 async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
