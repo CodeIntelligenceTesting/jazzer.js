@@ -15,60 +15,16 @@
  */
 
 import { default as bind } from "bindings";
+import {
+	incrementCounter,
+	initializeCounters,
+	nextCounter,
+	readCounter,
+} from "./coverage";
 
 export const addon = bind("jazzerjs");
 
-const MAX_NUM_COUNTERS: number = 1 << 20;
-const INITIAL_NUM_COUNTERS: number = 1 << 9;
-const coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
-
-addon.registerCoverageMap(coverageMap);
-addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
-
-let currentNumCounters = INITIAL_NUM_COUNTERS;
-let nextEdgeID = 0;
-
-// Returns the next counter id to use for edge coverage.
-// If needed, the coverage map is enlarged.
-function nextCounter(): number {
-	enlargeCountersBufferIfNeeded(nextEdgeID);
-	return nextEdgeID++;
-}
-
-function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
-	// Enlarge registered counters if needed
-	let newNumCounters = currentNumCounters;
-	while (nextEdgeID >= newNumCounters) {
-		newNumCounters = 2 * newNumCounters;
-		if (newNumCounters > MAX_NUM_COUNTERS) {
-			throw new Error(
-				`Maximum number (${MAX_NUM_COUNTERS}) of coverage counts exceeded.`
-			);
-		}
-	}
-
-	// Register new counters if enlarged
-	if (newNumCounters > currentNumCounters) {
-		addon.registerNewCounters(currentNumCounters, newNumCounters);
-		currentNumCounters = newNumCounters;
-		console.log(`INFO: New number of coverage counters ${currentNumCounters}`);
-	}
-}
-
-/**
- * Increments the coverage counter for a given ID.
- * This function implements the NeverZero policy from AFL++.
- * See https://aflplus.plus//papers/aflpp-woot2020.pdf
- * @param id the id of the coverage counter to increment
- */
-function incrementCounter(id: number) {
-	const counter = coverageMap.readUint8(id);
-	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, id);
-}
-
-function readCounter(id: number): number {
-	return coverageMap.readUint8(id);
-}
+initializeCounters(addon);
 
 /**
  * Performs a string comparison between two strings and calls the corresponding native hook if needed.
