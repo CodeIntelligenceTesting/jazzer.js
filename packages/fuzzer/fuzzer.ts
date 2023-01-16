@@ -26,16 +26,19 @@ addon.registerCoverageMap(coverageMap);
 addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
 
 let currentNumCounters = INITIAL_NUM_COUNTERS;
-let currentCounter = 0;
+let nextEdgeID = 0;
 
 // Returns the next counter id to use for edge coverage.
 // If needed, the coverage map is enlarged.
 function nextCounter(): number {
-	currentCounter++;
+	enlargeCountersBufferIfNeeded(nextEdgeID);
+	return nextEdgeID++;
+}
 
+function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
 	// Enlarge registered counters if needed
 	let newNumCounters = currentNumCounters;
-	while (currentCounter >= newNumCounters) {
+	while (nextEdgeID >= newNumCounters) {
 		newNumCounters = 2 * newNumCounters;
 		if (newNumCounters > MAX_NUM_COUNTERS) {
 			throw new Error(
@@ -50,7 +53,6 @@ function nextCounter(): number {
 		currentNumCounters = newNumCounters;
 		console.log(`INFO: New number of coverage counters ${currentNumCounters}`);
 	}
-	return currentCounter;
 }
 
 /**
