@@ -22,6 +22,7 @@ import {
 	transform,
 } from "./instrument";
 import { codeCoverage } from "./plugins/codeCoverage";
+import { MemorySyncIdStrategy } from "./edgeIdStrategy";
 
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
@@ -74,7 +75,9 @@ describe("transform", () => {
 			try {
 				// Use the codeCoverage plugin to add additional lines, so that the
 				// resulting error stack does not match the original code anymore.
-				const result = transform(sourceFileName, content, [codeCoverage()]);
+				const result = transform(sourceFileName, content, [
+					codeCoverage(new MemorySyncIdStrategy()),
+				]);
 				const fn = eval(result?.code || "");
 				fn();
 				fail("Error expected but not thrown.");

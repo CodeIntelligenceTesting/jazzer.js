@@ -20,20 +20,18 @@ const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
 let coverageMap: Buffer;
 let currentNumCounters: number;
-let nextEdgeID: number;
 
 export function initializeCounters() {
 	coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
 	addon.registerCoverageMap(coverageMap);
 	addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
 	currentNumCounters = INITIAL_NUM_COUNTERS;
-	nextEdgeID = 0;
 }
 
-export function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
+export function enlargeCountersBufferIfNeeded(nextEdgeId: number) {
 	// Enlarge registered counters if needed
 	let newNumCounters = currentNumCounters;
-	while (nextEdgeID >= newNumCounters) {
+	while (nextEdgeId >= newNumCounters) {
 		newNumCounters = 2 * newNumCounters;
 		if (newNumCounters > MAX_NUM_COUNTERS) {
 			throw new Error(
@@ -50,24 +48,17 @@ export function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
 	}
 }
 
-// Returns the next counter id to use for edge coverage.
-// If needed, the coverage map is enlarged.
-export function nextCounter(): number {
-	enlargeCountersBufferIfNeeded(nextEdgeID);
-	return nextEdgeID++;
-}
-
 /**
  * Increments the coverage counter for a given ID.
  * This function implements the NeverZero policy from AFL++.
  * See https://aflplus.plus//papers/aflpp-woot2020.pdf
- * @param id the id of the coverage counter to increment
+ * @param edgeId the edge ID of the coverage counter to increment
  */
-export function incrementCounter(id: number) {
-	const counter = coverageMap.readUint8(id);
-	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, id);
+export function incrementCounter(edgeId: number) {
+	const counter = coverageMap.readUint8(edgeId);
+	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, edgeId);
 }
 
-export function readCounter(id: number): number {
-	return coverageMap.readUint8(id);
+export function readCounter(edgeId: number): number {
+	return coverageMap.readUint8(edgeId);
 }

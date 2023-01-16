@@ -18,8 +18,8 @@ import { addon, StartFuzzingAsyncFn, StartFuzzingSyncFn } from "./addon";
 import {
 	incrementCounter,
 	initializeCounters,
-	nextCounter,
 	readCounter,
+	enlargeCountersBufferIfNeeded,
 } from "./coverage";
 import { traceAndReturn, traceNumberCmp, traceStrCmp } from "./trace";
 
@@ -38,12 +38,12 @@ export interface Fuzzer {
 	startFuzzing: StartFuzzingSyncFn;
 	startFuzzingAsync: StartFuzzingAsyncFn;
 	stopFuzzingAsync: (status?: number) => void;
-	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
 	readCounter: typeof readCounter;
 	traceStrCmp: typeof traceStrCmp;
 	traceNumberCmp: typeof traceNumberCmp;
 	traceAndReturn: typeof traceAndReturn;
+	enlargeCountersBufferIfNeeded: typeof enlargeCountersBufferIfNeeded;
 }
 
 export const fuzzer: Fuzzer = {
@@ -51,10 +51,10 @@ export const fuzzer: Fuzzer = {
 	startFuzzing: addon.startFuzzing,
 	startFuzzingAsync: addon.startFuzzingAsync,
 	stopFuzzingAsync: addon.stopFuzzingAsync,
-	nextCounter,
 	incrementCounter,
 	readCounter,
 	traceStrCmp,
 	traceNumberCmp,
 	traceAndReturn,
+	enlargeCountersBufferIfNeeded,
 };

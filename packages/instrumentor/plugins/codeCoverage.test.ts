@@ -16,13 +16,23 @@
 
 import { codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
+import { MemorySyncIdStrategy } from "../edgeIdStrategy";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const native = require("@jazzer.js/fuzzer").fuzzer;
-jest.mock("@jazzer.js/fuzzer");
-native.nextCounter.mockReturnValue(0);
+jest.mock("../edgeIdStrategy", () => {
+	return {
+		MemorySyncIdStrategy: jest.fn().mockImplementation(() => {
+			return {
+				nextEdgeId: () => {
+					return 0;
+				},
+			};
+		}),
+	};
+});
 
-const expectInstrumentation = instrumentWith(codeCoverage);
+const expectInstrumentation = instrumentWith(
+	codeCoverage(new MemorySyncIdStrategy())
+);
 
 describe("code coverage instrumentation", () => {
 	describe("IfStatement", () => {
