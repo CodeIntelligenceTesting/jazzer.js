@@ -27,6 +27,7 @@ import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { hookManager } from "@jazzer.js/hooking";
+import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 
 interface SourceMaps {
 	[file: string]: RawSourceMap;
@@ -65,12 +66,21 @@ export function registerInstrumentor(includes: string[], excludes: string[]) {
 		unloadInternalModules();
 	}
 
+	const idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy();
+
 	const shouldInstrument = shouldInstrumentFn(includes, excludes);
 	const shouldHook = hookManager.hasFunctionsToHook.bind(hookManager);
 	hookRequire(
 		() => true,
-		(code: string, options: TransformerOptions): string =>
-			instrument(code, options.filename, shouldInstrument, shouldHook)
+		(code: string, options: TransformerOptions): string => {
+			return instrument(
+				code,
+				options.filename,
+				shouldInstrument,
+				shouldHook,
+				idStrategy
+			);
+		}
 	);
 }
 
@@ -114,16 +124,29 @@ function instrument(
 	code: string,
 	filename: string,
 	shouldInstrument: FilePredicate,
-	shouldHook: FilePredicate
+	shouldHook: FilePredicate,
+	idStrategy: EdgeIdStrategy
 ) {
 	const transformations: PluginItem[] = [];
-	if (shouldInstrument(filename)) {
-		transformations.push(codeCoverage, compareHooks);
+	const shouldInstrumentFile = shouldInstrument(filename);
+	if (shouldInstrumentFile) {
+		transformations.push(codeCoverage(idStrategy), compareHooks);
 	}
 	if (shouldHook(filename)) {
 		transformations.push(functionHooks(filename));
 	}
-	return transform(filename, code, transformations)?.code || code;
+	if (shouldInstrumentFile) {
+		idStrategy.startForSourceFile(filename);
+	}
+
+	const transformedCode =
+		transform(filename, code, transformations)?.code || code;
+
+	if (shouldInstrumentFile) {
+		idStrategy.commitIdCount(filename);
+	}
+
+	return transformedCode;
 }
 
 export function transform(
