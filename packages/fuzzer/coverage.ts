@@ -14,25 +14,20 @@
  * limitations under the License.
  */
 
+import { addon } from "./addon";
+
 const MAX_NUM_COUNTERS: number = 1 << 20;
 const INITIAL_NUM_COUNTERS: number = 1 << 9;
 let coverageMap: Buffer;
 let currentNumCounters: number;
-let nextEdgeID = 0;
+let nextEdgeID: number;
 
-type NativeAddon = {
-	registerCoverageMap: (buffer: Buffer) => void;
-	registerNewCounters: (oldNumCounters: number, newNumCounters: number) => void;
-};
-
-let nativeAddon: NativeAddon;
-
-export function initializeCounters(addon: NativeAddon) {
+export function initializeCounters() {
 	coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
 	addon.registerCoverageMap(coverageMap);
 	addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
 	currentNumCounters = INITIAL_NUM_COUNTERS;
-	nativeAddon = addon;
+	nextEdgeID = 0;
 }
 
 export function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
@@ -49,7 +44,7 @@ export function enlargeCountersBufferIfNeeded(nextEdgeID: number) {
 
 	// Register new counters if enlarged
 	if (newNumCounters > currentNumCounters) {
-		nativeAddon.registerNewCounters(currentNumCounters, newNumCounters);
+		addon.registerNewCounters(currentNumCounters, newNumCounters);
 		currentNumCounters = newNumCounters;
 		console.log(`INFO: New number of coverage counters ${currentNumCounters}`);
 	}
