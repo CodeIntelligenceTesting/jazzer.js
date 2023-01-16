@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { default as bind } from "bindings";
+import { addon, StartFuzzingAsyncFn, StartFuzzingSyncFn } from "./addon";
 import {
 	incrementCounter,
 	initializeCounters,
@@ -22,9 +22,7 @@ import {
 	readCounter,
 } from "./coverage";
 
-export const addon = bind("jazzerjs");
-
-initializeCounters(addon);
+initializeCounters();
 
 /**
  * Performs a string comparison between two strings and calls the corresponding native hook if needed.
@@ -126,19 +124,18 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 	return target;
 }
 
-// Re-export everything from the native library.
-export type FuzzTargetAsyncOrValue = (data: Buffer) => void | Promise<void>;
-export type FuzzTargetCallback = (
-	data: Buffer,
-	done: (e?: Error) => void
-) => void;
-export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
-export type FuzzOpts = string[];
+export type {
+	FuzzTarget,
+	FuzzTargetAsyncOrValue,
+	FuzzTargetCallback,
+} from "./addon";
+
+export { addon } from "./addon";
 
 export interface Fuzzer {
 	printVersion: () => void;
-	startFuzzing: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => void;
-	startFuzzingAsync: (fuzzFn: FuzzTarget, fuzzOpts: FuzzOpts) => Promise<void>;
+	startFuzzing: StartFuzzingSyncFn;
+	startFuzzingAsync: StartFuzzingAsyncFn;
 	stopFuzzingAsync: (status?: number) => void;
 	nextCounter: typeof nextCounter;
 	incrementCounter: typeof incrementCounter;
