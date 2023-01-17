@@ -32,11 +32,15 @@ jobs:
 
   prebuilds:
     name: create prebuilds
-    runs-on: ${{ matrix.os }}
     needs: [create_release]
     strategy:
       matrix:
         os: [ubuntu-20.04, macos-11, windows-2019]
+        opts: [""]
+        include:
+          - os: macos-11
+            opts: "--arch arm64"
+    runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -52,5 +56,5 @@ jobs:
         run: npm install --ws=@jazzer.js/fuzzer
       - name: build and upload prebuilds
         run: >
-          npm run upload --workspace=@jazzer.js/fuzzer --
-          ${{secrets.GITHUB_TOKEN}}
+          npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
+          --upload ${{secrets.GITHUB_TOKEN}}
