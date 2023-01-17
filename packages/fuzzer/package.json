@@ -17,7 +17,7 @@
 	"types": "dist/fuzzer.d.ts",
 	"scripts": {
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
-		"install": "prebuild-install --runtime napi || cmake-js rebuild --out build",
+		"install": "prebuild-install --runtime napi || npm run prebuild",
 		"build": "cmake-js build --out build",
 		"format:fix": "clang-format -i *.cpp shared/*.cpp shared/*.h",
 		"lint": "find . -path ./build -prune -type f -o -iname '*.h' -o -iname '*.cpp' | xargs clang-tidy"
