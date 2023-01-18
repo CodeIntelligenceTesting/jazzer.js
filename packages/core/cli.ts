@@ -74,6 +74,15 @@ yargs(process.argv.slice(2))
 				})
 				.hide("fuzzFunction")
 
+				.option("id_sync_file", {
+					describe:
+						"File used to sync edge ID generation. " +
+						"Needed when fuzzing in multi-process modes",
+					type: "string",
+					default: undefined,
+					group: "Fuzzer:",
+				})
+
 				.option("sync", {
 					describe: "Run the fuzz target synchronously.",
 					type: "boolean",
@@ -167,6 +176,7 @@ yargs(process.argv.slice(2))
 				fuzzerOptions: args.corpus.concat(args._),
 				customHooks: args.custom_hooks.map(ensureFilepath),
 				expectedErrors: args.expected_errors,
+				idSyncFile: args.id_sync_file,
 			});
 		}
 	)

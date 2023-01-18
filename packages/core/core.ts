@@ -44,6 +44,7 @@ export interface Options {
 	customHooks: string[];
 	expectedErrors: string[];
 	timeout?: number;
+	idSyncFile?: string;
 }
 
 interface FuzzModule {
@@ -60,7 +61,11 @@ export async function initFuzzing(options: Options) {
 	registerGlobals();
 	await Promise.all(options.customHooks.map(importModule));
 	if (!options.dryRun) {
-		registerInstrumentor(options.includes, options.excludes);
+		registerInstrumentor(
+			options.includes,
+			options.excludes,
+			options.idSyncFile
+		);
 	}
 }
 
@@ -120,6 +125,16 @@ function createWrapperScript(fuzzerOptions: string[]) {
 	const jazzerArgs = process.argv.filter(
 		(arg) => arg !== "--" && fuzzerOptions.indexOf(arg) === -1
 	);
+
+	if (jazzerArgs.indexOf("--id_sync_file") === -1) {
+		const idSyncFile = tmp.fileSync({
+			mode: 0o600,
+			prefix: "jazzer.js",
+			postfix: "idSync",
+		});
+		jazzerArgs.push("--id_sync_file", idSyncFile.name);
+		fs.closeSync(idSyncFile.fd);
+	}
 
 	const isWindows = process.platform === "win32";
 

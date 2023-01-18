@@ -27,7 +27,11 @@ import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { hookManager } from "@jazzer.js/hooking";
-import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
+import {
+	EdgeIdStrategy,
+	FileSyncIdStrategy,
+	MemorySyncIdStrategy,
+} from "./edgeIdStrategy";
 
 interface SourceMaps {
 	[file: string]: RawSourceMap;
@@ -60,13 +64,20 @@ export function installSourceMapSupport(): () => void {
 
 export type FilePredicate = (filepath: string) => boolean;
 
-export function registerInstrumentor(includes: string[], excludes: string[]) {
+export function registerInstrumentor(
+	includes: string[],
+	excludes: string[],
+	idSyncFile: string | undefined
+) {
 	installSourceMapSupport();
 	if (includes.includes("jazzer.js")) {
 		unloadInternalModules();
 	}
 
-	const idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy();
+	const idStrategy: EdgeIdStrategy =
+		idSyncFile !== undefined
+			? new FileSyncIdStrategy(idSyncFile)
+			: new MemorySyncIdStrategy();
 
 	const shouldInstrument = shouldInstrumentFn(includes, excludes);
 	const shouldHook = hookManager.hasFunctionsToHook.bind(hookManager);
