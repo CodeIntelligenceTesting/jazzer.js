@@ -19,7 +19,7 @@
 		"@babel/core": "^7.20.12"
 	},
 	"devDependencies": {
-		"@types/babel__core": "^7.1.20"
+		"@types/babel__core": "^7.20.0"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
