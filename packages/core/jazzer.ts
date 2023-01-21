@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { addon } from "@jazzer.js/fuzzer";
+import { fuzzer } from "@jazzer.js/fuzzer";
 
 /**
  * Instructs the fuzzer to guide its mutations towards making `current` equal to `target`
@@ -29,7 +29,7 @@ import { addon } from "@jazzer.js/fuzzer";
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
 function guideTowardsEquality(current: string, target: string, id: number) {
-	addon.traceUnequalStrings(id, current, target);
+	fuzzer.nativeAddon.traceUnequalStrings(id, current, target);
 }
 
 /**
@@ -45,7 +45,7 @@ function guideTowardsEquality(current: string, target: string, id: number) {
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
 function guideTowardsContainment(needle: string, haystack: string, id: number) {
-	addon.traceStringContainment(id, needle, haystack);
+	fuzzer.nativeAddon.traceStringContainment(id, needle, haystack);
 }
 
 /**
@@ -63,7 +63,7 @@ function guideTowardsContainment(needle: string, haystack: string, id: number) {
  * @param id a (probabilistically) unique identifier for this particular state hint
  */
 function exploreState(state: number, id: number) {
-	addon.tracePcIndir(id, state);
+	fuzzer.nativeAddon.tracePcIndir(id, state);
 }
 
 export interface Jazzer {
