@@ -33,6 +33,27 @@ import { NodePath, PluginTarget, types } from "@babel/core";
 import { EdgeIdStrategy } from "../edgeIdStrategy";
 
 export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
+	function addCounterToStmt(stmt: Statement): BlockStatement {
+		const counterStmt = makeCounterIncStmt();
+		if (isBlockStatement(stmt)) {
+			const br = stmt as BlockStatement;
+			br.body.unshift(counterStmt);
+			return br;
+		} else {
+			return types.blockStatement([counterStmt, stmt]);
+		}
+	}
+
+	function makeCounterIncStmt(): ExpressionStatement {
+		return types.expressionStatement(makeCounterIncExpr());
+	}
+
+	function makeCounterIncExpr(): Expression {
+		return types.callExpression(types.identifier("Fuzzer.incrementCounter"), [
+			types.numericLiteral(idStrategy.nextEdgeId()),
+		]);
+	}
+
 	return () => {
 		return {
 			visitor: {
@@ -41,92 +62,62 @@ export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
 					if (isBlockStatement(path.node.body)) {
 						const bodyStmt = path.node.body as BlockStatement;
 						if (bodyStmt) {
-							bodyStmt.body.unshift(makeCounterIncStmt(idStrategy));
+							bodyStmt.body.unshift(makeCounterIncStmt());
 						}
 					}
 				},
 				IfStatement(path: NodePath<IfStatement>) {
-					path.node.consequent = addCounterToStmt(
-						path.node.consequent,
-						idStrategy
-					);
+					path.node.consequent = addCounterToStmt(path.node.consequent);
 					if (path.node.alternate) {
-						path.node.alternate = addCounterToStmt(
-							path.node.alternate,
-							idStrategy
-						);
+						path.node.alternate = addCounterToStmt(path.node.alternate);
 					}
-					path.insertAfter(makeCounterIncStmt(idStrategy));
+					path.insertAfter(makeCounterIncStmt());
 				},
 				SwitchStatement(path: NodePath<SwitchStatement>) {
 					path.node.cases.forEach((caseStmt) =>
-						caseStmt.consequent.unshift(makeCounterIncStmt(idStrategy))
+						caseStmt.consequent.unshift(makeCounterIncStmt())
 					);
-					path.insertAfter(makeCounterIncStmt(idStrategy));
+					path.insertAfter(makeCounterIncStmt());
 				},
 				Loop(path: NodePath<Loop>) {
-					path.node.body = addCounterToStmt(path.node.body, idStrategy);
-					path.insertAfter(makeCounterIncStmt(idStrategy));
+					path.node.body = addCounterToStmt(path.node.body);
+					path.insertAfter(makeCounterIncStmt());
 				},
 				TryStatement(path: NodePath<TryStatement>) {
 					const catchStmt = path.node.handler;
 					if (catchStmt) {
-						catchStmt.body.body.unshift(makeCounterIncStmt(idStrategy));
+						catchStmt.body.body.unshift(makeCounterIncStmt());
 					}
-					path.insertAfter(makeCounterIncStmt(idStrategy));
+					path.insertAfter(makeCounterIncStmt());
 				},
 				LogicalExpression(path: NodePath<LogicalExpression>) {
 					if (!isLogicalExpression(path.node.left)) {
 						path.node.left = types.sequenceExpression([
-							makeCounterIncExpr(idStrategy),
+							makeCounterIncExpr(),
 							path.node.left,
 						]);
 					}
 					if (!isLogicalExpression(path.node.right)) {
 						path.node.right = types.sequenceExpression([
-							makeCounterIncExpr(idStrategy),
+							makeCounterIncExpr(),
 							path.node.right,
 						]);
 					}
 				},
 				ConditionalExpression(path: NodePath<ConditionalExpression>) {
 					path.node.consequent = types.sequenceExpression([
-						makeCounterIncExpr(idStrategy),
+						makeCounterIncExpr(),
 						path.node.consequent,
 					]);
 					path.node.alternate = types.sequenceExpression([
-						makeCounterIncExpr(idStrategy),
+						makeCounterIncExpr(),
 						path.node.alternate,
 					]);
 					if (isBlockStatement(path.parent)) {
-						path.insertAfter(makeCounterIncStmt(idStrategy));
+						path.insertAfter(makeCounterIncStmt());
 					}
 				},
 			},
 		};
 	};
-}
-
-function addCounterToStmt(
-	stmt: Statement,
-	strategy: EdgeIdStrategy
-): BlockStatement {
-	const counterStmt = makeCounterIncStmt(strategy);
-	if (isBlockStatement(stmt)) {
-		const br = stmt as BlockStatement;
-		br.body.unshift(counterStmt);
-		return br;
-	} else {
-		return types.blockStatement([counterStmt, stmt]);
-	}
-}
-
-function makeCounterIncStmt(strategy: EdgeIdStrategy): ExpressionStatement {
-	return types.expressionStatement(makeCounterIncExpr(strategy));
-}
-
-function makeCounterIncExpr(strategy: EdgeIdStrategy): Expression {
-	return types.callExpression(types.identifier("Fuzzer.incrementCounter"), [
-		types.numericLiteral(strategy.nextEdgeId()),
-	]);
 }
