@@ -73,7 +73,6 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 	}
 
 	startForSourceFile(filename: string): void {
-		console.log(`startForSourceFile(${filename})`);
 		// We resort to busy waiting since the `Transformer` required by istanbul's `hookRequire`
 		// must be a synchronous function returning the transformed code.
 		for (;;) {
@@ -158,21 +157,21 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 			throw Error("commitIdCount() is called before startForSourceFile()");
 		}
 
-		const idCount = this._nextEdgeId - this.firstEdgeId;
+		const usedIdsCount = this._nextEdgeId - this.firstEdgeId;
 		if (this.cachedIdCount !== undefined) {
 			// We released the lock already in startForSourceFile since the file had already been instrumented
-			// elsewhere. As we know the expected number of IDs for the current class in this case, check for
-			// deviations.
-			if (this.cachedIdCount !== idCount) {
+			// elsewhere. As we know the expected number of IDs for the current source file in this case, check
+			// for deviations.
+			if (this.cachedIdCount !== usedIdsCount) {
 				throw Error(
-					`${filename} has ${idCount} edges, but ${this.cachedIdCount} edges reserved in ID sync file`
+					`${filename} has ${usedIdsCount} edges, but ${this.cachedIdCount} edges reserved in ID sync file`
 				);
 			}
 		} else {
 			// We are the first to instrument this file and should record the number of IDs in the sync file.
 			fs.appendFileSync(
 				this.idSyncFile,
-				`${filename},${this.firstEdgeId},${idCount}${newLine}`
+				`${filename},${this.firstEdgeId},${usedIdsCount}${newLine}`
 			);
 			this.firstEdgeId = undefined;
 			this.cachedIdCount = undefined;

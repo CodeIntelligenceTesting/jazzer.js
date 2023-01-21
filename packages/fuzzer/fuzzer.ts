@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { addon, StartFuzzingAsyncFn, StartFuzzingSyncFn } from "./addon";
+import { addon, NativeAddon } from "./addon";
 import {
 	incrementCounter,
 	initializeCounters,
@@ -31,13 +31,8 @@ export type {
 	FuzzTargetCallback,
 } from "./addon";
 
-export { addon } from "./addon";
-
 export interface Fuzzer {
-	printVersion: () => void;
-	startFuzzing: StartFuzzingSyncFn;
-	startFuzzingAsync: StartFuzzingAsyncFn;
-	stopFuzzingAsync: (status?: number) => void;
+	nativeAddon: NativeAddon;
 	incrementCounter: typeof incrementCounter;
 	readCounter: typeof readCounter;
 	traceStrCmp: typeof traceStrCmp;
@@ -47,10 +42,7 @@ export interface Fuzzer {
 }
 
 export const fuzzer: Fuzzer = {
-	printVersion: addon.printVersion,
-	startFuzzing: addon.startFuzzing,
-	startFuzzingAsync: addon.startFuzzingAsync,
-	stopFuzzingAsync: addon.stopFuzzingAsync,
+	nativeAddon: addon,
 	incrementCounter,
 	readCounter,
 	traceStrCmp,

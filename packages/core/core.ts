@@ -94,8 +94,8 @@ export async function startFuzzingNoInit(
 ) {
 	const fuzzerOptions = buildFuzzerOptions(options);
 	const fuzzerFn = options.sync
-		? Fuzzer.startFuzzing
-		: Fuzzer.startFuzzingAsync;
+		? Fuzzer.nativeAddon.startFuzzing
+		: Fuzzer.nativeAddon.startFuzzingAsync;
 	// Wrap the potentially sync fuzzer call, so that resolve and exception
 	// handlers are always executed.
 	return Promise.resolve().then(() => fuzzerFn(fuzzFn, fuzzerOptions));
@@ -165,7 +165,7 @@ function stopFuzzing(err: unknown, expectedErrors: string[]) {
 			console.error(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`
 			);
-			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+			Fuzzer.nativeAddon.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
 		}
 		return;
 	}
@@ -175,13 +175,13 @@ function stopFuzzing(err: unknown, expectedErrors: string[]) {
 		const name = errorName(err);
 		if (expectedErrors.includes(name)) {
 			console.error(`INFO: Received expected error "${name}".`);
-			Fuzzer.stopFuzzingAsync(ERROR_EXPECTED_CODE);
+			Fuzzer.nativeAddon.stopFuzzingAsync(ERROR_EXPECTED_CODE);
 		} else {
 			printError(err);
 			console.error(
 				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`
 			);
-			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+			Fuzzer.nativeAddon.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
 		}
 		return;
 	}
@@ -189,7 +189,7 @@ function stopFuzzing(err: unknown, expectedErrors: string[]) {
 	// Error found, but no specific one expected. This case is used for normal
 	// fuzzing runs, so no dedicated exit code is given to the stop fuzzing function.
 	printError(err);
-	Fuzzer.stopFuzzingAsync();
+	Fuzzer.nativeAddon.stopFuzzingAsync();
 }
 
 function errorName(error: unknown): string {
