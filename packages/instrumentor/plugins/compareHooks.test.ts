@@ -27,20 +27,26 @@ const expectInstrumentation = instrumentWith(compareHooks);
 describe("compare hooks instrumentation", () => {
 	describe("string compares", () => {
 		it("intercepts equals (`==` and `===`)", () => {
-			fuzzer.traceStrCmp.mockClear().mockReturnValue(false);
+			fuzzer.tracer.traceStrCmp.mockClear().mockReturnValue(false);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 			const input = `
 			|let a = "a"
 			|a === "b" == "c"`;
 			const output = `
 			|let a = "a";
-			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "===", 0), "c", "==", 0);`;
+			|Fuzzer.tracer.traceStrCmp(Fuzzer.tracer.traceStrCmp(a, "b", "===", 0), "c", "==", 0);`;
 
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
-			expect(fuzzer.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===", 0);
-			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
+				1,
+				"a",
+				"b",
+				"===",
+				0
+			);
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				"c",
@@ -50,7 +56,7 @@ describe("compare hooks instrumentation", () => {
 		});
 
 		it("intercepts not equals (`!=` and `!==`)", () => {
-			fuzzer.traceStrCmp.mockClear().mockReturnValue(true);
+			fuzzer.tracer.traceStrCmp.mockClear().mockReturnValue(true);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -58,19 +64,31 @@ describe("compare hooks instrumentation", () => {
 			|a !== "b" != "c"`;
 			const output = `
 			|let a = "a";
-			|Fuzzer.traceStrCmp(Fuzzer.traceStrCmp(a, "b", "!==", 0), "c", "!=", 0);`;
+			|Fuzzer.tracer.traceStrCmp(Fuzzer.tracer.traceStrCmp(a, "b", "!==", 0), "c", "!=", 0);`;
 
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
-			expect(fuzzer.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==", 0);
-			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=", 0);
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
+				1,
+				"a",
+				"b",
+				"!==",
+				0
+			);
+			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
+				2,
+				true,
+				"c",
+				"!=",
+				0
+			);
 		});
 	});
 
 	describe("integer compares", () => {
 		it("intercepts equals (`==` and `===`))", () => {
-			fuzzer.traceNumberCmp.mockClear().mockReturnValue(false);
+			fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(false);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -78,18 +96,18 @@ describe("compare hooks instrumentation", () => {
 			|a === 20 == 30`;
 			const output = `
 			|let a = 10;
-			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "===", 0), 30, "==", 0);`;
+			|Fuzzer.tracer.traceNumberCmp(Fuzzer.tracer.traceNumberCmp(a, 20, "===", 0), 30, "==", 0);`;
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
-			expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(2);
-			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				1,
 				10,
 				20,
 				"===",
 				0
 			);
-			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				30,
@@ -99,7 +117,7 @@ describe("compare hooks instrumentation", () => {
 		});
 
 		it("intercepts not equals (`!=` and `!==`))", () => {
-			fuzzer.traceNumberCmp.mockClear().mockReturnValue(true);
+			fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(true);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -107,18 +125,18 @@ describe("compare hooks instrumentation", () => {
 			|a !== 20 != 30`;
 			const output = `
 			|let a = 10;
-			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "!==", 0), 30, "!=", 0);`;
+			|Fuzzer.tracer.traceNumberCmp(Fuzzer.tracer.traceNumberCmp(a, 20, "!==", 0), 30, "!=", 0);`;
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
-			expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(2);
-			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				1,
 				10,
 				20,
 				"!==",
 				0
 			);
-			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				true,
 				30,
@@ -129,18 +147,18 @@ describe("compare hooks instrumentation", () => {
 
 		it("intercepts greater and less them", () => {
 			[">", "<", ">=", "<="].forEach((operator) => {
-				fuzzer.traceNumberCmp.mockClear().mockReturnValue(false);
+				fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(false);
 				helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 				const input = `
 				|let a = 10
 				|a ${operator} 20`;
 				const output = `
 				|let a = 10;
-				|Fuzzer.traceNumberCmp(a, 20, "${operator}", 0);`;
+				|Fuzzer.tracer.traceNumberCmp(a, 20, "${operator}", 0);`;
 				const result = expectInstrumentationAndEval<boolean>(input, output);
 				expect(result).toBe(false);
-				expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(1);
-				expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
+				expect(fuzzer.tracer.traceNumberCmp).toHaveBeenCalledTimes(1);
+				expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 					1,
 					10,
 					20,
@@ -170,15 +188,15 @@ describe("compare hooks instrumentation", () => {
 			|}`;
 			const output = `
 			|switch (day) {
-            |  case Fuzzer.traceAndReturn(day, "Monday", 0):
+            |  case Fuzzer.tracer.traceAndReturn(day, "Monday", 0):
             |    console.log("monday");
             |    break;
             |
-            |  case Fuzzer.traceAndReturn(day, "Tuesday", 0):
+            |  case Fuzzer.tracer.traceAndReturn(day, "Tuesday", 0):
             |    console.log("Tuesday");
             |    break;
             |
-            |  case Fuzzer.traceAndReturn(day, "Friday", 0):
+            |  case Fuzzer.tracer.traceAndReturn(day, "Friday", 0):
             |    console.log("Friday");
             |    break;
             |
@@ -207,15 +225,15 @@ describe("compare hooks instrumentation", () => {
 			|}`;
 			const output = `
 			|switch (count) {
-            |  case Fuzzer.traceAndReturn(count, 1, 0):
+            |  case Fuzzer.tracer.traceAndReturn(count, 1, 0):
             |    console.log("1");
             |    break;
             |
-            |  case Fuzzer.traceAndReturn(count, 2, 0):
+            |  case Fuzzer.tracer.traceAndReturn(count, 2, 0):
             |    console.log("2");
             |    break;
             |
-            |  case Fuzzer.traceAndReturn(count, 5, 0):
+            |  case Fuzzer.tracer.traceAndReturn(count, 5, 0):
             |    console.log("5");
             |    break;
             |

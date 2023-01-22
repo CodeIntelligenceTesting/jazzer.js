@@ -26,7 +26,7 @@ import { addon } from "./addon";
  * @param id an unique identifier to distinguish between the different comparisons
  * @returns result of the comparison
  */
-export function traceStrCmp(
+function traceStrCmp(
 	s1: string,
 	s2: string,
 	operator: string,
@@ -68,7 +68,7 @@ export function traceStrCmp(
  * @param id an unique identifier to distinguish between the different comparisons
  * @returns result of the comparison
  */
-export function traceNumberCmp(
+function traceNumberCmp(
 	n1: number,
 	n2: number,
 	operator: string,
@@ -99,7 +99,7 @@ export function traceNumberCmp(
 	}
 }
 
-export function traceAndReturn(current: unknown, target: unknown, id: number) {
+function traceAndReturn(current: unknown, target: unknown, id: number) {
 	switch (typeof target) {
 		case "number":
 			if (typeof current === "number") {
@@ -115,3 +115,15 @@ export function traceAndReturn(current: unknown, target: unknown, id: number) {
 	}
 	return target;
 }
+
+export interface Tracer {
+	traceStrCmp: typeof traceStrCmp;
+	traceNumberCmp: typeof traceNumberCmp;
+	traceAndReturn: typeof traceAndReturn;
+}
+
+export const tracer: Tracer = {
+	traceStrCmp,
+	traceNumberCmp,
+	traceAndReturn,
+};

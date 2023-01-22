@@ -16,7 +16,7 @@
 
 import { addon, NativeAddon } from "./addon";
 import { CoverageTracker } from "./coverage";
-import { traceAndReturn, traceNumberCmp, traceStrCmp } from "./trace";
+import { Tracer, tracer } from "./trace";
 
 export type {
 	FuzzTarget,
@@ -27,17 +27,14 @@ export type {
 export interface Fuzzer {
 	nativeAddon: NativeAddon;
 	coverageTracker: CoverageTracker;
-	traceStrCmp: typeof traceStrCmp;
-	traceNumberCmp: typeof traceNumberCmp;
-	traceAndReturn: typeof traceAndReturn;
+	tracer: Tracer;
 }
 
 export const fuzzer: Fuzzer = {
 	nativeAddon: addon,
 	coverageTracker: new CoverageTracker(),
-	traceStrCmp,
-	traceNumberCmp,
-	traceAndReturn,
+	tracer: tracer,
 };
 
 export type { CoverageTracker } from "./coverage";
+export type { Tracer } from "./trace";

@@ -19,10 +19,10 @@ import { fuzzer } from "./fuzzer";
 
 describe("compare hooks", () => {
 	it("traceStrCmp supports equals operators", () => {
-		expect(fuzzer.traceStrCmp("a", "b", "==", 0)).toBe(false);
-		expect(fuzzer.traceStrCmp("a", "b", "===", 0)).toBe(false);
-		expect(fuzzer.traceStrCmp("a", "b", "!=", 0)).toBe(true);
-		expect(fuzzer.traceStrCmp("a", "b", "!==", 0)).toBe(true);
+		expect(fuzzer.tracer.traceStrCmp("a", "b", "==", 0)).toBe(false);
+		expect(fuzzer.tracer.traceStrCmp("a", "b", "===", 0)).toBe(false);
+		expect(fuzzer.tracer.traceStrCmp("a", "b", "!=", 0)).toBe(true);
+		expect(fuzzer.tracer.traceStrCmp("a", "b", "!==", 0)).toBe(true);
 	});
 });
 
