@@ -64,8 +64,10 @@ interface EdgeIdInfo {
  * multiple processes accessing it during instrumentation.
  */
 export class FileSyncIdStrategy extends EdgeIdStrategy {
+	private static fatalExitCode = 79;
 	private cachedIdCount: number | undefined;
 	private firstEdgeId: number | undefined;
+	private releaseLockOnSyncFile: (() => void) | undefined;
 
 	constructor(private idSyncFile: string) {
 		super(0);
@@ -86,7 +88,7 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 			try {
 				// Acquire the lock for the ID sync file and look for the initial edge ID and
 				// corresponding number of inserted counters.
-				lock.lockSync(this.idSyncFile);
+				this.releaseLockOnSyncFile = lock.lockSync(this.idSyncFile);
 				const idInfo = fs
 					.readFileSync(this.idSyncFile, "utf8")
 					.toString()
@@ -130,11 +132,12 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 						// to call commitIdCount.
 						this.firstEdgeId = idInfoForFile[0].firstId;
 						this.cachedIdCount = idInfoForFile[0].idCount;
-						lock.unlockSync(this.idSyncFile);
+						this.releaseLockOnSyncFile();
 						break;
 					default:
-						lock.unlockSync(this.idSyncFile);
-						throw Error(`Multiple entries for ${filename} in ID sync file`);
+						this.releaseLockOnSyncFile();
+						console.error(`Multiple entries for ${filename} in ID sync file`);
+						process.exit(FileSyncIdStrategy.fatalExitCode);
 				}
 				break;
 			} catch (e) {
@@ -142,6 +145,11 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 				// in the time window between last successful check and trying to acquire it.
 				if (this.isLockAlreadyHeldError(e)) {
 					continue;
+				}
+
+				// Before rethrowing the exception, release the lock if we have already acquired it.
+				if (this.releaseLockOnSyncFile !== undefined) {
+					this.releaseLockOnSyncFile();
 				}
 
 				// Stop waiting for the lock if we encounter other errors. Also, rethrow the error.
@@ -167,14 +175,22 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 				);
 			}
 		} else {
+			if (this.releaseLockOnSyncFile === undefined) {
+				console.error(
+					`Lock on ID sync file is not acquired by the first processing instrumenting: ${filename}`
+				);
+				process.exit(FileSyncIdStrategy.fatalExitCode);
+			}
+
 			// We are the first to instrument this file and should record the number of IDs in the sync file.
 			fs.appendFileSync(
 				this.idSyncFile,
 				`${filename},${this.firstEdgeId},${usedIdsCount}${os.EOL}`
 			);
+			this.releaseLockOnSyncFile();
+			this.releaseLockOnSyncFile = undefined;
 			this.firstEdgeId = undefined;
 			this.cachedIdCount = undefined;
-			lock.unlockSync(this.idSyncFile);
 		}
 	}
 
