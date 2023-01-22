@@ -15,15 +15,8 @@
  */
 
 import { addon, NativeAddon } from "./addon";
-import {
-	incrementCounter,
-	initializeCounters,
-	readCounter,
-	enlargeCountersBufferIfNeeded,
-} from "./coverage";
+import { CoverageTracker } from "./coverage";
 import { traceAndReturn, traceNumberCmp, traceStrCmp } from "./trace";
-
-initializeCounters();
 
 export type {
 	FuzzTarget,
@@ -33,20 +26,18 @@ export type {
 
 export interface Fuzzer {
 	nativeAddon: NativeAddon;
-	incrementCounter: typeof incrementCounter;
-	readCounter: typeof readCounter;
+	coverageTracker: CoverageTracker;
 	traceStrCmp: typeof traceStrCmp;
 	traceNumberCmp: typeof traceNumberCmp;
 	traceAndReturn: typeof traceAndReturn;
-	enlargeCountersBufferIfNeeded: typeof enlargeCountersBufferIfNeeded;
 }
 
 export const fuzzer: Fuzzer = {
 	nativeAddon: addon,
-	incrementCounter,
-	readCounter,
+	coverageTracker: new CoverageTracker(),
 	traceStrCmp,
 	traceNumberCmp,
 	traceAndReturn,
-	enlargeCountersBufferIfNeeded,
 };
+
+export type { CoverageTracker } from "./coverage";

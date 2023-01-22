@@ -31,7 +31,7 @@ export abstract class IncrementingEdgeIdStrategy implements EdgeIdStrategy {
 	protected constructor(protected _nextEdgeId: number) {}
 
 	nextEdgeId(): number {
-		fuzzer.enlargeCountersBufferIfNeeded(this._nextEdgeId);
+		fuzzer.coverageTracker.enlargeCountersBufferIfNeeded(this._nextEdgeId);
 		return this._nextEdgeId++;
 	}
 

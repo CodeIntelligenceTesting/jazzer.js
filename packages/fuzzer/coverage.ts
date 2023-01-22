@@ -16,49 +16,53 @@
 
 import { addon } from "./addon";
 
-const MAX_NUM_COUNTERS: number = 1 << 20;
-const INITIAL_NUM_COUNTERS: number = 1 << 9;
-let coverageMap: Buffer;
-let currentNumCounters: number;
+export class CoverageTracker {
+	private static readonly MAX_NUM_COUNTERS: number = 1 << 20;
+	private static readonly INITIAL_NUM_COUNTERS: number = 1 << 9;
+	private readonly coverageMap: Buffer;
+	private currentNumCounters: number;
 
-export function initializeCounters() {
-	coverageMap = Buffer.alloc(MAX_NUM_COUNTERS, 0);
-	addon.registerCoverageMap(coverageMap);
-	addon.registerNewCounters(0, INITIAL_NUM_COUNTERS);
-	currentNumCounters = INITIAL_NUM_COUNTERS;
-}
+	constructor() {
+		this.coverageMap = Buffer.alloc(CoverageTracker.MAX_NUM_COUNTERS, 0);
+		this.currentNumCounters = CoverageTracker.INITIAL_NUM_COUNTERS;
+		addon.registerCoverageMap(this.coverageMap);
+		addon.registerNewCounters(0, this.currentNumCounters);
+	}
 
-export function enlargeCountersBufferIfNeeded(nextEdgeId: number) {
-	// Enlarge registered counters if needed
-	let newNumCounters = currentNumCounters;
-	while (nextEdgeId >= newNumCounters) {
-		newNumCounters = 2 * newNumCounters;
-		if (newNumCounters > MAX_NUM_COUNTERS) {
-			throw new Error(
-				`Maximum number (${MAX_NUM_COUNTERS}) of coverage counts exceeded.`
+	enlargeCountersBufferIfNeeded(nextEdgeId: number) {
+		// Enlarge registered counters if needed
+		let newNumCounters = this.currentNumCounters;
+		while (nextEdgeId >= newNumCounters) {
+			newNumCounters = 2 * newNumCounters;
+			if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
+				throw new Error(
+					`Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`
+				);
+			}
+		}
+
+		// Register new counters if enlarged
+		if (newNumCounters > this.currentNumCounters) {
+			addon.registerNewCounters(this.currentNumCounters, newNumCounters);
+			this.currentNumCounters = newNumCounters;
+			console.log(
+				`INFO: New number of coverage counters ${this.currentNumCounters}`
 			);
 		}
 	}
 
-	// Register new counters if enlarged
-	if (newNumCounters > currentNumCounters) {
-		addon.registerNewCounters(currentNumCounters, newNumCounters);
-		currentNumCounters = newNumCounters;
-		console.log(`INFO: New number of coverage counters ${currentNumCounters}`);
+	/**
+	 * Increments the coverage counter for a given ID.
+	 * This function implements the NeverZero policy from AFL++.
+	 * See https://aflplus.plus//papers/aflpp-woot2020.pdf
+	 * @param edgeId the edge ID of the coverage counter to increment
+	 */
+	incrementCounter(edgeId: number) {
+		const counter = this.coverageMap.readUint8(edgeId);
+		this.coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, edgeId);
 	}
-}
 
-/**
- * Increments the coverage counter for a given ID.
- * This function implements the NeverZero policy from AFL++.
- * See https://aflplus.plus//papers/aflpp-woot2020.pdf
- * @param edgeId the edge ID of the coverage counter to increment
- */
-export function incrementCounter(edgeId: number) {
-	const counter = coverageMap.readUint8(edgeId);
-	coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, edgeId);
-}
-
-export function readCounter(edgeId: number): number {
-	return coverageMap.readUint8(edgeId);
+	readCounter(edgeId: number): number {
+		return this.coverageMap.readUint8(edgeId);
+	}
 }

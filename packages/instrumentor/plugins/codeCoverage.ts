@@ -49,9 +49,10 @@ export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
 	}
 
 	function makeCounterIncExpr(): Expression {
-		return types.callExpression(types.identifier("Fuzzer.incrementCounter"), [
-			types.numericLiteral(idStrategy.nextEdgeId()),
-		]);
+		return types.callExpression(
+			types.identifier("Fuzzer.coverageTracker.incrementCounter"),
+			[types.numericLiteral(idStrategy.nextEdgeId())]
+		);
 	}
 
 	return () => {
