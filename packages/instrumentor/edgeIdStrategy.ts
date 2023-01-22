@@ -16,6 +16,7 @@
 
 import * as lock from "proper-lockfile";
 import * as fs from "fs";
+import * as os from "os";
 import process from "process";
 
 import { fuzzer } from "@jazzer.js/fuzzer";
@@ -54,8 +55,6 @@ interface EdgeIdInfo {
 	idCount: number;
 }
 
-const newLine = process.platform === "win32" ? "\r\n" : "\n";
-
 /**
  * A strategy for edge ID generation that synchronizes the IDs assigned to a source file
  * with other processes via the specified `idSyncFile`. The edge information stored as a
@@ -91,7 +90,7 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 				const idInfo = fs
 					.readFileSync(this.idSyncFile, "utf8")
 					.toString()
-					.split(newLine)
+					.split(os.EOL)
 					.filter((line) => line.length !== 0)
 					.map((line): EdgeIdInfo => {
 						const parts = line.split(",");
@@ -171,7 +170,7 @@ export class FileSyncIdStrategy extends EdgeIdStrategy {
 			// We are the first to instrument this file and should record the number of IDs in the sync file.
 			fs.appendFileSync(
 				this.idSyncFile,
-				`${filename},${this.firstEdgeId},${usedIdsCount}${newLine}`
+				`${filename},${this.firstEdgeId},${usedIdsCount}${os.EOL}`
 			);
 			this.firstEdgeId = undefined;
 			this.cachedIdCount = undefined;
