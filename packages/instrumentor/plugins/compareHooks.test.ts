@@ -19,7 +19,7 @@ import { compareHooks } from "./compareHooks";
 import { instrumentAndEvalWith, instrumentWith } from "./testhelpers";
 import { types } from "@babel/core";
 
-const native = mockNativeAddonApi();
+const fuzzer = mockFuzzerApi();
 
 const expectInstrumentationAndEval = instrumentAndEvalWith(compareHooks);
 const expectInstrumentation = instrumentWith(compareHooks);
@@ -27,7 +27,7 @@ const expectInstrumentation = instrumentWith(compareHooks);
 describe("compare hooks instrumentation", () => {
 	describe("string compares", () => {
 		it("intercepts equals (`==` and `===`)", () => {
-			native.traceStrCmp.mockClear().mockReturnValue(false);
+			fuzzer.traceStrCmp.mockClear().mockReturnValue(false);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 			const input = `
 			|let a = "a"
@@ -38,9 +38,9 @@ describe("compare hooks instrumentation", () => {
 
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
-			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===", 0);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.traceStrCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "===", 0);
+			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				"c",
@@ -50,7 +50,7 @@ describe("compare hooks instrumentation", () => {
 		});
 
 		it("intercepts not equals (`!=` and `!==`)", () => {
-			native.traceStrCmp.mockClear().mockReturnValue(true);
+			fuzzer.traceStrCmp.mockClear().mockReturnValue(true);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -62,15 +62,15 @@ describe("compare hooks instrumentation", () => {
 
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
-			expect(native.traceStrCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==", 0);
-			expect(native.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=", 0);
+			expect(fuzzer.traceStrCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(1, "a", "b", "!==", 0);
+			expect(fuzzer.traceStrCmp).toHaveBeenNthCalledWith(2, true, "c", "!=", 0);
 		});
 	});
 
 	describe("integer compares", () => {
 		it("intercepts equals (`==` and `===`))", () => {
-			native.traceNumberCmp.mockClear().mockReturnValue(false);
+			fuzzer.traceNumberCmp.mockClear().mockReturnValue(false);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -81,15 +81,15 @@ describe("compare hooks instrumentation", () => {
 			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "===", 0), 30, "==", 0);`;
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(false);
-			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
 				1,
 				10,
 				20,
 				"===",
 				0
 			);
-			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				30,
@@ -99,7 +99,7 @@ describe("compare hooks instrumentation", () => {
 		});
 
 		it("intercepts not equals (`!=` and `!==`))", () => {
-			native.traceNumberCmp.mockClear().mockReturnValue(true);
+			fuzzer.traceNumberCmp.mockClear().mockReturnValue(true);
 			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 
 			const input = `
@@ -110,15 +110,15 @@ describe("compare hooks instrumentation", () => {
 			|Fuzzer.traceNumberCmp(Fuzzer.traceNumberCmp(a, 20, "!==", 0), 30, "!=", 0);`;
 			const result = expectInstrumentationAndEval<boolean>(input, output);
 			expect(result).toBe(true);
-			expect(native.traceNumberCmp).toHaveBeenCalledTimes(2);
-			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(2);
+			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
 				1,
 				10,
 				20,
 				"!==",
 				0
 			);
-			expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+			expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				true,
 				30,
@@ -129,7 +129,7 @@ describe("compare hooks instrumentation", () => {
 
 		it("intercepts greater and less them", () => {
 			[">", "<", ">=", "<="].forEach((operator) => {
-				native.traceNumberCmp.mockClear().mockReturnValue(false);
+				fuzzer.traceNumberCmp.mockClear().mockReturnValue(false);
 				helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
 				const input = `
 				|let a = 10
@@ -139,8 +139,8 @@ describe("compare hooks instrumentation", () => {
 				|Fuzzer.traceNumberCmp(a, 20, "${operator}", 0);`;
 				const result = expectInstrumentationAndEval<boolean>(input, output);
 				expect(result).toBe(false);
-				expect(native.traceNumberCmp).toHaveBeenCalledTimes(1);
-				expect(native.traceNumberCmp).toHaveBeenNthCalledWith(
+				expect(fuzzer.traceNumberCmp).toHaveBeenCalledTimes(1);
+				expect(fuzzer.traceNumberCmp).toHaveBeenNthCalledWith(
 					1,
 					10,
 					20,
@@ -228,17 +228,17 @@ describe("compare hooks instrumentation", () => {
 	});
 });
 
-// Mock global native addon API
+// Mock global Fuzzer API
 // This is normally done by the jest environment. Here we replace every
 // API function with a jest mock, which can be configured in the test.
-function mockNativeAddonApi() {
+function mockFuzzerApi() {
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-	const native = require("@jazzer.js/fuzzer").fuzzer;
+	const fuzzer = require("@jazzer.js/fuzzer").fuzzer;
 	jest.mock("@jazzer.js/fuzzer");
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
-	global.Fuzzer = native;
-	return native;
+	global.Fuzzer = fuzzer;
+	return fuzzer;
 }
 
 function mockHelpers() {
