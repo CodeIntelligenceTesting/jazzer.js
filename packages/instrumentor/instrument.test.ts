@@ -98,8 +98,11 @@ function withSourceMap(fn: () => void) {
 	const oldFuzzer = globalThis.Fuzzer;
 	// @ts-ignore
 	globalThis.Fuzzer = {
-		incrementCounter: () => {
-			// ignore
+		// @ts-ignore
+		coverageTracker: {
+			incrementCounter: (edgeId: number) => {
+				// ignore
+			},
 		},
 	};
 	const resetSourceMapHandlers = installSourceMapSupport();

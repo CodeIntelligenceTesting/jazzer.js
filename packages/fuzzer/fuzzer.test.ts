@@ -28,17 +28,17 @@ describe("compare hooks", () => {
 
 describe("incrementCounter", () => {
 	it("should support the NeverZero policy", () => {
-		expect(fuzzer.readCounter(0)).toBe(0);
+		expect(fuzzer.coverageTracker.readCounter(0)).toBe(0);
 		for (let counter = 1; counter <= 512; counter++) {
-			fuzzer.incrementCounter(0);
+			fuzzer.coverageTracker.incrementCounter(0);
 			if (counter < 256) {
-				expect(fuzzer.readCounter(0)).toBe(counter);
+				expect(fuzzer.coverageTracker.readCounter(0)).toBe(counter);
 			} else if (counter < 511) {
-				expect(fuzzer.readCounter(0)).toBe((counter % 256) + 1);
+				expect(fuzzer.coverageTracker.readCounter(0)).toBe((counter % 256) + 1);
 			} else if (counter == 511) {
-				expect(fuzzer.readCounter(0)).toBe(1);
+				expect(fuzzer.coverageTracker.readCounter(0)).toBe(1);
 			} else {
-				expect(fuzzer.readCounter(0)).toBe((counter % 256) + 2);
+				expect(fuzzer.coverageTracker.readCounter(0)).toBe((counter % 256) + 2);
 			}
 		}
 	});

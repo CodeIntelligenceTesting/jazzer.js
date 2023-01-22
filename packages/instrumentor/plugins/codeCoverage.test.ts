@@ -42,11 +42,11 @@ describe("code coverage instrumentation", () => {
                |  true;`;
 			const output = `
                |if (1 < 2) {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  true;
                |}
                |
-               |Fuzzer.incrementCounter(0);`;
+               |Fuzzer.coverageTracker.incrementCounter(0);`;
 			expectInstrumentation(input, output);
 		});
 		it("should add counter in alternate branch and afterwards", () => {
@@ -57,14 +57,14 @@ describe("code coverage instrumentation", () => {
                |  false;`;
 			const output = `
                |if (1 < 2) {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  true;
                |} else {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  false;
                |}
                |
-               |Fuzzer.incrementCounter(0);`;
+               |Fuzzer.coverageTracker.incrementCounter(0);`;
 			expectInstrumentation(input, output);
 		});
 	});
@@ -80,20 +80,20 @@ describe("code coverage instrumentation", () => {
 			const output = `
                |switch (a) {
                |  case 1:
-               |    Fuzzer.incrementCounter(0);
+               |    Fuzzer.coverageTracker.incrementCounter(0);
                |    true;
                |
                |  case 2:
-               |    Fuzzer.incrementCounter(0);
+               |    Fuzzer.coverageTracker.incrementCounter(0);
                |    false;
                |    break;
                |
                |  default:
-               |    Fuzzer.incrementCounter(0);
+               |    Fuzzer.coverageTracker.incrementCounter(0);
                |    true;
                |}
                |
-               |Fuzzer.incrementCounter(0);`;
+               |Fuzzer.coverageTracker.incrementCounter(0);`;
 			expectInstrumentation(input, output);
 		});
 	});
@@ -110,11 +110,11 @@ describe("code coverage instrumentation", () => {
                |try {
                |  dangerousCall();
                |} catch (e) {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  console.error(e, e.stack);
                |}
                |
-               |Fuzzer.incrementCounter(0);`;
+               |Fuzzer.coverageTracker.incrementCounter(0);`;
 			expectInstrumentation(input, output);
 		});
 	});
@@ -127,11 +127,11 @@ describe("code coverage instrumentation", () => {
                |}`;
 			const output = `
                |for (let i = 0; i < 100; i++) {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  counter++;
                |}
                |
-               |Fuzzer.incrementCounter(0);`;
+               |Fuzzer.coverageTracker.incrementCounter(0);`;
 			expectInstrumentation(input, output);
 		});
 	});
@@ -146,9 +146,9 @@ describe("code coverage instrumentation", () => {
                |};`;
 			const output = `
                |let foo = function add(a) {
-               |  Fuzzer.incrementCounter(0);
+               |  Fuzzer.coverageTracker.incrementCounter(0);
                |  return b => {
-               |    Fuzzer.incrementCounter(0);
+               |    Fuzzer.coverageTracker.incrementCounter(0);
                |    return a + b;
                |  };
                |};`;
@@ -159,7 +159,7 @@ describe("code coverage instrumentation", () => {
 	describe("LogicalExpression", () => {
 		it("should add counters in leaves", () => {
 			const input = `let condition = (a === "a" || (potentiallyNull ?? b === "b")) && c !== "c"`;
-			const output = `let condition = ((Fuzzer.incrementCounter(0), a === "a") || ((Fuzzer.incrementCounter(0), potentiallyNull) ?? (Fuzzer.incrementCounter(0), b === "b"))) && (Fuzzer.incrementCounter(0), c !== "c");`;
+			const output = `let condition = ((Fuzzer.coverageTracker.incrementCounter(0), a === "a") || ((Fuzzer.coverageTracker.incrementCounter(0), potentiallyNull) ?? (Fuzzer.coverageTracker.incrementCounter(0), b === "b"))) && (Fuzzer.coverageTracker.incrementCounter(0), c !== "c");`;
 			expectInstrumentation(input, output);
 		});
 	});
@@ -168,7 +168,7 @@ describe("code coverage instrumentation", () => {
 		it("should add counters branches", () => {
 			const input = `(a === "a" ? x : y) + 1`;
 			const output = `
-        |(a === "a" ? (Fuzzer.incrementCounter(0), x) : (Fuzzer.incrementCounter(0), y)) + 1;`;
+        |(a === "a" ? (Fuzzer.coverageTracker.incrementCounter(0), x) : (Fuzzer.coverageTracker.incrementCounter(0), y)) + 1;`;
 			expectInstrumentation(input, output);
 		});
 	});
