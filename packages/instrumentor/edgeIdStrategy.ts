@@ -21,7 +21,13 @@ import process from "process";
 
 import { fuzzer } from "@jazzer.js/fuzzer";
 
-export abstract class EdgeIdStrategy {
+export interface EdgeIdStrategy {
+	nextEdgeId(): number;
+	startForSourceFile(filename: string): void;
+	commitIdCount(filename: string): void;
+}
+
+export abstract class IncrementingEdgeIdStrategy implements EdgeIdStrategy {
 	protected constructor(protected _nextEdgeId: number) {}
 
 	nextEdgeId(): number {
@@ -33,7 +39,7 @@ export abstract class EdgeIdStrategy {
 	abstract commitIdCount(filename: string): void;
 }
 
-export class MemorySyncIdStrategy extends EdgeIdStrategy {
+export class MemorySyncIdStrategy extends IncrementingEdgeIdStrategy {
 	constructor() {
 		super(0);
 	}
@@ -63,7 +69,7 @@ interface EdgeIdInfo {
  * This class takes care of synchronizing the access to the file between
  * multiple processes accessing it during instrumentation.
  */
-export class FileSyncIdStrategy extends EdgeIdStrategy {
+export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 	private static fatalExitCode = 79;
 	private cachedIdCount: number | undefined;
 	private firstEdgeId: number | undefined;
