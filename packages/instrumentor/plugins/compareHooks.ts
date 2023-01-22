@@ -36,9 +36,9 @@ export function compareHooks(): PluginTarget {
 
 				let hookFunctionName: string;
 				if (isStringCompare(path.node)) {
-					hookFunctionName = "Fuzzer.traceStrCmp";
+					hookFunctionName = "Fuzzer.tracer.traceStrCmp";
 				} else if (isNumberCompare(path.node)) {
-					hookFunctionName = "Fuzzer.traceNumberCmp";
+					hookFunctionName = "Fuzzer.tracer.traceNumberCmp";
 				} else {
 					return;
 				}
@@ -61,7 +61,7 @@ export function compareHooks(): PluginTarget {
 					const test = path.node.cases[i].test;
 					if (test) {
 						path.node.cases[i].test = types.callExpression(
-							types.identifier("Fuzzer.traceAndReturn"),
+							types.identifier("Fuzzer.tracer.traceAndReturn"),
 							[id, test, fakePC()]
 						);
 					}
