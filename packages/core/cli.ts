@@ -82,6 +82,7 @@ yargs(process.argv.slice(2))
 					default: undefined,
 					group: "Fuzzer:",
 				})
+				.hide("id_sync_file")
 
 				.option("sync", {
 					describe: "Run the fuzz target synchronously.",
