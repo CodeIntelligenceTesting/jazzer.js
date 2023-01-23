@@ -66,3 +66,5 @@ export class CoverageTracker {
 		return this.coverageMap.readUint8(edgeId);
 	}
 }
+
+export const coverageTracker = new CoverageTracker();

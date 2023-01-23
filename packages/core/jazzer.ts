@@ -29,7 +29,7 @@ import { fuzzer } from "@jazzer.js/fuzzer";
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
 function guideTowardsEquality(current: string, target: string, id: number) {
-	fuzzer.nativeAddon.traceUnequalStrings(id, current, target);
+	fuzzer.tracer.traceUnequalStrings(id, current, target);
 }
 
 /**
@@ -45,7 +45,7 @@ function guideTowardsEquality(current: string, target: string, id: number) {
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
 function guideTowardsContainment(needle: string, haystack: string, id: number) {
-	fuzzer.nativeAddon.traceStringContainment(id, needle, haystack);
+	fuzzer.tracer.traceStringContainment(id, needle, haystack);
 }
 
 /**
@@ -63,7 +63,7 @@ function guideTowardsContainment(needle: string, haystack: string, id: number) {
  * @param id a (probabilistically) unique identifier for this particular state hint
  */
 function exploreState(state: number, id: number) {
-	fuzzer.nativeAddon.tracePcIndir(id, state);
+	fuzzer.tracer.tracePcIndir(id, state);
 }
 
 export interface Jazzer {

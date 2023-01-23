@@ -33,7 +33,7 @@ export type StartFuzzingAsyncFn = (
 	fuzzOpts: FuzzOpts
 ) => Promise<void>;
 
-export type NativeAddon = {
+type NativeAddon = {
 	registerCoverageMap: (buffer: Buffer) => void;
 	registerNewCounters: (oldNumCounters: number, newNumCounters: number) => void;
 
