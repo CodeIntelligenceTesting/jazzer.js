@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { addon, NativeAddon } from "./addon";
-import { CoverageTracker } from "./coverage";
-import { Tracer, tracer } from "./trace";
+import { coverageTracker, CoverageTracker } from "./coverage";
+import { tracer, Tracer } from "./trace";
+import { addon } from "./addon";
 
 export type {
 	FuzzTarget,
@@ -25,15 +25,19 @@ export type {
 } from "./addon";
 
 export interface Fuzzer {
-	nativeAddon: NativeAddon;
 	coverageTracker: CoverageTracker;
 	tracer: Tracer;
+	startFuzzing: typeof addon.startFuzzing;
+	startFuzzingAsync: typeof addon.startFuzzingAsync;
+	stopFuzzingAsync: typeof addon.stopFuzzingAsync;
 }
 
 export const fuzzer: Fuzzer = {
-	nativeAddon: addon,
-	coverageTracker: new CoverageTracker(),
+	coverageTracker: coverageTracker,
 	tracer: tracer,
+	startFuzzing: addon.startFuzzing,
+	startFuzzingAsync: addon.startFuzzingAsync,
+	stopFuzzingAsync: addon.stopFuzzingAsync,
 };
 
 export type { CoverageTracker } from "./coverage";

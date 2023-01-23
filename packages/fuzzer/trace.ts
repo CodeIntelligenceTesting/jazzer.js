@@ -118,12 +118,18 @@ function traceAndReturn(current: unknown, target: unknown, id: number) {
 
 export interface Tracer {
 	traceStrCmp: typeof traceStrCmp;
+	traceUnequalStrings: typeof addon.traceUnequalStrings;
+	traceStringContainment: typeof addon.traceStringContainment;
 	traceNumberCmp: typeof traceNumberCmp;
 	traceAndReturn: typeof traceAndReturn;
+	tracePcIndir: typeof addon.tracePcIndir;
 }
 
 export const tracer: Tracer = {
 	traceStrCmp,
+	traceUnequalStrings: addon.traceUnequalStrings,
+	traceStringContainment: addon.traceStringContainment,
 	traceNumberCmp,
 	traceAndReturn,
+	tracePcIndir: addon.tracePcIndir,
 };
