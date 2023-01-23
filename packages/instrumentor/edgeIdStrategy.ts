@@ -70,7 +70,7 @@ interface EdgeIdInfo {
  * multiple processes accessing it during instrumentation.
  */
 export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
-	private static fatalExitCode = 79;
+	private static readonly fatalExitCode = 79;
 	private cachedIdCount: number | undefined;
 	private firstEdgeId: number | undefined;
 	private releaseLockOnSyncFile: (() => void) | undefined;
