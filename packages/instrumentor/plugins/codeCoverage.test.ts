@@ -16,22 +16,10 @@
 
 import { codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
-import { MemorySyncIdStrategy } from "../edgeIdStrategy";
-
-jest.mock("../edgeIdStrategy", () => {
-	return {
-		MemorySyncIdStrategy: jest.fn().mockImplementation(() => {
-			return {
-				nextEdgeId: () => {
-					return 0;
-				},
-			};
-		}),
-	};
-});
+import { ZeroEdgeIdStrategy } from "../edgeIdStrategy";
 
 const expectInstrumentation = instrumentWith(
-	codeCoverage(new MemorySyncIdStrategy())
+	codeCoverage(new ZeroEdgeIdStrategy())
 );
 
 describe("code coverage instrumentation", () => {
