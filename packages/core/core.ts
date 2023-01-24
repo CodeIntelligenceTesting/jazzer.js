@@ -15,13 +15,19 @@
  */
 
 import path from "path";
-import * as fuzzer from "@jazzer.js/fuzzer";
-import * as hooking from "@jazzer.js/hooking";
-import { registerInstrumentor } from "@jazzer.js/instrumentor";
-import { trackedHooks } from "@jazzer.js/hooking";
 import * as process from "process";
 import * as tmp from "tmp";
 import * as fs from "fs";
+
+import * as fuzzer from "@jazzer.js/fuzzer";
+import * as hooking from "@jazzer.js/hooking";
+import { trackedHooks } from "@jazzer.js/hooking";
+import {
+	registerInstrumentor,
+	Instrumentor,
+	FileSyncIdStrategy,
+	MemorySyncIdStrategy,
+} from "@jazzer.js/instrumentor";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -62,9 +68,14 @@ export async function initFuzzing(options: Options) {
 	await Promise.all(options.customHooks.map(importModule));
 	if (!options.dryRun) {
 		registerInstrumentor(
-			options.includes,
-			options.excludes,
-			options.idSyncFile
+			new Instrumentor(
+				options.includes,
+				options.excludes,
+
+				options.idSyncFile !== undefined
+					? new FileSyncIdStrategy(options.idSyncFile)
+					: new MemorySyncIdStrategy()
+			)
 		);
 	}
 }

@@ -27,11 +27,7 @@ import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { hookManager } from "@jazzer.js/hooking";
-import {
-	EdgeIdStrategy,
-	FileSyncIdStrategy,
-	MemorySyncIdStrategy,
-} from "./edgeIdStrategy";
+import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 
 interface SourceMaps {
 	[file: string]: RawSourceMap;
@@ -39,88 +35,126 @@ interface SourceMaps {
 
 const sourceMaps: SourceMaps = {};
 
-/* Installs source-map-support handlers and returns a reset function */
-export function installSourceMapSupport(): () => void {
-	// Use the source-map-support library to enable in-memory source maps of
-	// transformed code and error stack rewrites.
-	// As there is no way to populate the source map cache of source-map-support,
-	// an additional buffer is used to pass on the source maps from babel to the
-	// library. This could be memory intensive and should be replaced by
-	// tmp source map files, if it really becomes a problem.
-	sms.install({
-		hookRequire: true,
-		retrieveSourceMap: (source) => {
-			if (sourceMaps[source]) {
-				return {
-					map: sourceMaps[source],
-					url: source,
-				};
-			}
-			return null;
-		},
-	});
-	return sms.resetRetrieveHandlers;
-}
+export {
+	EdgeIdStrategy,
+	FileSyncIdStrategy,
+	MemorySyncIdStrategy,
+} from "./edgeIdStrategy";
 
-export type FilePredicate = (filepath: string) => boolean;
+export class Instrumentor {
+	constructor(
+		private readonly includes: string[] = ["*"],
+		private readonly excludes: string[] = ["node_modules"],
+		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy()
+	) {}
 
-export function registerInstrumentor(
-	includes: string[],
-	excludes: string[],
-	idSyncFile: string | undefined
-) {
-	installSourceMapSupport();
-	if (includes.includes("jazzer.js")) {
-		unloadInternalModules();
+	init(): () => void {
+		if (this.includes.includes("jazzer.js")) {
+			this.unloadInternalModules();
+		}
+		return Instrumentor.installSourceMapSupport();
 	}
 
-	const idStrategy: EdgeIdStrategy =
-		idSyncFile !== undefined
-			? new FileSyncIdStrategy(idSyncFile)
-			: new MemorySyncIdStrategy();
+	instrument(code: string, filename: string): string {
+		const transformations: PluginItem[] = [];
 
-	const shouldInstrument = shouldInstrumentFn(includes, excludes);
-	const shouldHook = hookManager.hasFunctionsToHook.bind(hookManager);
-	hookRequire(
-		() => true,
-		(code: string, options: TransformerOptions): string => {
-			return instrument(
-				code,
-				options.filename,
-				shouldInstrument,
-				shouldHook,
-				idStrategy
-			);
+		const shouldInstrumentFile = this.shouldInstrument(filename);
+
+		if (shouldInstrumentFile) {
+			transformations.push(codeCoverage(this.idStrategy), compareHooks);
 		}
-	);
-}
 
-function unloadInternalModules() {
-	console.log(
-		"DEBUG: Unloading internal Jazzer.js modules for instrumentation..."
-	);
-	[
-		"@jazzer.js/core",
-		"@jazzer.js/fuzzer",
-		"@jazzer.js/hooking",
-		"@jazzer.js/instrumentor",
-		"@jazzer.js/jest-runner",
-	].forEach((module) => {
-		delete require.cache[require.resolve(module)];
-	});
-}
+		if (hookManager.hasFunctionsToHook(filename)) {
+			transformations.push(functionHooks(filename));
+		}
 
-export function shouldInstrumentFn(
-	includes: string[],
-	excludes: string[]
-): FilePredicate {
-	const cleanup = (settings: string[]) =>
-		settings
-			.filter((setting) => setting)
-			.map((setting) => (setting === "*" ? "" : setting)); // empty string matches every file
-	const cleanedIncludes = cleanup(includes);
-	const cleanedExcludes = cleanup(excludes);
-	return (filepath: string) => {
+		if (shouldInstrumentFile) {
+			this.idStrategy.startForSourceFile(filename);
+		}
+
+		const transformedCode =
+			this.transform(filename, code, transformations)?.code || code;
+
+		if (shouldInstrumentFile) {
+			this.idStrategy.commitIdCount(filename);
+		}
+
+		return transformedCode;
+	}
+
+	transform(
+		filename: string,
+		code: string,
+		plugins: PluginItem[],
+		options: TransformOptions = {}
+	): BabelFileResult | null {
+		if (plugins.length === 0) {
+			return null;
+		}
+		const result = transformSync(code, {
+			filename: filename,
+			sourceFileName: filename,
+			sourceMaps: true,
+			plugins: plugins,
+			...options,
+		});
+		if (result?.map) {
+			const sourceMap = result.map;
+			sourceMaps[filename] = {
+				version: sourceMap.version.toString(),
+				sources: sourceMap.sources ?? [],
+				names: sourceMap.names,
+				sourcesContent: sourceMap.sourcesContent,
+				mappings: sourceMap.mappings,
+			};
+		}
+		return result;
+	}
+
+	/* Installs source-map-support handlers and returns a reset function */
+	static installSourceMapSupport(): () => void {
+		// Use the source-map-support library to enable in-memory source maps of
+		// transformed code and error stack rewrites.
+		// As there is no way to populate the source map cache of source-map-support,
+		// an additional buffer is used to pass on the source maps from babel to the
+		// library. This could be memory intensive and should be replaced by
+		// tmp source map files, if it really becomes a problem.
+		sms.install({
+			hookRequire: true,
+			retrieveSourceMap: (source) => {
+				if (sourceMaps[source]) {
+					return {
+						map: sourceMaps[source],
+						url: source,
+					};
+				}
+				return null;
+			},
+		});
+		return sms.resetRetrieveHandlers;
+	}
+
+	private unloadInternalModules() {
+		console.log(
+			"DEBUG: Unloading internal Jazzer.js modules for instrumentation..."
+		);
+		[
+			"@jazzer.js/core",
+			"@jazzer.js/fuzzer",
+			"@jazzer.js/hooking",
+			"@jazzer.js/instrumentor",
+			"@jazzer.js/jest-runner",
+		].forEach((module) => {
+			delete require.cache[require.resolve(module)];
+		});
+	}
+	shouldInstrument(filepath: string): boolean {
+		const cleanup = (settings: string[]) =>
+			settings
+				.filter((setting) => setting)
+				.map((setting) => (setting === "*" ? "" : setting)); // empty string matches every file
+		const cleanedIncludes = cleanup(this.includes);
+		const cleanedExcludes = cleanup(this.excludes);
 		const included =
 			cleanedIncludes.find((include) => filepath.includes(include)) !==
 			undefined;
@@ -128,63 +162,16 @@ export function shouldInstrumentFn(
 			cleanedExcludes.find((exclude) => filepath.includes(exclude)) !==
 			undefined;
 		return included && !excluded;
-	};
+	}
 }
 
-function instrument(
-	code: string,
-	filename: string,
-	shouldInstrument: FilePredicate,
-	shouldHook: FilePredicate,
-	idStrategy: EdgeIdStrategy
-) {
-	const transformations: PluginItem[] = [];
-	const shouldInstrumentFile = shouldInstrument(filename);
-	if (shouldInstrumentFile) {
-		transformations.push(codeCoverage(idStrategy), compareHooks);
-	}
-	if (shouldHook(filename)) {
-		transformations.push(functionHooks(filename));
-	}
-	if (shouldInstrumentFile) {
-		idStrategy.startForSourceFile(filename);
-	}
+export function registerInstrumentor(instrumentor: Instrumentor) {
+	instrumentor.init();
 
-	const transformedCode =
-		transform(filename, code, transformations)?.code || code;
-
-	if (shouldInstrumentFile) {
-		idStrategy.commitIdCount(filename);
-	}
-
-	return transformedCode;
-}
-
-export function transform(
-	filename: string,
-	code: string,
-	plugins: PluginItem[],
-	options: TransformOptions = {}
-): BabelFileResult | null {
-	if (plugins.length === 0) {
-		return null;
-	}
-	const result = transformSync(code, {
-		filename: filename,
-		sourceFileName: filename,
-		sourceMaps: true,
-		plugins: plugins,
-		...options,
-	});
-	if (result?.map) {
-		const sourceMap = result.map;
-		sourceMaps[filename] = {
-			version: sourceMap.version.toString(),
-			sources: sourceMap.sources ?? [],
-			names: sourceMap.names,
-			sourcesContent: sourceMap.sourcesContent,
-			mappings: sourceMap.mappings,
-		};
-	}
-	return result;
+	hookRequire(
+		() => true,
+		(code: string, opts: TransformerOptions): string => {
+			return instrumentor.instrument(code, opts.filename);
+		}
+	);
 }
