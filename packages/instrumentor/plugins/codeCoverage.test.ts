@@ -16,7 +16,14 @@
 
 import { codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
-import { ZeroEdgeIdStrategy } from "../edgeIdStrategy";
+import { FileSyncIdStrategy, ZeroEdgeIdStrategy } from "../edgeIdStrategy";
+import { Instrumentor } from "../instrument";
+
+import * as tmp from "tmp";
+import * as fs from "fs";
+import * as os from "os";
+
+tmp.setGracefulCleanup();
 
 const expectInstrumentation = instrumentWith(
 	codeCoverage(new ZeroEdgeIdStrategy())
@@ -158,6 +165,61 @@ describe("code coverage instrumentation", () => {
 			const output = `
         |(a === "a" ? (Fuzzer.coverageTracker.incrementCounter(0), x) : (Fuzzer.coverageTracker.incrementCounter(0), y)) + 1;`;
 			expectInstrumentation(input, output);
+		});
+	});
+
+	describe("FileSyncIdStrategy", () => {
+		it("should add correct number of edges", () => {
+			const idSyncFile = tmp.fileSync({
+				mode: 0o600,
+				prefix: "jazzer.js",
+				postfix: "idSync",
+			});
+			fs.closeSync(idSyncFile.fd);
+
+			const testCases: { file: string; code: string }[] = [
+				{
+					file: "foo.js",
+					code: "if (1 < 2) { true; } else { false; }",
+				},
+				{
+					file: "bar.js",
+					code: "for (let i = 0; i < 100; i++) { counter++; }",
+				},
+				{
+					file: "do_not_instrument.js",
+					code: "some invalid code to throw a SyntaxError if we try to instrument it",
+				},
+				{
+					file: "baz.js",
+					code: "switch(a) {case 1: true; case 2: false; break; default: true;}",
+				},
+			];
+
+			const instrumentor = new Instrumentor(
+				["*"],
+				["do_not_instrument"],
+				new FileSyncIdStrategy(idSyncFile.name)
+			);
+
+			for (const testCase of testCases) {
+				instrumentor.instrument(testCase.code, testCase.file);
+			}
+
+			for (let i = 0; i < 100; i++) {
+				// Randomly select a file to instrument. At this point all files should have been instrumented
+				// and thus instrumenting new files should not change the ID sync file.
+				const testCase = testCases[Math.floor(Math.random() * 4)];
+				instrumentor.instrument(testCase.code, testCase.file);
+			}
+
+			expect(
+				fs
+					.readFileSync(idSyncFile.name)
+					.toString()
+					.split(os.EOL)
+					.filter((line) => line !== "")
+			).toEqual(["foo.js,0,3", "bar.js,3,2", "baz.js,5,4"]);
 		});
 	});
 });
