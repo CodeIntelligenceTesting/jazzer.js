@@ -16,48 +16,59 @@
 
 /* eslint @typescript-eslint/ban-ts-comment:0 */
 
-import {
-	installSourceMapSupport,
-	shouldInstrumentFn,
-	transform,
-} from "./instrument";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { MemorySyncIdStrategy } from "./edgeIdStrategy";
+import { Instrumentor } from "./instrument";
 
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
-		const check = shouldInstrumentFn(["include"], ["exclude"]);
-		expect(check("include")).toBeTruthy();
-		expect(check("exclude")).toBeFalsy();
-		expect(check("/some/package/include/files")).toBeTruthy();
-		expect(check("/some/package/exclude/files")).toBeFalsy();
-		expect(check("/something/else")).toBeFalsy();
+		const instrumentor = new Instrumentor(["include"], ["exclude"]);
+		expect(instrumentor.shouldInstrument("include")).toBeTruthy();
+		expect(instrumentor.shouldInstrument("exclude")).toBeFalsy();
+		expect(
+			instrumentor.shouldInstrument("/some/package/include/files")
+		).toBeTruthy();
+		expect(
+			instrumentor.shouldInstrument("/some/package/exclude/files")
+		).toBeFalsy();
+		expect(instrumentor.shouldInstrument("/something/else")).toBeFalsy();
 	});
 
 	it("should include everything with *", () => {
-		const check = shouldInstrumentFn(["*"], []);
-		expect(check("include")).toBeTruthy();
-		expect(check("/something/else")).toBeTruthy();
+		const instrumentor = new Instrumentor(["*"], []);
+		expect(instrumentor.shouldInstrument("include")).toBeTruthy();
+		expect(instrumentor.shouldInstrument("/something/else")).toBeTruthy();
 	});
 
 	it("should include nothing with emtpy string", () => {
-		const emtpyInclude = shouldInstrumentFn(["include", ""], []);
-		expect(emtpyInclude("include")).toBeTruthy();
-		expect(emtpyInclude("/something/else")).toBeFalsy();
-		const emtpyExclude = shouldInstrumentFn(["include"], [""]);
-		expect(emtpyExclude("include")).toBeTruthy();
-		expect(emtpyExclude("/something/else")).toBeFalsy();
+		const instrumentorWithEmptyInclude = new Instrumentor(["include", ""], []);
+		expect(
+			instrumentorWithEmptyInclude.shouldInstrument("include")
+		).toBeTruthy();
+		expect(
+			instrumentorWithEmptyInclude.shouldInstrument("/something/else")
+		).toBeFalsy();
+
+		const instrumentorWithEmptyExclude = new Instrumentor(["include"], [""]);
+		expect(
+			instrumentorWithEmptyExclude.shouldInstrument("include")
+		).toBeTruthy();
+		expect(
+			instrumentorWithEmptyExclude.shouldInstrument("/something/else")
+		).toBeFalsy();
 	});
 
 	it("should exclude with precedence", () => {
-		const check = shouldInstrumentFn(["include"], ["*"]);
-		expect(check("/some/package/include/files")).toBeFalsy();
+		const instrumentor = new Instrumentor(["include"], ["*"]);
+		expect(
+			instrumentor.shouldInstrument("/some/package/include/files")
+		).toBeFalsy();
 	});
 });
 
 describe("transform", () => {
 	it("should use source maps to correct error stack traces", () => {
-		withSourceMap(() => {
+		withSourceMap((instrumentor: Instrumentor) => {
 			const sourceFileName = "sourcemap-test.js";
 			const errorLocation = sourceFileName + ":5:13";
 			const content = ` 
@@ -75,7 +86,7 @@ describe("transform", () => {
 			try {
 				// Use the codeCoverage plugin to add additional lines, so that the
 				// resulting error stack does not match the original code anymore.
-				const result = transform(sourceFileName, content, [
+				const result = instrumentor.transform(sourceFileName, content, [
 					codeCoverage(new MemorySyncIdStrategy()),
 				]);
 				const fn = eval(result?.code || "");
@@ -93,7 +104,7 @@ describe("transform", () => {
 	});
 });
 
-function withSourceMap(fn: () => void) {
+function withSourceMap(fn: (instrumentor: Instrumentor) => void) {
 	// @ts-ignore
 	const oldFuzzer = globalThis.Fuzzer;
 	// @ts-ignore
@@ -105,9 +116,10 @@ function withSourceMap(fn: () => void) {
 			},
 		},
 	};
-	const resetSourceMapHandlers = installSourceMapSupport();
+	const instrumentor = new Instrumentor();
+	const resetSourceMapHandlers = instrumentor.init();
 	try {
-		fn();
+		fn(instrumentor);
 	} finally {
 		resetSourceMapHandlers();
 		// @ts-ignore

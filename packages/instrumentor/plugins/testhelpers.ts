@@ -15,7 +15,7 @@
  */
 
 import { PluginTarget } from "@babel/core";
-import { transform } from "../instrument";
+import { Instrumentor } from "../instrument";
 
 export function instrumentAndEvalWith(...plugins: PluginTarget[]) {
 	const instrument = instrumentWith(plugins);
@@ -34,7 +34,8 @@ function expectInstrumentation(
 	output: string
 ): string {
 	const code = removeIndentation(input);
-	const result = transform("test.js", code, plugins)?.code || code;
+	const instrumentor = new Instrumentor();
+	const result = instrumentor.transform("test.js", code, plugins)?.code || code;
 	expect(removeIndentation(result)).toBe(removeIndentation(output));
 	return result;
 }
