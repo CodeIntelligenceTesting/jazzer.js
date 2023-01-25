@@ -945,6 +945,24 @@ describe("FuzzedDataProvider checks", () => {
 		expect(strings).toContain("or si");
 		expect(strings).toContain("t ame");
 	});
+	it("verifyPrintableString", () => {
+		const data = new FuzzedDataProvider(Buffer.from(Data));
+		const consumedStrAsArr = [...data.consumeString(1024, "ascii", true)];
+		consumedStrAsArr.forEach((c) => {
+			const charAsNum = c.charCodeAt(0);
+			expect(charAsNum >= 32 && charAsNum <= 126).toBeTruthy();
+		});
+	});
+	it("verifyNonPrintableString", () => {
+		const data = new FuzzedDataProvider(Buffer.from(Data));
+		const consumedStrAsArr = [...data.consumeString(1024)];
+		expect(
+			consumedStrAsArr.some((ele) => {
+				const eleAsNum = ele.charCodeAt(0);
+				return eleAsNum < 32 || eleAsNum > 126;
+			})
+		).toBeTruthy();
+	});
 });
 
 const Data = Buffer.from([
