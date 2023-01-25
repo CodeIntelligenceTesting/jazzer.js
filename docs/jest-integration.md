@@ -28,7 +28,7 @@ your project. To do so, execute the following command in your project root
 directory.
 
 ```shell
-npm install --save-dev @jazzer.js/jest-integration
+npm install --save-dev @jazzer.js/jest-runner
 ```
 
 This will install the custom Jest runner along with all other required Jazzer.js

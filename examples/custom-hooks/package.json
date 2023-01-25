@@ -9,7 +9,7 @@
 	"scripts": {
 		"fuzz": "jazzer fuzz -i jpeg-js -e nothing -h custom-hooks --sync",
 		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -h custom-hooks -- -runs=100 -seed=123456789",
-		"coverage": "jazzer fuzz -i jpeg-js -i fuzz.js -i custom-hooks.js -e nothing -h custom-hooks --sync --corpus corpus --coverage -- -max_total_time=2"
+		"coverage": "jazzer fuzz -i jpeg-js -i fuzz.js -i custom-hooks.js -e nothing -h custom-hooks --sync --coverage -- -max_total_time=10"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
