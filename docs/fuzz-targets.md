@@ -194,7 +194,7 @@ Alternatively, you can add a new script to your package.json:
 
 Files matched by the flags `--include` or `--custom_hooks`, and not matched by
 the flag `--exclude` will be included in the coverage report. It is recommended
-to disable coverage report generation during fuzzing, because of a substantial
+to disable coverage report generation during fuzzing, because of the substantial
 overhead that it adds.
 
 ### Coverage report directory
