@@ -24,6 +24,14 @@ describe("compare hooks", () => {
 		expect(fuzzer.tracer.traceStrCmp("a", "b", "!=", 0)).toBe(true);
 		expect(fuzzer.tracer.traceStrCmp("a", "b", "!==", 0)).toBe(true);
 	});
+
+	it("traceStrCmp handles objects of unknown types", () => {
+		const foo = () => 5;
+		expect(fuzzer.tracer.traceStrCmp(foo, "foo", "==", 0)).toBe(false);
+		expect(fuzzer.tracer.traceStrCmp(foo, "foo", "===", 0)).toBe(false);
+		expect(fuzzer.tracer.traceStrCmp(foo, "foo", "!=", 0)).toBe(true);
+		expect(fuzzer.tracer.traceStrCmp(foo, "foo", "!==", 0)).toBe(true);
+	});
 });
 
 describe("incrementCounter", () => {
