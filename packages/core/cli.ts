@@ -70,11 +70,11 @@ yargs(process.argv.slice(2))
 					describe:
 						"Name of the fuzz test entry point. It must be an exported " +
 						"function with a single Buffer parameter",
+					alias: "f",
 					type: "string",
 					default: "fuzz",
 					group: "Fuzzer:",
 				})
-				.hide("fuzz_function")
 
 				.option("id_sync_file", {
 					describe:
