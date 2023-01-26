@@ -24,45 +24,49 @@ import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
 		const instrumentor = new Instrumentor(["include"], ["exclude"]);
-		expect(instrumentor.shouldInstrument("include")).toBeTruthy();
-		expect(instrumentor.shouldInstrument("exclude")).toBeFalsy();
+		expect(instrumentor.shouldInstrumentForFuzzing("include")).toBeTruthy();
+		expect(instrumentor.shouldInstrumentForFuzzing("exclude")).toBeFalsy();
 		expect(
-			instrumentor.shouldInstrument("/some/package/include/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files")
 		).toBeTruthy();
 		expect(
-			instrumentor.shouldInstrument("/some/package/exclude/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/exclude/files")
 		).toBeFalsy();
-		expect(instrumentor.shouldInstrument("/something/else")).toBeFalsy();
+		expect(
+			instrumentor.shouldInstrumentForFuzzing("/something/else")
+		).toBeFalsy();
 	});
 
 	it("should include everything with *", () => {
 		const instrumentor = new Instrumentor(["*"], []);
-		expect(instrumentor.shouldInstrument("include")).toBeTruthy();
-		expect(instrumentor.shouldInstrument("/something/else")).toBeTruthy();
+		expect(instrumentor.shouldInstrumentForFuzzing("include")).toBeTruthy();
+		expect(
+			instrumentor.shouldInstrumentForFuzzing("/something/else")
+		).toBeTruthy();
 	});
 
 	it("should include nothing with emtpy string", () => {
 		const instrumentorWithEmptyInclude = new Instrumentor(["include", ""], []);
 		expect(
-			instrumentorWithEmptyInclude.shouldInstrument("include")
+			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("include")
 		).toBeTruthy();
 		expect(
-			instrumentorWithEmptyInclude.shouldInstrument("/something/else")
+			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("/something/else")
 		).toBeFalsy();
 
 		const instrumentorWithEmptyExclude = new Instrumentor(["include"], [""]);
 		expect(
-			instrumentorWithEmptyExclude.shouldInstrument("include")
+			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing("include")
 		).toBeTruthy();
 		expect(
-			instrumentorWithEmptyExclude.shouldInstrument("/something/else")
+			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing("/something/else")
 		).toBeFalsy();
 	});
 
 	it("should exclude with precedence", () => {
 		const instrumentor = new Instrumentor(["include"], ["*"]);
 		expect(
-			instrumentor.shouldInstrument("/some/package/include/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files")
 		).toBeFalsy();
 	});
 });
