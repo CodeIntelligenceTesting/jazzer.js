@@ -10,7 +10,7 @@ FOR /D %%G in ("*") DO (
   cd %%G
   IF EXIST "package.json" (
     npm install
-    npm run "%command%"
+    npm run "%command%" || cmd /c exit -1073741510
   )
   cd ..
 )

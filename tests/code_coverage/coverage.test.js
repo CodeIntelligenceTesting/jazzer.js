@@ -99,10 +99,14 @@ describe("Source code coverage reports for regular fuzz targets", () => {
 	});
 
 	it("Want coverage in a non-default directory, instrumentation enabled, with custom hooks", () => {
-		const coverageDirectory = path.join(testDirectory, "coverage002");
+		const coverageDirectory = "coverage002";
+		const coverageAbsoluteDirectory = path.join(
+			testDirectory,
+			coverageDirectory
+		);
 		executeFuzzTest(false, true, true, true, true, coverageDirectory);
-		expect(fs.existsSync(coverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(coverageDirectory);
+		expect(fs.existsSync(coverageAbsoluteDirectory)).toBe(true);
+		const coverageJson = readCoverageJson(coverageAbsoluteDirectory);
 		const expectedCoverage = readExpectedCoverage("fuzz+lib+customHooks.json");
 		expect(coverageJson).toBeTruthy();
 		// lib.js
@@ -247,6 +251,7 @@ function executeJestRunner(
 	const process = spawnSync("npx", command, {
 		stdio: "pipe",
 		cwd: testDirectory,
+		shell: true,
 	});
 	if (verbose) console.log(process.output.toString());
 }
@@ -303,6 +308,7 @@ function executeFuzzTest(
 	const process = spawnSync("npx", options, {
 		stdio: "pipe",
 		cwd: testDirectory,
+		shell: true,
 	});
 	if (verbose) console.log(process.output.toString());
 }
