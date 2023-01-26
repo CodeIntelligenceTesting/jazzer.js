@@ -66,13 +66,15 @@ yargs(process.argv.slice(2))
 					type: "string",
 				})
 
-				.option("fuzzFunction", {
-					describe: "Name of the fuzz target function.",
+				.option("fuzz_function", {
+					describe:
+						"Name of the fuzz test entry point. It must be an exported " +
+						"function with a single Buffer parameter",
 					type: "string",
 					default: "fuzz",
 					group: "Fuzzer:",
 				})
-				.hide("fuzzFunction")
+				.hide("fuzz_function")
 
 				.option("id_sync_file", {
 					describe:
@@ -169,7 +171,7 @@ yargs(process.argv.slice(2))
 			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing({
 				fuzzTarget: ensureFilepath(args.fuzzTarget),
-				fuzzEntryPoint: args.fuzzFunction,
+				fuzzEntryPoint: args.fuzz_function,
 				includes: args.instrumentation_includes,
 				excludes: args.instrumentation_excludes,
 				dryRun: args.dry_run,
