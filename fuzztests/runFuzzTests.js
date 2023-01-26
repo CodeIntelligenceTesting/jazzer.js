@@ -47,7 +47,8 @@ async function executeFuzzTest(file, name) {
 		});
 		test.on("close", (code) => {
 			console.log(`--- Finished fuzz test ${file} > ${name} with code ${code}`);
-			resolve();
+			if (code !== 0 && code !== null) reject(code);
+			else resolve();
 		});
 	});
 }
