@@ -20,15 +20,15 @@ import { addon } from "./addon";
  * Performs a string comparison between two strings and calls the corresponding native hook if needed.
  * This function replaces the original comparison expression and preserves the semantics by returning
  * the original result after calling the native hook.
- * @param s1 first compared string
- * @param s2 second compared string
+ * @param s1 first compared string. s1 has the type `unknown` because we can only know the type at runtime.
+ * @param s2 second compared string. s2 has the type `unknown` because we can only know the type at runtime.
  * @param operator the operator used in the comparison
  * @param id an unique identifier to distinguish between the different comparisons
  * @returns result of the comparison
  */
 function traceStrCmp(
-	s1: string,
-	s2: string,
+	s1: unknown,
+	s2: unknown,
 	operator: string,
 	id: number
 ): boolean {
@@ -52,7 +52,13 @@ function traceStrCmp(
 			shouldCallLibfuzzer = result;
 			break;
 	}
-	if (shouldCallLibfuzzer && s1 && s2) {
+	if (
+		shouldCallLibfuzzer &&
+		s1 &&
+		s2 &&
+		typeof s1 === "string" &&
+		typeof s2 === "string"
+	) {
 		addon.traceUnequalStrings(id, s1, s2);
 	}
 	return result;
