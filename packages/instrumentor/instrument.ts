@@ -47,8 +47,8 @@ export class Instrumentor {
 		private readonly includes: string[] = ["*"],
 		private readonly excludes: string[] = ["node_modules"],
 		private readonly customHooks: string[] = [],
-		private readonly collectSourceCodeCoverage = false,
-		private readonly dryRun = false,
+		private readonly shouldCollectSourceCodeCoverage = false,
+		private readonly isDryRun = false,
 		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy()
 	) {}
 
@@ -62,7 +62,7 @@ export class Instrumentor {
 	instrument(code: string, filename: string): string {
 		const transformations: PluginItem[] = [];
 
-		const shouldInstrumentFile = this.shouldInstrument(filename);
+		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
 
 		if (shouldInstrumentFile) {
 			transformations.push(codeCoverage(this.idStrategy), compareHooks);
@@ -72,12 +72,12 @@ export class Instrumentor {
 			transformations.push(functionHooks(filename));
 		}
 
-		if (shouldInstrumentFile) {
-			this.idStrategy.startForSourceFile(filename);
-		}
-
 		if (this.shouldCollectCodeCoverage(filename)) {
 			transformations.push(sourceCodeCoverage(filename));
+		}
+
+		if (shouldInstrumentFile) {
+			this.idStrategy.startForSourceFile(filename);
 		}
 
 		const transformedCode =
@@ -156,17 +156,28 @@ export class Instrumentor {
 			delete require.cache[require.resolve(module)];
 		});
 	}
-	shouldInstrument(
+	shouldInstrumentForFuzzing(filepath: string): boolean {
+		return (
+			!this.isDryRun &&
+			Instrumentor.doesMatchFilters(filepath, this.includes, this.excludes)
+		);
+	}
+
+	private shouldCollectCodeCoverage(filepath: string): boolean {
+		return (
+			this.shouldCollectSourceCodeCoverage &&
+			(Instrumentor.doesMatchFilters(filepath, this.includes, this.excludes) ||
+				Instrumentor.doesMatchFilters(filepath, this.customHooks, ["nothing"]))
+		);
+	}
+
+	private static doesMatchFilters(
 		filepath: string,
-		dryRun = this.dryRun,
-		includes = this.includes,
-		excludes = this.excludes
+		includes: string[],
+		excludes: string[]
 	): boolean {
-		if (dryRun) {
-			return false;
-		}
-		const cleanedIncludes = this.cleanup(includes);
-		const cleanedExcludes = this.cleanup(excludes);
+		const cleanedIncludes = Instrumentor.cleanup(includes);
+		const cleanedExcludes = Instrumentor.cleanup(excludes);
 		const included =
 			cleanedIncludes.find((include) => filepath.includes(include)) !==
 			undefined;
@@ -176,20 +187,7 @@ export class Instrumentor {
 		return included && !excluded;
 	}
 
-	shouldCollectCodeCoverage(filepath: string): boolean {
-		const shouldCoverCustomHooks = this.shouldInstrument(
-			filepath,
-			false,
-			this.customHooks,
-			["nothing"]
-		);
-		return (
-			this.collectSourceCodeCoverage &&
-			(shouldCoverCustomHooks || this.shouldInstrument(filepath, false))
-		);
-	}
-
-	cleanup(settings: string[]): string[] {
+	private static cleanup(settings: string[]): string[] {
 		return settings
 			.filter((setting) => setting)
 			.map((setting) => (setting === "*" ? "" : setting)); // empty string matches every file
