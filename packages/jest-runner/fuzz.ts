@@ -42,7 +42,11 @@ export class FuzzerStartError extends FuzzerError {}
 // Use Jests global object definition.
 const g = globalThis as unknown as Global.Global;
 
-export type FuzzTest = (name: Global.TestNameLike, fn: FuzzTarget) => void;
+export type FuzzTest = (
+	name: Global.TestNameLike,
+	fn: FuzzTarget,
+	timeout?: number
+) => void;
 
 export const skip: FuzzTest = (name) => {
 	g.test.skip(toTestName(name), () => {
@@ -50,7 +54,7 @@ export const skip: FuzzTest = (name) => {
 	});
 };
 
-export const fuzz: FuzzTest = (name, fn) => {
+export const fuzz: FuzzTest = (name, fn, timeout) => {
 	const testName = toTestName(name);
 
 	// Request the current test file path from the worker to create appropriate
@@ -64,15 +68,14 @@ export const fuzz: FuzzTest = (name, fn) => {
 	// points to the element containing the fuzz function.
 	const testStatePath = currentTestStatePath(testName);
 
-	// The timeout setting is extracted from the test state and defaults to 5s.
-	// Setting timeouts on this level is necessary, as they apply to the
-	// individual inputs and not the whole run.
-	const timeout = currentTimeout();
-
 	const corpus = new Corpus(testFile, testStatePath);
 
 	const fuzzingConfig = loadConfig();
-	fuzzingConfig.timeout = timeout;
+
+	// Timeout priority is: test timeout > config timeout > default timeout.
+	if (!timeout)
+		if (fuzzingConfig.timeout) timeout = fuzzingConfig.timeout;
+		else timeout = 5000;
 
 	if (fuzzingConfig.dryRun) {
 		runInRegressionMode(name, fn, corpus, timeout);
@@ -230,8 +233,4 @@ const currentTestStatePath = (testName: string): string[] => {
 		}
 	}
 	return elements;
-};
-
-const currentTimeout = (): number => {
-	return circus.getState().testTimeout || 5000;
 };
