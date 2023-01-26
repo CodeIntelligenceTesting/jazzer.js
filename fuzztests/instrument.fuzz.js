@@ -16,12 +16,13 @@
 
 /* eslint-disable no-undef, @typescript-eslint/no-var-requires */
 
-const { shouldInstrumentFn } = require("@jazzer.js/instrumentor");
+const { Instrumentor } = require("@jazzer.js/instrumentor");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
 describe("instrument", () => {
 	it.fuzz("shouldInstrumentFn", (data) => {
 		const provider = new FuzzedDataProvider(data);
+		const filename = provider.consumeString(10);
 		const includes = provider.consumeStringArray(
 			provider.consumeIntegralInRange(0, 10),
 			5
@@ -31,8 +32,8 @@ describe("instrument", () => {
 			5
 		);
 
-		const check = shouldInstrumentFn(includes, excludes);
-
+		const instrumentor = new Instrumentor(includes, excludes);
+		const check = instrumentor.shouldInstrumentForFuzzing(filename);
 		const includeAll = includes.some((e) => e === "*");
 		const excludeAll = excludes.some((e) => e === "*");
 

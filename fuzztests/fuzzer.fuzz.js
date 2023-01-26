@@ -25,15 +25,15 @@ describe("fuzzer", () => {
 		let a = provider.consumeString(10);
 		let b = provider.consumeString(10);
 		let op = provider.consumeString(5);
-		expect(fuzzer.traceStrCmp(a, b, op, 0)).toBeDefined();
+		expect(fuzzer.tracer.traceStrCmp(a, b, op, 0)).toBeDefined();
 	});
 
 	it.fuzz("use never zero policy", (data) => {
 		const provider = new FuzzedDataProvider(data);
 		const iterations = provider.consumeIntegralInRange(1, 1 << 16);
 		for (let i = 0; i < iterations; i++) {
-			fuzzer.incrementCounter(0);
+			fuzzer.coverageTracker.incrementCounter(0);
 		}
-		expect(fuzzer.readCounter(0)).not.toEqual(0);
+		expect(fuzzer.coverageTracker.readCounter(0)).not.toEqual(0);
 	});
 });

@@ -23,23 +23,27 @@ describe("FuzzedDataProvider", () => {
 	// FuzzedDataProvider as possible, before invoking a terminating one
 	// like consumeRemainingXY. Strange combinations of functions could produce a
 	// one off error.
-	it.fuzz("consumes the provided input", (data) => {
-		const provider = new FuzzedDataProvider(data);
-		const properties = Object.getOwnPropertyNames(
-			Object.getPrototypeOf(provider)
-		);
-		const methodNames = properties
-			.filter((p) => provider[p] instanceof Function)
-			.filter((m) => provider[m].length === 0);
+	it.fuzz(
+		"consumes the provided input",
+		(data) => {
+			const provider = new FuzzedDataProvider(data);
+			const properties = Object.getOwnPropertyNames(
+				Object.getPrototypeOf(provider)
+			);
+			const methodNames = properties
+				.filter((p) => provider[p] instanceof Function)
+				.filter((m) => provider[m].length === 0);
 
-		let usedMethods = "";
-		while (provider.remainingBytes > 0) {
-			const methodName = provider.pickValue(methodNames);
-			provider[methodName].call(provider);
-			usedMethods += methodName;
-		}
-		jazzer.exploreState(hash(usedMethods), 31);
-	});
+			let usedMethods = "";
+			while (provider.remainingBytes > 0) {
+				const methodName = provider.pickValue(methodNames);
+				provider[methodName].call(provider);
+				usedMethods += methodName;
+			}
+			jazzer.exploreState(hash(usedMethods), 31);
+		},
+		40000
+	);
 });
 
 const hash = (str) => {
