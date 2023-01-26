@@ -20,7 +20,7 @@ let invocationCount = lastInvocationCount + 1;
 /**
  * @param { Buffer } data
  */
-module.exports.fuzz = function (data) {
+module.exports.fuzz_promise = function (data) {
 	return new Promise((resolve, reject) => {
 		if (data.length < 3) {
 			resolve(invocationCount++);
