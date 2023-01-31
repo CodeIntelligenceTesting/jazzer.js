@@ -21,6 +21,18 @@ import process from "process";
 
 import { fuzzer } from "@jazzer.js/fuzzer";
 
+if (process.listeners) {
+	// "signal-exit" library imported by "proper-lockfile" inserts listeners for all important signals, such as SIGALRM and SIGINT (see https://github.com/tapjs/signal-exit/blob/39a5946d2b04d00106400c0dcc5d358a40892438/signals.js)
+	// libFuzzer has a SIGALRM handler to deal with -timeout flag, here we give the control back to libFuzzer by removing the SIGALRM listeners inserted by "signal-exit".
+	if (process.listeners("SIGALRM").length > 0) {
+		process.removeListener("SIGALRM", process.listeners("SIGALRM")[0]);
+	}
+	// SIGINT: in synchronous mode, pressing CTRL-C does not abort the process. Removing the SIGINT listener inserted by "signal-exit" gives the control back to the users.
+	if (process.listeners("SIGINT").length > 0) {
+		process.removeListener("SIGINT", process.listeners("SIGINT")[0]);
+	}
+}
+
 export interface EdgeIdStrategy {
 	nextEdgeId(): number;
 	startForSourceFile(filename: string): void;
