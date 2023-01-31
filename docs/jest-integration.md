@@ -82,7 +82,8 @@ which can be specified through the CLI client.
 	"excludes": ["node_modules"],
 	"customHooks": [],
 	"fuzzerOptions": [],
-	"sync": false
+	"sync": false,
+	"timeout": 1000
 }
 ```
 
@@ -105,9 +106,13 @@ The resulting code looks very similar to normal Jest tests.
 
 ```javascript
 describe("My describe", () => {
-	it.fuzz("My fuzz test", (data) => {
-		target.fuzzMe(data);
-	});
+	it.fuzz(
+		"My fuzz test",
+		(data) => {
+			target.fuzzMe(data);
+		},
+		2000
+	);
 });
 ```
 
@@ -327,4 +332,3 @@ reimplemented.
 
 - Mock functions
 - Isolated workers
-- Test-based timeouts (third parameter to `test` functions)

@@ -55,18 +55,16 @@ npx jazzer fuzzTarget -- -use_value_profile=1
 ## Timeout
 
 Invocations of fuzz targets, which take longer than the configured timeout, will
-cause fuzzing to stop and a timeout finding to be reported. This feature is
-directly provided by the underlying fuzzing engine, libFuzzer.
-
-A [default timeout](https://www.llvm.org/docs/LibFuzzer.html#output) of 1200
-seconds is preconfigured, but can be changed using the `-timeout` fuzzer flag.
+cause fuzzing to stop and a timeout finding to be reported. A default timeout of
+5000 milliseconds is preconfigured, but can be changed using the `--timeout`
+fuzzer flag.
 
 Timeouts work in the sync- and asynchronous fuzzing mode.
 
 **Example invocation:**
 
 ```shell
-npx jazzer fuzzTarget -- -timeout=10
+npx jazzer fuzzTarget --timeout=10000
 ```
 
 **Example output:**

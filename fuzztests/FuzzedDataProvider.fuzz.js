@@ -42,7 +42,7 @@ describe("FuzzedDataProvider", () => {
 			}
 			jazzer.exploreState(hash(usedMethods), 31);
 		},
-		40000
+		5000
 	);
 });
 

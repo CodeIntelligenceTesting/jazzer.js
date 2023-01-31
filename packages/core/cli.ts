@@ -181,6 +181,12 @@ yargs(process.argv.slice(2))
 					type: "string",
 					group: "Fuzzer:",
 					default: ["json", "text", "lcov", "clover"],
+				})
+				.option("timeout", {
+					describe: "Timeout in milliseconds for each fuzz test execution.",
+					type: "number",
+					group: "Fuzzer:",
+					default: 5000,
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,6 +202,7 @@ yargs(process.argv.slice(2))
 				excludes: args.instrumentation_excludes,
 				dryRun: args.dry_run,
 				sync: args.sync,
+				timeout: args.timeout,
 				fuzzerOptions: args.corpus.concat(args._),
 				customHooks: args.custom_hooks,
 				expectedErrors: args.expected_errors,

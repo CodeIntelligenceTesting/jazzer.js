@@ -9,7 +9,7 @@ const fs = require("fs/promises");
 const { spawn } = require("child_process");
 
 const fuzzTestFileExtension = "fuzz.js";
-const fuzzTestNameRegex = /it.fuzz\(\s*"(.*)"/g;
+const fuzzTestNameRegex = /it.fuzz\s*\(\s*"(.*)"/g;
 
 async function findFuzzTestNamesInFile(file) {
 	const fuzzTestNames = [];
@@ -47,8 +47,11 @@ async function executeFuzzTest(file, name) {
 		});
 		test.on("close", (code) => {
 			console.log(`--- Finished fuzz test ${file} > ${name} with code ${code}`);
-			if (code !== 0 && code !== null) reject(code);
-			else resolve();
+			if (code !== 0 && code !== null) {
+				reject(code);
+			} else {
+				resolve();
+			}
 		});
 	});
 }

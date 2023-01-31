@@ -73,9 +73,11 @@ export const fuzz: FuzzTest = (name, fn, timeout) => {
 	const fuzzingConfig = loadConfig();
 
 	// Timeout priority is: test timeout > config timeout > default timeout.
-	if (!timeout)
-		if (fuzzingConfig.timeout) timeout = fuzzingConfig.timeout;
-		else timeout = 5000;
+	if (!timeout) {
+		timeout = fuzzingConfig.timeout;
+	} else {
+		fuzzingConfig.timeout = timeout;
+	}
 
 	if (fuzzingConfig.dryRun) {
 		runInRegressionMode(name, fn, corpus, timeout);

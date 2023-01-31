@@ -52,7 +52,7 @@ export interface Options {
 	fuzzerOptions: string[];
 	customHooks: string[];
 	expectedErrors: string[];
-	timeout?: number;
+	timeout: number;
 	idSyncFile?: string;
 	coverage: boolean; // Enables source code coverage report generation.
 	coverageDirectory: string;
@@ -290,10 +290,12 @@ function buildFuzzerOptions(options: Options): string[] {
 		// the last provided option takes precedence
 		opts = opts.concat("-runs=0");
 	}
-	if (options.timeout != undefined) {
-		const inSeconds = options.timeout / 1000;
-		opts = opts.concat(`-timeout=${inSeconds}`);
+
+	if (options.timeout <= 0) {
+		throw new Error("timeout must be > 0");
 	}
+	const inSeconds = Math.ceil(options.timeout / 1000);
+	opts = opts.concat(`-timeout=${inSeconds}`);
 
 	return [prepareLibFuzzerArg0(opts), ...opts];
 }
