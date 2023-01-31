@@ -1,10 +1,10 @@
 {
-	"name": "jazzerjs-timeout-example",
+	"name": "jazzerjs-timeout-test",
 	"version": "1.0.0",
-	"description": "An example showing how Jazzer.js handles timeouts",
+	"description": "Timeout test: checking that the handler for the SIGALRM signal does not return with error code.",
 	"scripts": {
-		"timeout": "jazzer fuzz -- -timeout=1",
-		"fuzz": "echo \"skipped\"",
+		"timeout": "jazzer fuzz -f=timeout -- -timeout=1",
+		"fuzz": "jazzer fuzz -- -timeout=1 -max_total_time=10",
 		"dryRun": "echo \"skipped\""
 	},
 	"devDependencies": {

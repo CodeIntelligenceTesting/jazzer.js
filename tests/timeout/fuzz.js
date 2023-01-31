@@ -15,12 +15,23 @@
  */
 
 /**
+ * This is a regression test that checks that running this function with "-timeout=1" does not result in a timeout.
+ *
+ * @param { Buffer } data
+ */
+module.exports.fuzz = function (data) {
+	if (data.length < 8) {
+		return;
+	}
+};
+
+/**
  * Timeouts are directly handled by libFuzzer and can not be intercepted.
  * Due to this, the example is not executed during the test phase.
  *
  * @param { Buffer } data
  */
-module.exports.fuzz = function (data) {
+module.exports.timeout = function (data) {
 	return new Promise((resolve) => {
 		if (data.length <= 10) {
 			resolve();
