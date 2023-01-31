@@ -24,6 +24,22 @@ describe("My describe", () => {
 		target.fuzzMe(data);
 	});
 
+	it.fuzz(
+		"My fuzz test with an explicit timeout (async)",
+		async (data) => {
+			target.fuzzMe(data);
+		},
+		1000
+	);
+
+	it.fuzz(
+		"My fuzz test with an explicit timeout (sync)",
+		(data) => {
+			target.fuzzMe(data);
+		},
+		1000
+	);
+
 	it.fuzz("My callback fuzz test", (data, done) => {
 		target.callbackFuzzMe(data, done);
 	});

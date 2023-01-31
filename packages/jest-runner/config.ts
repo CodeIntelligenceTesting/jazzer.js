@@ -27,7 +27,7 @@ export const defaultOptions: Options = {
 	fuzzerOptions: [],
 	sync: false,
 	expectedErrors: [],
-	timeout: undefined,
+	timeout: 5000, // default Jest timeout
 	coverage: false,
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters

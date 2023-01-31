@@ -3,8 +3,8 @@
 	"version": "1.0.0",
 	"description": "Timeout test: checking that the handler for the SIGALRM signal does not return with error code.",
 	"scripts": {
-		"timeout": "jazzer fuzz -f=timeout -- -timeout=1",
-		"fuzz": "jazzer fuzz -- -timeout=1 -max_total_time=10",
+		"timeout": "jazzer fuzz -f=timeout --timeout=1000 -- -max_total_time=10",
+		"fuzz": "jazzer fuzz --timeout=1000 -- -max_total_time=10",
 		"dryRun": "echo \"skipped\""
 	},
 	"devDependencies": {

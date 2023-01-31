@@ -15,7 +15,7 @@
  */
 
 /**
- * This is a regression test that checks that running this function with "-timeout=1" does not result in a timeout.
+ * This is a regression test that checks that running this function with "--timeout=1000" does not result in a timeout.
  *
  * @param { Buffer } data
  */
