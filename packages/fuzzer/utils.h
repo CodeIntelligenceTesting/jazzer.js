@@ -23,3 +23,8 @@ void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback);
 std::vector<std::string> LibFuzzerArgs(Napi::Env env,
                                        const Napi::Array &jsArgs);
+
+int StopFuzzingHandleExit(const Napi::CallbackInfo &info);
+void AsyncReturnsHandler();
+void SyncReturnsHandler();
+void ReturnValueInfo(bool);

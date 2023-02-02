@@ -1,0 +1,3 @@
+# Fuzzer coverage
+**/coverage[0-9]*/
+sample_fuzz_test/.jazzerjsrc.json

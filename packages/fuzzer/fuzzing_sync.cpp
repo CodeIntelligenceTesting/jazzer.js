@@ -12,8 +12,10 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "start_fuzzing_sync.h"
+#include "fuzzing_sync.h"
+#include "shared/libfuzzer.h"
 #include "utils.h"
+#include <cstdlib>
 #include <optional>
 
 namespace {
@@ -49,18 +51,25 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
   // modify it (else the fuzzer will abort); moreover, we don't know when
   // the JS buffer is going to be garbage-collected. But it would still be
   // nice for efficiency if we could use a pointer instead of copying.
+  //
   auto data = Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size);
-  gFuzzTarget->target.Call({data});
-  return 0;
+  auto result = gFuzzTarget->target.Call({data});
+
+  if (result.IsPromise()) {
+    AsyncReturnsHandler();
+  } else {
+    SyncReturnsHandler();
+  }
+  return EXIT_SUCCESS;
 }
 
 // Start libfuzzer with a JS fuzz target.
 //
-// This is a JS-enabled version of libfuzzer's main function (see FuzzerMain.cpp
-// in the compiler-rt source). It takes the fuzz target, which must be a JS
-// function taking a single data argument, as its first parameter; the fuzz
-// target's return value is ignored. The second argument is an array of
-// (command-line) arguments to pass to libfuzzer.
+// This is a JS-enabled version of libfuzzer's main function (see
+// FuzzerMain.cpp in the compiler-rt source). It takes the fuzz target, which
+// must be a JS function taking a single data argument, as its first
+// parameter; the fuzz target's return value is ignored. The second argument
+// is an array of (command-line) arguments to pass to libfuzzer.
 void StartFuzzing(const Napi::CallbackInfo &info) {
   if (info.Length() != 2 || !info[0].IsFunction() || !info[1].IsArray()) {
     throw Napi::Error::New(info.Env(),
@@ -79,4 +88,20 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
   // function reference that it's currently holding will become invalid
   // when we return.
   gFuzzTarget = {};
+}
+
+void StopFuzzing(const Napi::CallbackInfo &info) {
+  int exitCode = StopFuzzingHandleExit(info);
+
+  // If we ran in async mode and we only ever encountered synchronous results
+  // we'll give an indicator that running in synchronous mode is likely
+  // benefical
+  ReturnValueInfo(true);
+
+  // We call _Exit to immediately terminate the process without performing any
+  // cleanup including libfuzzer exit handlers. These handlers print information
+  // about the native libfuzzer target which is neither relevant nor actionable
+  // for JavaScript developers. We provide the relevant crash information
+  // such as the error message and stack trace in Jazzer.js CLI.
+  _Exit(exitCode);
 }

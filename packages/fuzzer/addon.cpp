@@ -14,8 +14,8 @@
 
 #include <iostream>
 
-#include "start_fuzzing_async.h"
-#include "start_fuzzing_sync.h"
+#include "fuzzing_async.h"
+#include "fuzzing_sync.h"
 
 #include "shared/callbacks.h"
 
@@ -27,16 +27,30 @@ void PrintVersion(const Napi::CallbackInfo &info) {
             << " using Node-API version " << napi_version << std::endl;
 }
 
-// Initialize the module by populating its JS exports with pointers to our C++
-// functions.
+// This code is defining a function called "Init" which is used to initialize a
+// Node.js addon module. The function takes two arguments, an "env" object, and
+// an "exports" object.
+// The "exports" object is an instance of the `Napi::Object` class, which is
+// used to define the exports of the Node.js addon module. The code is adding
+// properties to the "exports" object, where each property is a JavaScript
+// function that corresponds to a C++ function.
+// `RegisterCallbackExports` links more functions needed, like coverage tracking
+// capabilities.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["printVersion"] = Napi::Function::New<PrintVersion>(env);
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);
   exports["stopFuzzingAsync"] = Napi::Function::New<StopFuzzingAsync>(env);
+  exports["stopFuzzing"] = Napi::Function::New<StopFuzzing>(env);
 
   RegisterCallbackExports(env, exports);
   return exports;
 }
 
+// Macro that exports the "Init" function as the entry point of the addon module
+// named "myPackage". When this addon is imported in a Node.js script, the
+// "Init" function will be executed to define the exports of the addon.
+// This effectively allows us to do this from the Node.js side of things:
+// const jazzerjs = require('jazzerjs');
+// jazzerjs.printVersion
 NODE_API_MODULE(jazzerjs, Init)

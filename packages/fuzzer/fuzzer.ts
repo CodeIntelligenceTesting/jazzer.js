@@ -30,6 +30,7 @@ export interface Fuzzer {
 	startFuzzing: typeof addon.startFuzzing;
 	startFuzzingAsync: typeof addon.startFuzzingAsync;
 	stopFuzzingAsync: typeof addon.stopFuzzingAsync;
+	stopFuzzing: typeof addon.stopFuzzing;
 }
 
 export const fuzzer: Fuzzer = {
@@ -38,6 +39,7 @@ export const fuzzer: Fuzzer = {
 	startFuzzing: addon.startFuzzing,
 	startFuzzingAsync: addon.startFuzzingAsync,
 	stopFuzzingAsync: addon.stopFuzzingAsync,
+	stopFuzzing: addon.stopFuzzing,
 };
 
 export type { CoverageTracker } from "./coverage";

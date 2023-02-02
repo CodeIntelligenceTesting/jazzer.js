@@ -60,6 +60,7 @@ type NativeAddon = {
 	startFuzzing: StartFuzzingSyncFn;
 	startFuzzingAsync: StartFuzzingAsyncFn;
 	stopFuzzingAsync: (status?: number) => void;
+	stopFuzzing: (status?: number) => void;
 };
 
 export const addon: NativeAddon = bind("jazzerjs");

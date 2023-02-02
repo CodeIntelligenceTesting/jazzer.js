@@ -23,6 +23,7 @@ module.exports = {
 		"packages/fuzzer/build",
 		"tests/code_coverage",
 	],
+	testMatch: ["<rootDir>/packages/**/*.test.[jt]s"],
 	collectCoverageFrom: ["packages/**/*.ts"],
 	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
 };

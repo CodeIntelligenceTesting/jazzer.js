@@ -78,3 +78,10 @@ possible to decide if a loaded module should be instrumented or not.
 
 **Consequences**: Independence of JavaScript engine, fine-grained
 instrumentation control
+
+## Visualization
+
+The most crucial inner mechanisms that make Jazzer.js work are highlighted in
+the below Figure:
+
+![DetailOvervoew](pictures/jazzer-detail_overview.jpg "Detail overview")
