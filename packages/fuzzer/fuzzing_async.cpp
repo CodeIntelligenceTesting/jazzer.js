@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include "napi.h"
+#include <cstdlib>
 #include <future>
 #include <iostream>
 
@@ -23,8 +25,8 @@
 #define GetPID getpid
 #endif
 
+#include "fuzzing_async.h"
 #include "shared/libfuzzer.h"
-#include "start_fuzzing_async.h"
 #include "utils.h"
 
 namespace {
@@ -89,7 +91,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
     // cleanup including libfuzzer exit handlers.
     _Exit(libfuzzer::ExitErrorCode);
   }
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 // This function is the callback that gets executed in the addon's main thread
@@ -164,6 +166,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
           // not, an appropriate error, describing the illegal return value,
           // can be set. As everything is executed on the main event loop, no
           // synchronization is needed.
+          AsyncReturnsHandler();
           if (context->is_resolved) {
             return;
           }
@@ -176,6 +179,8 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                                     "done callback based fuzz tests allowed.")
                   .Value());
           context->is_resolved = true;
+        } else {
+          SyncReturnsHandler();
         }
         return;
       }
@@ -186,6 +191,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
       // resolving the fuzzer promise and continue fuzzing. Otherwise, resolve
       // and continue directly.
       if (result.IsPromise()) {
+        AsyncReturnsHandler();
         auto jsPromise = result.As<Napi::Object>();
         auto then = jsPromise.Get("then").As<Napi::Function>();
         then.Call(
@@ -203,6 +209,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                    std::make_exception_ptr(JSException()));
              })});
       } else {
+        SyncReturnsHandler();
         data->promise->set_value(nullptr);
       }
     } else {
@@ -285,15 +292,12 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
 }
 
 void StopFuzzingAsync(const Napi::CallbackInfo &info) {
-  int exitCode = libfuzzer::ExitErrorCode;
+  int exitCode = StopFuzzingHandleExit(info);
 
-  if (info[0].IsNumber()) {
-    exitCode = info[0].As<Napi::Number>().Int32Value();
-  } else {
-    // If a dedicated status code is provided, the run is executed as internal
-    // test and the crashing input does not need to be printed/saved.
-    libfuzzer::PrintCrashingInput();
-  }
+  // If we ran in async mode and we only ever encountered synchronous results
+  // we'll give an indicator that running in synchronous mode is likely
+  // benefical
+  ReturnValueInfo(false);
 
   // We call _Exit to immediately terminate the process without performing any
   // cleanup including libfuzzer exit handlers. These handlers print information

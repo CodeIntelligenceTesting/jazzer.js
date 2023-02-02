@@ -1,0 +1,13 @@
+{
+	"name": "jazzerjs-string-compare-sync-sync-no-info",
+	"version": "1.0.0",
+	"description": "An example showing how Jazzer.js handles string comparisons in the code",
+	"scripts": {
+		"fuzz": "jazzer fuzz --sync  -- -max_total_time=60 ",
+		"dryRun": "jazzer fuzz -- -runs=100 -seed=123456789 "
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../../packages/core",
+		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner/"
+	}
+}

@@ -102,7 +102,8 @@ export async function startFuzzing(options: Options) {
 				undefined,
 				options.expectedErrors,
 				options.coverageDirectory,
-				options.coverageReporters
+				options.coverageReporters,
+				options.sync
 			);
 		},
 		(err: unknown) => {
@@ -110,7 +111,8 @@ export async function startFuzzing(options: Options) {
 				err,
 				options.expectedErrors,
 				options.coverageDirectory,
-				options.coverageReporters
+				options.coverageReporters,
+				options.sync
 			);
 		}
 	);
@@ -186,8 +188,10 @@ function stopFuzzing(
 	err: unknown,
 	expectedErrors: string[],
 	coverageDirectory: string,
-	coverageReporters: reports.ReportType[]
+	coverageReporters: reports.ReportType[],
+	sync: boolean
 ) {
+	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
 	if (process.env.JAZZER_DEBUG) {
 		trackedHooks.categorizeUnknown(HookManager.hooks).print();
 	}
@@ -211,7 +215,7 @@ function stopFuzzing(
 			console.error(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`
 			);
-			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+			stopFuzzing(ERROR_UNEXPECTED_CODE);
 		}
 		return;
 	}
@@ -221,13 +225,13 @@ function stopFuzzing(
 		const name = errorName(err);
 		if (expectedErrors.includes(name)) {
 			console.error(`INFO: Received expected error "${name}".`);
-			Fuzzer.stopFuzzingAsync(ERROR_EXPECTED_CODE);
+			stopFuzzing(ERROR_EXPECTED_CODE);
 		} else {
 			printError(err);
 			console.error(
 				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`
 			);
-			Fuzzer.stopFuzzingAsync(ERROR_UNEXPECTED_CODE);
+			stopFuzzing(ERROR_UNEXPECTED_CODE);
 		}
 		return;
 	}
@@ -235,7 +239,7 @@ function stopFuzzing(
 	// Error found, but no specific one expected. This case is used for normal
 	// fuzzing runs, so no dedicated exit code is given to the stop fuzzing function.
 	printError(err);
-	Fuzzer.stopFuzzingAsync();
+	stopFuzzing();
 }
 
 function errorName(error: unknown): string {
@@ -296,7 +300,6 @@ function buildFuzzerOptions(options: Options): string[] {
 	}
 	const inSeconds = Math.ceil(options.timeout / 1000);
 	opts = opts.concat(`-timeout=${inSeconds}`);
-
 	return [prepareLibFuzzerArg0(opts), ...opts];
 }
 
