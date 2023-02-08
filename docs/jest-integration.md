@@ -87,7 +87,7 @@ which can be specified through the CLI client.
 }
 ```
 
-## Writing a Jest fuzz tests
+## Writing a Jest fuzz test
 
 To create a fuzz test, the `fuzz` function on Jest's `test` and `it` can be
 used.
@@ -116,9 +116,11 @@ describe("My describe", () => {
 });
 ```
 
-However, the provided `Buffer` is not the nicest abstraction to work with. For
-that reason, Jazzer.js provides the wrapper class `FuzzedDataProvider`. An
-example on how to use everything in combination is shown below.
+If the function you want to test expects parameters of types other than
+`Buffer`, you have to take care of constructing the corresponding arguments from
+the provided buffer. To facilitate this step, Jazzer.js provides a utility class
+`FuzzedDataProvider` that you can use to consume data of certain types from the
+fuzzer input. An example on how to use everything in combination is shown below.
 
 ```js
 const target = require("./target");
