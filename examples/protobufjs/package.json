@@ -3,8 +3,8 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"fuzz": "npx jazzer fuzz --sync -i protobuf -e nothing",
-		"dryRun": "npx jazzer fuzz -d --sync -i protobuf -e nothing -- -runs=100 -seed=123456789"
+		"fuzz": "npx jazzer fuzz --sync -i protobuf",
+		"dryRun": "npx jazzer fuzz -d --sync -i protobuf -- -runs=100 -seed=123456789"
 	},
 	"dependencies": {
 		"protobufjs": "^7.0.0",

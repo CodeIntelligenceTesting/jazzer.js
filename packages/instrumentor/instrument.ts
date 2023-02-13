@@ -44,13 +44,21 @@ export {
 
 export class Instrumentor {
 	constructor(
-		private readonly includes: string[] = ["*"],
-		private readonly excludes: string[] = ["node_modules"],
+		private readonly includes: string[] = [],
+		private readonly excludes: string[] = [],
 		private readonly customHooks: string[] = [],
 		private readonly shouldCollectSourceCodeCoverage = false,
 		private readonly isDryRun = false,
 		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy()
-	) {}
+	) {
+		// This is our default case where we want to include everthing and exclude the "node_modules" folder.
+		if (includes.length === 0 && excludes.length === 0) {
+			includes.push("*");
+			excludes.push("node_modules");
+		}
+		this.includes = Instrumentor.cleanup(includes);
+		this.excludes = Instrumentor.cleanup(excludes);
+	}
 
 	init(): () => void {
 		if (this.includes.includes("jazzer.js")) {
@@ -156,6 +164,7 @@ export class Instrumentor {
 			delete require.cache[require.resolve(module)];
 		});
 	}
+
 	shouldInstrumentForFuzzing(filepath: string): boolean {
 		return (
 			!this.isDryRun &&
@@ -176,14 +185,10 @@ export class Instrumentor {
 		includes: string[],
 		excludes: string[]
 	): boolean {
-		const cleanedIncludes = Instrumentor.cleanup(includes);
-		const cleanedExcludes = Instrumentor.cleanup(excludes);
 		const included =
-			cleanedIncludes.find((include) => filepath.includes(include)) !==
-			undefined;
+			includes.find((include) => filepath.includes(include)) !== undefined;
 		const excluded =
-			cleanedExcludes.find((exclude) => filepath.includes(exclude)) !==
-			undefined;
+			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
 		return included && !excluded;
 	}
 
