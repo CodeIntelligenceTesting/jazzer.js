@@ -9,9 +9,9 @@
 		"jpeg-js": "^0.4.4"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i jpeg-js -e nothing --sync",
-		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync -- -runs=100 -seed=123456789",
-		"coverage": "jazzer fuzz -i jpeg-js/lib -i fuzz.js -e nothing --sync --coverage -- -max_total_time=1 -seed=123456789"
+		"fuzz": "jazzer fuzz -i jpeg-js --sync",
+		"dryRun": "jazzer fuzz -i jpeg-js --sync -- -runs=100 -seed=123456789",
+		"coverage": "jazzer fuzz -i jpeg-js/lib -i fuzz.js --sync --coverage -- -max_total_time=1 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
