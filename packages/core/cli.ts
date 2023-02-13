@@ -98,11 +98,11 @@ yargs(process.argv.slice(2))
 						"Part of filepath names to include in the instrumentation. " +
 						'A tailing "/" should be used to include directories and prevent ' +
 						'confusion with filenames. "*" can be used to include all files.\n' +
-						"Can be specified multiple times.",
+						"Can be specified multiple times. By default all files will be" +
+						"included.",
 					type: "string",
 					alias: "i",
 					group: "Fuzzer:",
-					default: ["*"],
 				})
 
 				.array("instrumentation_excludes")
@@ -111,11 +111,11 @@ yargs(process.argv.slice(2))
 						"Part of filepath names to exclude in the instrumentation. " +
 						'A tailing "/" should be used to exclude directories and prevent ' +
 						'confusion with filenames. "*" can be used to exclude all files.\n' +
-						"Can be specified multiple times.",
+						'Can be specified multiple times. By default, "node_modules/" will' +
+						"be excluded.",
 					type: "string",
 					alias: "e",
 					group: "Fuzzer:",
-					default: ["node_modules"],
 				})
 				.option("dry_run", {
 					describe:

@@ -37,8 +37,8 @@ describe("shouldInstrument check", () => {
 		).toBeFalsy();
 	});
 
-	it("should include everything with *", () => {
-		const instrumentor = new Instrumentor(["*"], []);
+	it("should include everything by default", () => {
+		const instrumentor = new Instrumentor();
 		expect(instrumentor.shouldInstrumentForFuzzing("include")).toBeTruthy();
 		expect(
 			instrumentor.shouldInstrumentForFuzzing("/something/else")
@@ -46,7 +46,7 @@ describe("shouldInstrument check", () => {
 	});
 
 	it("should include nothing with emtpy string", () => {
-		const instrumentorWithEmptyInclude = new Instrumentor(["include", ""], []);
+		const instrumentorWithEmptyInclude = new Instrumentor(["include", ""]);
 		expect(
 			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("include")
 		).toBeTruthy();
