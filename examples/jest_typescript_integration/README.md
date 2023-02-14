@@ -58,7 +58,7 @@ Write a fuzz test like:
 // file: jazzerjs.fuzz.ts
 import "@jazzer.js/jest-runner/jest-extension";
 describe("My describe", () => {
-	it.fuzz("My fuzz test", (data) => {
+	it.fuzz("My fuzz test", (data: Buffer) => {
 		target.fuzzMe(data);
 	});
 });
