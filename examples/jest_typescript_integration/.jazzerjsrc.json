@@ -1,0 +1,6 @@
+{
+	"includes": ["target", "integration.fuzz"],
+	"excludes": ["node_modules"],
+	"fuzzerOptions": ["-rss_limit_mb=16000"],
+	"extensions": [".ts", ".js"]
+}

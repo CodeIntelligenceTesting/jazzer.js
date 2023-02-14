@@ -24,8 +24,9 @@ import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
-import { fuzz, FuzzerStartError, skip } from "./fuzz";
+import { fuzz, FuzzerStartError, skip, FuzzTest } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
+import { createScriptTransformer } from "@jest/transform";
 
 function isGeneratorFunction(obj?: unknown): boolean {
 	return (
@@ -50,6 +51,15 @@ type JazzerTestResult = {
 	errors: Error[];
 	duration?: number;
 };
+
+declare global {
+	// eslint-disable-next-line @typescript-eslint/no-namespace
+	namespace jest {
+		interface It {
+			fuzz: FuzzTest;
+		}
+	}
+}
 
 export class JazzerWorker {
 	static #workerInitialized = false;
@@ -104,9 +114,7 @@ export class JazzerWorker {
 		globalThis.test.skip.fuzz = skip;
 		// @ts-ignore
 		globalThis.it = circus.it;
-		// @ts-ignore
 		globalThis.it.fuzz = fuzz;
-		// @ts-ignore
 		globalThis.it.skip.fuzz = skip;
 		// @ts-ignore
 		globalThis.describe = circus.describe;
@@ -146,7 +154,8 @@ export class JazzerWorker {
 
 	private async loadTests(test: Test): Promise<circus.State> {
 		circus.resetState();
-		await this.importFile(test.path);
+		const transformer = await createScriptTransformer(test.context.config);
+		await transformer.requireAndTranspileModule(test.path);
 		return circus.getState();
 	}
 

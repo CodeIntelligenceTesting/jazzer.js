@@ -16,10 +16,11 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"dependencies": {
-		"@jazzer.js/core": "*",
+		"@jazzer.js/core": "../core",
 		"cosmiconfig": "^8.0.0",
 		"jest": "^29.4.2",
-		"istanbul-reports": "^3.1.5"
+		"istanbul-reports": "^3.1.5",
+		"ts-jest": "^29.0.5"
 	},
 	"devDependencies": {
 		"@types/istanbul-reports": "^3.0.1",
