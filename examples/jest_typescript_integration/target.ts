@@ -39,6 +39,6 @@ export function callbackFuzzMe(data: Buffer, done: () => void) {
 
 export async function asyncFuzzMe(data: Buffer) {
 	return callbackFuzzMe(data, () => {
-		console.log("callback done");
+		// can't have empty functions
 	});
 }

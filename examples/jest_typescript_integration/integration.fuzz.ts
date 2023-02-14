@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 import * as target from "./target";
-// this import is used to get the
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as _ from "@jazzer.js/jest-runner/worker";
+import "@jazzer.js/jest-runner/jest-extension";
 
 describe("fuzz testing for target", () => {
 	it.fuzz("My fuzz test", (data: Buffer) => {

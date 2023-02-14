@@ -24,9 +24,10 @@ import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
-import { fuzz, FuzzerStartError, skip, FuzzTest } from "./fuzz";
+import { fuzz, FuzzerStartError, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
 import { createScriptTransformer } from "@jest/transform";
+import "./jest-extension";
 
 function isGeneratorFunction(obj?: unknown): boolean {
 	return (
@@ -51,15 +52,6 @@ type JazzerTestResult = {
 	errors: Error[];
 	duration?: number;
 };
-
-declare global {
-	// eslint-disable-next-line @typescript-eslint/no-namespace
-	namespace jest {
-		interface It {
-			fuzz: FuzzTest;
-		}
-	}
-}
 
 export class JazzerWorker {
 	static #workerInitialized = false;

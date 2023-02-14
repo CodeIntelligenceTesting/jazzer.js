@@ -73,7 +73,6 @@ export class Instrumentor {
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
 
 		if (shouldInstrumentFile) {
-			console.log("FOUND FILE FOR INSTRUMENTATION: ", filename);
 			transformations.push(codeCoverage(this.idStrategy), compareHooks);
 		}
 
@@ -208,10 +207,9 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 		(code: string, opts: TransformerOptions): string => {
 			return instrumentor.instrument(code, opts.filename);
 		},
-		// TODO: this doesn't appear to be strictly necessary for typescript tests to run but not having it here means
-		// that a warning printed when debugging (and seemingly only when debugging). It also will does not seem to
-		// instrument the typescript files when not here
-		// This should probably be handled via configuration
+		// required to allow jest to run typescript files
+		// jest's typescript integration will transform the typescript into javascript before giving it to the
+		// instrumentor but the filename will still have a .ts extension
 		{ extensions: [".ts", ".js"] }
 	);
 }
