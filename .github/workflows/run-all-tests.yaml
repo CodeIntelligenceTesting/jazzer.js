@@ -50,9 +50,23 @@ jobs:
         if: contains(matrix.os, 'windows')
       - name: install dependencies
         run: npm install
+      - name: cache C++ build artifact
+        id: cache-artifact
+        uses: actions/cache@v2
+        with:
+          path: ./packages/fuzzer/
+          key: fuzzer-${{ env.HASH }}
+          restore-keys: |
+            fuzzer-
+      - name: Compute Hash
+        id: compute-hash
+        run: |
+          hash=$(node custom_hasher.js)
+          echo "HASH=$hash" >> $GITHUB_ENV
       - name: build project
         run: npm run build
       - name: build fuzzer
+        if: steps.cache-artifact.outputs.cache-hit != 'true'
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
