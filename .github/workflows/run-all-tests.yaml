@@ -84,9 +84,18 @@ jobs:
       pull-requests: write
       contents: write
     runs-on: ubuntu-20.04
+    if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
-      - uses: fastify/github-action-merge-dependabot@v3.0.0
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1.1.1
         with:
-          target: minor
-          merge-method: rebase
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Enable auto-merge for Dependabot PRs
+        if:
+          ${{steps.metadata.outputs.update-type ==
+          'version-update:semver-patch'}}
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
