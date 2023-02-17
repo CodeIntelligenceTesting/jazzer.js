@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles promise based fuzz targets",
 	"scripts": {
-		"fuzz": "jazzer fuzz --fuzz_function fuzz_promise -x Error -- -max_total_time=60",
+		"fuzz": "jazzer fuzz --fuzz_function fuzz_promise -x Error -- -runs=5000 -seed=3088388356",
 		"dryRun": "jazzer fuzz --fuzz_function fuzz_promise -- -runs=1 -seed=123456789"
 	},
 	"devDependencies": {
