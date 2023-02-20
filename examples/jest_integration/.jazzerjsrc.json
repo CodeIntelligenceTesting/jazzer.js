@@ -1,5 +1,5 @@
 {
 	"includes": ["target", "integration.fuzz", "worker.fuzz"],
 	"excludes": ["node_modules"],
-	"fuzzerOptions": ["-rss_limit_mb=16000"]
+	"fuzzerOptions": ["-rss_limit_mb=16000", "-runs=100000"]
 }
