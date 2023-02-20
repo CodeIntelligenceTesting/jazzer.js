@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles switch statements",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync -x Error -- -max_total_time=60,",
+		"fuzz": "jazzer fuzz --sync -x Error -- -runs=2000000 -seed=1148448756",
 		"dryRun": "jazzer fuzz --sync -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {

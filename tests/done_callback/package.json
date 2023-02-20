@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles callback based fuzz targets",
 	"scripts": {
-		"fuzz": "jazzer fuzz -x Error -- -max_total_time=60",
+		"fuzz": "jazzer fuzz -x Error -- -runs=5000 -seed=2386907168",
 		"dryRun": "jazzer fuzz -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
