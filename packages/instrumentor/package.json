@@ -16,7 +16,7 @@
 	"main": "dist/instrument.js",
 	"types": "dist/instrument.d.js",
 	"dependencies": {
-		"@babel/core": "^7.20.12",
+		"@babel/core": "^7.21.0",
 		"@babel/generator": "^7.21.1",
 		"@jazzer.js/fuzzer": "*",
 		"@jazzer.js/hooking": "*",
