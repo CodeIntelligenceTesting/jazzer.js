@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles string comparisons in the code",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync -x Error -- -runs=1000000 -seed=111994470",
+		"fuzz": "jazzer fuzz --sync -x Error -- -runs=5000000 -seed=111994470",
 		"dryRun": "jazzer fuzz --sync -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
