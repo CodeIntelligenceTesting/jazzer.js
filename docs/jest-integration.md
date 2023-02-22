@@ -334,3 +334,4 @@ reimplemented.
 
 - Mock functions
 - Isolated workers
+- Typescript or any other non-Javascript test files
