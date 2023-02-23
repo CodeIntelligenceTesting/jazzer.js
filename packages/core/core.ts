@@ -327,8 +327,13 @@ export function ensureFilepath(filePath: string): string {
 	if (!filePath) {
 		throw Error("Empty filepath provided");
 	}
+
+	const absolutePath = path.isAbsolute(filePath)
+		? filePath
+		: path.join(process.cwd(), filePath);
+
 	// file: schema is required on Windows
-	const fullPath = "file://" + path.join(process.cwd(), filePath);
+	const fullPath = "file://" + absolutePath;
 	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
 		? fullPath
 		: fullPath + ".js";
