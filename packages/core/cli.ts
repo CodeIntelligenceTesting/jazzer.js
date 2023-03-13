@@ -98,7 +98,7 @@ yargs(process.argv.slice(2))
 						"Part of filepath names to include in the instrumentation. " +
 						'A tailing "/" should be used to include directories and prevent ' +
 						'confusion with filenames. "*" can be used to include all files.\n' +
-						"Can be specified multiple times. By default all files will be" +
+						"Can be specified multiple times. By default all files will be " +
 						"included.",
 					type: "string",
 					alias: "i",
@@ -111,7 +111,7 @@ yargs(process.argv.slice(2))
 						"Part of filepath names to exclude in the instrumentation. " +
 						'A tailing "/" should be used to exclude directories and prevent ' +
 						'confusion with filenames. "*" can be used to exclude all files.\n' +
-						'Can be specified multiple times. By default, "node_modules/" will' +
+						'Can be specified multiple times. By default, "node_modules/" will ' +
 						"be excluded.",
 					type: "string",
 					alias: "e",
