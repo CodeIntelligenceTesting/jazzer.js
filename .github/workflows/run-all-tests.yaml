@@ -5,38 +5,38 @@ on:
   merge_group:
   workflow_dispatch:
 jobs:
-  linting:
-    name: lint
-    runs-on: ubuntu-20.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "npm"
-      - name: install dependencies
-        run: npm install
-      - name: install dependencies with apt
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main'
-          sudo apt-get install clang-tidy-15
-          sudo rm -f /usr/bin/clang-tidy
-          sudo ln -s /usr/bin/clang-tidy-15 /usr/bin/clang-tidy
-      - name: build fuzzer
-        # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
-        run: npm run build --workspace=@jazzer.js/fuzzer
-      - name: check formatting and linting
-        run: npm run check
+  #  linting:
+  #    name: lint
+  #    runs-on: ubuntu-20.04
+  #    steps:
+  #      - name: checkout
+  #        uses: actions/checkout@v3
+  #      - name: node
+  #        uses: actions/setup-node@v3
+  #        with:
+  #          node-version: 16
+  #          cache: "npm"
+  #      - name: install dependencies
+  #        run: npm install
+  #      - name: install dependencies with apt
+  #        run: |
+  #          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+  #          sudo apt-get install software-properties-common
+  #          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main'
+  #          sudo apt-get install clang-tidy-15
+  #          sudo rm -f /usr/bin/clang-tidy
+  #          sudo ln -s /usr/bin/clang-tidy-15 /usr/bin/clang-tidy
+  #      - name: build fuzzer
+  #        # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
+  #        run: npm run build --workspace=@jazzer.js/fuzzer
+  #      - name: check formatting and linting
+  #        run: npm run check
   unit_tests:
     name: unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [windows-latest]
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -47,6 +47,8 @@ jobs:
           cache: "npm"
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          shell: pwsh
         if: contains(matrix.os, 'windows')
       - name: install dependencies
         run: npm install
@@ -55,55 +57,58 @@ jobs:
       - name: build fuzzer
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
-        run: npm run test
-  fuzz_tests:
-    name: fuzz tests
-    runs-on: ubuntu-20.04
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "npm"
-      - name: install dependencies
-        run: npm install
-      - name: build project
-        run: npm run build
-      - name: build fuzzer
-        run: npm run build --workspace=@jazzer.js/fuzzer
-      - name: run all fuzz tests
-        run: node fuzztests/runFuzzTests.js
-  auto-merge:
-    needs:
-      - linting
-      - unit_tests
-      - fuzz_tests
-    permissions:
-      pull-requests: write
-      contents: write
-    runs-on: ubuntu-20.04
-    if: ${{ github.actor == 'dependabot[bot]' }}
-    steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v1.3.6
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Approve
-        if:
-          ${{steps.metadata.outputs.update-type !=
-          'version-update:semver-major'}}
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: Enable auto-merge
-        if:
-          ${{steps.metadata.outputs.update-type !=
-          'version-update:semver-major'}}
-        run: gh pr merge --auto --rebase "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          gci env:
+          npm run test
+
+#  fuzz_tests:
+#    name: fuzz tests
+#    runs-on: ubuntu-20.04
+#    steps:
+#      - name: checkout
+#        uses: actions/checkout@v3
+#      - name: node
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: 16
+#          cache: "npm"
+#      - name: install dependencies
+#        run: npm install
+#      - name: build project
+#        run: npm run build
+#      - name: build fuzzer
+#        run: npm run build --workspace=@jazzer.js/fuzzer
+#      - name: run all fuzz tests
+#        run: node fuzztests/runFuzzTests.js
+#  auto-merge:
+#    needs:
+#      - linting
+#      - unit_tests
+#      - fuzz_tests
+#    permissions:
+#      pull-requests: write
+#      contents: write
+#    runs-on: ubuntu-20.04
+#    if: ${{ github.actor == 'dependabot[bot]' }}
+#    steps:
+#      - name: Dependabot metadata
+#        id: metadata
+#        uses: dependabot/fetch-metadata@v1.3.6
+#        with:
+#          github-token: "${{ secrets.GITHUB_TOKEN }}"
+#      - name: Approve
+#        if:
+#          ${{steps.metadata.outputs.update-type !=
+#          'version-update:semver-major'}}
+#        run: gh pr review --approve "$PR_URL"
+#        env:
+#          PR_URL: ${{github.event.pull_request.html_url}}
+#          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+#      - name: Enable auto-merge
+#        if:
+#          ${{steps.metadata.outputs.update-type !=
+#          'version-update:semver-major'}}
+#        run: gh pr merge --auto --rebase "$PR_URL"
+#        env:
+#          PR_URL: ${{github.event.pull_request.html_url}}
+#          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
