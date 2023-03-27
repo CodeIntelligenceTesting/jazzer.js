@@ -48,7 +48,7 @@ jobs:
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          shell: pwsh
+          shell: bash
         if: contains(matrix.os, 'windows')
       - name: install dependencies
         run: npm install
@@ -58,7 +58,7 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: |
-          gci env:
+          env
           npm run test
 
 #  fuzz_tests:
