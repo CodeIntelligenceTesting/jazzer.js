@@ -25,7 +25,7 @@
 		"test:coverage": "jest --coverage",
 		"test:default": "npm run test:jest",
 		"test:linux:darwin": "npm run test:jest && cd examples && sh ../scripts/run_all.sh dryRun && cd ../tests && sh ../scripts/run_all.sh fuzz",
-		"test:win32": "cd tests && bash ..\\scripts\\run_all.bat fuzz",
+		"test:win32": "cd tests && bash ..\\scripts\\run_all.sh fuzz",
 		"test:watch": "jest --watch",
 		"lint": "eslint . && npm run lint --ws --if-present",
 		"lint:fix": "eslint . --fix && npm run lint:fix --ws --if-present",
