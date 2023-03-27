@@ -57,10 +57,7 @@ jobs:
       - name: build fuzzer
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
-        run: |
-          env
-          npm run test
-
+        run: npm run test
 #  fuzz_tests:
 #    name: fuzz tests
 #    runs-on: ubuntu-20.04
