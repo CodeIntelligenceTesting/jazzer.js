@@ -17,7 +17,7 @@
 	"types": "dist/instrument.d.js",
 	"dependencies": {
 		"@babel/core": "^7.21.3",
-		"@babel/generator": "^7.21.3",
+		"@babel/generator": "^7.21.4",
 		"@jazzer.js/fuzzer": "*",
 		"@jazzer.js/hooking": "*",
 		"istanbul-lib-hook": "^3.0.0",
