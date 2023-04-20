@@ -190,6 +190,13 @@ yargs(process.argv.slice(2))
 					type: "number",
 					group: "Fuzzer:",
 					default: 5000,
+				})
+				.array("bugDetectors")
+				.option("bugDetectors", {
+					describe: "A list of bug detectors to use.",
+					type: "string",
+					group: "Fuzzer:",
+					default: [],
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -210,6 +217,7 @@ yargs(process.argv.slice(2))
 				customHooks: args.custom_hooks,
 				expectedErrors: args.expected_errors,
 				idSyncFile: args.id_sync_file,
+				bugDetectors: args.bugDetectors,
 				coverage: args.cov,
 				coverageDirectory: args.cov_dir,
 				coverageReporters: args.cov_reporters,
