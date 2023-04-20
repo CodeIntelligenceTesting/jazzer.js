@@ -1,7 +1,7 @@
 {
-	"name": "@jazzer.js/core",
+	"name": "@jazzer.js/bug-detectors",
 	"version": "1.4.0",
-	"description": "Jazzer.js CLI",
+	"description": "Jazzer.js bug detectors",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
@@ -11,26 +11,16 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git",
-		"directory": "packages/core"
+		"directory": "packages/bug-detectors"
 	},
-	"main": "dist/core.js",
-	"types": "dist/core.d.ts",
-	"bin": {
-		"jazzer": "dist/cli.js"
-	},
+	"main": "dist/index.js",
+	"types": "dist/index.d.js",
 	"dependencies": {
+		"@jazzer.js/fuzzer": "*",
 		"@jazzer.js/hooking": "*",
-		"@jazzer.js/instrumentor": "*",
-		"@jazzer.js/bug-detectors": "*",
-		"tmp": "^0.2.1",
-		"istanbul-lib-coverage": "^3.2.0",
-		"istanbul-lib-report": "^3.0.0",
-		"istanbul-reports": "^3.1.5",
-		"yargs": "^17.7.2"
+		"@jazzer.js/instrumentor": "*"
 	},
-	"devDependencies": {
-		"@types/yargs": "^17.0.24"
-	},
+	"devDependencies": {},
 	"engines": {
 		"node": ">= 14.0.0",
 		"npm": ">= 7.0.0"

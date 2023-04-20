@@ -1,0 +1,12 @@
+{
+	"name": "jazzer-js-tests-for-bug-detectors",
+	"version": "1.0.0",
+	"description": "Tests for Jazzer's bug detectors",
+	"scripts": {
+		"fuzz": "jest",
+		"test": "jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

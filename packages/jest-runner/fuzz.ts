@@ -28,7 +28,11 @@ import { Corpus } from "./corpus";
 import * as circus from "jest-circus";
 import * as fs from "fs";
 import { removeTopFramesFromError } from "./errorUtils";
-import { Options, startFuzzingNoInit } from "@jazzer.js/core";
+import {
+	Options,
+	startFuzzingNoInit,
+	wrapFuzzFunctionForBugDetection,
+} from "@jazzer.js/core";
 
 // Globally track when the fuzzer is started in fuzzing mode.
 let fuzzerStarted = false;
@@ -79,10 +83,13 @@ export const fuzz: FuzzTest = (name, fn, timeout) => {
 		fuzzingConfig.timeout = timeout;
 	}
 
+	const wrappedFn =
+		options.bugDetectors.length > 0 ? wrapFuzzFunctionForBugDetection(fn) : fn;
+
 	if (fuzzingConfig.dryRun) {
-		runInRegressionMode(name, fn, corpus, timeout);
+		runInRegressionMode(name, wrappedFn, corpus, timeout);
 	} else {
-		runInFuzzingMode(name, fn, corpus, fuzzingConfig);
+		runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig);
 	}
 };
 

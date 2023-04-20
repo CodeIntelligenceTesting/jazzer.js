@@ -24,6 +24,7 @@ import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
+import { registerBugDetectors } from "@jazzer.js/bug-detectors";
 import { trackedHooks } from "@jazzer.js/hooking";
 import {
 	registerInstrumentor,
@@ -39,6 +40,24 @@ tmp.setGracefulCleanup();
 // failed error expectations.
 const ERROR_EXPECTED_CODE = 0;
 const ERROR_UNEXPECTED_CODE = 78;
+
+// The first exception thrown by any bug detector will be stored here.
+let bugDetectorException: Error | undefined;
+
+function saveFirstBugDetectorException(
+	e: Error,
+	trimErrorStackLines = 0
+): void {
+	if (bugDetectorException) {
+		return;
+	}
+	e.stack = e.stack
+		?.replace(e.message, "")
+		.split("\n")
+		.slice(trimErrorStackLines)
+		.join("\n");
+	bugDetectorException = e;
+}
 
 export interface Options {
 	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
@@ -57,6 +76,7 @@ export interface Options {
 	coverage: boolean; // Enables source code coverage report generation.
 	coverageDirectory: string;
 	coverageReporters: reports.ReportType[];
+	bugDetectors: string[];
 }
 
 interface FuzzModule {
@@ -68,10 +88,15 @@ declare global {
 	var Fuzzer: fuzzer.Fuzzer;
 	var HookManager: hooking.HookManager;
 	var __coverage__: libCoverage.CoverageMapData;
+	var options: Options;
 }
 
 export async function initFuzzing(options: Options) {
 	registerGlobals();
+	await registerBugDetectors(
+		options.bugDetectors,
+		saveFirstBugDetectorException
+	);
 	registerInstrumentor(
 		new Instrumentor(
 			options.includes,
@@ -87,15 +112,30 @@ export async function initFuzzing(options: Options) {
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 }
 
+export function forceStopFuzzing(err: unknown) {
+	stopFuzzing(
+		err,
+		options.expectedErrors,
+		options.coverageDirectory,
+		options.coverageReporters,
+		options.sync
+	);
+}
+
 export function registerGlobals() {
 	globalThis.Fuzzer = fuzzer.fuzzer;
-	//TODO make sure that all sanitizers are registered at this point
 	globalThis.HookManager = hooking.hookManager;
 }
 
 export async function startFuzzing(options: Options) {
 	await initFuzzing(options);
+
+	// Exceptions thrown by bug detectors should bypass all try-catch blocks in the fuzzing target;
+	// and have higher priority than exceptions thrown by fuzz target.
+	// To enable this, we wrap the fuzz target in a function that checks if any bug detector exception has been
+	// thrown, and ensures that it is treated with higher priority.
 	const fuzzFn = await loadFuzzFunction(options);
+
 	await startFuzzingNoInit(fuzzFn, options).then(
 		() => {
 			stopFuzzing(
@@ -315,6 +355,87 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 		throw new Error(
 			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`
 		);
+	}
+	return wrapFuzzFunctionForBugDetection(fuzzFn);
+}
+
+// Reset the bug detector exception when it should be thrown.
+// This is useful in regression tests using Jest, or when the fuzzer should continue running after finding a bug.
+function throwBugDetectorExceptionAndReset() {
+	const e = bugDetectorException;
+	bugDetectorException = undefined;
+	throw e;
+}
+
+export function wrapFuzzFunctionForBugDetection(
+	originalFuzzFn: fuzzer.FuzzTarget
+) {
+	let fuzzFn: fuzzer.FuzzTarget;
+	if (originalFuzzFn.length === 1) {
+		fuzzFn = (data: Buffer): void | Promise<void> => {
+			let fuzzTargetException = undefined;
+			let result: void | Promise<void>;
+			try {
+				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
+				if (result instanceof Promise) {
+					result.then(
+						(r) => {
+							if (bugDetectorException !== undefined) {
+								throw bugDetectorException;
+							}
+							return r;
+						},
+						(e) => {
+							if (bugDetectorException !== undefined) {
+								throw bugDetectorException;
+							}
+							throw e;
+						}
+					);
+				}
+			} catch (e) {
+				fuzzTargetException = e;
+			}
+			// Exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
+			if (bugDetectorException !== undefined) {
+				throwBugDetectorExceptionAndReset();
+			} else if (fuzzTargetException !== undefined) {
+				throw fuzzTargetException;
+			}
+			return result;
+		};
+	} else {
+		fuzzFn = (data: Buffer, done: (err?: Error) => void): void => {
+			let fuzzTargetException = undefined;
+			let result: void | Promise<void>;
+			try {
+				result = originalFuzzFn(data, done);
+				if (result instanceof Promise) {
+					result.then(
+						(r) => {
+							if (bugDetectorException !== undefined) {
+								throw bugDetectorException;
+							}
+							return r;
+						},
+						(e) => {
+							if (bugDetectorException !== undefined) {
+								throw bugDetectorException;
+							}
+							throw e;
+						}
+					);
+				}
+			} catch (e) {
+				fuzzTargetException = e;
+			}
+			// Exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
+			if (bugDetectorException !== undefined) {
+				throwBugDetectorExceptionAndReset();
+			} else if (fuzzTargetException !== undefined) {
+				throw fuzzTargetException;
+			}
+		};
 	}
 	return fuzzFn;
 }
