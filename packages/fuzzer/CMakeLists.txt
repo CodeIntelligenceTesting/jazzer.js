@@ -73,9 +73,9 @@ target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 include(ExternalProject)
 ExternalProject_Add(
   compiler-rt
-  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
+  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2023-04-25.tar.gz
   URL_HASH
-    SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
+    SHA256=200b32c897b1171824462706f577d7f1d6175da602eccfe570d2dceeac11d490
   SOURCE_SUBDIR compiler-rt
   CMAKE_ARGS # compiler-rt usually initializes the sanitizer runtime by means of
              # a pointer in the .preinit_array section; since .preinit_array
