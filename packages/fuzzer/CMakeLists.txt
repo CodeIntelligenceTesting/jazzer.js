@@ -91,6 +91,7 @@ ExternalProject_Add(
              # Use the same build type as the parent project.
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              # We only need libfuzzer from the compiler-rt project.
+             -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=x86_64-linux-gnu
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target
                 ${LIBFUZZER_TARGET}
   # Skip the install step because it tries to copy files to a hardcoded path in
