@@ -26,6 +26,8 @@ jobs:
           sudo apt-get install -y clang-tidy-16
           sudo rm -f /usr/bin/clang-tidy
           sudo ln -s /usr/bin/clang-tidy-16 /usr/bin/clang-tidy
+      - name: check clang target
+        run: clang-16 --version
       - name: build fuzzer
         # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
         run: npm run build --workspace=@jazzer.js/fuzzer
