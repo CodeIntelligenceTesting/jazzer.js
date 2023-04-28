@@ -31,6 +31,11 @@ jobs:
       - name: build fuzzer
         # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
         run: npm run build --workspace=@jazzer.js/fuzzer
+      - name: get cmake values for compiler rt
+        if: always()
+        run:
+          cat
+          packages/fuzzer/build/compiler-rt-prefix/src/compiler-rt-build/CMakeCache.txt
       - name: check formatting and linting
         run: npm run check
   unit_tests:
