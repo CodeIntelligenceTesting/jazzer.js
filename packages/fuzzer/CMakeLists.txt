@@ -74,9 +74,12 @@ message(STATUS "LIBFUZZER TARGET: ${LIBFUZZER_TARGET}")
 include(ExternalProject)
 ExternalProject_Add(
   compiler-rt
-  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
+  # URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
+  # URL_HASH
+  #   SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
+  URL https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-16.0.2.tar.gz
   URL_HASH
-    SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
+    SHA256=97c3c6aafb53c4bb0ed2781a18d6f05e75445e24bb1dc57a32b74f8d710ac19f
   SOURCE_SUBDIR compiler-rt
   CMAKE_ARGS # compiler-rt usually initializes the sanitizer runtime by means of
              # a pointer in the .preinit_array section; since .preinit_array
