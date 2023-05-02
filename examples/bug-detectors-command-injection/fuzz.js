@@ -19,11 +19,10 @@ const { FuzzedDataProvider } = require("@jazzer.js/core");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const root = require("global-modules-path");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { exec } = require("child_process");
-
+const { execSync } = require("child_process");
 module.exports.fuzz = function (data) {
 	const provider = new FuzzedDataProvider(data);
-	exec(provider.consumeString(provider.consumeIntegralInRange(1, 20)));
+	execSync(provider.consumeString(provider.consumeIntegralInRange(1, 20)));
 	const str1 = provider.consumeString(provider.consumeIntegralInRange(1, 20));
 	const str2 = provider.consumeRemainingAsString();
 	root.getPath(str1, str2);

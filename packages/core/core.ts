@@ -24,7 +24,12 @@ import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
-import { registerBugDetectors } from "@jazzer.js/bug-detectors";
+import {
+	registerBugDetectors,
+	BugDetectorError,
+	getFirstBugDetectorError,
+	clearFirstBugDetectorError,
+} from "@jazzer.js/bug-detectors";
 import { trackedHooks } from "@jazzer.js/hooking";
 import {
 	registerInstrumentor,
@@ -40,24 +45,6 @@ tmp.setGracefulCleanup();
 // failed error expectations.
 const ERROR_EXPECTED_CODE = 0;
 const ERROR_UNEXPECTED_CODE = 78;
-
-// The first exception thrown by any bug detector will be stored here.
-let bugDetectorException: Error | undefined;
-
-function saveFirstBugDetectorException(
-	e: Error,
-	trimErrorStackLines = 0
-): void {
-	if (bugDetectorException) {
-		return;
-	}
-	e.stack = e.stack
-		?.replace(e.message, "")
-		.split("\n")
-		.slice(trimErrorStackLines)
-		.join("\n");
-	bugDetectorException = e;
-}
 
 export interface Options {
 	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
@@ -93,10 +80,7 @@ declare global {
 
 export async function initFuzzing(options: Options) {
 	registerGlobals();
-	await registerBugDetectors(
-		options.bugDetectors,
-		saveFirstBugDetectorException
-	);
+	await registerBugDetectors(options.bugDetectors);
 	registerInstrumentor(
 		new Instrumentor(
 			options.includes,
@@ -296,7 +280,10 @@ function errorName(error: unknown): string {
 }
 
 function printError(error: unknown) {
-	let errorMessage = `==${process.pid}== Uncaught Exception: Jazzer.js: `;
+	let errorMessage = `==${process.pid}== `;
+	if (!(error instanceof BugDetectorError)) {
+		errorMessage += "Uncaught Exception: Jazzer.js: ";
+	}
 	if (error instanceof Error) {
 		errorMessage += error.message;
 		console.log(errorMessage);
@@ -358,87 +345,53 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 	return wrapFuzzFunctionForBugDetection(fuzzFn);
 }
 
-// Reset the bug detector exception when it should be thrown.
-// This is useful in regression tests using Jest, or when the fuzzer should continue running after finding a bug.
-function throwBugDetectorExceptionAndReset() {
-	const e = bugDetectorException;
-	bugDetectorException = undefined;
-	throw e;
-}
-
-function handleExceptions(
-	result: void | Promise<void>,
-	bugDetectorException: Error | undefined,
-	fuzzTargetException: Error | undefined
-) {
-	if (bugDetectorException !== undefined) {
-		throwBugDetectorExceptionAndReset();
-	} else if (fuzzTargetException !== undefined) {
-		throw fuzzTargetException;
-	}
-	return result;
-}
-
-/**
- * Executes the given fuzz target function (with return value or Promise) and handles exceptions.
- * @param originalFuzzFn - The original fuzz target function with return value or Promise.
- * @param data - The input data for the fuzz target function.
- * @returns The result of the original fuzz target function, or void if an exception is thrown.
- */
-function executeFuzzFn(
-	originalFuzzFn: fuzzer.FuzzTargetAsyncOrValue,
-	data: Buffer
-): void | Promise<void> {
-	let fuzzTargetException: Error | undefined;
-	let result: void | Promise<void>;
-	try {
-		result = originalFuzzFn(data);
-	} catch (e) {
-		fuzzTargetException = e as Error;
-	}
-	return handleExceptions(result, bugDetectorException, fuzzTargetException);
-}
-
-/**
- * Executes the given fuzz target function (with a callback) and handles exceptions.
- * @param originalFuzzFn - The original fuzz target function with a callback.
- * @param data - The input data for the fuzz target function.
- * @param done - The callback function to be called upon completion of the fuzz target function.
- */
-function executeFuzzFnCallback(
-	originalFuzzFn: fuzzer.FuzzTargetCallback,
-	data: Buffer,
-	done: (err?: Error) => void
-): void {
-	let fuzzTargetException: Error | undefined;
-	try {
-		originalFuzzFn(data, done);
-	} catch (e) {
-		fuzzTargetException = e as Error;
-	}
-	handleExceptions(undefined, bugDetectorException, fuzzTargetException);
-}
-
 /**
  * Wraps the given fuzz target function to handle exceptions from both the fuzz target and bug detectors.
  * Ensures that exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
- * @param originalFuzzFn - The original fuzz target function to be wrapped.
- * @returns A wrapped fuzz target function that handles exceptions from both the fuzz target and bug detectors.
  */
 export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget
 ): fuzzer.FuzzTarget {
 	if (originalFuzzFn.length === 1) {
-		return (data: Buffer): void | Promise<void> =>
-			executeFuzzFn(originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue, data);
+		return (data: Buffer): void | Promise<void> => {
+			let fuzzTargetException: Error | undefined;
+			let result: void | Promise<void>;
+			try {
+				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
+			} catch (e) {
+				fuzzTargetException = e as Error;
+			}
+			return handleErrors(result, fuzzTargetException);
+		};
 	} else {
-		return (data: Buffer, done: (err?: Error) => void): void =>
-			executeFuzzFnCallback(
-				originalFuzzFn as fuzzer.FuzzTargetCallback,
-				data,
-				done
-			);
+		return (data: Buffer, done: (err?: Error) => void): void => {
+			let fuzzTargetException: Error | undefined;
+			try {
+				originalFuzzFn(data, (err?: Error) => {
+					done(getFirstBugDetectorError() ?? err);
+				});
+			} catch (e) {
+				fuzzTargetException = e as Error;
+			}
+			handleErrors(undefined, fuzzTargetException);
+		};
 	}
+}
+
+function handleErrors(
+	result: void | Promise<void>,
+	fuzzTargetError: Error | undefined
+) {
+	const error = getFirstBugDetectorError();
+	if (error !== undefined) {
+		// Since the bug detector error is a global variable, we need to clear it after each fuzzing iteration.
+		clearFirstBugDetectorError();
+
+		throw error;
+	} else if (fuzzTargetError !== undefined) {
+		throw fuzzTargetError;
+	}
+	return result;
 }
 
 async function importModule(name: string): Promise<FuzzModule | void> {
