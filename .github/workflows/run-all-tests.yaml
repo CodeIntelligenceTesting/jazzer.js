@@ -22,12 +22,12 @@ jobs:
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-get install software-properties-common
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main'
-          sudo apt-get install -y clang-tidy-15
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main'
+          sudo apt-get install -y clang-tidy-16
           sudo rm -f /usr/bin/clang-tidy
-          sudo ln -s /usr/bin/clang-tidy-15 /usr/bin/clang-tidy
+          sudo ln -s /usr/bin/clang-tidy-16 /usr/bin/clang-tidy
       - name: check clang target
-        run: clang-15 --version
+        run: clang-16 --version
       - name: cmake version
         run: cmake --version
       - name: build fuzzer
