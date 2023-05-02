@@ -23,7 +23,9 @@ const safeCommand =
 	process.platform === "win32" ? "copy NUL SAFE" : "touch SAFE";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CommandInjectionCallOriginalEvilAsync = async function (_) {
+module.exports.CommandInjectionCallOriginalEvilAsync = async function (
+	/** @type {any} */ _
+) {
 	child_process.execSync(evilCommand);
 };
 
@@ -33,31 +35,37 @@ module.exports.CommandInjectionCallOriginalEvilDoneCallback =
 
 module.exports.CommandInjectionCallOriginalEvilAsyncCallingSync =
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (_) {
+	async function (/** @type {any} */ _) {
 		child_process.execSync(evilCommand);
 	};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CommandInjectionCallOriginalSafeAsync = async function (_) {
+module.exports.CommandInjectionCallOriginalSafeAsync = async function (
+	/** @type {any} */ _
+) {
 	child_process.exec(safeCommand);
 };
 
 module.exports.CommandInjectionCallOriginalSafeAsyncCallingSync =
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (_) {
+	async function (/** @type {any} */ _) {
 		child_process.execSync(safeCommand);
 	};
 
 module.exports.ForkModeCommandInjectionCallOriginalEvil =
 	generateDelayedResponseFunction(100, evilCommand);
 
+/**
+ * @param {number} iterationsBeforeEvilCommand
+ * @param {string} _response
+ */
 function generateDelayedResponseFunction(
 	iterationsBeforeEvilCommand,
-	response
+	_response
 ) {
 	let i = 0;
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	return function (data) {
+	return function (/** @type {any} */ _data) {
 		i++;
 		if (i == iterationsBeforeEvilCommand) {
 			child_process.execSync(evilCommand);
@@ -65,13 +73,17 @@ function generateDelayedResponseFunction(
 	};
 }
 
+/**
+ * @param {number} iterationsBeforeEvilCommand
+ * @param {string} response
+ */
 function generateDelayedResponseFunctionWithDone(
 	iterationsBeforeEvilCommand,
 	response
 ) {
 	let i = 0;
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	return function (data, done) {
+	return function (/** @type {any} */ data, /** @type {() => void} */ done) {
 		i++;
 		if (i == iterationsBeforeEvilCommand) {
 			child_process.execSync(response);

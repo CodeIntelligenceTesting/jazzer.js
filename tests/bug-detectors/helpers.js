@@ -38,6 +38,19 @@ class FuzzTest {
 	jestTestNamePattern;
 	jestRunInFuzzingMode;
 
+	/**
+	 * @param {boolean} sync
+	 * @param {number} runs
+	 * @param {boolean} verbose
+	 * @param {string} fuzzEntryPoint
+	 * @param {string} dir
+	 * @param {string} bugDetectorActivationFlag
+	 * @param {number} forkMode
+	 * @param {number} seed
+	 * @param {string} jestTestFile
+	 * @param {string} jestTestName
+	 * @param {boolean} jestRunInFuzzingMode
+	 */
 	constructor(
 		sync,
 		runs,
@@ -77,10 +90,8 @@ class FuzzTest {
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
 		options.push("-seed=" + this.seed);
-		console.log("Executing: npx " + options.join(" "));
 		const process = spawnSync("npx", options, {
 			stdio: "inherit",
-			stderr: "inherit",
 			cwd: this.dir,
 			shell: true,
 			windowsHide: true,
@@ -109,11 +120,8 @@ class FuzzTest {
 			this.jestTestFile,
 			'--testNamePattern="' + this.jestTestNamePattern + '"',
 		];
-		console.log(options);
-		console.log("Executing: " + cmd + " " + options.join(" "));
 		const proc = spawnSync(cmd, options, {
 			stdio: "inherit",
-			stderr: "inherit",
 			cwd: this.dir,
 			shell: true,
 			windowsHide: true,
@@ -141,57 +149,90 @@ class FuzzTestBuilder {
 	_jestTestName = "";
 	_jestRunInFuzzingMode = false;
 
+	/**
+	 * @param {boolean} sync
+	 */
 	sync(sync) {
 		this._sync = sync;
 		return this;
 	}
 
+	/**
+	 * @param {number} runs
+	 */
 	runs(runs) {
 		this._runs = runs;
 		return this;
 	}
 
+	/**
+	 * @param {boolean} verbose
+	 */
 	verbose(verbose) {
 		this._verbose = verbose;
 		return this;
 	}
 
+	/**
+	 * @param {string} fuzzEntryPoint
+	 */
 	fuzzEntryPoint(fuzzEntryPoint) {
 		this._fuzzEntryPoint = fuzzEntryPoint;
 		return this;
 	}
 
+	/**
+	 * @param {string} dir
+	 */
 	dir(dir) {
 		this._dir = dir;
 		return this;
 	}
 
+	/**
+	 * @param {string} flag
+	 */
 	bugDetectorActivationFlag(flag) {
 		this._bugDetectorActivationFlag = flag;
 		return this;
 	}
 
+	/**
+	 * @param {number} forkMode
+	 */
 	forkMode(forkMode) {
 		assert(forkMode >= 0 && forkMode <= 4);
 		this._forkMode = forkMode;
 		return this;
 	}
 
+	/**
+	 * @param {number} seed
+	 */
 	seed(seed) {
 		this._seed = seed;
 		return this;
 	}
 
+	/**
+	 * @param {string} jestTestFile
+	 */
 	jestTestFile(jestTestFile) {
 		this._jestTestFile = jestTestFile;
 		return this;
 	}
 
+	/**
+	 * @param {string} jestTestName
+	 */
 	jestTestName(jestTestName) {
 		this._jestTestName = jestTestName;
 		return this;
 	}
 
+	/**
+	 * @param {boolean} jestRunInFuzzingMode
+	 */
 	jestRunInFuzzingMode(jestRunInFuzzingMode) {
 		this._jestRunInFuzzingMode = jestRunInFuzzingMode;
 		return this;

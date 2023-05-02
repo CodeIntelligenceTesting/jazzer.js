@@ -7,7 +7,7 @@
 		"global-modules-path": "^2.3.1"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i global-modules-path --bugDetectors=commandInjectionSafe --timeout=100000000 -- -runs=100000 ",
+		"fuzz": "jazzer fuzz -i global-modules-path --bugDetectors=commandInjectionSafe --timeout=100000000 --sync -- -runs=100000 ",
 		"dryRun": "jazzer fuzz -i global-modules-path --bugDetectors=commandInjectionSafe --sync -x Error -- -runs=100000 -seed=123456789"
 	},
 	"devDependencies": {

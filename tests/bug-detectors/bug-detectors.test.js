@@ -46,8 +46,7 @@ describe("Command Injection", () => {
 		expect(() => {
 			result = fuzzTest.execute();
 		}).toThrow(); // we call the original exec with an evil command
-		// wait for exec process to finish
-		await result;
+		result;
 		expect(
 			fs.existsSync(bugDetectorDirectory + path.sep + "EVIL")
 		).toBeTruthy();
@@ -78,7 +77,7 @@ describe("Command Injection", () => {
 			.dir(bugDetectorDirectory)
 			.bugDetectorActivationFlag("commandInjection")
 			.build();
-		await fuzzTest.execute(); // we call the original exec with a safe command
+		fuzzTest.execute(); // we call the original exec with a safe command
 		expect(
 			fs.existsSync(bugDetectorDirectory + path.sep + "SAFE")
 		).toBeTruthy();
@@ -106,7 +105,7 @@ describe("Command Injection", () => {
 			.dir(bugDetectorDirectory)
 			.bugDetectorActivationFlag("commandInjectionSafe")
 			.build();
-		await fuzzTest.execute(); // we call the original exec with a safe command
+		fuzzTest.execute(); // we call the original exec with a safe command
 		expect(fs.existsSync(bugDetectorDirectory + path.sep + "SAFE")).toBeFalsy();
 		expect(fs.existsSync(bugDetectorDirectory + path.sep + "EVIL")).toBeFalsy();
 	});
