@@ -25,6 +25,9 @@ const evilString =
 // Calling touch on Windows will result in an error and the test will fail.
 // By wrapping the call to execSync in a try-catch block, we can make sure that the test will not fail.
 // Bug detectors should be able to bypass the try-catch block by rethrowing the error internally.
+/**
+ * @param {string} data
+ */
 function test(data) {
 	try {
 		child_process.execSync(data);
@@ -40,20 +43,29 @@ describe("Command Injection Jest tests", () => {
 		iteration = 0;
 	});
 
-	it.fuzz("Should fail, creating EVIL file", (data) => {
-		test(data.toString());
-	});
+	it.fuzz(
+		"Should fail, creating EVIL file",
+		(/** @type {{ toString: () => string; }} */ data) => {
+			test(data.toString());
+		}
+	);
 
-	it.fuzz("Should not fail, creating SAFE file", (data) => {
-		test(data.toString());
-	});
+	it.fuzz(
+		"Should not fail, creating SAFE file",
+		(/** @type {{ toString: () => string; }} */ data) => {
+			test(data.toString());
+		}
+	);
 
 	// Use the evil string after 10 iterations, while running in fuzzing mode.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	it.fuzz("Fuzzing mode-- should fail and create EVIL file", (data) => {
-		iteration++;
-		if (iteration === 10) {
-			test(evilString);
+	it.fuzz(
+		"Fuzzing mode-- should fail and create EVIL file",
+		(/** @type {any} */ _data) => {
+			iteration++;
+			if (iteration === 10) {
+				test(evilString);
+			}
 		}
-	});
+	);
 });

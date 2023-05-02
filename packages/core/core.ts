@@ -129,7 +129,6 @@ export function registerGlobals() {
 
 export async function startFuzzing(options: Options) {
 	await initFuzzing(options);
-
 	// Exceptions thrown by bug detectors should bypass all try-catch blocks in the fuzzing target;
 	// and have higher priority than exceptions thrown by fuzz target.
 	// To enable this, we wrap the fuzz target in a function that checks if any bug detector exception has been
@@ -367,77 +366,79 @@ function throwBugDetectorExceptionAndReset() {
 	throw e;
 }
 
+function handleExceptions(
+	result: void | Promise<void>,
+	bugDetectorException: Error | undefined,
+	fuzzTargetException: Error | undefined
+) {
+	if (bugDetectorException !== undefined) {
+		throwBugDetectorExceptionAndReset();
+	} else if (fuzzTargetException !== undefined) {
+		throw fuzzTargetException;
+	}
+	return result;
+}
+
+/**
+ * Executes the given fuzz target function (with return value or Promise) and handles exceptions.
+ * @param originalFuzzFn - The original fuzz target function with return value or Promise.
+ * @param data - The input data for the fuzz target function.
+ * @returns The result of the original fuzz target function, or void if an exception is thrown.
+ */
+function executeFuzzFn(
+	originalFuzzFn: fuzzer.FuzzTargetAsyncOrValue,
+	data: Buffer
+): void | Promise<void> {
+	let fuzzTargetException: Error | undefined;
+	let result: void | Promise<void>;
+	try {
+		result = originalFuzzFn(data);
+	} catch (e) {
+		fuzzTargetException = e as Error;
+	}
+	return handleExceptions(result, bugDetectorException, fuzzTargetException);
+}
+
+/**
+ * Executes the given fuzz target function (with a callback) and handles exceptions.
+ * @param originalFuzzFn - The original fuzz target function with a callback.
+ * @param data - The input data for the fuzz target function.
+ * @param done - The callback function to be called upon completion of the fuzz target function.
+ */
+function executeFuzzFnCallback(
+	originalFuzzFn: fuzzer.FuzzTargetCallback,
+	data: Buffer,
+	done: (err?: Error) => void
+): void {
+	let fuzzTargetException: Error | undefined;
+	try {
+		originalFuzzFn(data, done);
+	} catch (e) {
+		fuzzTargetException = e as Error;
+	}
+	handleExceptions(undefined, bugDetectorException, fuzzTargetException);
+}
+
+/**
+ * Wraps the given fuzz target function to handle exceptions from both the fuzz target and bug detectors.
+ * Ensures that exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
+ * @param originalFuzzFn - The original fuzz target function to be wrapped.
+ * @returns A wrapped fuzz target function that handles exceptions from both the fuzz target and bug detectors.
+ */
 export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget
-) {
-	let fuzzFn: fuzzer.FuzzTarget;
+): fuzzer.FuzzTarget {
 	if (originalFuzzFn.length === 1) {
-		fuzzFn = (data: Buffer): void | Promise<void> => {
-			let fuzzTargetException = undefined;
-			let result: void | Promise<void>;
-			try {
-				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
-				if (result instanceof Promise) {
-					result.then(
-						(r) => {
-							if (bugDetectorException !== undefined) {
-								throw bugDetectorException;
-							}
-							return r;
-						},
-						(e) => {
-							if (bugDetectorException !== undefined) {
-								throw bugDetectorException;
-							}
-							throw e;
-						}
-					);
-				}
-			} catch (e) {
-				fuzzTargetException = e;
-			}
-			// Exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
-			if (bugDetectorException !== undefined) {
-				throwBugDetectorExceptionAndReset();
-			} else if (fuzzTargetException !== undefined) {
-				throw fuzzTargetException;
-			}
-			return result;
-		};
+		return (data: Buffer): void | Promise<void> =>
+			executeFuzzFn(originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue, data);
 	} else {
-		fuzzFn = (data: Buffer, done: (err?: Error) => void): void => {
-			let fuzzTargetException = undefined;
-			let result: void | Promise<void>;
-			try {
-				result = originalFuzzFn(data, done);
-				if (result instanceof Promise) {
-					result.then(
-						(r) => {
-							if (bugDetectorException !== undefined) {
-								throw bugDetectorException;
-							}
-							return r;
-						},
-						(e) => {
-							if (bugDetectorException !== undefined) {
-								throw bugDetectorException;
-							}
-							throw e;
-						}
-					);
-				}
-			} catch (e) {
-				fuzzTargetException = e;
-			}
-			// Exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
-			if (bugDetectorException !== undefined) {
-				throwBugDetectorExceptionAndReset();
-			} else if (fuzzTargetException !== undefined) {
-				throw fuzzTargetException;
-			}
-		};
+		return (data: Buffer, done: (err?: Error) => void): void =>
+			executeFuzzFnCallback(
+				originalFuzzFn as fuzzer.FuzzTargetCallback,
+				data,
+				done
+			);
 	}
-	return fuzzFn;
 }
 
 async function importModule(name: string): Promise<FuzzModule | void> {

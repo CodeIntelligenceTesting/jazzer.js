@@ -1,0 +1,5 @@
+{
+	"sync": false,
+	"bugDetectors": ["commandInjection"],
+	"fuzzerOptions": ["-runs=1000", "-seed=100"]
+}
