@@ -75,6 +75,7 @@ execute_process(
 )
 
 message(STATUS "COMPILER: ${CMAKE_CXX_COMPILER}")
+message(STATUS "TARGET  : ${target_triple}")
 # Download and build compiler-rt, which contains libfuzzer.
 include(ExternalProject)
 ExternalProject_Add(
