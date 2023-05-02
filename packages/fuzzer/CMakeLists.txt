@@ -69,7 +69,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
-message(STATUS "LIBFUZZER TARGET: ${LIBFUZZER_TARGET}")
+execute_process(
+  COMMAND "${CMAKE_CXX_COMPILER} --print-target-triple"
+  OUTPUT_VARIABLE target_triple
+)
+
+message(STATUS "COMPILER: ${CMAKE_CXX_COMPILER}")
 # Download and build compiler-rt, which contains libfuzzer.
 include(ExternalProject)
 ExternalProject_Add(
@@ -94,6 +99,8 @@ ExternalProject_Add(
              -DCOMPILER_RT_USE_LIBCXX=OFF
              # Use the same build type as the parent project.
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+             # Something in LLVM 16 meant that this was no longer being set which causes the build to break
+             -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="${target_triple}"
              # We only need libfuzzer from the compiler-rt project.
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target
                 ${LIBFUZZER_TARGET}
