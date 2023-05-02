@@ -40,6 +40,7 @@ struct AsyncFuzzTargetContext {
   Napi::Promise::Deferred deferred;
   bool is_resolved = false;
   bool is_done_called = false;
+  bool is_data_resolved = false;
   AsyncFuzzTargetContext() = delete;
 };
 
@@ -104,6 +105,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   // thrown from this function would cause a process termination. If the fuzz
   // target is executed successfully resolve data->promise to unblock the fuzzer
   // thread and continue with the next invocation.
+  
   try {
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
@@ -116,6 +118,8 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
       // considered to be a done callback to indicate finished execution.
       if (parameterCount > 1) {
         context->is_done_called = false;
+        context->is_data_resolved = false;
+        context->is_resolved = false;
         auto done =
             Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
               // If the done callback based fuzz target also returned a promise,
@@ -148,16 +152,17 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
               context->is_done_called = true;
 
               auto hasError = !(info[0].IsNull() || info[0].IsUndefined());
-              if (hasError) {
-                context->deferred.Reject(info[0].As<Napi::Error>().Value());
-                context->is_resolved = true;
-                data->promise->set_exception(
-                    std::make_exception_ptr(JSException()));
-              } else {
-                data->promise->set_value(nullptr);
-              }
+                if (hasError) {
+                  context->deferred.Reject(info[0].As<Napi::Error>().Value());
+                  context->is_resolved = true;
+                  data->promise->set_exception(
+                      std::make_exception_ptr(JSException()));
+                } else {
+                  data->promise->set_value(nullptr);
+                }
             });
         auto result = jsFuzzCallback.Call({buffer, done});
+        context->is_data_resolved = true;
         if (result.IsPromise()) {
           // If the fuzz target received a done callback, but also returned a
           // promise, the callback could already have been called. In that case
@@ -217,6 +222,8 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
           std::runtime_error("Environment is shut down")));
     }
   } catch (const Napi::Error &error) {
+    if (context->is_resolved)
+      return;
     context->deferred.Reject(error.Value());
     context->is_resolved = true;
     data->promise->set_exception(std::make_exception_ptr(JSException()));

@@ -1,7 +1,7 @@
 {
-	"name": "jazzerjs-fuzz-the-fuzzer",
+	"name": "jazzerjs-command-injection-tests",
 	"version": "1.0.0",
-	"description": "Fuzz parts of the fuzzer itself",
+	"description": "Tests for the command injection bug detector",
 	"scripts": {
 		"test": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest"

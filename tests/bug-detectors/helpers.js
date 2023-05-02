@@ -97,7 +97,7 @@ class FuzzTest {
 			windowsHide: true,
 		});
 		if (process.status !== 0 && process.status !== null) {
-			throw new Error("Fuzzing failed with status " + process.status);
+			throw new Error(process.status.toString());
 		}
 	}
 
@@ -131,7 +131,7 @@ class FuzzTest {
 			},
 		});
 		if (proc.status !== 0 && proc.status !== null) {
-			throw new Error("Fuzzing failed with status " + proc.status);
+			throw new Error(proc.status.toString());
 		}
 	}
 }
@@ -201,7 +201,7 @@ class FuzzTestBuilder {
 	 * @param {number} forkMode
 	 */
 	forkMode(forkMode) {
-		assert(forkMode >= 0 && forkMode <= 4);
+		assert(forkMode >= 0);
 		this._forkMode = forkMode;
 		return this;
 	}
