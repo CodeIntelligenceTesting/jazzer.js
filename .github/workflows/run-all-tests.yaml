@@ -25,6 +25,7 @@ jobs:
           sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main'
           sudo apt-get install clang-tidy-15
           sudo rm -f /usr/bin/clang-tidy
+          sudo ln -s /usr/bin/clang-tidy-15 /usr/bin/clang-tidy
       - name: build fuzzer
         # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
         run: npm run build --workspace=@jazzer.js/fuzzer
