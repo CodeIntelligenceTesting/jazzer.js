@@ -196,7 +196,7 @@ yargs(process.argv.slice(2))
 			}
 			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing({
-				fuzzTarget: ensureFilepath(args.fuzzTarget),
+				fuzzTarget: ensureFilepath(args.target),
 				fuzzEntryPoint: args.fuzz_function,
 				includes: args.instrumentation_includes,
 				excludes: args.instrumentation_excludes,
