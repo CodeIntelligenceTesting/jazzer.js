@@ -190,18 +190,30 @@ describe("Source code coverage reports for our custom Jest runner", () => {
 	});
 });
 
+/**
+ * @param {string} coverageDirectory
+ */
 function readCoverageJson(coverageDirectory) {
 	return JSON.parse(
-		fs.readFileSync(path.join(coverageDirectory, "coverage-final.json"))
+		fs
+			.readFileSync(path.join(coverageDirectory, "coverage-final.json"))
+			.toString()
 	);
 }
 
+/**
+ * @param {string} name
+ */
 function readExpectedCoverage(name) {
 	return JSON.parse(
-		fs.readFileSync(path.join(expectedCoverageDirectory, name))
+		fs.readFileSync(path.join(expectedCoverageDirectory, name)).toString()
 	);
 }
 
+/**
+ * @param {{ statementMap: any; s: any; fnMap: any; f: any; branchMap: any; b: any; }} coverage
+ * @param {{ statementMap: any; s: any; fnMap: any; f: any; branchMap: any; b: any; }} expectedCoverage
+ */
 function expectEqualCoverage(coverage, expectedCoverage) {
 	expect(coverage.statementMap).toStrictEqual(expectedCoverage.statementMap);
 	expect(coverage.s).toStrictEqual(expectedCoverage.s);
@@ -211,11 +223,17 @@ function expectEqualCoverage(coverage, expectedCoverage) {
 	expect(coverage.b).toStrictEqual(expectedCoverage.b);
 }
 
+/**
+ * @param {boolean} includeLib
+ * @param {boolean} includeTarget
+ * @param {boolean} useCustomHooks
+ * @param {boolean} _coverage
+ */
 function executeJestRunner(
 	includeLib,
 	includeTarget,
 	useCustomHooks,
-	coverage,
+	_coverage,
 	coverageOutputDir = "coverage",
 	excludePattern = ["nothing"],
 	verbose = false
@@ -256,6 +274,13 @@ function executeJestRunner(
 	if (verbose) console.log(process.output.toString());
 }
 
+/**
+ * @param {boolean} dryRun
+ * @param {boolean} includeLib
+ * @param {boolean} includeTarget
+ * @param {boolean} useCustomHooks
+ * @param {boolean} coverage
+ */
 function executeFuzzTest(
 	dryRun,
 	includeLib,
@@ -296,7 +321,7 @@ function executeFuzzTest(
 		options.push("custom-hooks");
 	}
 	if (coverage) {
-		options.push("--coverage");
+		options.push("--cov");
 	}
 	if (coverageOutputDir) {
 		options.push("--cov_dir");
