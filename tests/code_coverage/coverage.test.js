@@ -299,7 +299,7 @@ function executeFuzzTest(
 		options.push("--coverage");
 	}
 	if (coverageOutputDir) {
-		options.push("--coverageDirectory");
+		options.push("--cov_dir");
 		options.push(coverageOutputDir);
 	}
 	options.push("--");

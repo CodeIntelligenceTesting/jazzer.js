@@ -181,14 +181,14 @@ In this example, the `--coverage` flag is combined with the dry run flag `-d`
 that disables internal instrumentation used by the fuzzer.
 
 ```shell
-npx jazzer -d <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>
+npx jazzer -d <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>
 ```
 
 Alternatively, you can add a new script to your package.json:
 
 ```json
 "scripts": {
- "coverage": "jazzer -d -i target -i another_target <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>"
+ "coverage": "jazzer -d -i target -i another_target <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>"
 }
 ```
 
@@ -201,7 +201,7 @@ fuzzing, because of the substantial overhead that it adds.
 
 By default, the coverage reports can be found in the `./coverage` directory.
 This default directory can be changed by setting the flag
-`--coverageDirectory=<another coverage directory>`.
+`--cov_dir=<another coverage directory>`.
 
 ### Coverage reporters
 
