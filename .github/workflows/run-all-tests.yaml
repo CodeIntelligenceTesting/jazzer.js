@@ -7,7 +7,7 @@ on:
 jobs:
   linting:
     name: lint
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -22,26 +22,12 @@ jobs:
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-get install software-properties-common
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main'
-          sudo apt-get install -y clang-tidy-16
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-15 main'
+          sudo apt-get install clang-tidy-15
           sudo rm -f /usr/bin/clang-tidy
-          sudo ln -s /usr/bin/clang-tidy-16 /usr/bin/clang-tidy
-      - name: check clang version
-        run: clang-16 --version
-      - name: check c++ compiler version
-        run: /usr/bin/c++ --version
-      # - name: check target triple
-      #   run: /usr/bin/c++ --print-target-triple
-      - name: cmake version
-        run: cmake --version
       - name: build fuzzer
         # Build the native addon so that CMake generates compile_commands.json that is needed by clang-tidy
         run: npm run build --workspace=@jazzer.js/fuzzer
-      - name: get cmake values for compiler rt
-        if: always()
-        run:
-          cat
-          packages/fuzzer/build/compiler-rt-prefix/src/compiler-rt-build/CMakeCache.txt
       - name: check formatting and linting
         run: npm run check
   unit_tests:

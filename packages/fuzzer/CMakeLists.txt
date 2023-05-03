@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 
 project(jazzerjs)
 
@@ -69,23 +69,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
-# execute_process(
-#   COMMAND "${CMAKE_CXX_COMPILER} --print-target-triple"
-#   OUTPUT_VARIABLE target_triple
-# )
-
-message(STATUS "COMPILER: ${CMAKE_CXX_COMPILER}")
-#message(STATUS "TARGET  : ${target_triple}")
 # Download and build compiler-rt, which contains libfuzzer.
 include(ExternalProject)
 ExternalProject_Add(
   compiler-rt
-  # URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
-  # URL_HASH
-  #   SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
-  URL https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-16.0.2.tar.gz
+  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2023-04-25.tar.gz
   URL_HASH
-    SHA256=97c3c6aafb53c4bb0ed2781a18d6f05e75445e24bb1dc57a32b74f8d710ac19f
+    SHA256=200b32c897b1171824462706f577d7f1d6175da602eccfe570d2dceeac11d490
   SOURCE_SUBDIR compiler-rt
   CMAKE_ARGS # compiler-rt usually initializes the sanitizer runtime by means of
              # a pointer in the .preinit_array section; since .preinit_array
@@ -100,8 +90,6 @@ ExternalProject_Add(
              -DCOMPILER_RT_USE_LIBCXX=OFF
              # Use the same build type as the parent project.
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-             # Something in LLVM 16 meant that this was no longer being set which causes the build to break
-             # -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="${target_triple}"
              # We only need libfuzzer from the compiler-rt project.
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target
                 ${LIBFUZZER_TARGET}
