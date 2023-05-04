@@ -1,0 +1,27 @@
+{
+	"name": "jazzerjs-command-injection-tests",
+	"version": "1.0.0",
+	"description": "Tests for the command injection bug detector",
+	"scripts": {
+		"test": "jest",
+		"fuzz": "JAZZER_FUZZ=1 jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",
+		"eslint-plugin-jest": "^27.1.3"
+	},
+	"jest": {
+		"projects": [
+			{
+				"runner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
+	}
+}

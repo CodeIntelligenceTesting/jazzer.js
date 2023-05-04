@@ -17,11 +17,11 @@
 /* eslint no-undef: 0 */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const child_process = require("child_process");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const assert = require("assert");
 
-const evilString =
-	process.platform === "win32" ? "copy NUL EVIL" : "touch EVIL";
-const friendlyString =
+const evilCommand = "jaz_zer";
+const friendlyCommand =
 	process.platform === "win32" ? "copy NUL FRIENDLY" : "touch FRIENDLY";
 
 describe("Command Injection Jest tests", () => {
@@ -44,13 +44,13 @@ describe("Command Injection Jest tests", () => {
 	it.fuzz(
 		"Fuzzing mode with EVIL command",
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		makeFuzzFunctionWithInput(10, evilString)
+		makeFuzzFunctionWithInput(10, evilCommand)
 	);
 
 	it.fuzz(
 		"Fuzzing mode with FRIENDLY command",
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		makeFuzzFunctionWithInput(10, friendlyString)
+		makeFuzzFunctionWithInput(10, friendlyCommand)
 	);
 
 	it.fuzz("Call with EVIL command and done callback", (data, done) => {
