@@ -160,6 +160,9 @@ describe("Command Injection", () => {
 	it("Fork mode: Call with EVIL string; SYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
+			console.log(
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+			);
 			return;
 		}
 		const fuzzTest = new FuzzTestBuilder()
@@ -178,6 +181,9 @@ describe("Command Injection", () => {
 	it("Fork mode: Call with FRIENDLY string; SYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
+			console.log(
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+			);
 			return;
 		}
 		const fuzzTest = new FuzzTestBuilder()
@@ -196,6 +202,9 @@ describe("Command Injection", () => {
 	it("Fork mode: Call with EVIL string; ASYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
+			console.log(
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+			);
 			return;
 		}
 		const fuzzTest = new FuzzTestBuilder()
@@ -214,6 +223,9 @@ describe("Command Injection", () => {
 	it("Fork mode: Call with FRIENDLY string; ASYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
+			console.log(
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+			);
 			return;
 		}
 		const fuzzTest = new FuzzTestBuilder()

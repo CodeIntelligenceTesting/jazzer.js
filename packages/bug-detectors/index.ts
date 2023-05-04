@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { registerCommandInjectionBugDetector } from "./command-injection";
+import { registerCommandInjectionBugDetectors } from "./command-injection";
 
 export class BugDetectorError extends Error {}
-
-// TODO: Internally Jazzer.js should use original unhooked builtin functions.
-export type OriginalFnInfo = [string, string, (...args: unknown[]) => unknown];
 
 /**
  * Registers bug detectors based on the provided list of bug detectors.
@@ -35,11 +32,11 @@ export async function registerBugDetectors(
 		switch (bugDetectors[i]) {
 			case "commandInjectionSafe":
 				registeredBugDetectors.push(bugDetectors[i]);
-				await registerCommandInjectionBugDetector(false);
+				await registerCommandInjectionBugDetectors(false);
 				break;
 			case "commandInjection":
 				registeredBugDetectors.push(bugDetectors[i]);
-				await registerCommandInjectionBugDetector(true);
+				await registerCommandInjectionBugDetectors(true);
 				break;
 		}
 	}
@@ -83,16 +80,19 @@ export async function hookBuiltInFunction<
 	return originalFn;
 }
 
-// This is checked by the core after each fuzzer iteration.
-let bugDetectorError: BugDetectorError | undefined;
+// The first error to be found by any bug detector will be saved here.
+// This is a global variable shared between the core-library (read, reset) and the bug detectors (write).
+// It will be reset after the fuzzer has processed an input (only relevant for modes where the fuzzing
+// continues after finding an error, e.g. fork mode, Jest regression mode, fuzzing that ignores errors mode, etc.).
+let firstBugDetectorError: BugDetectorError | undefined;
 
 export function getFirstBugDetectorError(): BugDetectorError | undefined {
-	return bugDetectorError;
+	return firstBugDetectorError;
 }
 
 // Clear the error saved by the bug detector before the fuzzer continues with a new input.
 export function clearFirstBugDetectorError(): void {
-	bugDetectorError = undefined;
+	firstBugDetectorError = undefined;
 }
 
 export function saveFirstBugDetectorError(
@@ -100,7 +100,7 @@ export function saveFirstBugDetectorError(
 	trimErrorStackLines = 0
 ): void {
 	// After an error has been saved, ignore all subsequent errors.
-	if (bugDetectorError) {
+	if (firstBugDetectorError) {
 		return;
 	}
 	error.stack = error.stack
@@ -108,6 +108,6 @@ export function saveFirstBugDetectorError(
 		?.split("\n")
 		.slice(trimErrorStackLines)
 		.join("\n");
-	bugDetectorError = error;
+	firstBugDetectorError = error;
 	return;
 }
