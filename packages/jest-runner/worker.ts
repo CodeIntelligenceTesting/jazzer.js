@@ -26,6 +26,7 @@ import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
 import { fuzz, FuzzerStartError, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
+import { BugDetectorError } from "@jazzer.js/bug-detectors";
 
 function isGeneratorFunction(obj?: unknown): boolean {
 	return (
@@ -211,6 +212,10 @@ export class JazzerWorker {
 				// Mark fuzzer tests as skipped and not as error.
 				if (error instanceof FuzzerStartError) {
 					skipTest = true;
+				} else if (error instanceof BugDetectorError) {
+					// Add error message to the top of the stack trace---Jest will print it at the top.
+					// TODO: check if we need to do this for other errors as well.
+					error.stack = error.message + "\n" + error.stack;
 				}
 				errors.push(error);
 			});

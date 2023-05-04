@@ -27,10 +27,7 @@ export async function registerCommandInjectionBugDetectors<F extends Function>(
 	callOriginalFn: boolean
 ): Promise<void> {
 	async function registerBugDetector(
-		moduleName: string,
 		targetFunctionName: string,
-		evilCommand: string,
-		baseErrorString: string,
 		callOriginalFn: boolean
 	): Promise<F> {
 		const id = nextFakePC();
@@ -42,10 +39,9 @@ export async function registerCommandInjectionBugDetectors<F extends Function>(
 				cmdOrFileOrPath: string,
 				...args: unknown[]
 			): F | void => {
-				guideTowardsEquality(cmdOrFileOrPath, evilCommand, id);
 				if (cmdOrFileOrPath.includes(evilCommand)) {
 					const err = new BugDetectorError(
-						baseErrorString +
+						baseErrorMessage +
 							targetFunctionName +
 							"() called with command: '" +
 							cmdOrFileOrPath +
@@ -56,16 +52,18 @@ export async function registerCommandInjectionBugDetectors<F extends Function>(
 					saveFirstBugDetectorError(err, 3);
 					throw err;
 				}
+				guideTowardsEquality(cmdOrFileOrPath, evilCommand, id);
 				if (callOriginalFn) {
 					return originalFn(cmdOrFileOrPath, ...args);
 				}
 			}
 		);
 	}
-	const evilCommand =
-		process.platform === "win32" ? "copy NUL EVIL" : "touch EVIL";
-	const baseErrorString = "Command Injection: ";
+
+	const evilCommand = "jaz_zer";
+	const baseErrorMessage = "Command Injection in ";
 	const moduleName = "child_process";
+
 	const functionNames = [
 		"exec",
 		"execSync",
@@ -77,12 +75,6 @@ export async function registerCommandInjectionBugDetectors<F extends Function>(
 	];
 
 	for (const targetFunction of functionNames) {
-		await registerBugDetector(
-			moduleName,
-			targetFunction,
-			evilCommand,
-			baseErrorString,
-			callOriginalFn
-		);
+		await registerBugDetector(targetFunction, callOriginalFn);
 	}
 }

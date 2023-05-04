@@ -105,7 +105,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   // thrown from this function would cause a process termination. If the fuzz
   // target is executed successfully resolve data->promise to unblock the fuzzer
   // thread and continue with the next invocation.
-  
+
   try {
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
@@ -152,14 +152,14 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
               context->is_done_called = true;
 
               auto hasError = !(info[0].IsNull() || info[0].IsUndefined());
-                if (hasError) {
-                  context->deferred.Reject(info[0].As<Napi::Error>().Value());
-                  context->is_resolved = true;
-                  data->promise->set_exception(
-                      std::make_exception_ptr(JSException()));
-                } else {
-                  data->promise->set_value(nullptr);
-                }
+              if (hasError) {
+                context->deferred.Reject(info[0].As<Napi::Error>().Value());
+                context->is_resolved = true;
+                data->promise->set_exception(
+                    std::make_exception_ptr(JSException()));
+              } else {
+                data->promise->set_value(nullptr);
+              }
             });
         auto result = jsFuzzCallback.Call({buffer, done});
         context->is_data_resolved = true;

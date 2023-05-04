@@ -17,143 +17,92 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const child_process = require("child_process");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const assert = require("assert");
+const { promisify } = require("util");
 
-const evilFile = "EVIL";
 const friendlyFile = "FRIENDLY";
 
-const evilCommand =
-	(process.platform === "win32" ? "copy NUL " : "touch ") + evilFile;
+const evilCommand = "jaz_zer";
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilAsync = async function (data) {
-	child_process.execSync(evilCommand);
+module.exports.execEVIL = async function (data) {
+	child_process.exec(evilCommand);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilSync = function (data) {
-	child_process.execSync(evilCommand);
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalFriendlyAsync = async function (data) {
+module.exports.execFRIENDLY = async function (data) {
 	child_process.exec(friendlyCommand);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalFriendlySync = function (data) {
-	child_process.exec(friendlyCommand);
+module.exports.execFileEVIL = async function (data) {
+	child_process.execFile(evilCommand);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilDoneCallback = function (data, done) {
-	child_process.execSync(evilCommand);
-	done();
+module.exports.execFileFRIENDLY = async function (data) {
+	const command = process.platform === "win32" ? "copy" : "touch";
+	const args =
+		process.platform === "win32" ? ["NUL", friendlyFile] : [friendlyFile];
+	const execFile = promisify(child_process.execFile);
+	await execFile(command, args, { shell: true });
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilDoneCallbackWithTryCatch = function (
-	data,
-	done
-) {
-	try {
-		child_process.execSync(evilCommand);
-	} catch (e) {
-		console.log("error caught");
-	}
-	done();
+module.exports.execFileSyncEVIL = function (data) {
+	child_process.execFileSync(evilCommand);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilDoneCallbackWithTimeout = function (data, done) {
-	setTimeout(() => {
-		child_process.execSync(evilCommand);
-		done();
-	}, 100);
+module.exports.execFileSyncFRIENDLY = function (data) {
+	const command = process.platform === "win32" ? "copy" : "touch";
+	const args =
+		process.platform === "win32" ? ["NUL", friendlyFile] : [friendlyFile];
+	const options = process.platform === "win32" ? { shell: true } : {};
+	child_process.execFileSync(command, args, options);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch = function (
-	data,
-	done
-) {
-	setTimeout(() => {
-		try {
-			child_process.execSync(evilCommand);
-		} catch (e) {
-			console.log("error caught");
-		}
-		done();
-	}, 100);
+module.exports.spawnEVIL = async function (data) {
+	child_process.spawn(evilCommand);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalFriendlyDoneCallback = function (data, done) {
-	child_process.execSync(friendlyCommand);
-	done();
+module.exports.spawnFRIENDLY = async function (data) {
+	const command = process.platform === "win32" ? "copy" : "touch";
+	const args =
+		process.platform === "win32" ? ["NUL", friendlyFile] : [friendlyFile];
+	const proc = child_process.spawn(command, args, { shell: true });
+	await new Promise((resolve, reject) => {
+		proc.on("exit", (val) => {
+			resolve(val);
+		});
+		proc.on("error", (err) => {
+			reject(err);
+		});
+	});
 };
-
-module.exports.CallOriginalEvilAsyncCallingSync =
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (data) {
-		child_process.execSync(evilCommand);
-	};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-module.exports.CallOriginalFriendlyAsync = async function (data) {
-	child_process.exec(friendlyCommand);
+module.exports.spawnSyncEVIL = function (data) {
+	child_process.spawnSync(evilCommand);
 };
 
-module.exports.CallOriginalFriendlyAsyncCallingSync =
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (data) {
-		child_process.execSync(friendlyCommand);
-	};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+module.exports.spawnSyncFRIENDLY = function (data) {
+	const command = process.platform === "win32" ? "copy" : "touch";
+	const args =
+		process.platform === "win32" ? ["NUL", friendlyFile] : [friendlyFile];
+	child_process.spawnSync(command, args, { shell: true });
+};
 
-module.exports.ForkModeCallOriginalEvil = makeFuzzFunctionWithInput(
-	100,
-	evilCommand
-);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+module.exports.forkEVIL = function (data) {
+	child_process.fork(evilCommand);
+};
 
-module.exports.ForkModeCallOriginalFriendly = makeFuzzFunctionWithInput(
-	100,
-	friendlyCommand
-);
-
-module.exports.ForkModeCallOriginalEvilAsync = makeAsyncFuzzFunctionWithInput(
-	100,
-	evilCommand
-);
-
-module.exports.ForkModeCallOriginalFriendlyAsync =
-	makeAsyncFuzzFunctionWithInput(100, friendlyCommand);
-
-/**
- * Generates a fuzz function that does nothing for a given number of iterations; calls the provided
- * input at the n-th iteration; and continues doing nothing thereafter.
- */
-function makeFuzzFunctionWithInput(n, input) {
-	assert(n > 0);
-	let i = n;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	return function (data) {
-		i--;
-		if (i === 0) {
-			child_process.execSync(input);
-		}
-	};
-}
-
-function makeAsyncFuzzFunctionWithInput(n, input) {
-	assert(n > 0);
-	let i = n;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	return async function (data) {
-		i--;
-		if (i === 0) {
-			child_process.execSync(input);
-		}
-	};
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+module.exports.forkFRIENDLY = function (data) {
+	child_process.fork("makeFRIENDLY.js");
+};

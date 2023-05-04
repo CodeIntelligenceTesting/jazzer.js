@@ -90,14 +90,19 @@ class FuzzTest {
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
 		options.push("-seed=" + this.seed);
-		const process = spawnSync("npx", options, {
-			stdio: "inherit",
+		const proc = spawnSync("npx", options, {
+			stdio: "pipe",
 			cwd: this.dir,
 			shell: true,
 			windowsHide: true,
 		});
-		if (process.status !== 0 && process.status !== null) {
-			throw new Error(process.status.toString());
+		if (this.verbose) {
+			console.log("STDOUT: " + proc.stdout.toString());
+			console.log("STDERR: " + proc.stderr.toString());
+			console.log("STATUS: " + proc.status);
+		}
+		if (proc.status !== 0 && proc.status !== null) {
+			throw new Error(proc.status.toString());
 		}
 	}
 
@@ -120,16 +125,22 @@ class FuzzTest {
 			this.jestTestFile,
 			'--testNamePattern="' + this.jestTestNamePattern + '"',
 		];
+		let env = { ...process.env };
+		if (this.jestRunInFuzzingMode) {
+			env.JAZZER_FUZZ = "1";
+		}
 		const proc = spawnSync(cmd, options, {
-			stdio: "inherit",
+			stdio: "pipe",
 			cwd: this.dir,
 			shell: true,
 			windowsHide: true,
-			env: {
-				...process.env,
-				JAZZER_FUZZ: this.jestRunInFuzzingMode ? "1" : "0",
-			},
+			env: env,
 		});
+		if (this.verbose) {
+			console.log("STDOUT: " + proc.stdout.toString());
+			console.log("STDERR: " + proc.stderr.toString());
+			console.log("STATUS: " + proc.status);
+		}
 		if (proc.status !== 0 && proc.status !== null) {
 			throw new Error(proc.status.toString());
 		}
@@ -139,7 +150,7 @@ class FuzzTest {
 class FuzzTestBuilder {
 	_sync = false;
 	_runs = 0;
-	_verbose = false;
+	_verbose = true;
 	_fuzzEntryPoint = "";
 	_dir = "";
 	_bugDetectorActivationFlag = "";
