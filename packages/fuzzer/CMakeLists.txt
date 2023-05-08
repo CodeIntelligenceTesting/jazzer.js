@@ -120,6 +120,7 @@ ExternalProject_Add(
              # Use the same build type as the parent project.
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=${COMPILER_RT_DEFAULT_TARGET_TRIPLE}
+             -DLLVM_CMAKE_DIR=<SOURCE_DIR>
              # We only need libfuzzer from the compiler-rt project.
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target
                 ${LIBFUZZER_TARGET}
