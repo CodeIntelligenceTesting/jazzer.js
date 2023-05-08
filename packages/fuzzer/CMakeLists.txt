@@ -93,6 +93,8 @@ if(NOT DEFINED ENV{COMPILER_RT_DEFAULT_TARGET_TRIPLE})
       set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "i686-pc-windows-msvc" )
     endif()
   endif()
+  # strip whitespace because newlines from the shell calls will break the cmake call
+  string(STRIP COMPILER_RT_DEFAULT_TARGET_TRIPLE COMPILER_RT_DEFAULT_TARGET_TRIPLE)
   message(STATUS "COMPILER_RT_DEFAULT_TARGET_TRIPLE not set, using ${COMPILER_RT_DEFAULT_TARGET_TRIPLE}")
 endif()
 
