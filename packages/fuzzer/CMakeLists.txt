@@ -69,6 +69,33 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 
+# We're not sure why but sometimes systems don't end up setting LLVM_TARGET_TRIPLE used in llvm's cmake to eventually
+# set COMPILER_RT_DEFAULT_TARGET which is necessary for compiler-rt to build
+# So this will either take it from an envvar or try to set it to a sane value until we can figure out why it's broken
+if(NOT DEFINED ENV{COMPILER_RT_DEFAULT_TARGET_TRIPLE})
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} "-print-target-triple" OUTPUT_VARIABLE COMPILER_RT_DEFAULT_TARGET_TRIPLE)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} "-print-multiarch" OUTPUT_VARIABLE COMPILER_RT_DEFAULT_TARGET_TRIPLE)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # pulled from https://github.com/llvm/llvm-project/blob/main/llvm/cmake/modules/GetHostTriple.cmake
+    if( CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "ARM64.*" )
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "aarch64-pc-windows-msvc" )
+    elseif( CMAKE_C_COMPILER_ARCHITECTURE_ID MATCHES "ARM.*" )
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "armv7-pc-windows-msvc" )
+    elseif( CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "x64" )
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "x86_64-pc-windows-msvc" )
+    elseif( CMAKE_C_COMPILER_ARCHITECTURE_ID STREQUAL "X86" )
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "i686-pc-windows-msvc" )
+    elseif( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "x86_64-pc-windows-msvc" )
+    else()
+      set( COMPILER_RT_DEFAULT_TARGET_TRIPLE "i686-pc-windows-msvc" )
+    endif()
+  endif()
+  message(STATUS "COMPILER_RT_DEFAULT_TARGET_TRIPLE not set, using ${COMPILER_RT_DEFAULT_TARGET_TRIPLE}")
+endif()
+
 # Download and build compiler-rt, which contains libfuzzer.
 include(ExternalProject)
 ExternalProject_Add(
