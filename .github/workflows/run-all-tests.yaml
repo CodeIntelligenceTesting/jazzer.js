@@ -48,6 +48,9 @@ jobs:
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
+      - name: check for llvm-config
+        if: contains(matrix.os, 'windows')
+        run: llvm-config --version
       - name: install dependencies
         run: npm install
       - name: build project
