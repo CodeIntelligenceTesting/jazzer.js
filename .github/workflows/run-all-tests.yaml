@@ -51,6 +51,7 @@ jobs:
       - name: check for llvm-config
         if: contains(matrix.os, 'windows')
         run: llvm-config --version
+        continue-on-error: true
       - name: install dependencies
         run: npm install
       - name: build project
