@@ -16,8 +16,8 @@
 	"main": "dist/instrument.js",
 	"types": "dist/instrument.d.js",
 	"dependencies": {
-		"@babel/core": "^7.21.4",
-		"@babel/generator": "^7.21.4",
+		"@babel/core": "^7.21.8",
+		"@babel/generator": "^7.21.5",
 		"@jazzer.js/fuzzer": "*",
 		"@jazzer.js/hooking": "*",
 		"istanbul-lib-hook": "^3.0.0",
@@ -29,7 +29,7 @@
 		"@types/babel__core": "^7.20.0",
 		"@types/istanbul-lib-hook": "^2.0.1",
 		"@types/istanbul-lib-instrument": "^1.7.4",
-		"@types/node": "^18.16.0",
+		"@types/node": "^20.1.1",
 		"@types/proper-lockfile": "^4.1.2",
 		"@types/source-map-support": "^0.5.6"
 	},
