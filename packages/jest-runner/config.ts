@@ -31,7 +31,7 @@ export const defaultOptions: Options = {
 	coverage: false,
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
-	bugDetectors: [],
+	disableBugDetectors: [],
 };
 
 // Looks up Jazzer.js options via the `jazzer-runner` configuration from

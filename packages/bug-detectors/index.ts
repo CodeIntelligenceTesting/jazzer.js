@@ -13,101 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { registerCommandInjectionBugDetectors } from "./command-injection";
 
-export class BugDetectorError extends Error {}
+// Export user-facing API for writing custom bug detectors.
+export {
+	reportFinding,
+	getFirstFinding,
+	clearFirstFinding,
+	Finding,
+} from "./findings";
 
-/**
- * Registers bug detectors based on the provided list of bug detectors.
- */
-export async function registerBugDetectors(
-	bugDetectors: string[]
+// Checks in the global options if the bug detector should be loaded.
+function shouldDisableBugDetector(
+	disableBugDetectors: RegExp[],
+	bugDetectorName: string
+): boolean {
+	// pattern match for bugDetectorName in disableBugDetectors
+	for (const pattern of disableBugDetectors) {
+		if (pattern.test(bugDetectorName)) {
+			if (process.env.JAZZER_DEBUG)
+				console.log(
+					`Skip loading bug detector ${bugDetectorName} because it matches ${pattern}`
+				);
+			return true;
+		}
+	}
+	return false;
+}
+
+export async function loadBugDetectors(
+	disableBugDetectors: RegExp[]
 ): Promise<void> {
-	// Keep track of registered bug detectors to avoid registering the same bug detector multiple times.
-	const registeredBugDetectors: string[] = [];
-	for (let i = 0; i < bugDetectors.length; i++) {
-		if (registeredBugDetectors.includes(bugDetectors[i])) {
-			continue;
-		}
-		switch (bugDetectors[i]) {
-			case "commandInjectionSafe":
-				registeredBugDetectors.push(bugDetectors[i]);
-				await registerCommandInjectionBugDetectors(false);
-				break;
-			case "commandInjection":
-				registeredBugDetectors.push(bugDetectors[i]);
-				await registerCommandInjectionBugDetectors(true);
-				break;
-		}
+	// Dynamic imports require either absolute path, or a relative path with .js extension.
+	// This is ok, since our .ts files are compiled to .js files.
+	if (!shouldDisableBugDetector(disableBugDetectors, "command-injection")) {
+		await import("./internal/command-injection.js");
 	}
-}
-
-/**
- * Replaces a built-in function with a custom implementation while preserving
- * the original function for potential use within the replacement function.
- *
- * @param moduleName - The name of the module containing the target function.
- * @param targetFnName - The name of the target function to be replaced.
- * @param replacementFn - The replacement function that will be called instead
- *                        of the original function. The first argument passed
- *                        to the replacement function will be the original function,
- *                        followed by any arguments that were originally passed
- *                        to the target function.
- * @returns A promise that resolves to the original function that was replaced.
- * @throws Will throw an error if the module cannot be imported.
- *
- * @example
- * const originalExec = await hookBuiltInFunction(
- *   "child_process",
- *   "exec",
- *   (originalFn: Function, cmd: string, options: object, callback: Function) => {
- *     console.log("Custom implementation called with command:", cmd);
- *     return originalFn(cmd, options, callback);
- *   }
- * );
- */
-export async function hookBuiltInFunction<
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	F extends Function,
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	K extends Function
->(moduleName: string, targetFnName: string, replacementFn: F): Promise<K> {
-	const { default: module } = await import(moduleName);
-	const originalFn = module[targetFnName];
-	delete module[targetFnName];
-	module[targetFnName] = (...args: unknown[]) =>
-		replacementFn(originalFn, ...args);
-	return originalFn;
-}
-
-// The first error to be found by any bug detector will be saved here.
-// This is a global variable shared between the core-library (read, reset) and the bug detectors (write).
-// It will be reset after the fuzzer has processed an input (only relevant for modes where the fuzzing
-// continues after finding an error, e.g. fork mode, Jest regression mode, fuzzing that ignores errors mode, etc.).
-let firstBugDetectorError: BugDetectorError | undefined;
-
-export function getFirstBugDetectorError(): BugDetectorError | undefined {
-	return firstBugDetectorError;
-}
-
-// Clear the error saved by the bug detector before the fuzzer continues with a new input.
-export function clearFirstBugDetectorError(): void {
-	firstBugDetectorError = undefined;
-}
-
-export function saveFirstBugDetectorError(
-	error: BugDetectorError,
-	trimErrorStackLines = 0
-): void {
-	// After an error has been saved, ignore all subsequent errors.
-	if (firstBugDetectorError) {
-		return;
-	}
-	error.stack = error.stack
-		//?.replace(e.message, "")
-		?.split("\n")
-		.slice(trimErrorStackLines)
-		.join("\n");
-	firstBugDetectorError = error;
-	return;
 }

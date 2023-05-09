@@ -191,9 +191,13 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					default: 5000,
 				})
-				.array("bugDetectors")
-				.option("bugDetectors", {
-					describe: "A list of bug detectors to use.",
+				.array("disable_bug_detectors")
+				.option("disable_bug_detectors", {
+					describe:
+						"A list of patterns to disable internal bug detectors. By default all internal " +
+						"bug detectors are enabled. To disable all, use the '.*' pattern." +
+						"Following bug detectors are available: " +
+						"    command-injection",
 					type: "string",
 					group: "Fuzzer:",
 					default: [],
@@ -217,10 +221,12 @@ yargs(process.argv.slice(2))
 				customHooks: args.custom_hooks,
 				expectedErrors: args.expected_errors,
 				idSyncFile: args.id_sync_file,
-				bugDetectors: args.bugDetectors,
 				coverage: args.cov,
 				coverageDirectory: args.cov_dir,
 				coverageReporters: args.cov_reporters,
+				disableBugDetectors: args.disable_bug_detectors.map(
+					(s: string) => new RegExp(s)
+				),
 			});
 		}
 	)

@@ -83,8 +83,7 @@ export const fuzz: FuzzTest = (name, fn, timeout) => {
 		fuzzingConfig.timeout = timeout;
 	}
 
-	const wrappedFn =
-		options.bugDetectors.length > 0 ? wrapFuzzFunctionForBugDetection(fn) : fn;
+	const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
 	if (fuzzingConfig.dryRun) {
 		runInRegressionMode(name, wrappedFn, corpus, timeout);
