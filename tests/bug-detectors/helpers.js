@@ -31,7 +31,7 @@ class FuzzTest {
 	verbose;
 	fuzzEntryPoint;
 	dir;
-	bugDetectorActivationFlag;
+	excludeBugDetectors;
 	forkMode;
 	seed;
 	jestTestFile;
@@ -44,7 +44,7 @@ class FuzzTest {
 	 * @param {boolean} verbose
 	 * @param {string} fuzzEntryPoint
 	 * @param {string} dir
-	 * @param {string} bugDetectorActivationFlag
+	 * @param {string} excludeBugDetectors
 	 * @param {number} forkMode
 	 * @param {number} seed
 	 * @param {string} jestTestFile
@@ -57,7 +57,7 @@ class FuzzTest {
 		verbose,
 		fuzzEntryPoint,
 		dir,
-		bugDetectorActivationFlag,
+		excludeBugDetectors,
 		forkMode,
 		seed,
 		jestTestFile,
@@ -69,7 +69,7 @@ class FuzzTest {
 		this.verbose = verbose;
 		this.fuzzEntryPoint = fuzzEntryPoint;
 		this.dir = dir;
-		this.bugDetectorActivationFlag = bugDetectorActivationFlag;
+		this.excludeBugDetectors = excludeBugDetectors;
 		this.forkMode = forkMode;
 		this.seed = seed;
 		this.jestTestFile = jestTestFile;
@@ -85,7 +85,9 @@ class FuzzTest {
 		const options = ["jazzer", "fuzz"];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
-		options.push("--bugDetectors=" + this.bugDetectorActivationFlag);
+		for (const bugDetector of this.excludeBugDetectors) {
+			options.push("--excludeBugDetectors=" + bugDetector);
+		}
 		options.push("--");
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
@@ -110,7 +112,7 @@ class FuzzTest {
 		// Put together the jest config.
 		const config = {
 			sync: this.sync,
-			bugDetectors: [this.bugDetectorActivationFlag],
+			bugDetectors: this.excludeBugDetectors,
 			fuzzerOptions: ["-runs=" + this.runs, "-seed=" + this.seed],
 		};
 
@@ -153,7 +155,7 @@ class FuzzTestBuilder {
 	_verbose = true;
 	_fuzzEntryPoint = "";
 	_dir = "";
-	_bugDetectorActivationFlag = "";
+	_excludeBugDetectors = "";
 	_forkMode = 0;
 	_seed = 100;
 	_jestTestFile = "";
@@ -203,8 +205,8 @@ class FuzzTestBuilder {
 	/**
 	 * @param {string} flag
 	 */
-	bugDetectorActivationFlag(flag) {
-		this._bugDetectorActivationFlag = flag;
+	excludeBugDetectors(bugDetectors) {
+		this._excludeBugDetectors = bugDetectors;
 		return this;
 	}
 
@@ -264,7 +266,7 @@ class FuzzTestBuilder {
 			this._verbose,
 			this._fuzzEntryPoint,
 			this._dir,
-			this._bugDetectorActivationFlag,
+			this._excludeBugDetectors,
 			this._forkMode,
 			this._seed,
 			this._jestTestFile,

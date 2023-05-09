@@ -68,9 +68,9 @@ export function guideTowardsEquality(
  * complex, running the fuzzer with the argument `-use_value_profile=1` may be necessary to
  * satisfy the substring check.
  *
- * @param haystack a non-constant string observed during fuzz target execution
  * @param needle a string that should be contained in `haystack` as a substring, but
  *     currently isn't
+ * @param haystack a non-constant string observed during fuzz target execution
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
 export function guideTowardsContainment(

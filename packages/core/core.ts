@@ -25,18 +25,18 @@ import * as reports from "istanbul-reports";
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import {
-	registerBugDetectors,
-	BugDetectorError,
-	getFirstBugDetectorError,
-	clearFirstBugDetectorError,
+	loadBugDetectors,
+	Finding,
+	getFirstFinding,
+	clearFirstFinding,
 } from "@jazzer.js/bug-detectors";
-import { trackedHooks } from "@jazzer.js/hooking";
 import {
 	registerInstrumentor,
 	Instrumentor,
 	FileSyncIdStrategy,
 	MemorySyncIdStrategy,
 } from "@jazzer.js/instrumentor";
+import { builtinModules } from "module";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -63,7 +63,7 @@ export interface Options {
 	coverage: boolean; // Enables source code coverage report generation.
 	coverageDirectory: string;
 	coverageReporters: reports.ReportType[];
-	bugDetectors: string[];
+	disableBugDetectors: RegExp[];
 }
 
 interface FuzzModule {
@@ -80,7 +80,6 @@ declare global {
 
 export async function initFuzzing(options: Options) {
 	registerGlobals();
-	await registerBugDetectors(options.bugDetectors);
 	registerInstrumentor(
 		new Instrumentor(
 			options.includes,
@@ -93,17 +92,36 @@ export async function initFuzzing(options: Options) {
 				: new MemorySyncIdStrategy()
 		)
 	);
+	// Loads custom hook files and adds them to the hook manager.
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
+
+	// Load built-in bug detectors. Some of them might register hooks with the hook manager.
+	// Each bug detector is written in its own file, and theoretically could be loaded in the same way as custom hooks
+	// above. However, the path the bug detectors must be the compiled path. For this reason we decided to load them
+	// using this function, which loads each bug detector relative to the bug-detectors directory. E.g., in Jazzer
+	// (without the .js) there is no distinction between custom hooks and bug detectors.
+	await loadBugDetectors(options.disableBugDetectors);
+
+	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
+	await hookBuiltInFunctions(hooking.hookManager);
 }
 
-export function forceStopFuzzing(err: unknown) {
-	stopFuzzing(
-		err,
-		options.expectedErrors,
-		options.coverageDirectory,
-		options.coverageReporters,
-		options.sync
-	);
+// Built-in functions cannot be hooked by the instrumentor. We hook them by overwriting them at the module level.
+async function hookBuiltInFunctions(hookManager: hooking.HookManager) {
+	for (const builtinModule of builtinModules) {
+		for (const hook of hookManager.getMatchingHooks(builtinModule)) {
+			try {
+				await hooking.hookBuiltInFunction(hook);
+			} catch (e) {
+				if (process.env.JAZZER_DEBUG) {
+					console.log(
+						"DEBUG: [Hook] Error when trying to hook the built-in function: " +
+							e
+					);
+				}
+			}
+		}
+	}
 }
 
 export function registerGlobals() {
@@ -113,10 +131,6 @@ export function registerGlobals() {
 
 export async function startFuzzing(options: Options) {
 	await initFuzzing(options);
-	// Exceptions thrown by bug detectors should bypass all try-catch blocks in the fuzzing target;
-	// and have higher priority than exceptions thrown by fuzz target.
-	// To enable this, we wrap the fuzz target in a function that checks if any bug detector exception has been
-	// thrown, and ensures that it is treated with higher priority.
 	const fuzzFn = await loadFuzzFunction(options);
 
 	await startFuzzingNoInit(fuzzFn, options).then(
@@ -216,7 +230,7 @@ function stopFuzzing(
 ) {
 	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
 	if (process.env.JAZZER_DEBUG) {
-		trackedHooks.categorizeUnknown(HookManager.hooks).print();
+		hooking.trackedHooks.categorizeUnknown(HookManager.hooks).print();
 	}
 	// Generate a coverage report in fuzzing mode (non-jest). The coverage report for our jest-runner is generated
 	// by jest internally (as long as '--coverage' is set).
@@ -281,14 +295,15 @@ function errorName(error: unknown): string {
 
 function printError(error: unknown) {
 	let errorMessage = `==${process.pid}== `;
-	if (!(error instanceof BugDetectorError)) {
+	if (!(error instanceof Finding)) {
 		errorMessage += "Uncaught Exception: Jazzer.js: ";
 	}
+
 	if (error instanceof Error) {
 		errorMessage += error.message;
 		console.log(errorMessage);
 		if (error.stack) {
-			console.log(cleanStack(error.stack));
+			console.log(cleanErrorStack(error));
 		}
 	} else if (typeof error === "string" || error instanceof String) {
 		errorMessage += error;
@@ -299,10 +314,32 @@ function printError(error: unknown) {
 	}
 }
 
-function cleanStack(stack: string): string {
+function cleanErrorStack(error: Error): string {
+	if (error.stack === undefined) return "";
+
+	// This cleans up the stack of a finding. The changes are independent of each other, since a finding can be
+	// thrown from the hooking library, by the custom hooks, or by the fuzz target.
+	if (error instanceof Finding) {
+		// Remove the message from the stack trace. Also remove the subsequent line of the remaining stack trace that
+		// always contains `reportFinding()`, which is not relevant for the user.
+		error.stack = error.stack
+			?.replace(`Error: ${error.message}\n`, "")
+			.replace(/.*\n/, "");
+
+		// Remove all lines up to and including the line that mentions the hooking library from the stack trace of a
+		// finding.
+		const stack = error.stack.split("\n");
+		const index = stack.findIndex((line) =>
+			line.includes("jazzer.js/packages/hooking/manager")
+		);
+		if (index !== undefined && index >= 0) {
+			error.stack = stack.slice(index + 1).join("\n");
+		}
+	}
+
 	const result: string[] = [];
-	for (const line of stack.split("\n")) {
-		if (line.includes("startFuzzing") && line.includes("jazzer.js")) {
+	for (const line of error.stack.split("\n")) {
+		if (line.includes("jazzer.js/packages/core/core.ts")) {
 			break;
 		}
 		result.push(line);
@@ -346,47 +383,47 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 }
 
 /**
- * Wraps the given fuzz target function to handle exceptions from both the fuzz target and bug detectors.
- * Ensures that exceptions thrown by bug detectors have higher priority than exceptions in the fuzz target.
+ * Wraps the given fuzz target function to handle errors from both the fuzz target and bug detectors.
+ * Ensures that errors thrown by bug detectors have higher priority than errors in the fuzz target.
  */
 export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget
 ): fuzzer.FuzzTarget {
 	if (originalFuzzFn.length === 1) {
 		return (data: Buffer): void | Promise<void> => {
-			let fuzzTargetException: Error | undefined;
+			let fuzzTargetError: unknown;
 			let result: void | Promise<void>;
 			try {
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
 			} catch (e) {
-				fuzzTargetException = e as Error;
+				fuzzTargetError = e;
 			}
-			return handleErrors(result, fuzzTargetException);
+			return handleErrors(result, fuzzTargetError);
 		};
 	} else {
 		return (data: Buffer, done: (err?: Error) => void): void => {
-			let fuzzTargetException: Error | undefined;
+			let fuzzTargetError: unknown;
 			try {
 				originalFuzzFn(data, (err?: Error) => {
-					done(getFirstBugDetectorError() ?? err);
+					const finding = getFirstFinding();
+					if (finding !== undefined) {
+						clearFirstFinding();
+					}
+					done(finding ?? err);
 				});
 			} catch (e) {
-				fuzzTargetException = e as Error;
+				fuzzTargetError = e;
 			}
-			handleErrors(undefined, fuzzTargetException);
+			handleErrors(undefined, fuzzTargetError);
 		};
 	}
 }
 
-function handleErrors(
-	result: void | Promise<void>,
-	fuzzTargetError: Error | undefined
-) {
-	const error = getFirstBugDetectorError();
+function handleErrors(result: void | Promise<void>, fuzzTargetError: unknown) {
+	const error = getFirstFinding();
 	if (error !== undefined) {
-		// Since the bug detector error is a global variable, we need to clear it after each fuzzing iteration.
-		clearFirstBugDetectorError();
-
+		// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
+		clearFirstFinding();
 		throw error;
 	} else if (fuzzTargetError !== undefined) {
 		throw fuzzTargetError;

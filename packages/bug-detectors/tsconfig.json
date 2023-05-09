@@ -6,7 +6,7 @@
 	},
 	"references": [
 		{
-			"path": "../instrumentor"
+			"path": "../fuzzer"
 		},
 		{
 			"path": "../hooking"

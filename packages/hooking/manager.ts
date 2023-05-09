@@ -146,6 +146,10 @@ export class HookManager {
 		);
 	}
 
+	getMatchingHooks(filepath: string): Hook[] {
+		return this._hooks.filter((hook) => filepath.includes(hook.pkg));
+	}
+
 	callHook(
 		id: number,
 		thisPtr: object,
@@ -193,7 +197,6 @@ export class HookManager {
 }
 
 export const hookManager = new HookManager();
-
 // convenience functions to register hooks
 export function registerBeforeHook(
 	target: string,
@@ -220,4 +223,29 @@ export function registerAfterHook(
 	hookFn: HookFn
 ) {
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
+}
+
+/**
+ * Replaces a built-in function with a custom implementation while preserving
+ * the original function for potential use within the replacement function.
+ */
+export async function hookBuiltInFunction(hook: Hook): Promise<void> {
+	const { default: module } = await import(hook.pkg);
+	const originalFn = module[hook.target];
+	const id = hookManager.hookIndex(hook);
+	if (hook.type == HookType.Before) {
+		module[hook.target] = (...args: unknown[]) => {
+			(hook.hookFunction as BeforeHookFn)(null, args, id);
+			return originalFn(...args);
+		};
+	} else if (hook.type == HookType.Replace) {
+		module[hook.target] = (...args: unknown[]) => {
+			return (hook.hookFunction as ReplaceHookFn)(null, args, id, originalFn);
+		};
+	} else if (hook.type == HookType.After) {
+		module[hook.target] = (...args: unknown[]) => {
+			const result: unknown = originalFn(...args);
+			return (hook.hookFunction as AfterHookFn)(null, args, id, result);
+		};
+	}
 }

@@ -40,7 +40,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilAsync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -53,7 +52,6 @@ describe("General tests", () => {
 			.sync(true)
 			.fuzzEntryPoint("CallOriginalEvilSync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -66,7 +64,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalFriendlyAsync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -77,7 +74,6 @@ describe("General tests", () => {
 			.sync(true)
 			.fuzzEntryPoint("CallOriginalFriendlySync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -88,7 +84,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallback")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -101,7 +96,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTryCatch")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -114,7 +108,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeout")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -129,7 +122,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -142,7 +134,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalFriendlyDoneCallback")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -160,7 +151,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("ForkModeCallOriginalEvil")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.runs(200)
 			.forkMode(3)
 			.build();
@@ -180,7 +170,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("ForkModeCallOriginalFriendly")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.runs(200)
 			.forkMode(3)
 			.build();
@@ -200,7 +189,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("ForkModeCallOriginalEvilAsync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.runs(200)
 			.forkMode(3)
 			.build();
@@ -220,7 +208,6 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("ForkModeCallOriginalFriendlyAsync")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.runs(200)
 			.forkMode(3)
 			.build();
@@ -232,7 +219,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("^Command Injection Jest tests Call with EVIL command$")
 			.build();
@@ -246,7 +232,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Call with EVIL command ASYNC$"
@@ -262,7 +247,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("^Command Injection Jest tests Call with FRIENDLY command$")
 			.build();
@@ -274,7 +258,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Call with FRIENDLY command ASYNC$"
@@ -288,7 +271,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Fuzzing mode with EVIL command$"
@@ -308,7 +290,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Fuzzing mode with FRIENDLY command$"
@@ -324,7 +305,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Call with EVIL command and done callback$"
@@ -340,7 +320,6 @@ describe("General tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.sync(false)
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
 				"^Command Injection Jest tests Call with FRIENDLY command and done callback$"
@@ -365,7 +344,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -378,7 +356,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -389,7 +366,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execFileEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -402,7 +378,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execFileFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -413,7 +388,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execFileSyncEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -426,7 +400,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("execFileSyncFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -437,7 +410,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("spawnEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -450,7 +422,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("spawnFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -461,7 +432,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("spawnSyncEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -474,7 +444,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("spawnSyncFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
@@ -485,7 +454,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("forkEVIL")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -498,7 +466,6 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("forkFRIENDLY")
 			.dir(bugDetectorDirectory)
-			.bugDetectorActivationFlag("commandInjection")
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
