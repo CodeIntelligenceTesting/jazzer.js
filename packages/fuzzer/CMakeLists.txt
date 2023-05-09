@@ -102,12 +102,12 @@ endif()
 include(ExternalProject)
 ExternalProject_Add(
   compiler-rt
-  # URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2023-04-25.tar.gz
-  # URL_HASH
-  #   SHA256=200b32c897b1171824462706f577d7f1d6175da602eccfe570d2dceeac11d490
-  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
+  URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2023-04-25.tar.gz
   URL_HASH
-    SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
+    SHA256=200b32c897b1171824462706f577d7f1d6175da602eccfe570d2dceeac11d490
+  # URL https://github.com/CodeIntelligenceTesting/llvm-project-jazzer/archive/refs/tags/2022-11-25.tar.gz
+  # URL_HASH
+  #   SHA256=e691dc9b45c35713fa67c613d352b646f30cab5d35d15abfcf77cc004a3befdb
   SOURCE_SUBDIR compiler-rt
   CMAKE_ARGS # compiler-rt usually initializes the sanitizer runtime by means of
              # a pointer in the .preinit_array section; since .preinit_array
@@ -123,7 +123,7 @@ ExternalProject_Add(
              # Use the same build type as the parent project.
              -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
              -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE=${COMPILER_RT_DEFAULT_TARGET_TRIPLE}
-             -DLLVM_CMAKE_DIR=<SOURCE_DIR>
+             -DLLVM_CMAKE_DIR=<SOURCE_DIR>/llvm/cmake/modules
              # We only need libfuzzer from the compiler-rt project.
   BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --target
                 ${LIBFUZZER_TARGET}
