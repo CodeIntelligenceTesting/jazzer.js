@@ -165,19 +165,22 @@ yargs(process.argv.slice(2))
 				.boolean("cov")
 				.option("cov", {
 					describe: "Enable code coverage.",
+					alias: "coverage",
 					type: "boolean",
 					group: "Fuzzer:",
 					default: false,
 				})
 				.option("cov_dir", {
 					describe: "Directory for storing coverage reports.",
+					alias: "coverage_directory",
 					type: "string",
 					default: "coverage",
 					group: "Fuzzer:",
 				})
-				.array("covReporters")
+				.array("cov_reporters")
 				.option("cov_reporters", {
 					describe: "A list of reporter names for writing coverage reports.",
+					alias: "coverage_reporters",
 					type: "string",
 					group: "Fuzzer:",
 					default: ["json", "text", "lcov", "clover"],
