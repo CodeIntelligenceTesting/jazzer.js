@@ -20,7 +20,7 @@ directories are executed during startup.
 **Example invocation:**
 
 ```shell
-npx jazzer fuzzTarget corpusDir otherCorupsDir
+npx jazzer target corpus_dir other_corpus
 ```
 
 ## Reproducing errors
@@ -32,7 +32,7 @@ This input can then be used to reproduce the issue by specifying it as last
 parameter in the CLI call:
 
 ```shell
-npx jazzer fuzzTarget crash-abcdef0123456789
+npx jazzer target crash-abcdef0123456789
 ```
 
 ## Value profile
@@ -49,7 +49,7 @@ An example of using value profiling can be found at
 **Example invocation:**
 
 ```shell
-npx jazzer fuzzTarget -- -use_value_profile=1
+npx jazzer target -- -use_value_profile=1
 ```
 
 ## Timeout
@@ -64,7 +64,7 @@ Timeouts work in the sync- and asynchronous fuzzing mode.
 **Example invocation:**
 
 ```shell
-npx jazzer fuzzTarget --timeout=10000
+npx jazzer target --timeout=10000
 ```
 
 **Example output:**
@@ -113,7 +113,7 @@ definitions.
 ### Defining Custom Hooks
 
 Import the functions `registerBeforeHook`, `registerReplaceHook`,
-`registerAfterHook` from jazzer.js:
+`registerAfterHook` from Jazzer.js:
 
 ```javascript
 const {

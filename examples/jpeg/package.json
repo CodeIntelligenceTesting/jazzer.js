@@ -11,7 +11,7 @@
 	"scripts": {
 		"fuzz": "jazzer fuzz -i jpeg-js --sync",
 		"dryRun": "jazzer fuzz -i jpeg-js --sync -- -runs=100 -seed=123456789",
-		"coverage": "jazzer fuzz -i jpeg-js/lib -i fuzz.js --sync --coverage -- -max_total_time=1 -seed=123456789"
+		"coverage": "jazzer fuzz -i jpeg-js/lib -i fuzz.js --sync --cov -- -max_total_time=1 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

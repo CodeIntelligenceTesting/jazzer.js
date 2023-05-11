@@ -27,21 +27,21 @@ yargs(process.argv.slice(2))
 		"greedy-arrays": false,
 	})
 	.example(
-		"$0 package/fuzzTarget -i packages/foo -i packages/bar",
-		'Start a fuzzing run using the "fuzz" function exported by "fuzzTarget" ' +
+		"$0 package/target -i packages/foo -i packages/bar",
+		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
 			'and only instrument code in the "packages/a" and "packages/b" modules.'
 	)
 	.example(
-		"$0 package/fuzzTarget corpus -- -max_total_time=60",
-		'Start a fuzzing run using the "fuzz" function exported by "fuzzTarget" ' +
+		"$0 package/target corpus -- -max_total_time=60",
+		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
 			'and use the directory "corpus" to store newly generated inputs. ' +
 			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
 			"(libFuzzer) to stop the fuzzing run after 60 seconds."
 	)
 	.command(
-		"$0 <fuzzTarget> [corpus..]",
+		"$0 <target> [corpus..]",
 		"Coverage-guided, in-process fuzzer for the Node.js platform. \n\n" +
-			'The "fuzzTarget" module has to export a function "fuzz" which accepts ' +
+			'The "target" module has to export a function "fuzz" which accepts ' +
 			"a byte array as first parameter and uses that to invoke the actual " +
 			"function to fuzz.\n\n" +
 			'The "corpus" directory is optional and can be used to provide initial ' +
@@ -52,11 +52,11 @@ yargs(process.argv.slice(2))
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
 			yargs
-				.positional("fuzzTarget", {
+				.positional("target", {
 					describe: "Name of the module that exports the fuzz target function.",
 					type: "string",
 				})
-				.demandOption("fuzzTarget")
+				.demandOption("target")
 
 				.array("corpus")
 				.positional("corpus", {
@@ -162,22 +162,25 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					default: false,
 				})
-				.boolean("coverage")
-				.option("coverage", {
+				.boolean("cov")
+				.option("cov", {
 					describe: "Enable code coverage.",
+					alias: "coverage",
 					type: "boolean",
 					group: "Fuzzer:",
 					default: false,
 				})
-				.option("coverageDirectory", {
+				.option("cov_dir", {
 					describe: "Directory for storing coverage reports.",
+					alias: "coverage_directory",
 					type: "string",
 					default: "coverage",
 					group: "Fuzzer:",
 				})
-				.array("coverageReporters")
-				.option("coverageReporters", {
+				.array("cov_reporters")
+				.option("cov_reporters", {
 					describe: "A list of reporter names for writing coverage reports.",
+					alias: "coverage_reporters",
 					type: "string",
 					group: "Fuzzer:",
 					default: ["json", "text", "lcov", "clover"],
@@ -196,7 +199,7 @@ yargs(process.argv.slice(2))
 			}
 			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing({
-				fuzzTarget: ensureFilepath(args.fuzzTarget),
+				fuzzTarget: ensureFilepath(args.target),
 				fuzzEntryPoint: args.fuzz_function,
 				includes: args.instrumentation_includes,
 				excludes: args.instrumentation_excludes,
@@ -207,9 +210,9 @@ yargs(process.argv.slice(2))
 				customHooks: args.custom_hooks,
 				expectedErrors: args.expected_errors,
 				idSyncFile: args.id_sync_file,
-				coverage: args.coverage,
-				coverageDirectory: args.coverageDirectory,
-				coverageReporters: args.coverageReporters,
+				coverage: args.cov,
+				coverageDirectory: args.cov_dir,
+				coverageReporters: args.cov_reporters,
 			});
 		}
 	)
