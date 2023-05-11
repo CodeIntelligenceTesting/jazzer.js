@@ -113,7 +113,7 @@ definitions.
 ### Defining Custom Hooks
 
 Import the functions `registerBeforeHook`, `registerReplaceHook`,
-`registerAfterHook` from jazzer.js:
+`registerAfterHook` from Jazzer.js:
 
 ```javascript
 const {

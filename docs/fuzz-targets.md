@@ -176,15 +176,15 @@ flag, so that only the most important parameters are discussed here.
 
 ## Coverage report generation
 
-To generate a coverage report, add the `--coverage` flag to the Jazzer.js CLI.
-In this example, the `--coverage` flag is combined with the dry run flag `-d`
-that disables internal instrumentation used by the fuzzer.
+To generate a coverage report, add the `--cov`/`--coverage` flag to the
+Jazzer.js CLI. In the following example, the `--cov` flag is combined with the
+dry run flag `-d` that disables internal instrumentation used by the fuzzer.
 
 ```shell
 npx jazzer -d <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>
 ```
 
-Alternatively, you can add a new script to your package.json:
+Alternatively, you can add a new script to your `package.json`:
 
 ```json
 "scripts": {
@@ -201,11 +201,13 @@ fuzzing, because of the substantial overhead that it adds.
 
 By default, the coverage reports can be found in the `./coverage` directory.
 This default directory can be changed by setting the flag
-`--cov_dir=<another coverage directory>`.
+`--cov_dir=<another coverage directory>`. A longer flag of the form
+`--coverage_directory` also exists.
 
 ### Coverage reporters
 
-The desired report format can be set by the flag `--coverageReports`, which by
-default is set to `--coverageReports clover json lcov text`. See
+The desired report format can be set by the flags
+`--cov_reporters`/`--coverage_reporters`, which by default is set to
+`--coverage_reporters clover json lcov text`. See
 [here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
 for a list of supported coverage reporters.

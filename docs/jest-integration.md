@@ -299,11 +299,14 @@ To generate a coverage report, run jest with the `--coverage` flag:
 npx jest --coverage
 ```
 
+Note that unlike for the Jazzer.js CLI Jest only accepts the long flag of
+`--coverage`!
+
 Additional options for coverage report generation are described in the
 [fuzz targets documentation](./fuzz-targets.md#coverage-report-generation).
 
-The desired report format can be set by the flag `--coverageReports`, which by
-default is set to `--coverageReports clover json lcov text`. See
+The desired report format can be set by the flag `--coverage_reporters`, which
+by default is set to `--coverage_reporters clover json lcov text`. See
 [here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
 for a list of supported coverage reporters.
 
