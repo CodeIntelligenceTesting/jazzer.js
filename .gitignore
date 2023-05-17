@@ -51,3 +51,6 @@ node_modules/
 
 # Output of 'npm pack'
 *.tgz
+
+# corpus files in the path traversal example except for manual test.zip
+examples/bug-detectors/path-traversal/corpus/

@@ -17,13 +17,16 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { spawnSync } = require("child_process");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const process = require("process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fs = require("fs");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const assert = require("assert");
+
+// This is used to distinguish an error thrown during fuzzing from other errors, such as wrong
+// `fuzzEntryPoint` (which would return a "1")
+const FuzzingExitCode = "77";
+const JestRegressionExitCode = "1";
 
 class FuzzTest {
 	sync;
@@ -31,33 +34,20 @@ class FuzzTest {
 	verbose;
 	fuzzEntryPoint;
 	dir;
-	excludeBugDetectors;
+	disableBugDetectors;
 	forkMode;
 	seed;
 	jestTestFile;
 	jestTestNamePattern;
 	jestRunInFuzzingMode;
 
-	/**
-	 * @param {boolean} sync
-	 * @param {number} runs
-	 * @param {boolean} verbose
-	 * @param {string} fuzzEntryPoint
-	 * @param {string} dir
-	 * @param {string} excludeBugDetectors
-	 * @param {number} forkMode
-	 * @param {number} seed
-	 * @param {string} jestTestFile
-	 * @param {string} jestTestName
-	 * @param {boolean} jestRunInFuzzingMode
-	 */
 	constructor(
 		sync,
 		runs,
 		verbose,
 		fuzzEntryPoint,
 		dir,
-		excludeBugDetectors,
+		disableBugDetectors,
 		forkMode,
 		seed,
 		jestTestFile,
@@ -69,7 +59,7 @@ class FuzzTest {
 		this.verbose = verbose;
 		this.fuzzEntryPoint = fuzzEntryPoint;
 		this.dir = dir;
-		this.excludeBugDetectors = excludeBugDetectors;
+		this.disableBugDetectors = disableBugDetectors;
 		this.forkMode = forkMode;
 		this.seed = seed;
 		this.jestTestFile = jestTestFile;
@@ -85,34 +75,21 @@ class FuzzTest {
 		const options = ["jazzer", "fuzz"];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
-		for (const bugDetector of this.excludeBugDetectors) {
-			options.push("--excludeBugDetectors=" + bugDetector);
+		for (const bugDetector of this.disableBugDetectors) {
+			options.push("--disable_bug_detectors=" + bugDetector);
 		}
 		options.push("--");
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
 		options.push("-seed=" + this.seed);
-		const proc = spawnSync("npx", options, {
-			stdio: "pipe",
-			cwd: this.dir,
-			shell: true,
-			windowsHide: true,
-		});
-		if (this.verbose) {
-			console.log("STDOUT: " + proc.stdout.toString());
-			console.log("STDERR: " + proc.stderr.toString());
-			console.log("STATUS: " + proc.status);
-		}
-		if (proc.status !== 0 && proc.status !== null) {
-			throw new Error(proc.status.toString());
-		}
+		this.runTest("npx", options, { ...process.env });
 	}
 
 	executeWithJest() {
 		// Put together the jest config.
 		const config = {
 			sync: this.sync,
-			bugDetectors: this.excludeBugDetectors,
+			bugDetectors: this.disableBugDetectors,
 			fuzzerOptions: ["-runs=" + this.runs, "-seed=" + this.seed],
 		};
 
@@ -131,6 +108,10 @@ class FuzzTest {
 		if (this.jestRunInFuzzingMode) {
 			env.JAZZER_FUZZ = "1";
 		}
+		this.runTest(cmd, options, env);
+	}
+
+	runTest(cmd, options, env) {
 		const proc = spawnSync(cmd, options, {
 			stdio: "pipe",
 			cwd: this.dir,
@@ -138,13 +119,16 @@ class FuzzTest {
 			windowsHide: true,
 			env: env,
 		});
+		this.stdout = proc.stdout.toString();
+		this.stderr = proc.stderr.toString();
+		this.status = proc.status;
 		if (this.verbose) {
-			console.log("STDOUT: " + proc.stdout.toString());
-			console.log("STDERR: " + proc.stderr.toString());
-			console.log("STATUS: " + proc.status);
+			console.log("STDOUT: " + this.stdout.toString());
+			console.log("STDERR: " + this.stderr.toString());
+			console.log("STATUS: " + this.status);
 		}
-		if (proc.status !== 0 && proc.status !== null) {
-			throw new Error(proc.status.toString());
+		if (this.status !== 0 && this.status !== null) {
+			throw new Error(this.status.toString());
 		}
 	}
 }
@@ -152,10 +136,10 @@ class FuzzTest {
 class FuzzTestBuilder {
 	_sync = false;
 	_runs = 0;
-	_verbose = true;
+	_verbose = false;
 	_fuzzEntryPoint = "";
 	_dir = "";
-	_excludeBugDetectors = "";
+	_disableBugDetectors = "";
 	_forkMode = 0;
 	_seed = 100;
 	_jestTestFile = "";
@@ -163,7 +147,7 @@ class FuzzTestBuilder {
 	_jestRunInFuzzingMode = false;
 
 	/**
-	 * @param {boolean} sync
+	 * @param {boolean} sync - whether to run the fuzz test in synchronous mode.
 	 */
 	sync(sync) {
 		this._sync = sync;
@@ -171,7 +155,8 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {number} runs
+	 * @param {number} runs - libFuzzer's (-runs=<runs>) option. Number of times the fuzz target
+	 * function should be executed.
 	 */
 	runs(runs) {
 		this._runs = runs;
@@ -179,7 +164,8 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {boolean} verbose
+	 * @param {boolean} verbose - whether to print the output of the fuzz test to the console. True by
+	 * default.
 	 */
 	verbose(verbose) {
 		this._verbose = verbose;
@@ -195,7 +181,8 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {string} dir
+	 * @param {string} dir - directory in which the fuzz test should be executed. It should contain the file
+	 * with the fuzz entry point / Jest test file.
 	 */
 	dir(dir) {
 		this._dir = dir;
@@ -203,15 +190,18 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {string} flag
+	 * @param {string[]} bugDetectors - bug detectors to disable. This will set Jazzer.js's command line flag
+	 * --disableBugDetectors=bugDetector1 --disableBugDetectors=bugDetector2 ...
 	 */
-	excludeBugDetectors(bugDetectors) {
-		this._excludeBugDetectors = bugDetectors;
+	disableBugDetectors(bugDetectors) {
+		this._disableBugDetectors = bugDetectors;
 		return this;
 	}
 
 	/**
-	 * @param {number} forkMode
+	 * @param {number} forkMode - sets libFuzzer's fork mode (-fork=<fork>). Default is 0 (disabled).
+	 * When enabled and greater zero, the number
+	 * tells how many processes to fork.
 	 */
 	forkMode(forkMode) {
 		assert(forkMode >= 0);
@@ -220,7 +210,7 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {number} seed
+	 * @param {number} seed - sets libFuzzer's seed (-seed=<seed>)
 	 */
 	seed(seed) {
 		this._seed = seed;
@@ -266,7 +256,7 @@ class FuzzTestBuilder {
 			this._verbose,
 			this._fuzzEntryPoint,
 			this._dir,
-			this._excludeBugDetectors,
+			this._disableBugDetectors,
 			this._forkMode,
 			this._seed,
 			this._jestTestFile,
@@ -276,5 +266,28 @@ class FuzzTestBuilder {
 	}
 }
 
+/**
+ * libFuzzer tends to call the test function at least twice: once with empty data; and subsequent times with user data.
+ * If the test function generates a directory, it will fail with error "EEXIST: file already exists, mkdir '...'" on the
+ * second call. Thus, we call only once.
+ * @param fn - fuzz function to be called once
+ */
+function makeFnCalledOnce(fn, callOnIteration = 0) {
+	let iteration = 0;
+	assert(callOnIteration >= 0, "callOnIteration must be >= 0");
+
+	return async (data) => {
+		if (iteration !== callOnIteration) {
+			iteration++;
+			return;
+		}
+		iteration++;
+
+		return fn(data);
+	};
+}
+
 module.exports.FuzzTestBuilder = FuzzTestBuilder;
-module.exports.FuzzTest = FuzzTest;
+module.exports.FuzzingExitCode = FuzzingExitCode;
+module.exports.JestRegressionExitCode = JestRegressionExitCode;
+module.exports.makeFnCalledOnce = makeFnCalledOnce;

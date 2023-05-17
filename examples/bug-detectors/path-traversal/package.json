@@ -1,0 +1,17 @@
+{
+	"name": "custom-hooks-bd",
+	"version": "1.0.0",
+	"main": "fuzz.js",
+	"license": "ISC",
+	"dependencies": {
+		"jszip": "3.7.1"
+	},
+	"scripts": {
+		"bugDetectors": "jazzer fuzz -i fuzz.js -i jszip --timeout=100000000 corpus -- -runs=10000000 -print_final_stats=1 -use_value_profile=1 -max_len=600",
+		"merge": "jazzer fuzz -i jszip --timeout=100000000 --corpus=new --corpus=corpus -- -runs=1 -use_value_profile=1 -merge=1",
+		"dryRun": "jazzer fuzz --sync -x Error -- -runs=100000 -seed=123456789"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

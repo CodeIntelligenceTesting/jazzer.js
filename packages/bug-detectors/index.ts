@@ -48,4 +48,7 @@ export async function loadBugDetectors(
 	if (!shouldDisableBugDetector(disableBugDetectors, "command-injection")) {
 		await import("./internal/command-injection.js");
 	}
+	if (!shouldDisableBugDetector(disableBugDetectors, "path-traversal")) {
+		await import("./internal/path-traversal.js");
+	}
 }

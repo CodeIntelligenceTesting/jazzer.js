@@ -14,10 +14,19 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+/* eslint no-undef: 0 */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-empty-function */
+
 const child_process = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require("path");
+const fs = require("fs");
 const assert = require("assert");
+const { platform } = require("os");
+
+// if on windows use copy NUL instead of touch
+const { makeFnCalledOnce } = require("../helpers");
 
 const evilCommand = "jaz_zer";
 const friendlyFile = "FRIENDLY";
@@ -25,8 +34,6 @@ const friendlyFile = "FRIENDLY";
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 
-let evilAsyncInvocations = 0;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilAsync = async function (data) {
 	return new Promise((resolve) => {
 		// Fuzz target is invoked two times. Skip the first one to verify that the
@@ -47,28 +54,23 @@ module.exports.CallOriginalEvilAsync = async function (data) {
 	});
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilSync = function (data) {
 	child_process.execSync(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalFriendlyAsync = async function (data) {
 	child_process.exec(friendlyCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalFriendlySync = function (data) {
 	child_process.exec(friendlyCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilDoneCallback = function (data, done) {
 	child_process.execSync(evilCommand);
 	done();
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilDoneCallbackWithTryCatch = function (
 	data,
 	done
@@ -81,7 +83,6 @@ module.exports.CallOriginalEvilDoneCallbackWithTryCatch = function (
 	done();
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilDoneCallbackWithTimeout = function (data, done) {
 	setTimeout(() => {
 		child_process.execSync(evilCommand);
@@ -89,7 +90,6 @@ module.exports.CallOriginalEvilDoneCallbackWithTimeout = function (data, done) {
 	}, 100);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch = function (
 	data,
 	done
@@ -104,28 +104,22 @@ module.exports.CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch = function (
 	}, 100);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalFriendlyDoneCallback = function (data, done) {
 	child_process.execSync(friendlyCommand);
 	done();
 };
 
-module.exports.CallOriginalEvilAsyncCallingSync =
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (data) {
-		child_process.execSync(evilCommand);
-	};
+module.exports.CallOriginalEvilAsyncCallingSync = async function (data) {
+	child_process.execSync(evilCommand);
+};
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalFriendlyAsync = async function (data) {
 	child_process.exec(friendlyCommand);
 };
 
-module.exports.CallOriginalFriendlyAsyncCallingSync =
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async function (data) {
-		child_process.execSync(friendlyCommand);
-	};
+module.exports.CallOriginalFriendlyAsyncCallingSync = async function (data) {
+	child_process.execSync(friendlyCommand);
+};
 
 module.exports.ForkModeCallOriginalEvil = makeFuzzFunctionWithInput(
 	100,
@@ -145,6 +139,16 @@ module.exports.ForkModeCallOriginalEvilAsync = makeAsyncFuzzFunctionWithInput(
 module.exports.ForkModeCallOriginalFriendlyAsync =
 	makeAsyncFuzzFunctionWithInput(100, friendlyCommand);
 
+module.exports.DisableAllBugDetectors = makeFnCalledOnce(async (data) => {
+	// Command Injection : try to make an empty file named "jaz_zer" (our evil string)
+	const execSyncCommand =
+		platform() === "win32" ? "COPY NUL jaz_zer" : "touch jaz_zer";
+
+	child_process.execSync(execSyncCommand);
+	// Path Traversal : try to make a directory named "../../jaz_zer" using fs
+	fs.mkdirSync("../../jaz_zer");
+});
+
 /**
  * Generates a fuzz function that does nothing for a given number of iterations; calls the provided
  * input at the n-th iteration; and continues doing nothing thereafter.
@@ -152,7 +156,6 @@ module.exports.ForkModeCallOriginalFriendlyAsync =
 function makeFuzzFunctionWithInput(n, input) {
 	assert(n > 0);
 	let i = n;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	return function (data) {
 		i--;
 		if (i === 0) {
@@ -164,7 +167,6 @@ function makeFuzzFunctionWithInput(n, input) {
 function makeAsyncFuzzFunctionWithInput(n, input) {
 	assert(n > 0);
 	let i = n;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	return async function (data) {
 		i--;
 		if (i === 0) {

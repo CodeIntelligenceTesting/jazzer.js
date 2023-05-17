@@ -1,5 +1,6 @@
 {
 	"fuzzerOptions": ["-use_value_profile=1", "-runs=100000"],
 	"includes": ["jazzer.js"],
-	"timeout": 1000
+	"timeout": 1000,
+	"disableBugDetectors": ['path-traversal']
 }
