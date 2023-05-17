@@ -16,11 +16,7 @@
  * Examples showcasing the custom hooks API
  */
 
-export class Finding extends Error {
-	constructor(message: string) {
-		super(message);
-	}
-}
+export class Finding extends Error {}
 
 // The first finding found by any bug detector will be saved here.
 // This is a global variable shared between the core-library (read, reset) and the bug detectors (write).

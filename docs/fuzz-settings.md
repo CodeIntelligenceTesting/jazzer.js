@@ -201,9 +201,10 @@ configuration. For example, to disable all built-in bug detectors, add
 
 Following built-in bug detectors are available in Jazzer.js:
 
-| Bug Detector        | Description                                                 |
-| ------------------- | ----------------------------------------------------------- |
-| `command-injection` | Hooks all functions of the built-in module `child_process`. |
+| Bug Detector        | Description                                                          |
+| ------------------- | -------------------------------------------------------------------- |
+| `command-injection` | Hooks all functions of the built-in module `child_process`.          |
+| `path-traversal`    | Hooks all relevant functions of the built-in modules `fs` and `path` |
 
 For implementation details see
 [../packages/bug-detectors/internal](../packages/bug-detectors/internal).

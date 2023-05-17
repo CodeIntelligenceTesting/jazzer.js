@@ -29,10 +29,13 @@ const JestRegressionExitCode = "1";
 describe("General tests", () => {
 	const bugDetectorDirectory = path.join(__dirname, "general");
 	const friendlyFilePath = path.join(bugDetectorDirectory, "FRIENDLY");
+	const evilFilePath = path.join(bugDetectorDirectory, "jaz_zer");
 
 	// Delete files created by the tests.
 	beforeEach(() => {
 		fs.rmSync(friendlyFilePath, { force: true });
+		fs.rmSync(evilFilePath, { force: true });
+		fs.rmSync("../jaz_zer", { force: true, recursive: true });
 	});
 
 	it("Call with EVIL string; ASYNC", () => {
@@ -213,6 +216,19 @@ describe("General tests", () => {
 			.build();
 		fuzzTest.execute(); // fork mode doesn't throw errors
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
+	});
+
+	it("Disable all bug detectors; Call with evil", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("DisableAllBugDetectors")
+			.dir(bugDetectorDirectory)
+			.disableBugDetectors([".*"])
+			.build();
+		fuzzTest.execute();
+		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expect(fs.existsSync(evilFilePath)).toBeTruthy();
+		expect(fs.existsSync("../jaz_zer")).toBeTruthy();
 	});
 
 	it("Jest: Test with EVIL command; SYNC", () => {
@@ -469,5 +485,161 @@ describe("Command injection", () => {
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
+	});
+});
+
+describe("Path Traversal", () => {
+	const SAFE = "../safe_path/";
+	const EVIL = "../evil_path/";
+
+	beforeEach(() => {
+		fs.rmSync(SAFE, { recursive: true, force: true });
+	});
+
+	const bugDetectorDirectory = path.join(__dirname, "path-traversal");
+
+	it("openSync with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalFsOpenEvilSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+	});
+
+	it("open with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFsOpenEvilAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+	});
+
+	it("mkdirSync with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalFsMkdirEvilSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+		expect(fs.existsSync(SAFE)).toBeFalsy();
+	});
+
+	it("mkdirSync with SAFE path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalFsMkdirSafeSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+		expect(fs.existsSync(SAFE)).toBeTruthy();
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+	});
+
+	it("mkdirAsync with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFsMkdirEvilAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+		expect(fs.existsSync(SAFE)).toBeFalsy();
+	});
+
+	it("mkdirAsync with SAFE path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFsMkdirSafeAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+		expect(fs.existsSync(SAFE)).toBeTruthy();
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+	});
+
+	it("mkdir PROMISES with SAFE path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFspMkdirSafeAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+		expect(fs.existsSync(SAFE)).toBeTruthy();
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+	});
+
+	it("mkdir PROMISES with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFspMkdirEvilAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fs.existsSync(EVIL)).toBeFalsy();
+		expect(fs.existsSync(SAFE)).toBeFalsy();
+	});
+
+	it("open PROMISES with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalFspOpenEvilAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+	});
+
+	it("joinSync with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalJoinEvilSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+	});
+
+	it("joinSync with SAFE path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalJoinSafeSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+	});
+
+	it("join with EVIL path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalJoinEvilAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+	});
+
+	it("join with SAFE path", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.sync(false)
+			.fuzzEntryPoint("PathTraversalJoinSafeAsync")
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
 	});
 });

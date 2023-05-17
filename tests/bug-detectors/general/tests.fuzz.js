@@ -15,9 +15,11 @@
  */
 
 /* eslint no-undef: 0 */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-empty-function */
+
 const child_process = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const assert = require("assert");
 
 const evilCommand = "jaz_zer";
@@ -43,13 +45,11 @@ describe("Command Injection Jest tests", () => {
 
 	it.fuzz(
 		"Fuzzing mode with EVIL command",
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		makeFuzzFunctionWithInput(10, evilCommand)
 	);
 
 	it.fuzz(
 		"Fuzzing mode with FRIENDLY command",
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		makeFuzzFunctionWithInput(10, friendlyCommand)
 	);
 

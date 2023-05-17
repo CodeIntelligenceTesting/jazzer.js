@@ -197,7 +197,8 @@ yargs(process.argv.slice(2))
 						"A list of patterns to disable internal bug detectors. By default all internal " +
 						"bug detectors are enabled. To disable all, use the '.*' pattern." +
 						"Following bug detectors are available: " +
-						"    command-injection",
+						"    command-injection\n" +
+						"    path-traversal\n",
 					type: "string",
 					group: "Fuzzer:",
 					default: [],
@@ -224,9 +225,7 @@ yargs(process.argv.slice(2))
 				coverage: args.cov,
 				coverageDirectory: args.cov_dir,
 				coverageReporters: args.cov_reporters,
-				disableBugDetectors: args.disable_bug_detectors.map(
-					(s: string) => new RegExp(s)
-				),
+				disableBugDetectors: args.disable_bug_detectors,
 			});
 		}
 	)
