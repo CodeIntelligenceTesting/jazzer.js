@@ -190,6 +190,33 @@ hooking point not being available). Check the section
 [Verbose logging](#verbose-logging) for information on how to enable this
 option.
 
+## Bug Detectors
+
+Bug detectors are one of the key features when fuzzing memory-safe languages. In
+Jazzer.js, they can detect some of the most common vulnerabilities in JavaScript
+code. Built-in bug detectors are enabled by default, but can be disabled by
+adding the `--disable_bug_detectors=<pattern>` flag to the project
+configuration. For example, to disable all built-in bug detectors, add
+`--disable_bug_detectors='.*'` to the project configuration.
+
+Following built-in bug detectors are available in Jazzer.js:
+
+| Bug Detector        | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| `command-injection` | Hooks all functions of the built-in module `child_process`. |
+
+For implementation details see
+[../packages/bug-detectors/internal](../packages/bug-detectors/internal).
+
+### Writing Custom Bug Detectors
+
+Users can write their own bug detectors using the
+[custom hooks feature](#custom-hooks). Use the function `reportFinding` to
+report a finding from your bug detector---it makes sure that the finding escapes
+all try/catch blocks along the way and is definitely reported. Beware that
+`reportFinding` will only report the first finding from any of the bug detectors
+and all subsequent findings will be ignored.
+
 ## Verbose logging
 
 To enable verbose logging in Jazzer.js, add either `-v`, or `--verbose` to the
