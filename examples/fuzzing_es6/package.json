@@ -1,0 +1,16 @@
+{
+	"name": "jpeg-es6-fuzz",
+	"version": "1.0.0",
+	"type": "module",
+	"description": "",
+	"author": "",
+	"license": "ISC",
+	"scripts": {
+		"fuzz": "jazzer fuzz -i jpeg-js -i fuzz -e '@babel' --sync --timeout=1000000 -- -use_value_profile=1",
+		"dryRun": "jazzer fuzz -i jpeg-js -e nothing --sync --corpus=corpus --coverage -- -runs=0 -seed=123456789"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core",
+		"yup": "0.32.11"
+	}
+}

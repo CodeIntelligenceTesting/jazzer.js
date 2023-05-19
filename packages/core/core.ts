@@ -36,6 +36,8 @@ import {
 	FileSyncIdStrategy,
 	MemorySyncIdStrategy,
 } from "@jazzer.js/instrumentor";
+import { transformFileSync } from "@babel/core";
+
 import { builtinModules } from "module";
 
 // Remove temporary files on exit
@@ -78,20 +80,22 @@ declare global {
 	var options: Options;
 }
 
+let instrumentor: Instrumentor;
+
 export async function initFuzzing(options: Options) {
 	registerGlobals();
-	registerInstrumentor(
-		new Instrumentor(
-			options.includes,
-			options.excludes,
-			options.customHooks,
-			options.coverage,
-			options.dryRun,
-			options.idSyncFile !== undefined
-				? new FileSyncIdStrategy(options.idSyncFile)
-				: new MemorySyncIdStrategy()
-		)
+	instrumentor = new Instrumentor(
+		options.includes,
+		options.excludes,
+		options.customHooks,
+		options.coverage,
+		options.dryRun,
+		options.idSyncFile !== undefined
+			? new FileSyncIdStrategy(options.idSyncFile)
+			: new MemorySyncIdStrategy()
 	);
+	registerInstrumentor(instrumentor);
+
 	// Loads custom hook files and adds them to the hook manager.
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
@@ -432,7 +436,40 @@ function handleErrors(result: void | Promise<void>, fuzzTargetError: unknown) {
 }
 
 async function importModule(name: string): Promise<FuzzModule | void> {
-	return import(name);
+	console.log("importing fuzz target+++++", name);
+	// transpile the fuzz target if necessary from ES6 to ES5
+	name = name.replace("file://", "");
+	const code = transpile(name);
+	if (code !== undefined && code !== null) {
+		console.log(name);
+		// replace the file extension with ".transpiled.cjs". Only the last .js should be replaced.
+		// .cjs extension is used for common JS modules
+		const transpiledFileName = name.replace(
+			/\.js(?!.*\.js)/,
+			".transpiled.cjs"
+		);
+		fs.writeFileSync(transpiledFileName, code);
+		return import(transpiledFileName);
+	}
+}
+
+// transpile using babel from ES6 to ES5 if necessary
+function transpile(name: string): string | undefined | null {
+	// remove "file://" from the beginning of the path
+	const transpiled = transformFileSync(name, {
+		plugins: [
+			["@babel/plugin-transform-modules-commonjs", { strictMode: true }],
+		],
+	});
+	// console.log(transpiled?.code);
+	// if (transpiled !== undefined && transpiled?.code !== undefined && transpiled.code !== null) {
+	// 	fs.writeFileSync("test.js", transpiled.code);
+	// 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// 	// @ts-ignore
+	// 	return await import("./.js");
+	// }
+	// return transpiled code as FuzzModule
+	return transpiled?.code;
 }
 
 export function ensureFilepath(filePath: string): string {

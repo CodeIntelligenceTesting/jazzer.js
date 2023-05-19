@@ -94,7 +94,7 @@ export class Instrumentor {
 		if (shouldInstrumentFile) {
 			this.idStrategy.commitIdCount(filename);
 		}
-
+		console.log(transformedCode);
 		return transformedCode;
 	}
 
@@ -205,6 +205,7 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 	hookRequire(
 		() => true,
 		(code: string, opts: TransformerOptions): string => {
+			console.log("DEBUG: Instrumenting--- " + opts.filename);
 			return instrumentor.instrument(code, opts.filename);
 		}
 	);

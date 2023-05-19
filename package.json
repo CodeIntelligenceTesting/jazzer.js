@@ -16,6 +16,11 @@
 		"type": "git",
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git"
 	},
+	"babel": {
+		"presets": [
+			"@babel/preset-env"
+		]
+	},
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc -b tsconfig.build.json",
