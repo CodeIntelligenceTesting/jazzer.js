@@ -30,6 +30,14 @@ describe("General tests", () => {
 	const bugDetectorDirectory = path.join(__dirname, "general");
 	const friendlyFilePath = path.join(bugDetectorDirectory, "FRIENDLY");
 	const evilFilePath = path.join(bugDetectorDirectory, "jaz_zer");
+	const errorPattern =
+		/Command Injection in execSync\(\): called with 'jaz_zer'/g;
+
+	function expectErrorToBePrintedOnce(output) {
+		const matches = output.match(errorPattern);
+		expect(matches).toBeTruthy();
+		expect(matches.length).toBe(1);
+	}
 
 	// Delete files created by the tests.
 	beforeEach(() => {
@@ -60,6 +68,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stdout);
 	});
 
 	it("Call with FRIENDLY string; ASYNC", () => {
@@ -92,6 +101,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stdout);
 	});
 
 	it("Call with EVIL string; With done callback; With try/catch", () => {
@@ -104,6 +114,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stdout);
 	});
 
 	it("Call with EVIL string; With done callback; With timeout", () => {
@@ -192,7 +203,7 @@ describe("General tests", () => {
 			.sync(false)
 			.fuzzEntryPoint("ForkModeCallOriginalEvilAsync")
 			.dir(bugDetectorDirectory)
-			.runs(200)
+			.runs(10)
 			.forkMode(3)
 			.build();
 		fuzzTest.execute();
@@ -242,6 +253,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stderr);
 	});
 
 	it("Jest: Test with EVIL command; ASYNC", () => {
@@ -257,6 +269,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stderr);
 	});
 
 	it("Jest: Test with FRIENDLY command", () => {
@@ -300,6 +313,7 @@ describe("General tests", () => {
 			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode
 		);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stderr);
 	});
 
 	it("Jest: Fuzzing mode; Test with FRIENDLY command", () => {
@@ -330,6 +344,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+		expectErrorToBePrintedOnce(fuzzTest.stderr);
 	});
 
 	it("Jest: Test with FRIENDLY command; Done callback", () => {

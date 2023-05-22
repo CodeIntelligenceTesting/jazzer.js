@@ -221,9 +221,6 @@ export class JazzerWorker {
 				// Mark fuzzer tests as skipped and not as error.
 				if (error instanceof FuzzerStartError) {
 					skipTest = true;
-				} else if (error instanceof Finding) {
-					// Add error message to the top of the stack trace---Jest will print it at the top.
-					error.stack = error.message + "\n" + error.stack;
 				}
 				errors.push(error);
 			});

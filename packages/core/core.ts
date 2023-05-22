@@ -344,6 +344,9 @@ function cleanErrorStack(error: Error): string {
 		if (index !== undefined && index >= 0) {
 			error.stack = stack.slice(index + 1).join("\n");
 		}
+
+		// also delete all lines that mention "jazzer.js/packages/"
+		error.stack = error.stack.replace(/.*jazzer.js\/packages\/.*\n/g, "");
 	}
 
 	const result: string[] = [];
