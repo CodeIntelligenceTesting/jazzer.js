@@ -102,6 +102,11 @@ as long as a module exporting a `fuzz` function is generated.
 An example on how to use TypeScript to fuzz a library can be found at
 [examples/js-yaml/package.json](../examples/js-yaml/package.json).
 
+**Note**: Directly executing fuzz targets written in TypeScript is **NOT**
+supported! However, it is possible to use the
+[Jest integration](jest-integration.md) to execute Jest fuzz tests written in
+TypeScript.
+
 ### ⚠️ Using Jazzer.js on pure ESM projects ⚠️
 
 ESM brings a couple of challenges to the table, which are currently not fully
