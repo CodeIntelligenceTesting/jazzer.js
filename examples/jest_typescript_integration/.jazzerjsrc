@@ -1,0 +1,4 @@
+{
+	"includes": ["target"],
+	"excludes": ["node_modules"]
+}
