@@ -58,12 +58,6 @@ To use Jazzer.js in your own project follow these few simple steps:
    	const fuzzerData = data.toString();
    	myAwesomeCode(fuzzerData);
    };
-
-   // Alternatively, using ES6 syntax is also possible
-   export function fuzz(data /*: Buffer */) {
-   	const fuzzerData = data.toString();
-   	myAwesomeCode(fuzzerData);
-   }
    ```
 
 3. Start the fuzzer using the fuzz target
@@ -77,9 +71,14 @@ To use Jazzer.js in your own project follow these few simple steps:
 ## Usage
 
 Jazzer.js can be used in two ways: Creating dedicated fuzz targets, as shown in
-the `Quickstart` section, or integrated into the Jest test framework.
+the [`Quickstart`](#quickstart) section, or integrated into the
+[Jest test framework](https://jestjs.io/).
 
 ### Using test framework integration
+
+**Note**: Using the test framework integration is the easiest and most
+convenient way to fuzz your code, hence, it is recommended to use this approach
+whenever possible.
 
 To use fuzzing in your normal development workflow, a tight integration with the
 [Jest test framework](https://jestjs.io/) is provided. This coupling allows the
@@ -94,15 +93,23 @@ Jest tests.
 **Note**: Detailed explanation on how to use the Jest integration can be found
 at [docs/jest-integration.md](docs/jest-integration.md).
 
-A fuzz test in Jest looks similar to the following example:
+A Jest fuzz test, in this case written in TypeScript, looks similar to the
+following example:
 
-```js
-describe("My function", () => {
-	it.fuzz("can be fuzzed", (data) => {
+```typescript
+// file: "Target.fuzz.ts"
+import * as target from "./target";
+
+describe("Target", () => {
+	it.fuzz("executes a method", (data: Buffer) => {
 		target.fuzzMe(data);
 	});
 });
 ```
+
+**Note**: Please take a look at
+[Enabling TypeScript in Jest tests](docs/jest-integration.md#enabling-typescript-jest-tests)
+for further information on how to set up Jest fuzz tests written in TypeScript.
 
 ### Using fuzz targets
 

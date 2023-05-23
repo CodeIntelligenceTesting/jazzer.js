@@ -13,9 +13,9 @@ normal Jest tests.
 The Jest integration provides two modes of execution, which will be explained in
 detail further down on this page.
 
-- **Fuzzing Mode**: Fuzzing a function through a Jest test.
-- **Regression Mode**: Using initially provided seeds and inputs of found
-  problems to execute the Jest test with.
+- **[Fuzzing Mode](#fuzzing-mode)**: Fuzzing a function through a Jest test.
+- **[Regression Mode](#regression-mode)**: Using initially provided seeds and
+  inputs of found problems to execute the Jest test with.
 
 ## Setting up the Jazzer.js Jest integration
 
@@ -86,6 +86,65 @@ which can be specified through the CLI client.
 	"timeout": 1000
 }
 ```
+
+## Enabling TypeScript Jest tests
+
+Jest supports execution of tests written in other languages than JavaScript via
+dedicated extensions. Probably most prominent is its TypeScript support, which
+can be enabled via [`ts-jest`](https://kulshekhar.github.io/ts-jest/).
+
+We assume you already set up your TypeScript project according to the `ts-jest`
+documentation. The following section shows a minimal configuration to enable
+TypeScript support for Jest fuzz tests. Furthermore, an example project is
+available at
+[jest_typescript_integration](../examples/jest_typescript_integration).
+
+In addition to the configuration shown in the last section, `ts-jest` has to be
+added as dev-dependency to the project.
+
+```shell
+npm install --save-dev ts-jest
+```
+
+The Jazzer.js runner configuration also needs to reference `ts-jest`, most
+commonly by setting the `preset` property to `ts-jest`. Also make sure to
+actually include test files with the `.fuzz.ts` extension.
+
+```typescript
+{
+  displayName: {
+    name: "Jazzer.js",
+    color: "cyan",
+  },
+  preset: "ts-jest",
+  runner: "@jazzer.js/jest-runner",
+  testEnvironment: "node",
+  testMatch: ["<rootDir>/*.fuzz.[jt]s"],
+},
+```
+
+To introduce the `fuzz` function types globally, add the following import to
+`globals.d.ts`. This could also be done in the individual test files.
+
+```typescript
+import "@jazzer.js/jest-runner/jest-extension";
+```
+
+To provide accurate coverage reports for TypeScript fuzz tests, make sure to
+enable source map generation in the TypeScript compiler options:
+
+```json
+{
+	"compilerOptions": {
+		"sourceMap": true
+	}
+}
+```
+
+These settings should be enough to start writing Jest fuzz tests in TypeScript.
+
+**Note**: Using custom hooks written in TypeScript is currently not supported,
+as those are not pre-processed by Jest.
 
 ## Writing a Jest fuzz test
 
@@ -158,6 +217,26 @@ describe("My describe", () => {
     await target.asyncFuzzMe(data);
   });
 )};
+```
+
+### TypeScript Jest fuzz tests
+
+After the setup mentioned previously, Jest fuzz tests can be written in
+TypeScript, just as one would expect.
+
+**Note**: To satisfy TypeScript's type checker, add an import of
+`@jazzer.js/jest-runner/jest-extension` in `globals.d.ts` or in the individual
+test file.
+
+```typescript
+import "@jazzer.js/jest-runner/jest-extension";
+import * as target from "./target";
+
+describe("Target", () => {
+	it.fuzz("executes a method", (data: Buffer) => {
+		target.fuzzMe(data);
+	});
+});
 ```
 
 ### Setup and teardown
@@ -299,7 +378,7 @@ To generate a coverage report, run jest with the `--coverage` flag:
 npx jest --coverage
 ```
 
-Note that unlike for the Jazzer.js CLI Jest only accepts the long flag of
+**Note**: Unlike the Jazzer.js CLI, Jest only accepts the long flag of
 `--coverage`!
 
 Additional options for coverage report generation are described in the
@@ -337,4 +416,3 @@ reimplemented.
 
 - Mock functions
 - Isolated workers
-- Typescript or any other non-Javascript test files
