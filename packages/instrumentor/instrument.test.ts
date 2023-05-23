@@ -16,10 +16,8 @@
 
 /* eslint @typescript-eslint/ban-ts-comment:0 */
 
-import { codeCoverage } from "./plugins/codeCoverage";
-import { MemorySyncIdStrategy } from "./edgeIdStrategy";
+import * as ts from "typescript";
 import { Instrumentor } from "./instrument";
-import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 
 describe("shouldInstrument check", () => {
 	it("should consider includes and excludes", () => {
@@ -77,7 +75,7 @@ describe("transform", () => {
 			const sourceFileName = "sourcemap-test.js";
 			const errorLocation = sourceFileName + ":5:13";
 			const content = ` 
-					module.exports.functionThrowingAnError = function foo () {
+				module.exports.functionThrowingAnError = function foo () {
 					// eslint-disable-next-line no-constant-condition
 					if (1 < 2) {
 						throw Error("Expected test error"); // error thrown at ${errorLocation}
@@ -89,13 +87,7 @@ describe("transform", () => {
 				// import/require without eval.
 				//@ sourceURL=${sourceFileName}`;
 			try {
-				// Use the codeCoverage plugin to add additional lines, so that the
-				// resulting error stack does not match the original code anymore.
-				const result = instrumentor.transform(sourceFileName, content, [
-					codeCoverage(new MemorySyncIdStrategy()),
-				]);
-				const fn = eval(result?.code || "");
-				fn();
+				evalWithInstrumentor(instrumentor, content, sourceFileName);
 				fail("Error expected but not thrown.");
 			} catch (e: unknown) {
 				if (!(e instanceof Error && e.stack)) {
@@ -108,45 +100,58 @@ describe("transform", () => {
 		});
 	});
 
-	describe("transform", () => {
-		it("should use source maps to correct error stack traces, also with enabled coverage", () => {
-			withSourceMap((instrumentor: Instrumentor) => {
-				const sourceFileName = "sourcemap-test002.js";
-				const errorLocation = sourceFileName + ":5:13";
-				const content = ` 
-					module.exports.functionThrowingAnError = function foo () {
-					// eslint-disable-next-line no-constant-condition
-					if (1 < 2) {
-						throw Error("Expected test error"); // error thrown at ${errorLocation}
-					}
-				};
-				// sourceURL is required for the snippet to reference a filename during
-				// eval and so be able to lookup the appropriate source map later on.
-				// This is only necessary for this test and not when using normal 
-				// import/require without eval.
-				//@ sourceURL=${sourceFileName}`;
-				try {
-					// Use the codeCoverage plugin to add additional lines, so that the
-					// resulting error stack does not match the original code anymore.
-					const result = instrumentor.transform(sourceFileName, content, [
-						sourceCodeCoverage(sourceFileName),
-						codeCoverage(new MemorySyncIdStrategy()),
-					]);
-					const fn = eval(result?.code || "");
-					fn();
-					fail("Error expected but not thrown.");
-				} catch (e: unknown) {
-					if (!(e instanceof Error && e.stack)) {
-						throw e;
-					}
-					// Verify that the received error was corrected via a source map
-					// by checking the original error location.
-					expect(e.stack).toContain(errorLocation);
+	it("should use inline source maps to correct error stack traces", () => {
+		const sourceFileName = "inline-sourcemap-test.ts";
+		const errorLocation = sourceFileName + ":7:12";
+		const content = `
+			interface Foo {
+				bar: string;
+			}
+			export default function foo (): Foo {
+				if (1 < 2) {
+					throw new Error("Expected test error"); // error thrown at ${errorLocation}
+				} else {
+					return { bar: "baz" };
 				}
-			});
+			}
+			// sourceURL is required for the snippet to reference a filename during
+			// eval and so be able to lookup the appropriate source map later on.
+		  // This is only necessary for this test and not when using normal 
+			// import/require without eval.
+			//@ sourceURL=${sourceFileName}`;
+
+		const transpiledCode = ts.transpile(
+			content,
+			{
+				fileName: sourceFileName,
+				inlineSourceMap: true,
+			},
+			sourceFileName
+		);
+
+		withSourceMap((instrumentor: Instrumentor) => {
+			try {
+				evalWithInstrumentor(instrumentor, transpiledCode, sourceFileName);
+				fail("Error expected but not thrown.");
+			} catch (e: unknown) {
+				if (!(e instanceof Error && e.stack)) {
+					throw e;
+				}
+				expect(e.stack).toContain(errorLocation);
+			}
 		});
 	});
 });
+
+function evalWithInstrumentor(
+	instrumentor: Instrumentor,
+	content: string,
+	fileName: string
+) {
+	const result = instrumentor.instrument(content, fileName);
+	const fn = eval(result);
+	fn();
+}
 
 function withSourceMap(fn: (instrumentor: Instrumentor) => void) {
 	// @ts-ignore
@@ -155,13 +160,12 @@ function withSourceMap(fn: (instrumentor: Instrumentor) => void) {
 	globalThis.Fuzzer = {
 		// @ts-ignore
 		coverageTracker: {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			incrementCounter: (edgeId: number) => {
-				// ignore
+			incrementCounter: () => {
+				// ignored
 			},
 		},
 	};
-	const instrumentor = new Instrumentor();
+	const instrumentor = new Instrumentor([], [], [], true, false);
 	const resetSourceMapHandlers = instrumentor.init();
 	try {
 		fn(instrumentor);

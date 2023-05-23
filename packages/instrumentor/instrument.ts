@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import sms from "source-map-support";
-import { RawSourceMap } from "source-map";
 import {
 	BabelFileResult,
 	PluginItem,
@@ -23,18 +21,17 @@ import {
 	transformSync,
 } from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
+import { hookManager } from "@jazzer.js/hooking";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
-import { hookManager } from "@jazzer.js/hooking";
 import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
-
-interface SourceMaps {
-	[file: string]: RawSourceMap;
-}
-
-const sourceMaps: SourceMaps = {};
+import {
+	extractInlineSourceMap,
+	SourceMapRegistry,
+	toRawSourceMap,
+} from "./SourceMapRegistry";
 
 export {
 	EdgeIdStrategy,
@@ -49,9 +46,10 @@ export class Instrumentor {
 		private readonly customHooks: string[] = [],
 		private readonly shouldCollectSourceCodeCoverage = false,
 		private readonly isDryRun = false,
-		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy()
+		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy(),
+		private readonly sourceMapRegistry: SourceMapRegistry = new SourceMapRegistry()
 	) {
-		// This is our default case where we want to include everthing and exclude the "node_modules" folder.
+		// This is our default case where we want to include everything and exclude the "node_modules" folder.
 		if (includes.length === 0 && excludes.length === 0) {
 			includes.push("*");
 			excludes.push("node_modules");
@@ -64,14 +62,16 @@ export class Instrumentor {
 		if (this.includes.includes("jazzer.js")) {
 			this.unloadInternalModules();
 		}
-		return Instrumentor.installSourceMapSupport();
+		return this.sourceMapRegistry.installSourceMapSupport();
 	}
 
 	instrument(code: string, filename: string): string {
+		// Extract inline source map from code string and use it as input source map
+		// in further transformations.
+		const inputSourceMap = extractInlineSourceMap(code);
 		const transformations: PluginItem[] = [];
 
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
-
 		if (shouldInstrumentFile) {
 			transformations.push(codeCoverage(this.idStrategy), compareHooks);
 		}
@@ -81,7 +81,12 @@ export class Instrumentor {
 		}
 
 		if (this.shouldCollectCodeCoverage(filename)) {
-			transformations.push(sourceCodeCoverage(filename));
+			transformations.push(
+				sourceCodeCoverage(
+					filename,
+					this.asInputSourceOption(toRawSourceMap(inputSourceMap))
+				)
+			);
 		}
 
 		if (shouldInstrumentFile) {
@@ -89,13 +94,29 @@ export class Instrumentor {
 		}
 
 		const transformedCode =
-			this.transform(filename, code, transformations)?.code || code;
+			this.transform(
+				filename,
+				code,
+				transformations,
+				this.asInputSourceOption(inputSourceMap)
+			)?.code || code;
 
 		if (shouldInstrumentFile) {
 			this.idStrategy.commitIdCount(filename);
 		}
 
 		return transformedCode;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private asInputSourceOption(inputSourceMap: any): any {
+		// Empty input source maps mess up the coverage report.
+		if (inputSourceMap) {
+			return {
+				inputSourceMap,
+			};
+		}
+		return {};
 	}
 
 	transform(
@@ -115,39 +136,9 @@ export class Instrumentor {
 			...options,
 		});
 		if (result?.map) {
-			const sourceMap = result.map;
-			sourceMaps[filename] = {
-				version: sourceMap.version.toString(),
-				sources: sourceMap.sources ?? [],
-				names: sourceMap.names,
-				sourcesContent: sourceMap.sourcesContent,
-				mappings: sourceMap.mappings,
-			};
+			this.sourceMapRegistry.registerSourceMap(filename, result.map);
 		}
 		return result;
-	}
-
-	/* Installs source-map-support handlers and returns a reset function */
-	static installSourceMapSupport(): () => void {
-		// Use the source-map-support library to enable in-memory source maps of
-		// transformed code and error stack rewrites.
-		// As there is no way to populate the source map cache of source-map-support,
-		// an additional buffer is used to pass on the source maps from babel to the
-		// library. This could be memory intensive and should be replaced by
-		// tmp source map files, if it really becomes a problem.
-		sms.install({
-			hookRequire: true,
-			retrieveSourceMap: (source) => {
-				if (sourceMaps[source]) {
-					return {
-						map: sourceMaps[source],
-						url: source,
-					};
-				}
-				return null;
-			},
-		});
-		return sms.resetRetrieveHandlers;
 	}
 
 	private unloadInternalModules() {
@@ -155,6 +146,7 @@ export class Instrumentor {
 			"DEBUG: Unloading internal Jazzer.js modules for instrumentation..."
 		);
 		[
+			"@jazzer.js/bug-detectors",
 			"@jazzer.js/core",
 			"@jazzer.js/fuzzer",
 			"@jazzer.js/hooking",
@@ -206,6 +198,10 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 		() => true,
 		(code: string, opts: TransformerOptions): string => {
 			return instrumentor.instrument(code, opts.filename);
-		}
+		},
+		// required to allow jest to run typescript files
+		// jest's typescript integration will transform the typescript into javascript before giving it to the
+		// instrumentor but the filename will still have a .ts extension
+		{ extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] }
 	);
 }
