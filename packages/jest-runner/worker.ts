@@ -27,6 +27,8 @@ import { inspect } from "util";
 import { fuzz, FuzzerStartError, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
 import { Finding } from "@jazzer.js/bug-detectors";
+import { createScriptTransformer } from "@jest/transform";
+import "./jest-extension";
 
 function isGeneratorFunction(obj?: unknown): boolean {
 	return (
@@ -147,7 +149,14 @@ export class JazzerWorker {
 
 	private async loadTests(test: Test): Promise<circus.State> {
 		circus.resetState();
-		await this.importFile(test.path);
+
+		// Don't cache transformed files, as that will interfere with the internal
+		// transformations. Config is read only, so a copy is needed.
+		const config = { ...test.context.config };
+		config.cache = false;
+		const transformer = await createScriptTransformer(config);
+		await transformer.requireAndTranspileModule(test.path);
+
 		return circus.getState();
 	}
 
