@@ -1,4 +1,5 @@
 /*
+
  * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,11 @@
  * limitations under the License.
  */
 
+import * as findings from "./findings";
+import * as fs from "fs";
+import * as path from "path";
+export { getBugDetectorConfiguration } from "./configuration";
+
 // Export user-facing API for writing custom bug detectors.
 export {
 	reportFinding,
@@ -22,33 +28,50 @@ export {
 	Finding,
 } from "./findings";
 
-// Checks in the global options if the bug detector should be loaded.
-function shouldDisableBugDetector(
-	disableBugDetectors: RegExp[],
-	bugDetectorName: string,
-): boolean {
-	// pattern match for bugDetectorName in disableBugDetectors
-	for (const pattern of disableBugDetectors) {
-		if (pattern.test(bugDetectorName)) {
-			if (process.env.JAZZER_DEBUG)
-				console.log(
-					`Skip loading bug detector ${bugDetectorName} because it matches ${pattern}`,
-				);
-			return true;
-		}
-	}
-	return false;
+// Global API for bug detectors that can be used by instrumentation plugins.
+export interface BugDetectors {
+	reportFinding: typeof findings.reportFinding;
 }
 
-export async function loadBugDetectors(
-	disableBugDetectors: RegExp[],
-): Promise<void> {
-	// Dynamic imports require either absolute path, or a relative path with .js extension.
-	// This is ok, since our .ts files are compiled to .js files.
-	if (!shouldDisableBugDetector(disableBugDetectors, "command-injection")) {
-		await import("./internal/command-injection.js");
-	}
-	if (!shouldDisableBugDetector(disableBugDetectors, "path-traversal")) {
-		await import("./internal/path-traversal.js");
-	}
+export const bugDetectors: BugDetectors = {
+	reportFinding: findings.reportFinding,
+};
+
+// Filters out disabled bug detectors and prepares all the others for dynamic import.
+export function getFilteredBugDetectorPaths(
+	bugDetectorsDirectory: string,
+	disableBugDetectors: string[],
+): string[] {
+	const disablePatterns = disableBugDetectors.map(
+		(pattern: string) => new RegExp(pattern),
+	);
+	return (
+		fs
+			.readdirSync(bugDetectorsDirectory)
+			// The compiled "internal" directory contains several files such as .js.map and .d.ts.
+			// We only need the .js files.
+			// Here we also filter out bug detectors that should be disabled.
+			.filter((bugDetectorPath) => {
+				if (!bugDetectorPath.endsWith(".js")) {
+					return false;
+				}
+
+				// Dynamic imports need .js files.
+				const bugDetectorName = path.basename(bugDetectorPath, ".js");
+
+				// Checks in the global options if the bug detector should be loaded.
+				const shouldDisable = disablePatterns.some((pattern) =>
+					pattern.test(bugDetectorName),
+				);
+
+				if (shouldDisable) {
+					console.log(
+						`Skip loading bug detector "${bugDetectorName}" because of user-provided pattern.`,
+					);
+				}
+				return !shouldDisable;
+			})
+			// Get absolute paths for each bug detector.
+			.map((file) => path.join(bugDetectorsDirectory, file))
+	);
 }

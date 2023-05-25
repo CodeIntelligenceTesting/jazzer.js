@@ -24,6 +24,7 @@ import {
 	logHooks,
 	hookTracker,
 } from "./hook";
+import { PluginTarget } from "@babel/core";
 
 export class MatchingHooksResult {
 	public beforeHooks: Hook[] = [];
@@ -101,6 +102,10 @@ export class MatchingHooksResult {
 
 export class HookManager {
 	private _hooks: Hook[] = [];
+	private afterEachCallbacks: Array<Thunk> = [];
+	private beforeEachCallbacks: Array<Thunk> = [];
+	private dictionaries: Array<string> = [];
+	private instrumentationPlugins: Array<() => PluginTarget> = [];
 
 	registerHook(
 		hookType: HookType,
@@ -180,6 +185,46 @@ export class HookManager {
 				);
 		}
 	}
+
+	registerAfterEachCallback(callback: Thunk) {
+		this.afterEachCallbacks.push(callback);
+	}
+
+	registerBeforeEachCallback(callback: Thunk) {
+		this.beforeEachCallbacks.push(callback);
+	}
+
+	addDictionary(libFuzzerDictionary: string[]) {
+		this.dictionaries.push(this.compileFuzzerDictionary(libFuzzerDictionary));
+	}
+
+	registerInstrumentationPlugin(plugin: () => PluginTarget) {
+		this.instrumentationPlugins.push(plugin);
+	}
+
+	getDictionaries() {
+		return this.dictionaries;
+	}
+
+	getInstrumentationPlugins() {
+		return this.instrumentationPlugins;
+	}
+
+	runAfterEachCallbacks() {
+		for (const afterEachCallback of this.afterEachCallbacks) {
+			afterEachCallback();
+		}
+	}
+
+	runBeforeEachCallbacks() {
+		for (const beforeEachCallback of this.beforeEachCallbacks) {
+			beforeEachCallback();
+		}
+	}
+
+	private compileFuzzerDictionary(lines: string[]): string {
+		return lines.join("\n");
+	}
 }
 
 export function callSiteId(...additionalArguments: unknown[]): number {
@@ -197,6 +242,8 @@ export function callSiteId(...additionalArguments: unknown[]): number {
 	}
 	return hash;
 }
+
+type Thunk = () => void;
 
 export const hookManager = new HookManager();
 // convenience functions to register hooks
@@ -227,6 +274,22 @@ export function registerAfterHook(
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
 }
 
+export function registerAfterEachCallback(callback: Thunk) {
+	hookManager.registerAfterEachCallback(callback);
+}
+
+export function registerBeforeEachCallback(callback: Thunk) {
+	hookManager.registerBeforeEachCallback(callback);
+}
+
+export function addDictionary(...libFuzzerDictionary: string[]) {
+	hookManager.addDictionary(libFuzzerDictionary);
+}
+
+export function registerInstrumentationPlugin(plugin: () => PluginTarget) {
+	hookManager.registerInstrumentationPlugin(plugin);
+}
+
 /**
  * Replaces a built-in function with a custom implementation while preserving
  * the original function for potential use within the replacement function.
@@ -255,3 +318,35 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	logHooks([hook]);
 	hookTracker.addApplied(hook.pkg, hook.target);
 }
+
+// Keep track of statements and expressions that should not be instrumented.
+// This is necessary to avoid infinite recursion when instrumenting code.
+class InstrumentationGuard {
+	private map: Map<string, Set<string>> = new Map();
+
+	/**
+	 * Add a tag and a value to the guard. This can be used to look up if the value.
+	 * The value will be stringified internally before being added to the guard.
+	 * @example instrumentationGuard.add("AssignmentExpression", node.left);
+	 */
+	add(tag: string, value: unknown) {
+		if (!this.map.has(tag)) {
+			this.map.set(tag, new Set());
+		}
+		this.map.get(tag)?.add(JSON.stringify(value));
+	}
+
+	/**
+	 * Check if a value with a given tag exists in the guard. The value will be stringified internally before being checked.
+	 * @example instrumentationGuard.has("AssignmentExpression", node.object);
+	 */
+	has(expression: string, value: unknown): boolean {
+		return (
+			(this.map.has(expression) &&
+				this.map.get(expression)?.has(JSON.stringify(value))) ??
+			false
+		);
+	}
+}
+
+export const instrumentationGuard = new InstrumentationGuard();

@@ -15,7 +15,7 @@
  */
 
 import { reportFinding } from "../findings";
-import { guideTowardsContainment } from "@jazzer.js/fuzzer";
+import { fuzzer } from "@jazzer.js/fuzzer";
 import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -138,7 +138,7 @@ for (const module of modulesToHook) {
 					`Path Traversal in ${functionName}(): called with '${firstArgument}'`,
 				);
 			}
-			guideTowardsContainment(firstArgument, goal, hookId);
+			fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
 		};
 
 		registerBeforeHook(functionName, module.moduleName, false, beforeHook);
@@ -184,10 +184,14 @@ for (const module of functionsWithTwoTargets) {
 							` and '${secondArgument}'`,
 					);
 				}
-				guideTowardsContainment(firstArgument, goal, hookId);
+				fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
 				// We don't want to confuse the fuzzer guidance with the same hookId for both function arguments.
 				// Therefore, we use an extra hookId for the second argument.
-				guideTowardsContainment(secondArgument, goal, extraHookId);
+				fuzzer.tracer.guideTowardsContainment(
+					secondArgument,
+					goal,
+					extraHookId,
+				);
 			};
 		};
 

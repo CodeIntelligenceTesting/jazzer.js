@@ -73,7 +73,11 @@ export class Instrumentor {
 
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
 		if (shouldInstrumentFile) {
-			transformations.push(codeCoverage(this.idStrategy), compareHooks);
+			transformations.push(
+				...hookManager.getInstrumentationPlugins(),
+				codeCoverage(this.idStrategy),
+				compareHooks,
+			);
 		}
 
 		if (hookManager.hasFunctionsToHook(filename)) {

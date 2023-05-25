@@ -18,10 +18,12 @@
 
 const { registerReplaceHook } = require("@jazzer.js/hooking");
 const { reportFinding } = require("@jazzer.js/bug-detectors");
-const { guideTowardsEquality } = require("@jazzer.js/fuzzer");
+const { fuzzer } = require("@jazzer.js/fuzzer");
 
 /**
- * Custom bug detector for command injection.
+ * Custom bug detector for command injection. This hook does not call the original function (execSync) for two reasons:
+ * 1. To speed up fuzzing---calling execSync gives us about 5 executions per second, while calling nothing gives us a lot more.
+ * 2. To prevent the fuzzer from accidentally calling commands like "rm -rf" on the host system during local tests.
  */
 registerReplaceHook(
 	"execSync",
@@ -37,6 +39,6 @@ registerReplaceHook(
 				`Command Injection in spawnSync(): called with '${command}'`,
 			);
 		}
-		guideTowardsEquality(command, "jaz_zer", hookId);
+		fuzzer.tracer.guideTowardsEquality(command, "jaz_zer", hookId);
 	},
 );

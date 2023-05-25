@@ -18,7 +18,7 @@ import { loadConfig } from "./config";
 import { cleanupJestRunnerStack } from "./errorUtils";
 import { FuzzTest } from "./fuzz";
 import { JazzerWorker } from "./worker";
-import { registerGlobals, initFuzzing } from "@jazzer.js/core";
+import { initFuzzing } from "@jazzer.js/core";
 import {
 	CallbackTestRunner,
 	OnTestFailure,
@@ -39,7 +39,6 @@ class FuzzRunner extends CallbackTestRunner {
 		super(globalConfig, context);
 		this.shouldCollectCoverage = globalConfig.collectCoverage;
 		this.coverageReporters = globalConfig.coverageReporters;
-		registerGlobals();
 	}
 
 	async runTests(

@@ -27,44 +27,39 @@ const JestRegressionExitCode = "1";
 const WindowsExitCode = "1";
 
 class FuzzTest {
-	sync;
-	runs;
-	verbose;
-	fuzzEntryPoint;
-	dir;
-	disableBugDetectors;
-	forkMode;
-	seed;
-	jestTestFile;
-	jestTestNamePattern;
-	jestRunInFuzzingMode;
-	coverage;
-
 	constructor(
-		sync,
-		runs,
-		verbose,
-		fuzzEntryPoint,
+		customHooks,
+		dictionaries,
 		dir,
 		disableBugDetectors,
+		dryRun,
 		forkMode,
-		seed,
+		fuzzEntryPoint,
+		fuzzFile,
+		jestRunInFuzzingMode,
 		jestTestFile,
 		jestTestName,
-		jestRunInFuzzingMode,
+		runs,
+		seed,
+		sync,
+		verbose,
 		coverage,
 	) {
-		this.sync = sync;
-		this.runs = runs;
-		this.verbose = verbose;
-		this.fuzzEntryPoint = fuzzEntryPoint;
+		this.customHooks = customHooks;
+		this.dictionaries = dictionaries;
 		this.dir = dir;
 		this.disableBugDetectors = disableBugDetectors;
+		this.dryRun = dryRun;
 		this.forkMode = forkMode;
-		this.seed = seed;
+		this.fuzzEntryPoint = fuzzEntryPoint;
+		this.fuzzFile = fuzzFile;
+		this.jestRunInFuzzingMode = jestRunInFuzzingMode;
 		this.jestTestFile = jestTestFile;
 		this.jestTestNamePattern = jestTestName;
-		this.jestRunInFuzzingMode = jestRunInFuzzingMode;
+		this.runs = runs;
+		this.seed = seed;
+		this.sync = sync;
+		this.verbose = verbose;
 		this.coverage = coverage;
 	}
 
@@ -73,26 +68,45 @@ class FuzzTest {
 			this.executeWithJest();
 			return;
 		}
-		const options = ["jazzer", "fuzz"];
+		const options = ["jazzer", this.fuzzFile];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
 		for (const bugDetector of this.disableBugDetectors) {
 			options.push("--disable_bug_detectors=" + bugDetector);
 		}
+
+		if (this.customHooks) {
+			options.push("--custom_hooks=" + this.customHooks);
+		}
+		options.push("--dryRun=" + this.dryRun);
 		if (this.coverage) options.push("--coverage");
 		options.push("--");
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
 		options.push("-seed=" + this.seed);
+		for (const dictionary of this.dictionaries) {
+			options.push("-dict=" + dictionary);
+		}
 		this.runTest("npx", options, { ...process.env });
 	}
 
 	executeWithJest() {
+		// Put together the libfuzzer options.
+		const fuzzerOptions = ["-runs=" + this.runs, "-seed=" + this.seed];
+		const dictionaries = this.dictionaries.map(
+			(dictionary) => "-dict=" + dictionary,
+		);
+		fuzzerOptions.push(...dictionaries);
+
 		// Put together the jest config.
 		const config = {
 			sync: this.sync,
-			bugDetectors: this.disableBugDetectors,
-			fuzzerOptions: ["-runs=" + this.runs, "-seed=" + this.seed],
+			include: [this.jestTestFile],
+			disableBugDetectors: this.disableBugDetectors,
+			fuzzerOptions: fuzzerOptions,
+			customHooks: this.customHooks,
+			dryRun: this.dryRun,
+			mode: this.jestRunInFuzzingMode ? "fuzzing" : "regression",
 		};
 
 		// Write jest config file even if it exists
@@ -107,11 +121,7 @@ class FuzzTest {
 			this.jestTestFile,
 			'--testNamePattern="' + this.jestTestNamePattern + '"',
 		];
-		let env = { ...process.env };
-		if (this.jestRunInFuzzingMode) {
-			env.JAZZER_FUZZ = "1";
-		}
-		this.runTest(cmd, options, env);
+		this.runTest(cmd, options, { ...process.env });
 	}
 
 	runTest(cmd, options, env) {
@@ -140,14 +150,18 @@ class FuzzTestBuilder {
 	_sync = false;
 	_runs = 0;
 	_verbose = false;
+	_dryRun = false;
 	_fuzzEntryPoint = "";
 	_dir = "";
-	_disableBugDetectors = "";
+	_fuzzFile = "fuzz";
+	_disableBugDetectors = [];
+	_customHooks = undefined;
 	_forkMode = 0;
 	_seed = 100;
 	_jestTestFile = "";
 	_jestTestName = "";
 	_jestRunInFuzzingMode = false;
+	_dictionaries = [];
 	_coverage = false;
 
 	/**
@@ -177,6 +191,14 @@ class FuzzTestBuilder {
 	}
 
 	/**
+	 * @param {boolean} dryRun
+	 */
+	dryRun(dryRun) {
+		this._dryRun = dryRun;
+		return this;
+	}
+
+	/**
 	 * @param {string} fuzzEntryPoint
 	 */
 	fuzzEntryPoint(fuzzEntryPoint) {
@@ -193,12 +215,34 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	fuzzFile(fuzzFile) {
+		this._fuzzFile = fuzzFile;
+		return this;
+	}
+
 	/**
 	 * @param {string[]} bugDetectors - bug detectors to disable. This will set Jazzer.js's command line flag
 	 * --disableBugDetectors=bugDetector1 --disableBugDetectors=bugDetector2 ...
 	 */
 	disableBugDetectors(bugDetectors) {
+		if (!Array.isArray(bugDetectors)) {
+			bugDetectors = [bugDetectors];
+		}
 		this._disableBugDetectors = bugDetectors;
+		return this;
+	}
+
+	/**
+	 * @param {string[]} file - an array of strings that represent the custom hooks files.
+	 * @returns {FuzzTestBuilder}
+	 */
+	customHooks(file) {
+		// make sure it's an array of strings
+		if (!Array.isArray(file)) {
+			// throw error
+			throw new Error("customHooks must be an array of strings");
+		}
+		this._customHooks = file;
 		return this;
 	}
 
@@ -245,6 +289,14 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	/**
+	 * @param {string[]} dictionaries
+	 */
+	dictionaries(dictionaries) {
+		this._dictionaries = dictionaries;
+		return this;
+	}
+
 	coverage(coverage) {
 		this._coverage = coverage;
 		return this;
@@ -260,17 +312,21 @@ class FuzzTestBuilder {
 			);
 		}
 		return new FuzzTest(
-			this._sync,
-			this._runs,
-			this._verbose,
-			this._fuzzEntryPoint,
+			this._customHooks,
+			this._dictionaries,
 			this._dir,
 			this._disableBugDetectors,
+			this._dryRun,
 			this._forkMode,
-			this._seed,
+			this._fuzzEntryPoint,
+			this._fuzzFile,
+			this._jestRunInFuzzingMode,
 			this._jestTestFile,
 			this._jestTestName,
-			this._jestRunInFuzzingMode,
+			this._runs,
+			this._seed,
+			this._sync,
+			this._verbose,
 			this._coverage,
 		);
 	}

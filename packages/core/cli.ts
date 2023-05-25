@@ -206,6 +206,8 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
+			// Set verbose mode environment variable. If the environment variable is
+			// set, the verbose mode flag is ignored.
 			if (args.verbose) {
 				process.env.JAZZER_DEBUG = "1";
 			}

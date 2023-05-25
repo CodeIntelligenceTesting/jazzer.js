@@ -32,6 +32,8 @@ export const defaultOptions: Options = {
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
 	disableBugDetectors: [],
+	mode: "regression",
+	verbose: false,
 };
 
 // Looks up Jazzer.js options via the `jazzer-runner` configuration from
@@ -56,7 +58,11 @@ export function loadConfig(optionsKey = "jazzerjs"): Options {
 
 	// Switch to fuzzing mode if environment variable `JAZZER_FUZZ` is set.
 	if (process.env.JAZZER_FUZZ) {
-		config.dryRun = false;
+		config.mode = "fuzzing";
+	}
+
+	if (config.verbose) {
+		process.env.JAZZER_DEBUG = "1";
 	}
 
 	return config;
