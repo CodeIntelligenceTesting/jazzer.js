@@ -83,10 +83,12 @@ export const fuzz: FuzzTest = (name, fn, timeout) => {
 
 	const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
-	if (fuzzingConfig.dryRun) {
+	if (fuzzingConfig.mode === "regression") {
 		runInRegressionMode(name, wrappedFn, corpus, timeout);
-	} else {
+	} else if (fuzzingConfig.mode === "fuzzing") {
 		runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig);
+	} else {
+		throw new Error(`Unknown mode ${fuzzingConfig.mode}`);
 	}
 };
 

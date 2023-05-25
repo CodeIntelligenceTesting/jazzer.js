@@ -1,7 +1,7 @@
 {
-	"name": "jazzerjs-general-bug-detector-tests",
+	"name": "jazzerjs-prototype-pollution-tests",
 	"version": "1.0.0",
-	"description": "Tests for checking the general functionality of bug detectors",
+	"description": "Tests for the Prototype Pollution bug detector",
 	"scripts": {
 		"test": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest"

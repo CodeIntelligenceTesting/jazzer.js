@@ -3,7 +3,8 @@
 	"version": "1.0.0",
 	"description": "Tests for Jazzer's bug detectors",
 	"scripts": {
-		"fuzz": "jest --verbose"
+		"fuzz": "jest --verbose",
+		"test": "jest --verbose"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

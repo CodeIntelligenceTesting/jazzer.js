@@ -26,8 +26,8 @@ import * as hooking from "@jazzer.js/hooking";
 import {
 	clearFirstFinding,
 	Finding,
+	getFilteredBugDetectorPaths,
 	getFirstFinding,
-	loadBugDetectors,
 } from "@jazzer.js/bug-detectors";
 import {
 	FileSyncIdStrategy,
@@ -63,6 +63,8 @@ export interface Options {
 	coverageDirectory: string;
 	coverageReporters: reports.ReportType[];
 	disableBugDetectors: string[];
+	mode?: "fuzzing" | "regression";
+	verbose?: boolean;
 }
 
 interface FuzzModule {
@@ -77,8 +79,9 @@ declare global {
 	var options: Options;
 }
 
-export async function initFuzzing(options: Options) {
-	registerGlobals();
+export async function initFuzzing(options: Options): Promise<void> {
+	registerGlobals(options);
+
 	registerInstrumentor(
 		new Instrumentor(
 			options.includes,
@@ -91,17 +94,28 @@ export async function initFuzzing(options: Options) {
 				: new MemorySyncIdStrategy(),
 		),
 	);
-	// Loads custom hook files and adds them to the hook manager.
-	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
-	// Load built-in bug detectors. Some of them might register hooks with the hook manager.
-	// Each bug detector is written in its own file, and theoretically could be loaded in the same way as custom hooks
-	// above. However, the path the bug detectors must be the compiled path. For this reason we decided to load them
-	// using this function, which loads each bug detector relative to the bug-detectors directory. E.g., in Jazzer
-	// (without the .js) there is no distinction between custom hooks and bug detectors.
-	await loadBugDetectors(
-		options.disableBugDetectors.map((pattern: string) => new RegExp(pattern)),
+	// Dynamic import works only with javascript files, so we have to manually specify the directory with the
+	// transpiled bug detector files.
+	const possibleBugDetectorFiles = getFilteredBugDetectorPaths(
+		path.join(__dirname, "../../bug-detectors/dist/internal"),
+		options.disableBugDetectors,
 	);
+
+	if (process.env.JAZZER_DEBUG) {
+		console.log(
+			"INFO: [BugDetector] Loading bug detectors: \n   " +
+				possibleBugDetectorFiles.join("\n   "),
+		);
+	}
+
+	// Load bug detectors before loading custom hooks because some bug detectors can be configured in the
+	// custom hooks file.
+	await Promise.all(
+		possibleBugDetectorFiles.map(ensureFilepath).map(importModule),
+	);
+
+	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
 	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
 	await hookBuiltInFunctions(hooking.hookManager);
@@ -125,9 +139,10 @@ async function hookBuiltInFunctions(hookManager: hooking.HookManager) {
 	}
 }
 
-export function registerGlobals() {
+export function registerGlobals(options: Options) {
 	globalThis.Fuzzer = fuzzer.fuzzer;
 	globalThis.HookManager = hooking.hookManager;
+	globalThis.options = options;
 }
 
 export async function startFuzzing(options: Options) {
@@ -185,7 +200,13 @@ export async function startFuzzingNoInit(
 
 	const fuzzerOptions = buildFuzzerOptions(options);
 	logInfoAboutFuzzerOptions(fuzzerOptions);
-
+	// in verbose mode print the configuration
+	if (process.env.JAZZER_DEBUG) {
+		console.debug("DEBUG: [core] Jazzer.js initial arguments: ");
+		console.debug(options);
+		console.debug("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");
+		console.debug(fuzzerOptions);
+	}
 	if (options.sync) {
 		return Promise.resolve().then(() =>
 			Fuzzer.startFuzzing(
@@ -395,7 +416,7 @@ function buildFuzzerOptions(options: Options): string[] {
 	}
 
 	let opts = options.fuzzerOptions;
-	if (options.dryRun) {
+	if (options.mode === "regression") {
 		// the last provided option takes precedence
 		opts = opts.concat("-runs=0");
 	}
@@ -409,6 +430,61 @@ function buildFuzzerOptions(options: Options): string[] {
 	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
 	// with the Node.js signal handling.
 	opts = opts.concat("-handle_int=0", "-handle_term=0");
+
+	// Dictionary handling. This diverges from the libfuzzer behavior, which allows only one dictionary (the last one).
+	// We merge all dictionaries into one and pass that to libfuzzer.
+	let shouldUseDictionaries = false;
+	const mergedDictionary = `.JazzerJs-merged-dictionaries`;
+	let dictionary = "";
+
+	// Extract dictionaries from bug detectors.
+	for (const dict of hooking.hookManager.getDictionaries()) {
+		// Make an empty dictionary file.
+		if (!shouldUseDictionaries) {
+			shouldUseDictionaries = true;
+		}
+		// Append the contents of dict to the .jazzer-merged-dictionaries file.
+		dictionary = dictionary.concat(dict);
+	}
+
+	// Merge all dictionaries into one: .jazzer-all-dictionaries.
+	for (const option of options.fuzzerOptions) {
+		if (option.startsWith("-dict=")) {
+			const dict = option.substring(6);
+			// if the dictionary is the same as the merged dictionary, skip it.
+			if (dict === mergedDictionary) {
+				continue;
+			}
+			// Make an empty dictionary file.
+			if (!shouldUseDictionaries) {
+				shouldUseDictionaries = true;
+			}
+
+			// Preserve the file name in a comment before merging dictionary contents.
+			dictionary = dictionary.concat(`\n# ${dict}:\n`);
+			dictionary = dictionary.concat(fs.readFileSync(dict).toString());
+			// Drop the dictionary from the list of options.
+			opts = opts.filter((o) => o !== option);
+		}
+	}
+
+	if (shouldUseDictionaries) {
+		// Add a comment to the top of the dictionary file.
+		dictionary =
+			"# This file was automatically generated. Do not edit.\n" + dictionary;
+		// Check if the merged dictionary already exists and has the same contents.
+		if (fs.existsSync(mergedDictionary)) {
+			const existingDictionary = fs.readFileSync(mergedDictionary).toString();
+			// Overwrite only if the dictionary contents differ.
+			if (existingDictionary !== dictionary) {
+				fs.writeFileSync(mergedDictionary, dictionary);
+			}
+		} else {
+			// Otherwise, create the file.
+			fs.writeFileSync(mergedDictionary, dictionary);
+		}
+		opts = opts.concat(`-dict=${mergedDictionary}`);
+	}
 
 	return [prepareLibFuzzerArg0(opts), ...opts];
 }
@@ -441,6 +517,7 @@ export function wrapFuzzFunctionForBugDetection(
 			let fuzzTargetError: unknown;
 			let result: void | Promise<void> = undefined;
 			try {
+				hooking.hookManager.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
 				// Explicitly set promise handlers to process findings, but still return
 				// the fuzz target result directly, so that sync execution is still
@@ -448,6 +525,7 @@ export function wrapFuzzFunctionForBugDetection(
 				if (result instanceof Promise) {
 					result = result.then(
 						(result) => {
+							hooking.hookManager.runAfterEachCallbacks();
 							return throwIfError() ?? result;
 						},
 						(reason) => {
@@ -458,6 +536,10 @@ export function wrapFuzzFunctionForBugDetection(
 			} catch (e) {
 				fuzzTargetError = e;
 			}
+			// Promises are handled above, so we only need to handle sync results here.
+			if (!(result instanceof Promise)) {
+				hooking.hookManager.runAfterEachCallbacks();
+			}
 			return throwIfError(fuzzTargetError) ?? result;
 		};
 	} else {
@@ -465,18 +547,23 @@ export function wrapFuzzFunctionForBugDetection(
 			data: Buffer,
 			done: (err?: Error) => void,
 		): void | Promise<void> => {
+			let result: void | Promise<void> = undefined;
 			try {
+				hooking.hookManager.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
-				return originalFuzzFn(data, (err?: Error) => {
+				result = originalFuzzFn(data, (err?: Error) => {
 					const finding = getFirstFinding();
 					if (finding !== undefined) {
 						clearFirstFinding();
 					}
+					hooking.hookManager.runAfterEachCallbacks();
 					done(finding ?? err);
 				});
 			} catch (e) {
+				hooking.hookManager.runAfterEachCallbacks();
 				throwIfError(e);
 			}
+			return result;
 		};
 	}
 }

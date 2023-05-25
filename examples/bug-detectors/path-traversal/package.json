@@ -1,5 +1,5 @@
 {
-	"name": "custom-hooks-bd",
+	"name": "path-traversal-example",
 	"version": "1.0.0",
 	"main": "fuzz.js",
 	"license": "ISC",
@@ -7,10 +7,10 @@
 		"jszip": "3.7.1"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i fuzz.js -i jszip corpus -- -runs=10000000 -print_final_stats=1 -use_value_profile=1 -max_len=600 -seed=123456789",
+		"fuzz": "jazzer fuzz -i fuzz.js -i jszip -x Error corpus -- -runs=10000000 -print_final_stats=1 -use_value_profile=1 -max_len=600 -seed=123456789",
 		"dryRun": "jazzer fuzz --sync -x Error -- -runs=100000 -seed=123456789"
 	},
 	"devDependencies": {
-		"@jazzer.js/core": "file:../../packages/core"
+		"@jazzer.js/core": "file:../../../packages/core"
 	}
 }

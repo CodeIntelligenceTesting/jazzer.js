@@ -196,15 +196,95 @@ Bug detectors are one of the key features when fuzzing memory-safe languages. In
 Jazzer.js, they can detect some of the most common vulnerabilities in JavaScript
 code. Built-in bug detectors are enabled by default, but can be disabled by
 adding the `--disable_bug_detectors=<pattern>` flag to the project
-configuration. For example, to disable all built-in bug detectors, add
+configuration. To disable all built-in bug detectors, add
 `--disable_bug_detectors='.*'` to the project configuration.
 
-Following built-in bug detectors are available in Jazzer.js:
+### Command Injection
 
-| Bug Detector        | Description                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| `command-injection` | Hooks all functions of the built-in module `child_process`.          |
-| `path-traversal`    | Hooks all relevant functions of the built-in modules `fs` and `path` |
+Hooks all functions of the built-in module `child_process` and reports a finding
+if the fuzzer was able to pass a command to any of the functions.
+
+_Disable with:_ `--disable_bug_detectors=command-injection`, or when using Jest:
+
+```json
+{ "disableBugDetectors": ["command-injection"] }
+```
+
+### Path Traversal
+
+Hooks all relevant functions of the built-in modules `fs` and `path` and reports
+a finding if the fuzzer could pass a special path to any of the functions.
+
+_Disable with:_ `--disable_bug_detectors=path-traversal`, or when using Jest:
+
+```json
+{ "disableBugDetectors": ["path-traversal"] }
+```
+
+### Prototype Pollution
+
+Detects Prototype Pollution. Prototype Pollution is a vulnerability that allows
+attackers to modify the prototype of a JavaScript object, which can lead to
+validation bypass, denial of service and arbitrary code execution.
+
+The Prototype Pollution bug detector can be configured in the
+[custom hooks](#custom-hooks) file.
+
+- `instrumentAssignmentsAndVariableDeclarations` - if called, the bug detector
+  will instrument assignment expressions and variable declarations and report a
+  finding if `__proto__` of the declared or assigned variable contains any
+  properties or methods. When called in dry run mode, this option will trigger
+  an error.
+- `addExcludedExactMatch` - if the stringified `__proto__` equals the given
+  string, the bug detector will not report a finding. This is useful to exclude
+  false positives.
+
+Here is an example configuration in the [custom hooks](#custom-hooks) file:
+
+```javascript
+const { getBugDetectorConfiguration } = require("@jazzer.js/bug-detectors");
+
+getBugDetectorConfiguration("prototype-pollution")
+	?.instrumentAssignmentsAndVariableDeclarations()
+	?.addExcludedExactMatch('{"methods":{}}');
+```
+
+Adding instrumentation to variable declarations and assignment expressions
+drastically reduces the fuzzer's performance because the fuzzer will check for
+non-empty `__proto__` on every variable declaration and assignment expression.
+In addition, this might cause false positives because some libraries (e.g.
+`lodash`) use `__proto__` to store methods. Therefore, in the default
+configuration these options are disabled.
+
+_Shortcoming:_ The instrumentation of variable declarations and assignment
+expressions will not detect if the prototype of the object in question has new,
+deleted, or modified functions. But it will detect if a function of a prototype
+of an object has become a non-function. The following example illustrates this
+issue:
+
+```javascript
+class A {}
+class B extends A {}
+const b = new B();
+b.__proto__.polluted = true; // will be detected
+b.__proto__.test = [1, 2, 3]; // will be detected
+b.__proto__.toString = 10; // will be detected
+b.__proto__.toString = () => "polluted"; // will not be detected
+delete b.__proto__.toString; // will not be detected
+b.__proto__.hello = () => "world"; // will not be detected
+```
+
+However, our assumption is that if the fuzzer is able to modify the methods in a
+prototype, it will be able also find a way to modify other properties of the
+prototype that are not functions. If you find a use case where this assumption
+does not hold, feel free to open an issue.
+
+_Disable with:_ `--disable_bug_detectors=prototype-pollution`, or when using
+Jest:
+
+```json
+{ "disableBugDetectors": ["prototype-pollution"] }
+```
 
 For implementation details see
 [../packages/bug-detectors/internal](../packages/bug-detectors/internal).

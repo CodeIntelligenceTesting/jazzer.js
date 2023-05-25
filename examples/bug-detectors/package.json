@@ -1,0 +1,13 @@
+{
+	"name": "examples-bug-detectors",
+	"version": "1.0.0",
+	"scripts": {
+		"dryRun": "npm run test",
+		"test": "run-script-os",
+		"test:linux:darwin": "sh ../../scripts/run_all.sh fuzz",
+		"test:win32": "..\\..\\scripts\\run_all.bat fuzz"
+	},
+	"devDependencies": {
+		"run-script-os": "^1.1.6"
+	}
+}

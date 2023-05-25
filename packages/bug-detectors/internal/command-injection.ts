@@ -15,7 +15,7 @@
  */
 
 import { reportFinding } from "../findings";
-import { guideTowardsContainment } from "@jazzer.js/fuzzer";
+import { fuzzer } from "@jazzer.js/fuzzer";
 import { registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -51,7 +51,7 @@ for (const functionName of functionNames) {
 				`Command Injection in ${functionName}(): called with '${firstArgument}'`,
 			);
 		}
-		guideTowardsContainment(firstArgument, goal, hookId);
+		fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
 	};
 
 	registerBeforeHook(functionName, moduleName, false, beforeHook);
