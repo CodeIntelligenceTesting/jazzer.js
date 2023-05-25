@@ -28,5 +28,12 @@ describe("Config", () => {
 			expect(config.includes).toContain("target");
 			expect(config.excludes).toContain("nothing");
 		});
+
+		it("configs are deep copied", () => {
+			const config1 = loadConfig();
+			config1.fuzzerOptions.push("-runs=100");
+			const config2 = loadConfig("merge-test-jazzerjs");
+			expect(config1.fuzzerOptions).not.toEqual(config2.fuzzerOptions);
+		});
 	});
 });

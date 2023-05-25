@@ -38,9 +38,10 @@ export const defaultOptions: Options = {
 // within different configuration files.
 export function loadConfig(optionsKey = "jazzerjs"): Options {
 	const result = cosmiconfigSync(optionsKey).search();
+	const defaultOptionsCopy = JSON.parse(JSON.stringify(defaultOptions));
 	let config;
 	if (result === null) {
-		config = { ...defaultOptions };
+		config = defaultOptionsCopy;
 	} else {
 		config = Object.keys(defaultOptions).reduce(
 			(config: Options, key: string) => {
@@ -49,7 +50,7 @@ export function loadConfig(optionsKey = "jazzerjs"): Options {
 				}
 				return config;
 			},
-			defaultOptions
+			defaultOptionsCopy
 		);
 	}
 
