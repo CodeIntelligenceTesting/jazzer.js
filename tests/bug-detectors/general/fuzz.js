@@ -25,12 +25,12 @@ const fs = require("fs");
 const assert = require("assert");
 const { platform } = require("os");
 
-// if on windows use copy NUL instead of touch
 const { makeFnCalledOnce } = require("../helpers");
 
 const evilCommand = "jaz_zer";
 const friendlyFile = "FRIENDLY";
 
+// On Windows use copy NUL instead of touch
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 

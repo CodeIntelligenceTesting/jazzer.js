@@ -20,7 +20,7 @@
 import { instrumentAndEvalWith } from "./testhelpers";
 import { functionHooks } from "./functionHooks";
 import * as hooking from "@jazzer.js/hooking";
-import { Hook, trackedHooks } from "@jazzer.js/hooking";
+import { Hook, TrackedHook, hookTracker } from "@jazzer.js/hooking";
 
 const expectInstrumentationEval = instrumentAndEvalWith(
 	functionHooks("pkg/lib/a")
@@ -32,7 +32,7 @@ describe("function hooks instrumentation", () => {
 	describe("Before hooks", () => {
 		it("one Before hook called before function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Before,
@@ -66,13 +66,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one Before hook not called when not applicable", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"baz",
 				hooking.HookType.Before,
@@ -106,14 +106,14 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.size).toEqual(1);
 			const [calls, hooks] = hookCallMap.get(0) as [number, Hook];
 			expect(calls).toEqual(0);
-			expectTrackedHooks(trackedHooks.applied, []);
-			trackedHooks.categorizeUnknown([hooks]);
-			expectTrackedHooks(trackedHooks.notApplied, ["baz"]);
-			expectTrackedHooks(trackedHooks.available, ["foo", "bar"]);
+			expectTrackedHooks(hookTracker.applied, []);
+			hookTracker.categorizeUnknown([hooks]);
+			expectTrackedHooks(hookTracker.notApplied, ["baz"]);
+			expectTrackedHooks(hookTracker.available, ["foo", "bar"]);
 		});
 		it("two Before hooks called before function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Before,
@@ -149,13 +149,13 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.size).toEqual(2);
 			expectHook(0, hookCallMap);
 			expectHook(1, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one Before hook called before a function expression", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Before,
@@ -189,13 +189,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one Before hook called before a class method", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerMethodHook(
 				"A.foo",
 				hooking.HookType.Before,
@@ -253,8 +253,8 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.size).toEqual(1);
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["A.foo"]);
-			expectTrackedHooks(trackedHooks.available, [
+			expectTrackedHooks(hookTracker.applied, ["A.foo"]);
+			expectTrackedHooks(hookTracker.available, [
 				"A.constructor",
 				"A.bar",
 				"foo",
@@ -263,7 +263,7 @@ describe("function hooks instrumentation", () => {
 		});
 		it("one Before hook called before an method in a class expression", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerMethodHook(
 				"A.foo",
 				hooking.HookType.Before,
@@ -320,8 +320,8 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "A.foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["A.foo"]);
-			expectTrackedHooks(trackedHooks.available, [
+			expectTrackedHooks(hookTracker.applied, ["A.foo"]);
+			expectTrackedHooks(hookTracker.available, [
 				"A.constructor",
 				"A.bar",
 				"foo",
@@ -330,7 +330,7 @@ describe("function hooks instrumentation", () => {
 		});
 		it("one Before hook called before an object method with assignment", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerMethodHook(
 				"A.foo",
 				hooking.HookType.Before,
@@ -372,13 +372,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "A.foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["A.foo"]);
-			expectTrackedHooks(trackedHooks.available, ["A.bar"]);
+			expectTrackedHooks(hookTracker.applied, ["A.foo"]);
+			expectTrackedHooks(hookTracker.available, ["A.bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one Before hook called before an object method as property", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerMethodHook(
 				"obj.foo",
 				hooking.HookType.Before,
@@ -419,13 +419,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "obj.foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["obj.foo"]);
-			expectTrackedHooks(trackedHooks.available, ["obj.bar"]);
+			expectTrackedHooks(hookTracker.applied, ["obj.foo"]);
+			expectTrackedHooks(hookTracker.available, ["obj.bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one Before hook called before a nested function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo.bar",
 				hooking.HookType.Before,
@@ -466,15 +466,15 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Before", "foo.bar");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo.bar"]);
-			expectTrackedHooks(trackedHooks.available, ["foo", "bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo.bar"]);
+			expectTrackedHooks(hookTracker.available, ["foo", "bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 	});
 	describe("After hooks", () => {
 		it("one hook called after a sync function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
@@ -513,13 +513,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "After", "foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("two hooks called after a sync function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
@@ -560,15 +560,15 @@ describe("function hooks instrumentation", () => {
 			expect(hookCallMap.size).toEqual(2);
 			expectHook(0, hookCallMap);
 			expectHook(1, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 
 		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("one hook called after an async function", (): any => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerAsyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
@@ -613,8 +613,8 @@ describe("function hooks instrumentation", () => {
 						expect(result).toEqual(3);
 						expect(hookCallMap.size).toEqual(1);
 						expectHook(0, hookCallMap);
-						expectTrackedHooks(trackedHooks.applied, ["foo"]);
-						expectTrackedHooks(trackedHooks.available, ["bar"]);
+						expectTrackedHooks(hookTracker.applied, ["foo"]);
+						expectTrackedHooks(hookTracker.available, ["bar"]);
 						expectTrackedHooksUnknown(hookCallMap, 0);
 					}
 				);
@@ -625,7 +625,7 @@ describe("function hooks instrumentation", () => {
 		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("two hooks called after an async function", (): any => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerAsyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
@@ -674,8 +674,8 @@ describe("function hooks instrumentation", () => {
 						expect(hookCallMap.size).toEqual(2);
 						expectHook(0, hookCallMap);
 						expectHook(1, hookCallMap);
-						expectTrackedHooks(trackedHooks.applied, ["foo"]);
-						expectTrackedHooks(trackedHooks.available, ["bar"]);
+						expectTrackedHooks(hookTracker.applied, ["foo"]);
+						expectTrackedHooks(hookTracker.available, ["bar"]);
 						expectTrackedHooksUnknown(hookCallMap, 0);
 					}
 				);
@@ -686,7 +686,7 @@ describe("function hooks instrumentation", () => {
 	describe("Replace hooks", () => {
 		it("one hook called instead of the original function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Replace,
@@ -723,13 +723,13 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Replace", "foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 		it("one hook for a nested function is called instead of the original function", () => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const hookCallMap = registerSyncFunctionHook(
 				"a.foo",
 				hooking.HookType.Replace,
@@ -773,15 +773,15 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "Replace", "a.foo");
 			expect(hookCallMap.size).toEqual(1);
 			expectHook(0, hookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["a.foo"]);
-			expectTrackedHooks(trackedHooks.available, ["a", "bar"]);
+			expectTrackedHooks(hookTracker.applied, ["a.foo"]);
+			expectTrackedHooks(hookTracker.available, ["a", "bar"]);
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 	});
 	describe("Before and After hooks", () => {
 		it("one Before and ond After hook for a sync function", function () {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const beforeHookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Before,
@@ -830,15 +830,15 @@ describe("function hooks instrumentation", () => {
 			expectHook(0, beforeHookCallMap);
 			expect(afterHookCallMap.size).toEqual(1);
 			expectHook(0, afterHookCallMap);
-			expectTrackedHooks(trackedHooks.applied, ["foo"]);
-			expectTrackedHooks(trackedHooks.available, ["bar"]);
+			expectTrackedHooks(hookTracker.applied, ["foo"]);
+			expectTrackedHooks(hookTracker.available, ["bar"]);
 			expectTrackedHooksUnknown(beforeHookCallMap, 0);
 			expectTrackedHooksUnknown(afterHookCallMap, 0);
 		});
 		//eslint-disable-next-line @typescript-eslint/no-explicit-any
 		it("one Before and ond After hook for an async function", (): any => {
 			hooking.hookManager.clearHooks();
-			trackedHooks.clear();
+			hookTracker.clear();
 			const beforeHookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.Before,
@@ -893,8 +893,8 @@ describe("function hooks instrumentation", () => {
 						expectHook(0, beforeHookCallMap);
 						expect(afterHookCallMap.size).toEqual(1);
 						expectHook(0, afterHookCallMap);
-						expectTrackedHooks(trackedHooks.applied, ["foo"]);
-						expectTrackedHooks(trackedHooks.available, ["bar"]);
+						expectTrackedHooks(hookTracker.applied, ["foo"]);
+						expectTrackedHooks(hookTracker.available, ["bar"]);
 						expectTrackedHooksUnknown(beforeHookCallMap, 0);
 						expectTrackedHooksUnknown(afterHookCallMap, 0);
 					}
@@ -1012,9 +1012,15 @@ function expectLogHooks(
 	}
 }
 
-function expectTrackedHooks(tracker: Set<string>, entries: string[]) {
-	expect(entries.every((e) => tracker.has(e))).toBeTruthy();
-	expect(tracker.size).toEqual(entries.length);
+// Only given functionNames (and none else) should be present in trackedHooks.
+function expectTrackedHooks(
+	trackedHooks: TrackedHook[],
+	functionNames: string[]
+) {
+	expect(
+		trackedHooks.every((h) => functionNames.includes(h.target))
+	).toBeTruthy();
+	expect(trackedHooks.length).toEqual(functionNames.length);
 }
 
 function expectTrackedHooksUnknown(
@@ -1022,8 +1028,8 @@ function expectTrackedHooksUnknown(
 	id: number
 ) {
 	const [_calls, hooks] = hookMap.get(id) as [number, Hook];
-	trackedHooks.categorizeUnknown([hooks]);
-	expectTrackedHooks(trackedHooks.notApplied, []);
+	hookTracker.categorizeUnknown([hooks]);
+	expectTrackedHooks(hookTracker.notApplied, []);
 }
 
 function expectHook(idx: number, hookCallMap: Map<number, [number, Hook]>) {

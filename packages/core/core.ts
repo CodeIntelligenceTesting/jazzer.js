@@ -63,7 +63,7 @@ export interface Options {
 	coverage: boolean; // Enables source code coverage report generation.
 	coverageDirectory: string;
 	coverageReporters: reports.ReportType[];
-	disableBugDetectors: RegExp[];
+	disableBugDetectors: string[];
 }
 
 interface FuzzModule {
@@ -100,7 +100,9 @@ export async function initFuzzing(options: Options) {
 	// above. However, the path the bug detectors must be the compiled path. For this reason we decided to load them
 	// using this function, which loads each bug detector relative to the bug-detectors directory. E.g., in Jazzer
 	// (without the .js) there is no distinction between custom hooks and bug detectors.
-	await loadBugDetectors(options.disableBugDetectors);
+	await loadBugDetectors(
+		options.disableBugDetectors.map((pattern: string) => new RegExp(pattern))
+	);
 
 	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
 	await hookBuiltInFunctions(hooking.hookManager);
@@ -239,7 +241,7 @@ function stopFuzzing(
 ) {
 	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
 	if (process.env.JAZZER_DEBUG) {
-		hooking.trackedHooks.categorizeUnknown(HookManager.hooks).print();
+		hooking.hookTracker.categorizeUnknown(HookManager.hooks).print();
 	}
 	// Generate a coverage report in fuzzing mode (non-jest). The coverage report for our jest-runner is generated
 	// by jest internally (as long as '--coverage' is set).

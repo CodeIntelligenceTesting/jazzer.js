@@ -21,22 +21,9 @@ import {
 	hookManager,
 	Hook,
 	MatchingHooksResult,
-	HookType,
-	trackedHooks,
+	hookTracker,
+	logHooks,
 } from "@jazzer.js/hooking";
-
-function logHooks(matchedHooks: MatchingHooksResult) {
-	matchedHooks.hooks().forEach((hook) => {
-		if (process.env.JAZZER_DEBUG) {
-			console.log(
-				`DEBUG: Applied %s-hook in %s#%s`,
-				HookType[hook.type],
-				hook.pkg,
-				hook.target
-			);
-		}
-	});
-}
 
 export function functionHooks(filepath: string): () => PluginTarget {
 	return () => {
@@ -45,9 +32,7 @@ export function functionHooks(filepath: string): () => PluginTarget {
 				Function(path: NodePath<babel.Function>) {
 					if (path.node.params.every((param) => babel.isIdentifier(param))) {
 						const target = targetPath(path);
-						const matchedHooks = hookManager.matchingHooks(target, filepath);
-						if (applyHooks(target, path.node, matchedHooks)) {
-							logHooks(matchedHooks);
+						if (applyHooks(filepath, target, path.node)) {
 							path.skip();
 						}
 					}
@@ -60,20 +45,23 @@ export function functionHooks(filepath: string): () => PluginTarget {
 type FunctionWithBlockBody = babel.Function & { body: babel.BlockStatement };
 
 function applyHooks(
+	filepath: string,
 	functionName: string,
-	functionNode: babel.Function,
-	matchesResult: MatchingHooksResult
+	functionNode: babel.Function
 ): boolean {
+	const matchedHooks = hookManager.matchingHooks(functionName, filepath);
+
 	// We currently only handle hooking functions with identifiers as parameters.
 	if (!functionNode.params.every((p) => babel.isIdentifier(p))) {
 		return false;
 	}
-
-	if (!matchesResult.hasHooks()) {
-		trackedHooks.available.add(functionName);
+	if (!matchedHooks.hasHooks()) {
+		hookTracker.addAvailable(filepath, functionName);
 		return false;
-	} else {
-		trackedHooks.applied.add(functionName);
+	}
+
+	for (const hook of matchedHooks.hooks()) {
+		hookTracker.addApplied(hook.pkg, hook.target);
 	}
 
 	// For arrow functions, the body can a single expression representing the value to be returned.
@@ -88,32 +76,35 @@ function applyHooks(
 	// Bind the original function to <fn name>_original
 	// replace all points by underscores in the function name
 	const origFuncName = functionName.replace(/\./g, "_") + "_original";
-	if (matchesResult.hasReplaceHooks() || matchesResult.hasAfterHooks()) {
+	if (matchedHooks.hasReplaceHooks() || matchedHooks.hasAfterHooks()) {
 		defineInternalFunctionWithOriginalImplementation(
 			functionNode as FunctionWithBlockBody,
 			origFuncName
 		);
 	}
 
-	if (matchesResult.hasReplaceHooks()) {
+	if (matchedHooks.hasReplaceHooks()) {
 		addReplaceHooks(
 			functionNode as FunctionWithBlockBody,
-			matchesResult,
+			matchedHooks,
 			origFuncName
 		);
 	}
 
-	if (matchesResult.hasAfterHooks()) {
+	if (matchedHooks.hasAfterHooks()) {
 		addAfterHooks(
 			functionNode as FunctionWithBlockBody,
-			matchesResult,
+			matchedHooks,
 			origFuncName
 		);
 	}
 
-	if (matchesResult.hasBeforeHooks()) {
-		addBeforeHooks(functionNode as FunctionWithBlockBody, matchesResult);
+	if (matchedHooks.hasBeforeHooks()) {
+		addBeforeHooks(functionNode as FunctionWithBlockBody, matchedHooks);
 	}
+
+	logHooks(matchedHooks.hooks());
+
 	return true;
 }
 

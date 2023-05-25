@@ -16,8 +16,7 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
 	"dependencies": {
-		"@jazzer.js/fuzzer": "*",
-		"@jazzer.js/instrumentor": "*"
+		"@jazzer.js/fuzzer": "*"
 	},
 	"devDependencies": {},
 	"engines": {
