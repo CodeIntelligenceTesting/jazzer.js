@@ -29,17 +29,20 @@ const { FuzzedDataProvider } = require("@jazzer.js/core");
 module.exports.fuzz = function (data) {
 	// Parse the buffer into a JSZip object. The buffer might have been obtained from an http-request.
 	// See https://stuk.github.io/jszip/documentation/howto/read_zip.html for some examples.
-	JSZip.loadAsync(data)
-		.then(function (zip) {
-			for (const file in zip.files) {
-				// We might want to extract the file from the zip archive and write it to disk.
-				// The loadAsync function should have sanitized the path already.
-				// Here we only construct the absolute path and trigger the path traversal bug.
-				// This issue was fixed in jszip 3.8.0.
-				path.join(__dirname, file);
-			}
-		})
-		.catch(function (err) {
-			// ignore broken zip files
-		});
+	return (
+		JSZip.loadAsync(data)
+			.then((zip) => {
+				for (const file in zip.files) {
+					// We might want to extract the file from the zip archive and write it to disk.
+					// The loadAsync function should have sanitized the path already.
+					// Here we only construct the absolute path and trigger the path traversal bug.
+					// This issue was fixed in jszip 3.8.0.
+					path.join(__dirname, file);
+				}
+			})
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			.catch(() => {
+				/* ignore broken zip files */
+			})
+	);
 };

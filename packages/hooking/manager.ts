@@ -21,6 +21,8 @@ import {
 	HookFn,
 	HookType,
 	ReplaceHookFn,
+	logHooks,
+	hookTracker,
 } from "./hook";
 
 export class MatchingHooksResult {
@@ -247,5 +249,9 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 			const result: unknown = originalFn(...args);
 			return (hook.hookFunction as AfterHookFn)(null, args, id, result);
 		};
+	} else {
+		throw new Error(`Unknown hook type ${hook.type}`);
 	}
+	logHooks([hook]);
+	hookTracker.addApplied(hook.pkg, hook.target);
 }

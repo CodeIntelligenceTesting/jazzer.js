@@ -19,7 +19,7 @@ import { guideTowardsContainment } from "@jazzer.js/fuzzer";
 import { registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
- * Importing this file adds "before-hooks" for all functions in the built-in `child_process` module and guides
+ * Importing this file adds "before-hooks" for all functions in the built-in `fs`, `fs/promises`, and `path` module and guides
  * the fuzzer towards the uniquely chosen `goal` string `"../../jaz_zer"`. If the goal is found in the first argument
  * of any hooked function, a `Finding` is reported.
  */
@@ -36,16 +36,10 @@ const modulesToHook = [
 			"chown",
 			"chownSync",
 			"chmodSync",
-			"copyFile",
-			"copyFileSync",
-			"cp",
-			"cpSync",
 			"createReadStream",
 			"createWriteStream",
 			"exists",
 			"existsSync",
-			"link",
-			"linkSync",
 			"lchmod",
 			"lchmodSync",
 			"lchown",
@@ -69,8 +63,6 @@ const modulesToHook = [
 			"readdirSync",
 			"realpath",
 			"realpathSync",
-			"rename",
-			"renameSync",
 			"rm",
 			"rmSync",
 			"rmdir",
@@ -79,8 +71,6 @@ const modulesToHook = [
 			"statfs",
 			"statfsSync",
 			"statSync",
-			"symlink",
-			"symlinkSync",
 			"truncate",
 			"truncateSync",
 			"unlink",
@@ -101,11 +91,8 @@ const modulesToHook = [
 			"appendFile",
 			"chmod",
 			"chown",
-			"copyFile",
-			"cp",
 			"lchmod",
 			"lchown",
-			"link",
 			"lstat",
 			"lutimes",
 			"mkdir",
@@ -115,12 +102,10 @@ const modulesToHook = [
 			"readlink",
 			"readdir",
 			"realpath",
-			"rename",
 			"rm",
 			"rmdir",
 			"stat",
 			"statfs",
-			"symlink",
 			"truncate",
 			"unlink",
 			"utimes",
