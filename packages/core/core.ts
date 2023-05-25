@@ -155,11 +155,20 @@ export async function startFuzzing(options: Options) {
 	);
 }
 
+function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
+	fuzzerOptions.slice(1).forEach((element) => {
+		if (element.length > 0 && element[0] != "-") {
+			console.log("INFO: seed corpus: input file:", element);
+		}
+	});
+}
+
 export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	options: Options
 ) {
 	const fuzzerOptions = buildFuzzerOptions(options);
+	logInfoAboutFuzzerOptions(fuzzerOptions);
 	const fuzzerFn = options.sync
 		? Fuzzer.startFuzzing
 		: Fuzzer.startFuzzingAsync;
