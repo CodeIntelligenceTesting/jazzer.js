@@ -14,232 +14,157 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+/* eslint no-undef: 0, @typescript-eslint/no-var-requires: 0 */
 const fs = require("fs");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { spawnSync } = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
+const { spawnSync } = require("child_process");
 
 // current working directory
 const testDirectory = path.join(process.cwd(), "sample_fuzz_test");
 const defaultCoverageDirectory = path.join(testDirectory, "coverage");
 const expectedCoverageDirectory = path.join(testDirectory, "expected_coverage");
-const libFile = path.join(testDirectory, "lib.js");
-const targetFile = path.join(testDirectory, "fuzz.js");
-const jestRunnerFile = path.join(testDirectory, "codeCoverage.fuzz.js");
-const hookFile = path.join(testDirectory, "custom-hooks.js");
 
-describe("Source code coverage reports for regular fuzz targets", () => {
-	it("Expect no coverage reports", () => {
-		executeFuzzTest(false, false, false, false, false);
-		expect(fs.existsSync(defaultCoverageDirectory)).toBe(false);
-	});
-	it("Want coverage, but no includes active. Expect no coverage reports", () => {
-		executeFuzzTest(false, false, false, false, true);
-		expect(fs.existsSync(defaultCoverageDirectory)).toBe(false);
-	});
-	it("Want coverage in dry run mode, no custom hooks", () => {
-		executeFuzzTest(true, true, true, false, true);
-		expect(fs.existsSync(defaultCoverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(defaultCoverageDirectory);
-		const expectedCoverage = readExpectedCoverage("fuzz+lib.json");
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// custom-hooks.js
-		expect(coverageJson[hookFile]).toBeFalsy();
+const libFile = "lib.js";
+const targetFile = "fuzz.js";
+const testFile = "codeCoverage.fuzz.js";
+const otherTestFile = "otherCodeCoverage.fuzz.ts";
+const hookFile = "custom-hooks.js";
+
+describe("Source code coverage reports", () => {
+	describe("for regular fuzz targets", () => {
+		it("expect no coverage reports", () => {
+			executeFuzzTest(false, false, false, false, false);
+			expect(defaultCoverageDirectory).not.toBeCreated();
+		});
+
+		it("want coverage, but no includes active. Expect no coverage reports", () => {
+			executeFuzzTest(false, false, false, false, true);
+			expect(defaultCoverageDirectory).not.toBeCreated();
+		});
+
+		it("want coverage in dry run mode, no custom hooks", () => {
+			executeFuzzTest(true, true, true, false, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage("fuzz+lib.json");
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveMissingCoverageIn(coverageJson);
+		});
+
+		it("want coverage in dry run mode, with custom hooks", () => {
+			executeFuzzTest(true, true, true, true, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+customHooks.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+		});
+
+		it("want coverage, instrumentation enabled, with custom hooks", () => {
+			executeFuzzTest(false, true, true, true, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+customHooks.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+		});
+
+		it("want coverage in a non-default directory, instrumentation enabled, with custom hooks", () => {
+			const coverageDirectory = "coverage002";
+			const coverageAbsoluteDirectory = path.join(
+				testDirectory,
+				coverageDirectory
+			);
+			executeFuzzTest(false, true, true, true, true, coverageDirectory);
+			expect(fs.existsSync(coverageAbsoluteDirectory)).toBe(true);
+			const coverageJson = readCoverageJson(coverageAbsoluteDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+customHooks.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+		});
 	});
 
-	it("Want coverage in dry run mode, with custom hooks", () => {
-		executeFuzzTest(true, true, true, true, true);
-		expect(fs.existsSync(defaultCoverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(defaultCoverageDirectory);
-		const expectedCoverage = readExpectedCoverage("fuzz+lib+customHooks.json");
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// custom-hooks.js
-		// work in dry run mode
-		expect(coverageJson[hookFile]).toBeTruthy();
-		expectEqualCoverage(
-			coverageJson[hookFile],
-			expectedCoverage["custom-hooks.js"]
-		);
-	});
+	describe("for our custom Jest runner", () => {
+		it("Expect no coverage reports", () => {
+			executeJestRunner("**.fuzz.js", false, false, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			// Jest generates an empty coverage report (unlike our non-jest fuzzer)
+			expect(coverageJson).toStrictEqual({});
+		});
 
-	it("Want coverage, instrumentation enabled, with custom hooks", () => {
-		executeFuzzTest(false, true, true, true, true);
-		expect(fs.existsSync(defaultCoverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(defaultCoverageDirectory);
-		const expectedCoverage = readExpectedCoverage("fuzz+lib+customHooks.json");
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// custom-hooks.js
-		// work in dry run mode
-		expect(coverageJson[hookFile]).toBeTruthy();
-		expectEqualCoverage(
-			coverageJson[hookFile],
-			expectedCoverage["custom-hooks.js"]
-		);
-	});
+		it("want coverage, no custom hooks", () => {
+			executeJestRunner("**.fuzz.js", true, true, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+codeCoverage-fuzz.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(testFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveMissingCoverageIn(coverageJson);
+		});
 
-	it("Want coverage in a non-default directory, instrumentation enabled, with custom hooks", () => {
-		const coverageDirectory = "coverage002";
-		const coverageAbsoluteDirectory = path.join(
-			testDirectory,
-			coverageDirectory
-		);
-		executeFuzzTest(false, true, true, true, true, coverageDirectory);
-		expect(fs.existsSync(coverageAbsoluteDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(coverageAbsoluteDirectory);
-		const expectedCoverage = readExpectedCoverage("fuzz+lib+customHooks.json");
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// custom-hooks.js
-		// work in dry run mode
-		expect(coverageJson[hookFile]).toBeTruthy();
-		expectEqualCoverage(
-			coverageJson[hookFile],
-			expectedCoverage["custom-hooks.js"]
-		);
+		it("want coverage, with custom hooks", () => {
+			executeJestRunner("**.fuzz.js", true, true, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+codeCoverage-fuzz.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(testFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(hookFile).toHaveMissingCoverageIn(coverageJson);
+		});
+
+		it("want coverage for TypeScript fuzz test", () => {
+			executeJestRunner("**.fuzz.ts", true, true, true);
+			expect(defaultCoverageDirectory).toBeCreated();
+			const coverageJson = readCoverageJson(defaultCoverageDirectory);
+			const expectedCoverage = readExpectedCoverage(
+				"fuzz+lib+otherCodeCoverage-fuzz.json"
+			);
+			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
+			expect(otherTestFile).toHaveEqualCoverageIn(
+				coverageJson,
+				expectedCoverage
+			);
+			expect(hookFile).toHaveMissingCoverageIn(coverageJson);
+		});
 	});
 });
 
-describe("Source code coverage reports for our custom Jest runner", () => {
-	it("Jest runner: Expect no coverage reports", () => {
-		const coverageDirectory = defaultCoverageDirectory;
-		executeJestRunner(false, false, false, true);
-		expect(fs.existsSync(coverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(coverageDirectory);
-		// Jest generates an empty coverage report (unlike our non-jest fuzzer)
-		expect(coverageJson).toBeTruthy();
-		expect(coverageJson).toStrictEqual({});
-		expect(coverageJson[targetFile]).toBeFalsy();
-		expect(coverageJson[targetFile]).toBeFalsy();
-		expect(coverageJson[hookFile]).toBeFalsy();
-	});
-
-	it("Jest runner: want coverage, no custom hooks", () => {
-		const coverageDirectory = defaultCoverageDirectory;
-		executeJestRunner(true, true, false, true);
-		expect(fs.existsSync(coverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(coverageDirectory);
-		const expectedCoverage = readExpectedCoverage(
-			"fuzz+lib+codeCoverage-fuzz.json"
-		);
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// codeCoverage.fuzz.js (the main fuzz test)
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(
-			coverageJson[jestRunnerFile],
-			expectedCoverage["codeCoverage.fuzz.js"]
-		);
-		// custom-hooks.js
-		expect(coverageJson[hookFile]).toBeFalsy();
-	});
-
-	it("Jest runner: want coverage, with custom hooks", () => {
-		const coverageDirectory = defaultCoverageDirectory;
-		executeJestRunner(true, true, false, true);
-		expect(fs.existsSync(coverageDirectory)).toBe(true);
-		const coverageJson = readCoverageJson(coverageDirectory);
-		const expectedCoverage = readExpectedCoverage(
-			"fuzz+lib+codeCoverage-fuzz.json"
-		);
-		expect(coverageJson).toBeTruthy();
-		// lib.js
-		expect(coverageJson[libFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[libFile], expectedCoverage["lib.js"]);
-		// fuzz.js
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(coverageJson[targetFile], expectedCoverage["fuzz.js"]);
-		// codeCoverage.fuzz.js (the main fuzz test)
-		expect(coverageJson[targetFile]).toBeTruthy();
-		expectEqualCoverage(
-			coverageJson[jestRunnerFile],
-			expectedCoverage["codeCoverage.fuzz.js"]
-		);
-		// custom-hooks.js
-		expect(coverageJson[hookFile]).toBeFalsy();
-	});
-});
-
-/**
- * @param {string} coverageDirectory
- */
 function readCoverageJson(coverageDirectory) {
-	return JSON.parse(
+	const coverageJson = JSON.parse(
 		fs
 			.readFileSync(path.join(coverageDirectory, "coverage-final.json"))
 			.toString()
 	);
+	expect(coverageJson).toBeTruthy();
+	return coverageJson;
 }
 
-/**
- * @param {string} name
- */
 function readExpectedCoverage(name) {
 	return JSON.parse(
 		fs.readFileSync(path.join(expectedCoverageDirectory, name)).toString()
 	);
 }
 
-/**
- * @param {{ statementMap: any; s: any; fnMap: any; f: any; branchMap: any; b: any; }} coverage
- * @param {{ statementMap: any; s: any; fnMap: any; f: any; branchMap: any; b: any; }} expectedCoverage
- */
-function expectEqualCoverage(coverage, expectedCoverage) {
-	expect(coverage.statementMap).toStrictEqual(expectedCoverage.statementMap);
-	expect(coverage.s).toStrictEqual(expectedCoverage.s);
-	expect(coverage.fnMap).toStrictEqual(expectedCoverage.fnMap);
-	expect(coverage.f).toStrictEqual(expectedCoverage.f);
-	expect(coverage.branchMap).toStrictEqual(expectedCoverage.branchMap);
-	expect(coverage.b).toStrictEqual(expectedCoverage.b);
-}
-
-/**
- * @param {boolean} includeLib
- * @param {boolean} includeTarget
- * @param {boolean} useCustomHooks
- * @param {boolean} _coverage
- */
-function executeJestRunner(
-	includeLib,
-	includeTarget,
-	useCustomHooks,
-	_coverage,
-	coverageOutputDir = "coverage",
-	excludePattern = ["nothing"],
-	verbose = false
-) {
+function removeCoverageDir(coverageOutputDir) {
 	try {
-		// remove the coverage folder if it exists
 		fs.rmSync(path.join(testDirectory, coverageOutputDir), {
 			recursive: true,
 			force: true,
@@ -247,17 +172,29 @@ function executeJestRunner(
 	} catch (err) {
 		// ignore
 	}
+}
+
+function executeJestRunner(
+	testMatch,
+	includeLib = true,
+	includeTarget = true,
+	coverage = true,
+	useCustomHooks = [],
+	coverageOutputDir = "coverage",
+	excludePattern = [],
+	verbose = false
+) {
+	removeCoverageDir(coverageOutputDir);
 
 	const includes = [];
-	if (includeLib) includes.push("lib.js");
-	if (includeTarget) includes.push("fuzz.js");
+	if (includeLib) includes.push(libFile);
+	if (includeTarget) includes.push(targetFile, "fuzz.ts");
 	if (!includeLib && !includeTarget) includes.push("nothing");
 
 	const config = {
 		includes: includes,
 		excludes: excludePattern,
-		fuzzerOptions: [],
-		customHooks: useCustomHooks ? ["custom-hooks.js"] : [],
+		customHooks: useCustomHooks,
 	};
 	// write the config file, overwriting any existing one
 	fs.writeFileSync(
@@ -265,7 +202,8 @@ function executeJestRunner(
 		JSON.stringify(config)
 	);
 
-	let command = ["jest", "--coverage"];
+	const cov = coverage ? "--coverage" : "";
+	const command = ["jest", cov, `--testMatch "${testMatch}"`];
 	const process = spawnSync("npx", command, {
 		stdio: "pipe",
 		cwd: testDirectory,
@@ -274,13 +212,6 @@ function executeJestRunner(
 	if (verbose) console.log(process.output.toString());
 }
 
-/**
- * @param {boolean} dryRun
- * @param {boolean} includeLib
- * @param {boolean} includeTarget
- * @param {boolean} useCustomHooks
- * @param {boolean} coverage
- */
 function executeFuzzTest(
 	dryRun,
 	includeLib,
@@ -291,25 +222,17 @@ function executeFuzzTest(
 	excludePattern = "nothing",
 	verbose = false
 ) {
-	try {
-		// remove the coverage folder if it exists
-		fs.rmSync(path.join(testDirectory, coverageOutputDir), {
-			recursive: true,
-			force: true,
-		});
-	} catch (err) {
-		// ignore
-	}
+	removeCoverageDir(coverageOutputDir);
 	let options = ["jazzer", "fuzz", "-e", excludePattern, "--corpus", "corpus"];
 	// add dry run option
 	if (dryRun) options.push("-d");
 	if (includeLib) {
 		options.push("-i");
-		options.push("lib.js");
+		options.push(libFile);
 	}
 	if (includeTarget) {
 		options.push("-i");
-		options.push("fuzz.js");
+		options.push(targetFile);
 	}
 	if (!includeLib && !includeTarget) {
 		options.push("-i");
@@ -329,7 +252,6 @@ function executeFuzzTest(
 	}
 	options.push("--");
 	options.push("-runs=0");
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const process = spawnSync("npx", options, {
 		stdio: "pipe",
 		cwd: testDirectory,
@@ -337,3 +259,25 @@ function executeFuzzTest(
 	});
 	if (verbose) console.log(process.output.toString());
 }
+
+expect.extend({
+	toHaveEqualCoverageIn(file, actualCoverage, expectedCoverage) {
+		const actual = actualCoverage[path.join(testDirectory, file)];
+		const expected = expectedCoverage[file];
+		expect(actual).toBeDefined();
+		expect(actual.statementMap).toStrictEqual(expected.statementMap);
+		expect(actual.s).toStrictEqual(expected.s);
+		expect(actual.fnMap).toStrictEqual(expected.fnMap);
+		expect(actual.f).toStrictEqual(expected.f);
+		expect(actual.branchMap).toStrictEqual(expected.branchMap);
+		expect(actual.b).toStrictEqual(expected.b);
+		return { pass: true };
+	},
+	toHaveMissingCoverageIn(file, actualCoverage) {
+		expect(actualCoverage[path.join(testDirectory, file)]).toBeUndefined();
+		return { pass: true };
+	},
+	toBeCreated(dir) {
+		return { pass: fs.existsSync(dir) };
+	},
+});
