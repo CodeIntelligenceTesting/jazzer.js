@@ -19,9 +19,6 @@ const JSZip = require("jszip");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { FuzzedDataProvider } = require("@jazzer.js/core");
-
 /**
  * This demonstrates the path traversal bug detector on a vulnerable version of jszip.
  * @param { Buffer } data

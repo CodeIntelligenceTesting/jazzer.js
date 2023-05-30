@@ -16,7 +16,7 @@
 
 import { reportFinding } from "../findings";
 import { guideTowardsContainment } from "@jazzer.js/fuzzer";
-import { registerBeforeHook } from "@jazzer.js/hooking";
+import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
  * Importing this file adds "before-hooks" for all functions in the built-in `fs`, `fs/promises`, and `path` module and guides
@@ -170,29 +170,32 @@ const functionsWithTwoTargets = [
 
 for (const module of functionsWithTwoTargets) {
 	for (const functionName of module.functionNames) {
-		const beforeHook = (
-			thisPtr: unknown,
-			params: unknown[],
-			hookId: number
-		) => {
-			if (params === undefined || params.length < 2) {
-				return;
-			}
-			// The first two arguments are paths.
-			const firstArgument = params[0] as string;
-			const secondArgument = params[1] as string;
-			if (firstArgument.includes(goal) || secondArgument.includes(goal)) {
-				reportFinding(
-					`Path Traversal in ${functionName}(): called with '${firstArgument}'` +
-						` and '${secondArgument}'`
-				);
-			}
-			guideTowardsContainment(firstArgument, goal, hookId);
-			// We don't want to confuse the fuzzer with the same hookId (used as a program counter (PC)),
-			// so we increment it.
-			guideTowardsContainment(secondArgument, goal, hookId + 1);
+		const makeBeforeHook = (extraHookId: number) => {
+			return (thisPtr: unknown, params: unknown[], hookId: number) => {
+				if (params === undefined || params.length < 2) {
+					return;
+				}
+				// The first two arguments are paths.
+				const firstArgument = params[0] as string;
+				const secondArgument = params[1] as string;
+				if (firstArgument.includes(goal) || secondArgument.includes(goal)) {
+					reportFinding(
+						`Path Traversal in ${functionName}(): called with '${firstArgument}'` +
+							` and '${secondArgument}'`
+					);
+				}
+				guideTowardsContainment(firstArgument, goal, hookId);
+				// We don't want to confuse the fuzzer guidance with the same hookId for both function arguments.
+				// Therefore, we use an extra hookId for the second argument.
+				guideTowardsContainment(secondArgument, goal, extraHookId);
+			};
 		};
 
-		registerBeforeHook(functionName, module.moduleName, false, beforeHook);
+		registerBeforeHook(
+			functionName,
+			module.moduleName,
+			false,
+			makeBeforeHook(callSiteId(functionName, module.moduleName, "secondId"))
+		);
 	}
 }
