@@ -161,13 +161,13 @@ export class HookManager {
 		const hook = this._hooks[id];
 		switch (hook.type) {
 			case HookType.Before:
-				(hook.hookFunction as BeforeHookFn)(thisPtr, params, this.callSiteId());
+				(hook.hookFunction as BeforeHookFn)(thisPtr, params, callSiteId());
 				break;
 			case HookType.Replace:
 				return (hook.hookFunction as ReplaceHookFn)(
 					thisPtr,
 					params,
-					this.callSiteId(),
+					callSiteId(),
 					// eslint-disable-next-line @typescript-eslint/ban-types
 					resultOrOriginalFunction as Function
 				);
@@ -175,27 +175,27 @@ export class HookManager {
 				(hook.hookFunction as AfterHookFn)(
 					thisPtr,
 					params,
-					this.callSiteId(),
+					callSiteId(),
 					resultOrOriginalFunction
 				);
 		}
 	}
+}
 
-	private callSiteId(): number {
-		const stackTrace = new Error().stack;
-		if (!stackTrace || stackTrace.length === 0) {
-			return 0;
-		}
-		let hash = 0,
-			i,
-			chr;
-		for (i = 0; i < stackTrace.length; i++) {
-			chr = stackTrace.charCodeAt(i);
-			hash = (hash << 5) - hash + chr;
-			hash |= 0; // Convert to 32bit integer
-		}
-		return hash;
+export function callSiteId(...additionalArguments: unknown[]): number {
+	const stackTrace = additionalArguments?.join(",") + new Error().stack;
+	if (!stackTrace || stackTrace.length === 0) {
+		return 0;
 	}
+	let hash = 0,
+		i,
+		chr;
+	for (i = 0; i < stackTrace.length; i++) {
+		chr = stackTrace.charCodeAt(i);
+		hash = (hash << 5) - hash + chr;
+		hash |= 0; // Convert to 32bit integer
+	}
+	return hash;
 }
 
 export const hookManager = new HookManager();
@@ -234,7 +234,7 @@ export function registerAfterHook(
 export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	const { default: module } = await import(hook.pkg);
 	const originalFn = module[hook.target];
-	const id = hookManager.hookIndex(hook);
+	const id = callSiteId(hookManager.hookIndex(hook), hook.pkg, hook.target);
 	if (hook.type == HookType.Before) {
 		module[hook.target] = (...args: unknown[]) => {
 			(hook.hookFunction as BeforeHookFn)(null, args, id);
