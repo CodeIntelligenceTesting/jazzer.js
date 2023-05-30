@@ -25,9 +25,26 @@ const friendlyFile = "FRIENDLY";
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 
+let evilAsyncInvocations = 0;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.CallOriginalEvilAsync = async function (data) {
-	child_process.execSync(evilCommand);
+	return new Promise((resolve) => {
+		// Fuzz target is invoked two times. Skip the first one to verify that the
+		// fuzzer reports the async finding of the second invocation.
+		if (evilAsyncInvocations++ === 0) {
+			resolve();
+			return;
+		}
+		setTimeout(() => {
+			try {
+				child_process.execSync(evilCommand);
+			} catch (ignored) {
+				// Swallow exception to force out of band notification of finding.
+			} finally {
+				resolve();
+			}
+		}, 100);
+	});
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -37,7 +37,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; ASYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
+			.runs(0)
 			.fuzzEntryPoint("CallOriginalEvilAsync")
 			.dir(bugDetectorDirectory)
 			.build();

@@ -25,16 +25,16 @@ import * as reports from "istanbul-reports";
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import {
-	loadBugDetectors,
+	clearFirstFinding,
 	Finding,
 	getFirstFinding,
-	clearFirstFinding,
+	loadBugDetectors,
 } from "@jazzer.js/bug-detectors";
 import {
-	registerInstrumentor,
-	Instrumentor,
 	FileSyncIdStrategy,
+	Instrumentor,
 	MemorySyncIdStrategy,
+	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
 import { builtinModules } from "module";
 
@@ -404,16 +404,32 @@ export function wrapFuzzFunctionForBugDetection(
 			let result: void | Promise<void>;
 			try {
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
+				// Explicitly set promise handlers to process findings, but still return
+				// the fuzz target result directly, so that sync execution is still
+				// possible.
+				if (result instanceof Promise) {
+					result = result.then(
+						(result) => {
+							return throwIfError() ?? result;
+						},
+						(reason) => {
+							return throwIfError(reason);
+						}
+					);
+				}
 			} catch (e) {
 				fuzzTargetError = e;
 			}
-			return handleErrors(result, fuzzTargetError);
+			return throwIfError(fuzzTargetError) ?? result;
 		};
 	} else {
-		return (data: Buffer, done: (err?: Error) => void): void => {
-			let fuzzTargetError: unknown;
+		return (
+			data: Buffer,
+			done: (err?: Error) => void
+		): void | Promise<void> => {
 			try {
-				originalFuzzFn(data, (err?: Error) => {
+				// Return result of fuzz target to enable sanity checks in C++ part.
+				return originalFuzzFn(data, (err?: Error) => {
 					const finding = getFirstFinding();
 					if (finding !== undefined) {
 						clearFirstFinding();
@@ -421,23 +437,22 @@ export function wrapFuzzFunctionForBugDetection(
 					done(finding ?? err);
 				});
 			} catch (e) {
-				fuzzTargetError = e;
+				throwIfError(e);
 			}
-			handleErrors(undefined, fuzzTargetError);
 		};
 	}
 }
 
-function handleErrors(result: void | Promise<void>, fuzzTargetError: unknown) {
+function throwIfError(fuzzTargetError?: unknown) {
 	const error = getFirstFinding();
 	if (error !== undefined) {
 		// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
 		clearFirstFinding();
 		throw error;
-	} else if (fuzzTargetError !== undefined) {
+	} else if (fuzzTargetError) {
 		throw fuzzTargetError;
 	}
-	return result;
+	return undefined;
 }
 
 async function importModule(name: string): Promise<FuzzModule | void> {
