@@ -99,17 +99,3 @@ module.exports.PathTraversalJoinEvilAsync = makeFnCalledOnce(async (data) => {
 module.exports.PathTraversalJoinSafeAsync = makeFnCalledOnce(async (data) => {
 	path.join(safe_path, "SAFE");
 });
-
-function callWithTimeout(fn, timeout) {
-	return new Promise((resolve) => {
-		setTimeout(() => {
-			try {
-				fn();
-			} catch (ignored) {
-				// Swallow exception to force out of band notification of finding.
-			} finally {
-				resolve();
-			}
-		}, timeout);
-	});
-}

@@ -271,6 +271,7 @@ class FuzzTestBuilder {
  * If the test function generates a directory, it will fail with error "EEXIST: file already exists, mkdir '...'" on the
  * second call. Thus, we call only once.
  * @param fn - fuzz function to be called once
+ * @param callOnIteration - the function will be called once on this iteration
  */
 function makeFnCalledOnce(fn, callOnIteration = 0) {
 	let iteration = 0;
@@ -287,7 +288,28 @@ function makeFnCalledOnce(fn, callOnIteration = 0) {
 	};
 }
 
+/**
+ * Calls the given function after the given timeout. Any exceptions thrown by the function are swallowed.
+ * @param fn
+ * @param timeout
+ * @returns {Promise<unknown>}
+ */
+function callWithTimeout(fn, timeout) {
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			try {
+				fn();
+			} catch (ignored) {
+				// Swallow exception to force out of band notification of finding.
+			} finally {
+				resolve();
+			}
+		}, timeout);
+	});
+}
+
 module.exports.FuzzTestBuilder = FuzzTestBuilder;
 module.exports.FuzzingExitCode = FuzzingExitCode;
 module.exports.JestRegressionExitCode = JestRegressionExitCode;
 module.exports.makeFnCalledOnce = makeFnCalledOnce;
+module.exports.callWithTimeout = callWithTimeout;

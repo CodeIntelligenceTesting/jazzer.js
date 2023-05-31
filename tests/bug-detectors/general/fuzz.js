@@ -25,7 +25,7 @@ const fs = require("fs");
 const assert = require("assert");
 const { platform } = require("os");
 
-const { makeFnCalledOnce } = require("../helpers");
+const { makeFnCalledOnce, callWithTimeout } = require("../helpers");
 
 const evilCommand = "jaz_zer";
 const friendlyFile = "FRIENDLY";
@@ -34,25 +34,9 @@ const friendlyFile = "FRIENDLY";
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 
-module.exports.CallOriginalEvilAsync = async function (data) {
-	return new Promise((resolve) => {
-		// Fuzz target is invoked two times. Skip the first one to verify that the
-		// fuzzer reports the async finding of the second invocation.
-		if (evilAsyncInvocations++ === 0) {
-			resolve();
-			return;
-		}
-		setTimeout(() => {
-			try {
-				child_process.execSync(evilCommand);
-			} catch (ignored) {
-				// Swallow exception to force out of band notification of finding.
-			} finally {
-				resolve();
-			}
-		}, 100);
-	});
-};
+module.exports.CallOriginalEvilAsync = makeFnCalledOnce(async (data) => {
+	return callWithTimeout(() => child_process.execSync(evilCommand), 500);
+}, 1);
 
 module.exports.CallOriginalEvilSync = function (data) {
 	child_process.execSync(evilCommand);
