@@ -45,7 +45,7 @@ export class CoverageTracker {
 		if (newNumCounters > this.currentNumCounters) {
 			addon.registerNewCounters(this.currentNumCounters, newNumCounters);
 			this.currentNumCounters = newNumCounters;
-			console.log(
+			console.error(
 				`INFO: New number of coverage counters ${this.currentNumCounters}`
 			);
 		}

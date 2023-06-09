@@ -158,7 +158,7 @@ export async function startFuzzing(options: Options) {
 function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
 	fuzzerOptions.slice(1).forEach((element) => {
 		if (element.length > 0 && element[0] != "-") {
-			console.log("INFO: seed corpus: input file:", element);
+			console.error("INFO: using inputs from:", element);
 		}
 	});
 }
