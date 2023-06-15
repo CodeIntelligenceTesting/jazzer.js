@@ -26,7 +26,6 @@ import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
 import { fuzz, FuzzerStartError, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
-import { Finding } from "@jazzer.js/bug-detectors";
 import { createScriptTransformer } from "@jest/transform";
 import "./jest-extension";
 
