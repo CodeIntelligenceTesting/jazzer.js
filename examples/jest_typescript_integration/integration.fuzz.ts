@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-// Import the fuzz testing extension definition to compile TS code,
-// or import it globally in globals.d.ts, like in this example.
-// import "@jazzer.js/jest-runner/jest-extension";
-
+import "@jazzer.js/jest-runner";
 import * as target from "./target";
 
 describe("Target", () => {

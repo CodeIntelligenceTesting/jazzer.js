@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-import {
-	TestRunnerOptions,
-	Test,
-	TestRunnerContext,
-	TestWatcher,
-	CallbackTestRunner,
-	OnTestStart,
-	OnTestSuccess,
-	OnTestFailure,
-} from "jest-runner";
-
-import { Config } from "@jest/types";
-import { JazzerWorker } from "./worker";
-import { registerGlobals, initFuzzing } from "@jazzer.js/core";
 import { loadConfig } from "./config";
 import { cleanupJestRunnerStack } from "./errorUtils";
+import { FuzzTest } from "./fuzz";
+import { JazzerWorker } from "./worker";
+import { registerGlobals, initFuzzing } from "@jazzer.js/core";
+import {
+	CallbackTestRunner,
+	OnTestFailure,
+	OnTestStart,
+	OnTestSuccess,
+	Test,
+	TestRunnerContext,
+	TestRunnerOptions,
+	TestWatcher,
+} from "jest-runner";
+import { Config } from "@jest/types";
 import * as reports from "istanbul-reports";
 
 class FuzzRunner extends CallbackTestRunner {
@@ -97,3 +97,14 @@ class CancelRun extends Error {
 }
 
 export default FuzzRunner;
+
+// Global definition of the Jest fuzz test extension function.
+// This is required to allow the Typescript compiler to recognize it.
+declare global {
+	// eslint-disable-next-line @typescript-eslint/no-namespace
+	namespace jest {
+		interface It {
+			fuzz: FuzzTest;
+		}
+	}
+}

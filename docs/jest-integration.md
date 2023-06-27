@@ -127,7 +127,7 @@ To introduce the `fuzz` function types globally, add the following import to
 `globals.d.ts`. This could also be done in the individual test files.
 
 ```typescript
-import "@jazzer.js/jest-runner/jest-extension";
+import "@jazzer.js/jest-runner";
 ```
 
 To provide accurate coverage reports for TypeScript fuzz tests, make sure to
@@ -224,12 +224,8 @@ describe("My describe", () => {
 After the setup mentioned previously, Jest fuzz tests can be written in
 TypeScript, just as one would expect.
 
-**Note**: To satisfy TypeScript's type checker, add an import of
-`@jazzer.js/jest-runner/jest-extension` in `globals.d.ts` or in the individual
-test file.
-
 ```typescript
-import "@jazzer.js/jest-runner/jest-extension";
+import "@jazzer.js/jest-runner";
 import * as target from "./target";
 
 describe("Target", () => {
