@@ -27,7 +27,6 @@ import { inspect } from "util";
 import { fuzz, FuzzerStartError, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
 import { createScriptTransformer } from "@jest/transform";
-import "./jest-extension";
 
 function isGeneratorFunction(obj?: unknown): boolean {
 	return (

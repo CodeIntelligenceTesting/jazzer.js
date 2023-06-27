@@ -98,6 +98,7 @@ following example:
 
 ```typescript
 // file: "Target.fuzz.ts"
+import "@jazzer.js/jest-runner";
 import * as target from "./target";
 
 describe("Target", () => {

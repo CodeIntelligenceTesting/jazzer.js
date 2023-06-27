@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import "@jazzer.js/jest-runner/jest-extension";
+import "@jazzer.js/jest-runner";
 import { fuzz } from "./fuzz.js";
 
 describe("My describe", () => {
