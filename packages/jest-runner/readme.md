@@ -10,7 +10,7 @@ the following example:
 ```typescript
 // file: "Target.fuzz.ts
 // Import the fuzz testing extension to compile TS code.
-import "@jazzer.js/jest-runner/jest-extension";
+import "@jazzer.js/jest-runner";
 import * as target from "./target";
 
 describe("Target", () => {
