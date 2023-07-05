@@ -1,0 +1,12 @@
+{
+	"name": "jazzer-js-tests-for-signal-handlers",
+	"version": "1.0.0",
+	"description": "Tests for Jazzer.js' signal handlers",
+	"scripts": {
+		"fuzz": "jest --verbose",
+		"test": "jest --verbose"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

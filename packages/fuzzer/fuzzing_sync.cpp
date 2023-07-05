@@ -1,4 +1,4 @@
-// Copyright 2022 Code Intelligence GmbH
+// Copyright 2023 Code Intelligence GmbH
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #include "fuzzing_sync.h"
 #include "shared/libfuzzer.h"
 #include "utils.h"
+#include <csignal>
 #include <cstdlib>
 #include <optional>
 
@@ -23,13 +24,21 @@ namespace {
 struct FuzzTargetInfo {
   Napi::Env env;
   Napi::Function target;
+  Napi::Function stopFunction;
 };
 
 // The JS fuzz target. We need to store the function pointer in a global
 // variable because libfuzzer doesn't give us a way to feed user-provided data
 // to its target function.
 std::optional<FuzzTargetInfo> gFuzzTarget;
+
+// Track if SIGINT signal handler was called.
+// This is only necessary in the sync fuzzing case, as async can be handled
+// much nicer directly in JavaScript.
+volatile std::sig_atomic_t gSignalStatus;
 } // namespace
+
+void sigintHandler(int signum) { gSignalStatus = signum; }
 
 // The libFuzzer callback when fuzzing synchronously
 int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
@@ -60,6 +69,12 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
   } else {
     SyncReturnsHandler();
   }
+
+  // Execute the signal handler in context of the node application.
+  if (gSignalStatus != 0) {
+    gFuzzTarget->stopFunction.Call({});
+  }
+
   return EXIT_SUCCESS;
 }
 
@@ -71,17 +86,24 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
 // parameter; the fuzz target's return value is ignored. The second argument
 // is an array of (command-line) arguments to pass to libfuzzer.
 void StartFuzzing(const Napi::CallbackInfo &info) {
-  if (info.Length() != 2 || !info[0].IsFunction() || !info[1].IsArray()) {
-    throw Napi::Error::New(info.Env(),
-                           "Need two arguments, which must be the fuzz target "
-                           "function and an array of libfuzzer arguments");
+  if (info.Length() != 3 || !info[0].IsFunction() || !info[1].IsArray() ||
+      !info[2].IsFunction()) {
+    throw Napi::Error::New(
+        info.Env(),
+        "Need three arguments, which must be the fuzz target "
+        "function, an array of libfuzzer arguments, and a callback function "
+        "that the fuzzer will call in case of SIGINT or a segmentation fault");
   }
 
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
 
   // Store the JS fuzz target and corresponding environment globally, so that
-  // our C++ fuzz target can use them to call back into JS.
-  gFuzzTarget = {info.Env(), info[0].As<Napi::Function>()};
+  // our C++ fuzz target can use them to call back into JS. Also store the stop
+  // function that will be called in case of a SIGINT.
+  gFuzzTarget = {info.Env(), info[0].As<Napi::Function>(),
+                 info[2].As<Napi::Function>()};
+
+  signal(SIGINT, sigintHandler);
 
   StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
   // Explicitly reset the global function pointer because the JS
@@ -93,9 +115,9 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
 void StopFuzzing(const Napi::CallbackInfo &info) {
   int exitCode = StopFuzzingHandleExit(info);
 
-  // If we ran in async mode and we only ever encountered synchronous results
+  // If we ran in async mode, and we only ever encountered synchronous results
   // we'll give an indicator that running in synchronous mode is likely
-  // benefical
+  // beneficial.
   ReturnValueInfo(true);
 
   // We call _Exit to immediately terminate the process without performing any

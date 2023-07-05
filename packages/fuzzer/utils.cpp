@@ -1,4 +1,4 @@
-// Copyright 2022 Code Intelligence GmbH
+// Copyright 2023 Code Intelligence GmbH
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 #include "napi.h"
 #include "shared/libfuzzer.h"
 #include <iostream>
-
-#define btoa(x) ((x) ? "true" : "false")
 
 void StartLibFuzzer(const std::vector<std::string> &args,
                     fuzzer::UserCallback fuzzCallback) {

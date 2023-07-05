@@ -27,6 +27,7 @@ const assert = require("assert");
 // `fuzzEntryPoint` (which would return a "1")
 const FuzzingExitCode = "77";
 const JestRegressionExitCode = "1";
+const WindowsExitCode = "1";
 
 class FuzzTest {
 	sync;
@@ -323,5 +324,6 @@ function callWithTimeout(fn, timeout) {
 module.exports.FuzzTestBuilder = FuzzTestBuilder;
 module.exports.FuzzingExitCode = FuzzingExitCode;
 module.exports.JestRegressionExitCode = JestRegressionExitCode;
+module.exports.WindowsExitCode = WindowsExitCode;
 module.exports.makeFnCalledOnce = makeFnCalledOnce;
 module.exports.callWithTimeout = callWithTimeout;
