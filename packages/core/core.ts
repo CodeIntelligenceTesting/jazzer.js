@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import path from "path";
-import * as process from "process";
 import * as tmp from "tmp";
 import * as fs from "fs";
 
@@ -169,14 +168,40 @@ export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	options: Options,
 ) {
+	// Signal handler that stops fuzzing when the process receives a SIGINT,
+	// necessary to generate coverage reports and print debug information.
+	// The handler stops the process via `stopFuzzing`, as resolving the "fuzzing
+	// promise" does not work in sync mode due to the blocked event loop.
+	const signalHandler = () => {
+		stopFuzzing(
+			undefined,
+			options.expectedErrors,
+			options.coverageDirectory,
+			options.coverageReporters,
+			options.sync,
+			0,
+		);
+	};
+
 	const fuzzerOptions = buildFuzzerOptions(options);
 	logInfoAboutFuzzerOptions(fuzzerOptions);
-	const fuzzerFn = options.sync
-		? Fuzzer.startFuzzing
-		: Fuzzer.startFuzzingAsync;
-	// Wrap the potentially sync fuzzer call, so that resolve and exception
-	// handlers are always executed.
-	return Promise.resolve().then(() => fuzzerFn(fuzzFn, fuzzerOptions));
+
+	if (options.sync) {
+		return Promise.resolve().then(() =>
+			Fuzzer.startFuzzing(
+				fuzzFn,
+				fuzzerOptions,
+				// In synchronous mode, we cannot use the SIGINT handler in Node,
+				// because it won't be called until the fuzzing process is finished.
+				// Hence, we pass a callback function to the native fuzzer.
+				signalHandler,
+			),
+		);
+	} else {
+		// Add a Node SIGINT handler to stop fuzzing gracefully.
+		process.on("SIGINT", signalHandler);
+		return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+	}
 }
 
 function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
@@ -238,6 +263,7 @@ function stopFuzzing(
 	coverageDirectory: string,
 	coverageReporters: reports.ReportType[],
 	sync: boolean,
+	forceShutdownWithCode?: number,
 ) {
 	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
 	if (process.env.JAZZER_DEBUG) {
@@ -257,13 +283,15 @@ function stopFuzzing(
 		);
 	}
 
-	// No error found, check if one is expected.
+	// No error found, check if one is expected or an exit code should be enforced.
 	if (!err) {
 		if (expectedErrors.length) {
 			console.error(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
 			);
 			stopFuzzing(ERROR_UNEXPECTED_CODE);
+		} else if (forceShutdownWithCode !== undefined) {
+			stopFuzzing(forceShutdownWithCode);
 		}
 		return;
 	}

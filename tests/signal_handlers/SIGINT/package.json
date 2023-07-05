@@ -1,0 +1,26 @@
+{
+	"name": "jazzerjs-signal-handler-tests",
+	"version": "1.0.0",
+	"description": "Tests for the SIGINT signal handler",
+	"scripts": {
+		"test": "jest",
+		"fuzz": "JAZZER_FUZZ=1 jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/jest-runner": "file:../../packages/jest-runner"
+	},
+	"jest": {
+		"projects": [
+			{
+				"runner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
+	}
+}
