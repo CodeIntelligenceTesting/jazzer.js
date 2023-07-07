@@ -40,6 +40,7 @@ class FuzzTest {
 	jestTestFile;
 	jestTestNamePattern;
 	jestRunInFuzzingMode;
+	coverage;
 
 	constructor(
 		sync,
@@ -53,6 +54,7 @@ class FuzzTest {
 		jestTestFile,
 		jestTestName,
 		jestRunInFuzzingMode,
+		coverage,
 	) {
 		this.sync = sync;
 		this.runs = runs;
@@ -65,6 +67,7 @@ class FuzzTest {
 		this.jestTestFile = jestTestFile;
 		this.jestTestNamePattern = jestTestName;
 		this.jestRunInFuzzingMode = jestRunInFuzzingMode;
+		this.coverage = coverage;
 	}
 
 	execute() {
@@ -78,6 +81,7 @@ class FuzzTest {
 		for (const bugDetector of this.disableBugDetectors) {
 			options.push("--disable_bug_detectors=" + bugDetector);
 		}
+		if (this.coverage) options.push("--coverage");
 		options.push("--");
 		options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
@@ -101,6 +105,7 @@ class FuzzTest {
 		const cmd = "npx";
 		const options = [
 			"jest",
+			this.coverage ? "--coverage" : "",
 			this.jestTestFile,
 			'--testNamePattern="' + this.jestTestNamePattern + '"',
 		];
@@ -145,6 +150,7 @@ class FuzzTestBuilder {
 	_jestTestFile = "";
 	_jestTestName = "";
 	_jestRunInFuzzingMode = false;
+	_coverage = false;
 
 	/**
 	 * @param {boolean} sync - whether to run the fuzz test in synchronous mode.
@@ -241,6 +247,11 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	coverage(coverage) {
+		this._coverage = coverage;
+		return this;
+	}
+
 	build() {
 		if (this._jestTestFile === "" && this._fuzzEntryPoint === "") {
 			throw new Error("fuzzEntryPoint or jestTestFile are not set.");
@@ -262,6 +273,7 @@ class FuzzTestBuilder {
 			this._jestTestFile,
 			this._jestTestName,
 			this._jestRunInFuzzingMode,
+			this._coverage,
 		);
 	}
 }
