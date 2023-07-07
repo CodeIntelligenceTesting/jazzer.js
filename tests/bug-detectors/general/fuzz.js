@@ -25,7 +25,7 @@ const fs = require("fs");
 const assert = require("assert");
 const { platform } = require("os");
 
-const { makeFnCalledOnce, callWithTimeout } = require("../helpers");
+const { makeFnCalledOnce, callWithTimeout } = require("../../helpers");
 
 const evilCommand = "jaz_zer";
 const friendlyFile = "FRIENDLY";
