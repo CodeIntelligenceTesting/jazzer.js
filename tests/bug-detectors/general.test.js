@@ -20,7 +20,7 @@ const {
 	FuzzingExitCode,
 	JestRegressionExitCode,
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
-} = require("./helpers.js");
+} = require("../helpers.js");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
