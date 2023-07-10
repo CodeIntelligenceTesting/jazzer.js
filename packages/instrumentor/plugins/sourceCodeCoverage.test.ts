@@ -88,10 +88,10 @@ describe("Source code coverage instrumentation", () => {
 		expect(Object.keys(statementMap).length).toEqual(4);
 		const functionMap = getFunctionMap();
 		expect(functionMap["0"]).toEqual(
-			makeFunctionMapping("foo", 1, 1, 9, 12, 1, 3, 15, 1, 1)
+			makeFunctionMapping("foo", 1, 1, 9, 12, 1, 3, 15, 1, 1),
 		);
 		expect(functionMap["1"]).toEqual(
-			makeFunctionMapping("bar", 4, 4, 9, 12, 4, 6, 15, 1, 4)
+			makeFunctionMapping("bar", 4, 4, 9, 12, 4, 6, 15, 1, 4),
 		);
 		expect(Object.keys(functionMap).length).toEqual(2);
 		expect(getBranchMap()).toEqual({}); // program has no branches
@@ -170,7 +170,7 @@ function makeCoverageRange(
 	startLine: number,
 	endLine: number,
 	startColumn: number,
-	endColumn: number
+	endColumn: number,
 ): libCoverage.Range {
 	return {
 		start: { line: startLine, column: startColumn },
@@ -188,7 +188,7 @@ function makeFunctionMapping(
 	locEndLine: number,
 	locStartColumn: number,
 	locEndColumn: number,
-	line: number
+	line: number,
 ): libCoverage.FunctionMapping {
 	return {
 		name: name,
@@ -196,13 +196,13 @@ function makeFunctionMapping(
 			declStartLine,
 			declEndLine,
 			declStartColumn,
-			declEndColumn
+			declEndColumn,
 		),
 		loc: makeCoverageRange(
 			locStartLine,
 			locEndLine,
 			locStartColumn,
-			locEndColumn
+			locEndColumn,
 		),
 		line: line,
 	};

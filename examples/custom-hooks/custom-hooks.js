@@ -36,10 +36,10 @@ registerReplaceHook(
 		if (params[0].data[0] === 0) {
 			// we are only interested in image frames in which data[0] equals zero
 			throw Error(
-				"custom hook bug detector: jpeg-js: copyToImageData() is called; image.data[0] equals 0"
+				"custom hook bug detector: jpeg-js: copyToImageData() is called; image.data[0] equals 0",
 			);
 		}
-	}
+	},
 );
 
 /**
@@ -52,7 +52,7 @@ registerReplaceHook(
 	false,
 	(thisPtr, params, hookId, origFn) => {
 		return origFn.apply(null, params);
-	}
+	},
 );
 
 /**
@@ -68,9 +68,9 @@ registerReplaceHook(
 	false,
 	() => {
 		console.log(
-			`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable()`
+			`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable()`,
 		);
-	}
+	},
 );
 
 /**
@@ -84,13 +84,13 @@ registerReplaceHook(
 	false,
 	(thisPtr, params, hookId, origFn) => {
 		console.log(
-			`[jpeg-js] Called custom hook instead of the original function prepareComponents()`
+			`[jpeg-js] Called custom hook instead of the original function prepareComponents()`,
 		);
 		const frame = params[0]; // our hooked function only has one argument: frame
 		frame.scanLines = 10; // we modify the frame before calling the original function
 		origFn.apply(null, [frame]); // call the original function that mutates the frame and does not return anything
 		frame.scanLines = 1000; // modify the frame once again before returning
-	}
+	},
 );
 
 /**
@@ -103,9 +103,9 @@ registerBeforeHook(
 	false,
 	(thisPtr, params, hookId) => {
 		console.log(
-			`[jpeg-js] [before] Called hooked function before calling resetMaxMemoryUsage()`
+			`[jpeg-js] [before] Called hooked function before calling resetMaxMemoryUsage()`,
 		);
-	}
+	},
 );
 
 /**
@@ -119,9 +119,9 @@ registerAfterHook(
 	false,
 	(thisPtr, params, hookId, origFnResult) => {
 		console.log(
-			`[jpeg-js] [after] Called hooked function after calling resetMaxMemoryUsage() with original result ${origFnResult}`
+			`[jpeg-js] [after] Called hooked function after calling resetMaxMemoryUsage() with original result ${origFnResult}`,
 		);
-	}
+	},
 );
 
 /**
@@ -132,5 +132,5 @@ registerReplaceHook(
 	"jpeg-js",
 	false,
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	() => {}
+	() => {},
 );

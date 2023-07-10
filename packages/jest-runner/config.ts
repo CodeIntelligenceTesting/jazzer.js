@@ -50,7 +50,7 @@ export function loadConfig(optionsKey = "jazzerjs"): Options {
 				}
 				return config;
 			},
-			defaultOptionsCopy
+			defaultOptionsCopy,
 		);
 	}
 

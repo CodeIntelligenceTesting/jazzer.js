@@ -31,7 +31,7 @@ export function instrumentWith(...plugins: PluginTarget[]) {
 function expectInstrumentation(
 	plugins: PluginTarget[],
 	input: string,
-	output: string
+	output: string,
 ): string {
 	const code = removeIndentation(input);
 	const instrumentor = new Instrumentor();

@@ -87,7 +87,7 @@ describe("FuzzedDataProvider checks", () => {
 	it("consumeBigIntegralInRange", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegralInRange(BigInt(0), BigInt(255))).toBe(
-			BigInt(0x4a)
+			BigInt(0x4a),
 		);
 		expect(data.remainingBytes).toBe(1023);
 		expect(() => {
@@ -100,15 +100,15 @@ describe("FuzzedDataProvider checks", () => {
 		expect(
 			data.consumeBigIntegralInRange(
 				BigInt(0),
-				BigInt("0xffffffffffffffffffff")
-			)
+				BigInt("0xffffffffffffffffffff"),
+			),
 		).toBe(BigInt(0x0d198a));
 		expect(data.remainingBytes).toBe(0);
 		expect(
 			data.consumeBigIntegralInRange(
 				BigInt(0),
-				BigInt("0xffffffffffffffffffff")
-			)
+				BigInt("0xffffffffffffffffffff"),
+			),
 		).toBe(BigInt(0));
 	});
 
@@ -318,8 +318,8 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.remainingBytes).toBe(986);
 		expect(data.consumeBigIntegrals(11, 1)).toStrictEqual(
 			[0xa4, 0x03, 0x37, 0x49, 0x50, 0x4b, 0xbc, 0x39, 0xa2, 0x09, 0x6c].map(
-				BigInt
-			)
+				BigInt,
+			),
 		);
 		expect(data.remainingBytes).toBe(975);
 		expect(data.consumeBigIntegrals(2, 8)).toStrictEqual([
@@ -336,7 +336,7 @@ describe("FuzzedDataProvider checks", () => {
 	it("consumeBigIntegrals signed", () => {
 		const data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegrals(4, 1, true)).toStrictEqual(
-			[0x8a - 128, 0x19 - 128, 0x0d - 128, 0x44 - 128].map(BigInt)
+			[0x8a - 128, 0x19 - 128, 0x0d - 128, 0x44 - 128].map(BigInt),
 		);
 		expect(data.remainingBytes).toBe(1020);
 		expect(data.consumeBigIntegrals(4, 2, true)).toStrictEqual(
@@ -345,7 +345,7 @@ describe("FuzzedDataProvider checks", () => {
 				0x385e - 2 ** 15,
 				0x9baa - 2 ** 15,
 				0xf3da - 2 ** 15,
-			].map(BigInt)
+			].map(BigInt),
 		);
 		expect(data.remainingBytes).toBe(1012);
 		expect(data.consumeBigIntegrals(4, 3, true)).toStrictEqual(
@@ -354,13 +354,15 @@ describe("FuzzedDataProvider checks", () => {
 				0x9b6cba - 2 ** 23,
 				0xbeb1f2 - 2 ** 23,
 				0xcf13b8 - 2 ** 23,
-			].map(BigInt)
+			].map(BigInt),
 		);
 		expect(data.remainingBytes).toBe(1000);
 		data.consumeBytes(990);
 		expect(data.remainingBytes).toBe(10);
 		expect(data.consumeBigIntegrals(4, 4, true)).toStrictEqual(
-			[0xd63d4373 - 2 ** 31, 0x3916cf3d - 2 ** 31, 0x294a - 2 ** 31].map(BigInt)
+			[0xd63d4373 - 2 ** 31, 0x3916cf3d - 2 ** 31, 0x294a - 2 ** 31].map(
+				BigInt,
+			),
 		);
 		expect(data.remainingBytes).toBe(0);
 	});
@@ -388,7 +390,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeIntegralInRange(0, 65535)).toBe(15823);
 		expect(data.consumeIntegralInRange(-123, 123)).toBe(-101);
 		expect(
-			data.consumeBigIntegralInRange(BigInt(-99999999999), BigInt(99999999999))
+			data.consumeBigIntegralInRange(BigInt(-99999999999), BigInt(99999999999)),
 		).toBe(BigInt(-53253077544));
 		const str = data.consumeString(31337);
 		expect(str.length).toBe(1014);
@@ -406,7 +408,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeIntegral(2, true)).toBe(22100);
 		expect(data.remainingBytes).toBe(1013);
 		expect(data.consumeBigIntegral(8, false)).toBe(
-			BigInt("0xfd4d113a1ff651f9")
+			BigInt("0xfd4d113a1ff651f9"),
 		);
 		expect(data.remainingBytes).toBe(1005);
 		// exhaust the buffer
@@ -641,7 +643,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeNumberInRange(13.37, 31.337)).toBe(30.859126145478349);
 		expect(data.remainingBytes).toBe(998);
 		expect(data.consumeFloatInRange(-999.9999, -777.77)).toBe(
-			-903.4772913756137
+			-903.4772913756137,
 		);
 		expect(data.remainingBytes).toBe(994);
 		expect(data.consumeNumberInRange(-13.37, 31.337)).toBe(24.561393182922771);
@@ -677,7 +679,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeDoubleInRange(13.37, 31.337)).toBe(30.859126145478349);
 		expect(data.remainingBytes).toBe(998);
 		expect(data.consumeFloatInRange(-999.9999, -777.77)).toBe(
-			-903.4772913756137
+			-903.4772913756137,
 		);
 		expect(data.remainingBytes).toBe(994);
 		expect(data.consumeDoubleInRange(-13.37, 31.337)).toBe(24.561393182922771);
@@ -715,7 +717,7 @@ describe("FuzzedDataProvider checks", () => {
 	it("consumeNumber", () => {
 		// some tests are from https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 		let data = new FuzzedDataProvider(
-			Buffer.from([0, 0, 0, 0, 0, 0, 0xf0, 0x3f])
+			Buffer.from([0, 0, 0, 0, 0, 0, 0xf0, 0x3f]),
 		);
 		expect(data.consumeNumber()).toBe(1);
 		expect(data.remainingBytes).toBe(0);
@@ -756,7 +758,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeNumber()).toBe(Number.NaN);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f])
+			Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]),
 		);
 		expect(data.consumeNumber()).toBe(Number.NaN);
 		expect(data.remainingBytes).toBe(0);
@@ -764,7 +766,7 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeNumber()).toBe(Number.MIN_VALUE);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0x7f])
+			Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0x7f]),
 		);
 		expect(data.consumeNumber()).toBe(Number.MAX_VALUE);
 		expect(data.remainingBytes).toBe(0);
@@ -792,22 +794,22 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeNumber()).toBe(23);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x37, 0x40])
+			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x37, 0x40]),
 		);
 		expect(data.consumeNumber()).toBe(23);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40])
+			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40]),
 		);
 		expect(data.consumeNumber()).toBe(23);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40])
+			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40]),
 		);
 		expect(data.consumeNumber()).toBe(23);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(
-			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40])
+			Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x37, 0x40]),
 		);
 		expect(data.consumeNumber()).toBe(23);
 		expect(data.remainingBytes).toBe(1);
@@ -835,7 +837,7 @@ describe("FuzzedDataProvider checks", () => {
 			Buffer.from([
 				0x40, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x37, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x40, 0x37,
-			])
+			]),
 		);
 		expect(data.consumeNumbers(3)).toStrictEqual([23, 23, 23]);
 		expect(data.remainingBytes).toBe(0);
@@ -882,7 +884,7 @@ describe("FuzzedDataProvider checks", () => {
 			.join("");
 		data = new FuzzedDataProvider(Data);
 		expect(data.consumeBigIntegral(data.remainingBytes)).toBe(
-			BigInt("0x" + hexData)
+			BigInt("0x" + hexData),
 		);
 		expect(data.consumeBigIntegral(1, true)).toBe(BigInt(-128));
 	});
@@ -924,11 +926,11 @@ describe("FuzzedDataProvider checks", () => {
 		expect(data.consumeString(20, "ascii")).toBe("m dolor sit amet, co");
 		expect(data.remainingBytes).toBe(testString.length - 30);
 		expect(data.consumeString(40, "ascii")).toBe(
-			"nsectetur adipiscing elit, sed do eiusmo"
+			"nsectetur adipiscing elit, sed do eiusmo",
 		);
 		expect(data.remainingBytes).toBe(testString.length - 70);
 		expect(data.consumeRemainingAsString()).toBe(
-			"d tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+			"d tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
 		);
 		expect(data.remainingBytes).toBe(0);
 		expect(data.consumeString(1000)).toBe("");
@@ -960,7 +962,7 @@ describe("FuzzedDataProvider checks", () => {
 			consumedStrAsArr.some((ele) => {
 				const eleAsNum = ele.charCodeAt(0);
 				return eleAsNum < 32 || eleAsNum > 126;
-			})
+			}),
 		).toBeTruthy();
 	});
 });

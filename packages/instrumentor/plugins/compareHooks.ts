@@ -49,7 +49,7 @@ export function compareHooks(): PluginTarget {
 						path.node.right,
 						types.stringLiteral(path.node.operator),
 						fakePC(),
-					])
+					]),
 				);
 			},
 			SwitchStatement(path: NodePath<SwitchStatement>) {
@@ -62,7 +62,7 @@ export function compareHooks(): PluginTarget {
 					if (test) {
 						path.node.cases[i].test = types.callExpression(
 							types.identifier("Fuzzer.tracer.traceAndReturn"),
-							[id, test, fakePC()]
+							[id, test, fakePC()],
 						);
 					}
 				}
@@ -94,6 +94,6 @@ function isNumberCompare(exp: BinaryExpression): boolean {
 		return false;
 	}
 	return ["==", "===", "!=", "!==", ">", ">=", "<", "<="].includes(
-		exp.operator
+		exp.operator,
 	);
 }

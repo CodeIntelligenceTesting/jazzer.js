@@ -33,8 +33,8 @@ module.exports.fuzz_promise = function (data) {
 			if (one + two + three === 42) {
 				reject(
 					new Error(
-						`${one} + ${two} + ${three} = 42 (invocation ${invocationCount})`
-					)
+						`${one} + ${two} + ${three} = 42 (invocation ${invocationCount})`,
+					),
 				);
 			} else {
 				resolve(invocationCount++);
@@ -43,7 +43,7 @@ module.exports.fuzz_promise = function (data) {
 	}).then((value) => {
 		if (value !== lastInvocationCount + 1) {
 			throw new Error(
-				`Invalid invocation order, received ${value} but last invocation was ${lastInvocationCount}.`
+				`Invalid invocation order, received ${value} but last invocation was ${lastInvocationCount}.`,
 			);
 		}
 		lastInvocationCount = value;

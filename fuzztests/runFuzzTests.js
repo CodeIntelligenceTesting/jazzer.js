@@ -61,8 +61,8 @@ async function runFuzzTestsInDir(dir, mode) {
 	if (mode === "async") {
 		return Promise.all(
 			Object.entries(fuzzTests).map(([file, names]) =>
-				Promise.all(names.map((name) => executeFuzzTest(file, name)))
-			)
+				Promise.all(names.map((name) => executeFuzzTest(file, name))),
+			),
 		);
 	} else {
 		for (const [file, names] of Object.entries(fuzzTests)) {
@@ -83,5 +83,5 @@ runFuzzTestsInDir(".", process.argv[2]).then(
 	(e) => {
 		console.log("ERROR:", e);
 		process.exit(79);
-	}
+	},
 );

@@ -25,11 +25,11 @@ describe("instrument", () => {
 		const filename = provider.consumeString(10);
 		const includes = provider.consumeStringArray(
 			provider.consumeIntegralInRange(0, 10),
-			5
+			5,
 		);
 		const excludes = provider.consumeStringArray(
 			provider.consumeIntegralInRange(0, 10),
-			5
+			5,
 		);
 
 		const instrumentor = new Instrumentor(includes, excludes);

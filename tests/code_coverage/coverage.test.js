@@ -57,7 +57,7 @@ describe("Source code coverage reports", () => {
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+customHooks.json"
+				"fuzz+lib+customHooks.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
@@ -69,7 +69,7 @@ describe("Source code coverage reports", () => {
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+customHooks.json"
+				"fuzz+lib+customHooks.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
@@ -80,13 +80,13 @@ describe("Source code coverage reports", () => {
 			const coverageDirectory = "coverage002";
 			const coverageAbsoluteDirectory = path.join(
 				testDirectory,
-				coverageDirectory
+				coverageDirectory,
 			);
 			executeFuzzTest(false, true, true, true, true, coverageDirectory);
 			expect(fs.existsSync(coverageAbsoluteDirectory)).toBe(true);
 			const coverageJson = readCoverageJson(coverageAbsoluteDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+customHooks.json"
+				"fuzz+lib+customHooks.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
@@ -108,7 +108,7 @@ describe("Source code coverage reports", () => {
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+codeCoverage-fuzz.json"
+				"fuzz+lib+codeCoverage-fuzz.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
@@ -121,7 +121,7 @@ describe("Source code coverage reports", () => {
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+codeCoverage-fuzz.json"
+				"fuzz+lib+codeCoverage-fuzz.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
@@ -134,13 +134,13 @@ describe("Source code coverage reports", () => {
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);
 			const expectedCoverage = readExpectedCoverage(
-				"fuzz+lib+otherCodeCoverage-fuzz.json"
+				"fuzz+lib+otherCodeCoverage-fuzz.json",
 			);
 			expect(libFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(targetFile).toHaveEqualCoverageIn(coverageJson, expectedCoverage);
 			expect(otherTestFile).toHaveEqualCoverageIn(
 				coverageJson,
-				expectedCoverage
+				expectedCoverage,
 			);
 			expect(hookFile).toHaveMissingCoverageIn(coverageJson);
 		});
@@ -151,7 +151,7 @@ function readCoverageJson(coverageDirectory) {
 	const coverageJson = JSON.parse(
 		fs
 			.readFileSync(path.join(coverageDirectory, "coverage-final.json"))
-			.toString()
+			.toString(),
 	);
 	expect(coverageJson).toBeTruthy();
 	return coverageJson;
@@ -159,7 +159,7 @@ function readCoverageJson(coverageDirectory) {
 
 function readExpectedCoverage(name) {
 	return JSON.parse(
-		fs.readFileSync(path.join(expectedCoverageDirectory, name)).toString()
+		fs.readFileSync(path.join(expectedCoverageDirectory, name)).toString(),
 	);
 }
 
@@ -182,7 +182,7 @@ function executeJestRunner(
 	useCustomHooks = [],
 	coverageOutputDir = "coverage",
 	excludePattern = [],
-	verbose = false
+	verbose = false,
 ) {
 	removeCoverageDir(coverageOutputDir);
 
@@ -199,7 +199,7 @@ function executeJestRunner(
 	// write the config file, overwriting any existing one
 	fs.writeFileSync(
 		path.join(testDirectory, ".jazzerjsrc.json"),
-		JSON.stringify(config)
+		JSON.stringify(config),
 	);
 
 	const cov = coverage ? "--coverage" : "";
@@ -220,7 +220,7 @@ function executeFuzzTest(
 	coverage,
 	coverageOutputDir = "coverage",
 	excludePattern = "nothing",
-	verbose = false
+	verbose = false,
 ) {
 	removeCoverageDir(coverageOutputDir);
 	let options = ["jazzer", "fuzz", "-e", excludePattern, "--corpus", "corpus"];

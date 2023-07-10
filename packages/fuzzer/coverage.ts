@@ -36,7 +36,7 @@ export class CoverageTracker {
 			newNumCounters = 2 * newNumCounters;
 			if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
 				throw new Error(
-					`Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`
+					`Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`,
 				);
 			}
 		}
@@ -46,7 +46,7 @@ export class CoverageTracker {
 			addon.registerNewCounters(this.currentNumCounters, newNumCounters);
 			this.currentNumCounters = newNumCounters;
 			console.error(
-				`INFO: New number of coverage counters ${this.currentNumCounters}`
+				`INFO: New number of coverage counters ${this.currentNumCounters}`,
 			);
 		}
 	}

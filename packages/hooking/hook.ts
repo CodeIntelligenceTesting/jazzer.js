@@ -135,7 +135,7 @@ export function logHooks(hooks: Hook[]) {
 				`DEBUG: Applied %s-hook in %s#%s`,
 				HookType[hook.type],
 				hook.pkg,
-				hook.target
+				hook.target,
 			);
 		}
 	});
@@ -157,14 +157,14 @@ export type ReplaceHookFn = (
 	params: any[],
 	hookId: number,
 	// eslint-disable-next-line @typescript-eslint/ban-types
-	origFn: Function
+	origFn: Function,
 ) => any;
 
 export type AfterHookFn = (
 	thisPtr: any,
 	params: any[],
 	hookId: number,
-	result: any
+	result: any,
 ) => any;
 
 export type HookFn = BeforeHookFn | ReplaceHookFn | AfterHookFn;
@@ -175,7 +175,7 @@ export class Hook {
 		public readonly target: string,
 		public readonly pkg: string,
 		public readonly async: boolean,
-		public readonly hookFunction: HookFn
+		public readonly hookFunction: HookFn,
 	) {}
 
 	match(pkg: string, target: string): boolean {

@@ -72,7 +72,7 @@ describe("fuzz", () => {
 			await expect(
 				withMockTest(() => {
 					runInFuzzingMode("second", testFn, corpus, defaultOptions);
-				})
+				}),
 			).rejects.toThrow(FuzzerStartError);
 			expect(startFuzzingMock).toBeCalledTimes(1);
 		});
@@ -101,7 +101,7 @@ describe("fuzz", () => {
 						done();
 					},
 					mockDefaultCorpus(),
-					1000
+					1000,
 				);
 			});
 			expect(called).toBeTruthy();
@@ -121,7 +121,7 @@ describe("fuzz", () => {
 						});
 					},
 					mockDefaultCorpus(),
-					1000
+					1000,
 				);
 			});
 			expect(called).toBeTruthy();
@@ -138,9 +138,9 @@ describe("fuzz", () => {
 							});
 						},
 						mockDefaultCorpus(),
-						100
+						100,
 					);
-				})
+				}),
 			).rejects;
 			await rejects.toThrow(FuzzerError);
 			await rejects.toThrowError(new RegExp(".*Timeout.*"));
@@ -159,9 +159,9 @@ describe("fuzz", () => {
 							});
 						},
 						mockDefaultCorpus(),
-						100
+						100,
 					);
-				})
+				}),
 			).rejects;
 			await rejects.toThrow(FuzzerError);
 			await rejects.toThrowError(new RegExp(".*async or done.*"));
@@ -181,9 +181,9 @@ describe("fuzz", () => {
 								resolve("done called multiple times");
 							},
 							mockDefaultCorpus(),
-							100
+							100,
 						);
-					})
+					}),
 				);
 			});
 			expect(consoleErrorMock).toHaveBeenCalledTimes(1);

@@ -47,7 +47,7 @@ export class Instrumentor {
 		private readonly shouldCollectSourceCodeCoverage = false,
 		private readonly isDryRun = false,
 		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy(),
-		private readonly sourceMapRegistry: SourceMapRegistry = new SourceMapRegistry()
+		private readonly sourceMapRegistry: SourceMapRegistry = new SourceMapRegistry(),
 	) {
 		// This is our default case where we want to include everything and exclude the "node_modules" folder.
 		if (includes.length === 0 && excludes.length === 0) {
@@ -84,8 +84,8 @@ export class Instrumentor {
 			transformations.push(
 				sourceCodeCoverage(
 					filename,
-					this.asInputSourceOption(toRawSourceMap(inputSourceMap))
-				)
+					this.asInputSourceOption(toRawSourceMap(inputSourceMap)),
+				),
 			);
 		}
 
@@ -98,7 +98,7 @@ export class Instrumentor {
 				filename,
 				code,
 				transformations,
-				this.asInputSourceOption(inputSourceMap)
+				this.asInputSourceOption(inputSourceMap),
 			)?.code || code;
 
 		if (shouldInstrumentFile) {
@@ -123,7 +123,7 @@ export class Instrumentor {
 		filename: string,
 		code: string,
 		plugins: PluginItem[],
-		options: TransformOptions = {}
+		options: TransformOptions = {},
 	): BabelFileResult | null {
 		if (plugins.length === 0) {
 			return null;
@@ -143,7 +143,7 @@ export class Instrumentor {
 
 	private unloadInternalModules() {
 		console.log(
-			"DEBUG: Unloading internal Jazzer.js modules for instrumentation..."
+			"DEBUG: Unloading internal Jazzer.js modules for instrumentation...",
 		);
 		[
 			"@jazzer.js/bug-detectors",
@@ -175,7 +175,7 @@ export class Instrumentor {
 	private static doesMatchFilters(
 		filepath: string,
 		includes: string[],
-		excludes: string[]
+		excludes: string[],
 	): boolean {
 		const included =
 			includes.find((include) => filepath.includes(include)) !== undefined;
@@ -202,6 +202,6 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 		// required to allow jest to run typescript files
 		// jest's typescript integration will transform the typescript into javascript before giving it to the
 		// instrumentor but the filename will still have a .ts extension
-		{ extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] }
+		{ extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] },
 	);
 }

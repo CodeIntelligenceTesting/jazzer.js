@@ -29,14 +29,14 @@ yargs(process.argv.slice(2))
 	.example(
 		"$0 package/target -i packages/foo -i packages/bar",
 		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
-			'and only instrument code in the "packages/a" and "packages/b" modules.'
+			'and only instrument code in the "packages/a" and "packages/b" modules.',
 	)
 	.example(
 		"$0 package/target corpus -- -max_total_time=60",
 		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
 			'and use the directory "corpus" to store newly generated inputs. ' +
 			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
-			"(libFuzzer) to stop the fuzzing run after 60 seconds."
+			"(libFuzzer) to stop the fuzzing run after 60 seconds.",
 	)
 	.command(
 		"$0 <target> [corpus..]",
@@ -227,6 +227,6 @@ yargs(process.argv.slice(2))
 				coverageReporters: args.cov_reporters,
 				disableBugDetectors: args.disable_bug_detectors,
 			});
-		}
+		},
 	)
 	.help().argv;

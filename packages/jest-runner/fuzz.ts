@@ -49,7 +49,7 @@ const g = globalThis as unknown as Global.Global;
 export type FuzzTest = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
-	timeout?: number
+	timeout?: number,
 ) => void;
 
 export const skip: FuzzTest = (name) => {
@@ -96,7 +96,7 @@ export const runInFuzzingMode = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
-	config: Options
+	config: Options,
 ) => {
 	config.fuzzerOptions.unshift(corpus.seedInputsDirectory);
 	config.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
@@ -105,7 +105,7 @@ export const runInFuzzingMode = (
 		// Fuzzing is only allowed to start once in a single nodejs instance.
 		if (fuzzerStarted) {
 			const message = `Fuzzer already started. Please provide single fuzz test using --testNamePattern. Skipping test "${toTestName(
-				name
+				name,
 			)}"`;
 			const error = new FuzzerStartError(message);
 			// Remove stack trace as it is shown in the CLI / IDE and points to internal code.
@@ -121,7 +121,7 @@ export const runInRegressionMode = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
-	timeout: number
+	timeout: number,
 ) => {
 	g.describe(name, () => {
 		const inputsPaths = corpus.inputsPaths();
@@ -167,7 +167,7 @@ export const runInRegressionMode = (
 						timeoutID?.unref?.();
 						clearTimeout(timeoutID);
 						throw error;
-					}
+					},
 				);
 			});
 		});
@@ -178,7 +178,7 @@ const doneCallbackPromise = (
 	fn: FuzzTargetCallback,
 	content: Buffer,
 	resolve: (value: unknown) => void,
-	reject: (reason?: unknown) => void
+	reject: (reason?: unknown) => void,
 ) => {
 	try {
 		let doneCalled = false;
@@ -188,7 +188,7 @@ const doneCallbackPromise = (
 				// there could be quite some time until this one, there is not much we
 				// can do besides printing an error message.
 				console.error(
-					"Expected done to be called once, but it was called multiple times."
+					"Expected done to be called once, but it was called multiple times.",
 				);
 			}
 			doneCalled = true;
@@ -208,8 +208,8 @@ const doneCallbackPromise = (
 		if (result && typeof result.then === "function") {
 			reject(
 				new FuzzerError(
-					"Either async or done callback based fuzz tests allowed"
-				)
+					"Either async or done callback based fuzz tests allowed",
+				),
 			);
 		}
 	} catch (e: unknown) {

@@ -56,7 +56,7 @@ export const fuzzer: Fuzzer = {
 export function guideTowardsEquality(
 	current: string,
 	target: string,
-	id: number
+	id: number,
 ) {
 	tracer.traceUnequalStrings(id, current, target);
 }
@@ -76,7 +76,7 @@ export function guideTowardsEquality(
 export function guideTowardsContainment(
 	needle: string,
 	haystack: string,
-	id: number
+	id: number,
 ) {
 	tracer.traceStringContainment(id, needle, haystack);
 }

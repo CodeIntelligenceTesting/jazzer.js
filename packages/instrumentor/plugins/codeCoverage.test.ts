@@ -26,7 +26,7 @@ import * as os from "os";
 tmp.setGracefulCleanup();
 
 const expectInstrumentation = instrumentWith(
-	codeCoverage(new ZeroEdgeIdStrategy())
+	codeCoverage(new ZeroEdgeIdStrategy()),
 );
 
 describe("code coverage instrumentation", () => {
@@ -202,7 +202,7 @@ describe("code coverage instrumentation", () => {
 				[],
 				false,
 				false,
-				new FileSyncIdStrategy(idSyncFile.name)
+				new FileSyncIdStrategy(idSyncFile.name),
 			);
 
 			for (const testCase of testCases) {
@@ -221,7 +221,7 @@ describe("code coverage instrumentation", () => {
 					.readFileSync(idSyncFile.name)
 					.toString()
 					.split(os.EOL)
-					.filter((line) => line !== "")
+					.filter((line) => line !== ""),
 			).toEqual(["foo.js,0,3", "bar.js,3,2", "baz.js,5,4"]);
 		});
 	});

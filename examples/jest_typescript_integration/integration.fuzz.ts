@@ -30,6 +30,6 @@ describe("Target", () => {
 		"executes methods with a done callback",
 		(data: Buffer, done: (e?: Error) => void) => {
 			target.callbackFuzzMe(data, done);
-		}
+		},
 	);
 });

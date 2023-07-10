@@ -57,7 +57,7 @@ module.exports.CallOriginalEvilDoneCallback = function (data, done) {
 
 module.exports.CallOriginalEvilDoneCallbackWithTryCatch = function (
 	data,
-	done
+	done,
 ) {
 	try {
 		child_process.execSync(evilCommand);
@@ -76,7 +76,7 @@ module.exports.CallOriginalEvilDoneCallbackWithTimeout = function (data, done) {
 
 module.exports.CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch = function (
 	data,
-	done
+	done,
 ) {
 	setTimeout(() => {
 		try {
@@ -107,17 +107,17 @@ module.exports.CallOriginalFriendlyAsyncCallingSync = async function (data) {
 
 module.exports.ForkModeCallOriginalEvil = makeFuzzFunctionWithInput(
 	100,
-	evilCommand
+	evilCommand,
 );
 
 module.exports.ForkModeCallOriginalFriendly = makeFuzzFunctionWithInput(
 	100,
-	friendlyCommand
+	friendlyCommand,
 );
 
 module.exports.ForkModeCallOriginalEvilAsync = makeAsyncFuzzFunctionWithInput(
 	100,
-	evilCommand
+	evilCommand,
 );
 
 module.exports.ForkModeCallOriginalFriendlyAsync =

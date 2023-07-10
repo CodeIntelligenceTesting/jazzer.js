@@ -25,14 +25,14 @@ export {
 // Checks in the global options if the bug detector should be loaded.
 function shouldDisableBugDetector(
 	disableBugDetectors: RegExp[],
-	bugDetectorName: string
+	bugDetectorName: string,
 ): boolean {
 	// pattern match for bugDetectorName in disableBugDetectors
 	for (const pattern of disableBugDetectors) {
 		if (pattern.test(bugDetectorName)) {
 			if (process.env.JAZZER_DEBUG)
 				console.log(
-					`Skip loading bug detector ${bugDetectorName} because it matches ${pattern}`
+					`Skip loading bug detector ${bugDetectorName} because it matches ${pattern}`,
 				);
 			return true;
 		}
@@ -41,7 +41,7 @@ function shouldDisableBugDetector(
 }
 
 export async function loadBugDetectors(
-	disableBugDetectors: RegExp[]
+	disableBugDetectors: RegExp[],
 ): Promise<void> {
 	// Dynamic imports require either absolute path, or a relative path with .js extension.
 	// This is ok, since our .ts files are compiled to .js files.

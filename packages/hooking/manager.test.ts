@@ -62,7 +62,7 @@ describe("Hooks manager", () => {
 			registerHook(HookType.After, "foo", "pkg", true);
 			registerHook(HookType.Replace, "bar", "pkg", false);
 			expect(() => hookManager.matchingHooks("foo", "path/lib/pkg")).toThrow(
-				"For a given target function, AFTER hooks have to be either all sync or all async."
+				"For a given target function, AFTER hooks have to be either all sync or all async.",
 			);
 		});
 		it("should be invalid when having a more than one REPLACE hook", () => {
@@ -70,7 +70,7 @@ describe("Hooks manager", () => {
 			registerHook(HookType.Replace, "foo", "pkg", false);
 			registerHook(HookType.Replace, "foo", "pkg", false);
 			expect(() => hookManager.matchingHooks("foo", "path/lib/pkg")).toThrow(
-				"For a given target function, one REPLACE hook can be configured. Found: 2"
+				"For a given target function, one REPLACE hook can be configured. Found: 2",
 			);
 		});
 		it("should be invalid when mixing REPLACE hooks with BEFORE hooks", () => {
@@ -78,7 +78,7 @@ describe("Hooks manager", () => {
 			registerHook(HookType.Replace, "foo", "pkg", false);
 			registerHook(HookType.Before, "foo", "pkg", false);
 			expect(() => hookManager.matchingHooks("foo", "path/lib/pkg")).toThrow(
-				"For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found 1 REPLACE hooks and 1 BEFORE/AFTER hooks"
+				"For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found 1 REPLACE hooks and 1 BEFORE/AFTER hooks",
 			);
 		});
 		it("should be invalid when mixing REPLACE hooks with AFTER hooks", () => {
@@ -86,7 +86,7 @@ describe("Hooks manager", () => {
 			registerHook(HookType.Replace, "foo", "pkg", false);
 			registerHook(HookType.After, "foo", "pkg", false);
 			expect(() => hookManager.matchingHooks("foo", "path/lib/pkg")).toThrow(
-				"For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found 1 REPLACE hooks and 1 BEFORE/AFTER hooks"
+				"For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found 1 REPLACE hooks and 1 BEFORE/AFTER hooks",
 			);
 		});
 	});
@@ -96,7 +96,7 @@ function registerHook(
 	hookType: HookType,
 	target: string,
 	pkg: string,
-	isAsync: boolean
+	isAsync: boolean,
 ) {
 	switch (hookType) {
 		case HookType.Before:
@@ -108,7 +108,7 @@ function registerHook(
 				target,
 				pkg,
 				isAsync,
-				() => {}
+				() => {},
 			);
 			break;
 		case HookType.After:

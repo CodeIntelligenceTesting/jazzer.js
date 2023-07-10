@@ -30,7 +30,7 @@ beforeAll(() => {
 					addCallLog("Top-level beforeAll");
 					res(10);
 				}, 10);
-			})
+			}),
 		);
 	});
 });

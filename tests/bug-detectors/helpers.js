@@ -52,7 +52,7 @@ class FuzzTest {
 		seed,
 		jestTestFile,
 		jestTestName,
-		jestRunInFuzzingMode
+		jestRunInFuzzingMode,
 	) {
 		this.sync = sync;
 		this.runs = runs;
@@ -96,7 +96,7 @@ class FuzzTest {
 		// Write jest config file even if it exists
 		fs.writeFileSync(
 			path.join(this.dir, ".jazzerjsrc.json"),
-			JSON.stringify(config)
+			JSON.stringify(config),
 		);
 		const cmd = "npx";
 		const options = [
@@ -247,7 +247,7 @@ class FuzzTestBuilder {
 		}
 		if (this._fuzzEntryPoint !== "" && this._jestTestFile !== "") {
 			throw new Error(
-				"fuzzEntryPoint and jestTestFile are both set. Please specify only one."
+				"fuzzEntryPoint and jestTestFile are both set. Please specify only one.",
 			);
 		}
 		return new FuzzTest(
@@ -261,7 +261,7 @@ class FuzzTestBuilder {
 			this._seed,
 			this._jestTestFile,
 			this._jestTestName,
-			this._jestRunInFuzzingMode
+			this._jestRunInFuzzingMode,
 		);
 	}
 }

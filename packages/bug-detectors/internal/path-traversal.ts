@@ -125,7 +125,7 @@ for (const module of modulesToHook) {
 		const beforeHook = (
 			thisPtr: unknown,
 			params: unknown[],
-			hookId: number
+			hookId: number,
 		) => {
 			if (params === undefined || params.length === 0) {
 				return;
@@ -135,7 +135,7 @@ for (const module of modulesToHook) {
 			const firstArgument = params[0] as string;
 			if (firstArgument.includes(goal)) {
 				reportFinding(
-					`Path Traversal in ${functionName}(): called with '${firstArgument}'`
+					`Path Traversal in ${functionName}(): called with '${firstArgument}'`,
 				);
 			}
 			guideTowardsContainment(firstArgument, goal, hookId);
@@ -181,7 +181,7 @@ for (const module of functionsWithTwoTargets) {
 				if (firstArgument.includes(goal) || secondArgument.includes(goal)) {
 					reportFinding(
 						`Path Traversal in ${functionName}(): called with '${firstArgument}'` +
-							` and '${secondArgument}'`
+							` and '${secondArgument}'`,
 					);
 				}
 				guideTowardsContainment(firstArgument, goal, hookId);
@@ -195,7 +195,7 @@ for (const module of functionsWithTwoTargets) {
 			functionName,
 			module.moduleName,
 			false,
-			makeBeforeHook(callSiteId(functionName, module.moduleName, "secondId"))
+			makeBeforeHook(callSiteId(functionName, module.moduleName, "secondId")),
 		);
 	}
 }

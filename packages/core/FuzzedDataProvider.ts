@@ -142,7 +142,7 @@ export class FuzzedDataProvider {
 				copiedData,
 				8 - this._remainingBytes,
 				this.dataPtr,
-				this.dataPtr + this._remainingBytes
+				this.dataPtr + this._remainingBytes,
 			);
 			this._remainingBytes = 0;
 			return copiedData.readDoubleLE();
@@ -169,7 +169,7 @@ export class FuzzedDataProvider {
 	consumeFloat(): number {
 		return this.consumeFloatInRange(
 			FuzzedDataProvider.min_float,
-			FuzzedDataProvider.max_float
+			FuzzedDataProvider.max_float,
 		);
 	}
 
@@ -204,7 +204,7 @@ export class FuzzedDataProvider {
 	consumeDouble(): number {
 		return this.consumeDoubleInRange(
 			FuzzedDataProvider.min_double,
-			FuzzedDataProvider.max_double
+			FuzzedDataProvider.max_double,
 		);
 	}
 
@@ -299,7 +299,7 @@ export class FuzzedDataProvider {
 	consumeIntegrals(
 		maxLength: number,
 		numBytesPerIntegral: number,
-		isSigned = false
+		isSigned = false,
 	): number[] {
 		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
 		const result = new Array<number>();
@@ -307,7 +307,7 @@ export class FuzzedDataProvider {
 			result[i] = this.consumeIntegralLEorBE(
 				numBytesPerIntegral,
 				isSigned,
-				false
+				false,
 			);
 		}
 		return result;
@@ -325,7 +325,7 @@ export class FuzzedDataProvider {
 	consumeBigIntegrals(
 		maxLength: number,
 		numBytesPerIntegral: number,
-		isSigned = false
+		isSigned = false,
 	): bigint[] {
 		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
 		const result: bigint[] = new Array<bigint>(arrayLength);
@@ -333,7 +333,7 @@ export class FuzzedDataProvider {
 			result[i] = this.consumeBigIntegralLEorBE(
 				numBytesPerIntegral,
 				isSigned,
-				false
+				false,
 			);
 		}
 		return result;
@@ -396,7 +396,7 @@ export class FuzzedDataProvider {
 	consumeString(
 		maxLength: number,
 		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false
+		printable: boolean | undefined = false,
 	): string {
 		if (maxLength < 0) throw new Error("maxLength must be non-negative");
 		let result;
@@ -407,13 +407,13 @@ export class FuzzedDataProvider {
 				this.data,
 				this.dataPtr,
 				this.dataPtr + arrayLength,
-				encoding
+				encoding,
 			);
 		} else {
 			result = this.data.toString(
 				encoding,
 				this.dataPtr,
-				this.dataPtr + arrayLength
+				this.dataPtr + arrayLength,
 			);
 		}
 		this.dataPtr += arrayLength;
@@ -438,7 +438,7 @@ export class FuzzedDataProvider {
 		buf: Buffer,
 		min: number,
 		max: number,
-		encoding: BufferEncoding
+		encoding: BufferEncoding,
 	): string {
 		const newBuf = new Uint8Array(max - min);
 		for (let i = min; i < max; i++) {
@@ -456,7 +456,7 @@ export class FuzzedDataProvider {
 	 */
 	consumeRemainingAsString(
 		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false
+		printable: boolean | undefined = false,
 	): string {
 		return this.consumeString(this._remainingBytes, encoding, printable);
 	}
@@ -476,7 +476,7 @@ export class FuzzedDataProvider {
 		maxArrayLength: number,
 		maxStringLength: number,
 		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false
+		printable: boolean | undefined = false,
 	) {
 		const strs = [];
 		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
@@ -532,7 +532,7 @@ export class FuzzedDataProvider {
 				copiedData,
 				0,
 				this.dataPtr,
-				this.dataPtr + this._remainingBytes
+				this.dataPtr + this._remainingBytes,
 			);
 			this._remainingBytes = 0;
 			return copiedData.readDoubleBE();
@@ -554,11 +554,11 @@ export class FuzzedDataProvider {
 	private consumeIntegralLEorBE(
 		maxNumBytes: number,
 		isSigned = false,
-		isLittleEndian = true
+		isLittleEndian = true,
 	): number {
 		if (maxNumBytes < 0 || maxNumBytes > 6) {
 			throw new Error(
-				"maxNumBytes must be between 0 and 6: use the corresponding *BigIntegral function instead"
+				"maxNumBytes must be between 0 and 6: use the corresponding *BigIntegral function instead",
 			);
 		}
 		const min = isSigned ? -(2 ** (8 * maxNumBytes - 1)) : 0;
@@ -584,24 +584,24 @@ export class FuzzedDataProvider {
 	private consumeIntegralInRangeLEorBE(
 		min: number,
 		max: number,
-		isLittleEndian = true
+		isLittleEndian = true,
 	): number {
 		if (min == max) return min;
 		if (min > max) throw new Error("min must be less than or equal to max");
 		if (this._remainingBytes == 0) return min;
 		if (max > Number.MAX_SAFE_INTEGER)
 			throw new Error(
-				"max is too large: use the corresponding *BigIntegral function instead"
+				"max is too large: use the corresponding *BigIntegral function instead",
 			);
 		const range = max - min;
 		const numBytesToRepresentRange = Math.ceil(Math.log2(range + 1) / 8);
 		const numBytesToConsume = Math.min(
 			this._remainingBytes,
-			numBytesToRepresentRange
+			numBytesToRepresentRange,
 		);
 		if (numBytesToConsume > 6) {
 			throw new Error(
-				"requested range exceeds 2**48-1: use the corresponding *BigIntegral function instead"
+				"requested range exceeds 2**48-1: use the corresponding *BigIntegral function instead",
 			);
 		}
 		this._remainingBytes -= numBytesToConsume;
@@ -609,7 +609,7 @@ export class FuzzedDataProvider {
 		if (isLittleEndian) {
 			result = this.data.readUIntLE(
 				this.dataPtr + this._remainingBytes,
-				numBytesToConsume
+				numBytesToConsume,
 			);
 		} else {
 			result = this.data.readUIntBE(this.dataPtr, numBytesToConsume);
@@ -629,7 +629,7 @@ export class FuzzedDataProvider {
 	consumeBigIntegralLEorBE(
 		maxNumBytes: number,
 		isSigned = false,
-		isLittleEndian = true
+		isLittleEndian = true,
 	): bigint {
 		let min, max;
 		if (isSigned) {
@@ -658,7 +658,7 @@ export class FuzzedDataProvider {
 	private consumeBigIntegralInRangeLEorBE(
 		min: bigint,
 		max: bigint,
-		isLittleEndian = true
+		isLittleEndian = true,
 	): bigint {
 		if (min == max) return min;
 		if (min > max) throw new Error("min must be less than or equal to max");
@@ -689,11 +689,11 @@ export class FuzzedDataProvider {
 	 */
 	private computeArrayLength(
 		maxLength: number,
-		numBytesPerElement: number
+		numBytesPerElement: number,
 	): number {
 		const numAvailableBytes = Math.min(
 			this._remainingBytes,
-			maxLength * numBytesPerElement
+			maxLength * numBytesPerElement,
 		);
 		return Math.ceil(numAvailableBytes / numBytesPerElement);
 	}

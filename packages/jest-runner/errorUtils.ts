@@ -15,7 +15,7 @@
  */
 
 export const cleanupJestError = (
-	error: Error | undefined
+	error: Error | undefined,
 ): Error | undefined => {
 	if (error == undefined) {
 		return error;
@@ -25,7 +25,7 @@ export const cleanupJestError = (
 };
 
 export const cleanupJestRunnerStack = (
-	stack: string | undefined
+	stack: string | undefined,
 ): string | undefined => {
 	if (!stack) {
 		return stack;
@@ -45,7 +45,7 @@ export const cleanupJestRunnerStack = (
 
 export const removeTopFramesFromError = (
 	error: Error | undefined,
-	drop: number
+	drop: number,
 ): Error | undefined => {
 	if (error == undefined) {
 		return error;
@@ -56,7 +56,7 @@ export const removeTopFramesFromError = (
 
 export const removeTopFrames = (
 	stack: string | undefined,
-	drop: number
+	drop: number,
 ): string | undefined => {
 	if (!stack) {
 		return stack;
@@ -68,7 +68,7 @@ export const removeTopFrames = (
 
 export const removeBottomFramesFromError = (
 	error: Error | undefined,
-	drop: number
+	drop: number,
 ): Error | undefined => {
 	if (error == undefined) {
 		return error;
@@ -79,7 +79,7 @@ export const removeBottomFramesFromError = (
 
 export const removeBottomFrames = (
 	stack: string | undefined,
-	drop: number
+	drop: number,
 ): string | undefined => {
 	if (!stack) {
 		return stack;
