@@ -52,7 +52,7 @@
 		"prettier": "3.0.0",
 		"run-script-os": "^1.1.6",
 		"ts-jest": "^29.1.1",
-		"typescript": "^5.0.4"
+		"typescript": "^5.1.6"
 	},
 	"workspaces": [
 		"packages/*"
