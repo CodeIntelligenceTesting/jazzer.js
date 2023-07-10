@@ -406,7 +406,7 @@ export function wrapFuzzFunctionForBugDetection(
 	if (originalFuzzFn.length === 1) {
 		return (data: Buffer): void | Promise<void> => {
 			let fuzzTargetError: unknown;
-			let result: void | Promise<void>;
+			let result: void | Promise<void> = undefined;
 			try {
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
 				// Explicitly set promise handlers to process findings, but still return
