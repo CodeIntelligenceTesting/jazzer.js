@@ -121,7 +121,7 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 						if (parts.length !== 3) {
 							lock.unlockSync(this.idSyncFile);
 							throw Error(
-								`Expected ID file line to be of the form <source file>,<first ID>,<num IDs>", got "${line}"`
+								`Expected ID file line to be of the form <source file>,<first ID>,<num IDs>", got "${line}"`,
 							);
 						}
 						return {
@@ -131,7 +131,7 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 						};
 					});
 				const idInfoForFile = idInfo.filter(
-					(info) => info.filename === filename
+					(info) => info.filename === filename,
 				);
 
 				switch (idInfoForFile.length) {
@@ -193,13 +193,13 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 			// for deviations.
 			if (this.cachedIdCount !== usedIdsCount) {
 				throw Error(
-					`${filename} has ${usedIdsCount} edges, but ${this.cachedIdCount} edges reserved in ID sync file`
+					`${filename} has ${usedIdsCount} edges, but ${this.cachedIdCount} edges reserved in ID sync file`,
 				);
 			}
 		} else {
 			if (this.releaseLockOnSyncFile === undefined) {
 				console.error(
-					`Lock on ID sync file is not acquired by the first processing instrumenting: ${filename}`
+					`Lock on ID sync file is not acquired by the first processing instrumenting: ${filename}`,
 				);
 				process.exit(FileSyncIdStrategy.fatalExitCode);
 			}
@@ -207,7 +207,7 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 			// We are the first to instrument this file and should record the number of IDs in the sync file.
 			fs.appendFileSync(
 				this.idSyncFile,
-				`${filename},${this.firstEdgeId},${usedIdsCount}${os.EOL}`
+				`${filename},${this.firstEdgeId},${usedIdsCount}${os.EOL}`,
 			);
 			this.releaseLockOnSyncFile();
 			this.releaseLockOnSyncFile = undefined;

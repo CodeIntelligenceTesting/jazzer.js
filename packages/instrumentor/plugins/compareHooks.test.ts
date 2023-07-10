@@ -44,14 +44,14 @@ describe("compare hooks instrumentation", () => {
 				"a",
 				"b",
 				"===",
-				0
+				0,
 			);
 			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				"c",
 				"==",
-				0
+				0,
 			);
 		});
 
@@ -74,14 +74,14 @@ describe("compare hooks instrumentation", () => {
 				"a",
 				"b",
 				"!==",
-				0
+				0,
 			);
 			expect(fuzzer.tracer.traceStrCmp).toHaveBeenNthCalledWith(
 				2,
 				true,
 				"c",
 				"!=",
-				0
+				0,
 			);
 		});
 	});
@@ -105,14 +105,14 @@ describe("compare hooks instrumentation", () => {
 				10,
 				20,
 				"===",
-				0
+				0,
 			);
 			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				false,
 				30,
 				"==",
-				0
+				0,
 			);
 		});
 
@@ -134,14 +134,14 @@ describe("compare hooks instrumentation", () => {
 				10,
 				20,
 				"!==",
-				0
+				0,
 			);
 			expect(fuzzer.tracer.traceNumberCmp).toHaveBeenNthCalledWith(
 				2,
 				true,
 				30,
 				"!=",
-				0
+				0,
 			);
 		});
 
@@ -163,7 +163,7 @@ describe("compare hooks instrumentation", () => {
 					10,
 					20,
 					operator,
-					0
+					0,
 				);
 			});
 		});

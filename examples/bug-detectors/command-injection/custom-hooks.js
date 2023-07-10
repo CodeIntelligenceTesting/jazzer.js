@@ -36,9 +36,9 @@ registerReplaceHook(
 		const command = params[0];
 		if (command.includes("jaz_zer")) {
 			reportFinding(
-				`Command Injection in spawnSync(): called with '${command}'`
+				`Command Injection in spawnSync(): called with '${command}'`,
 			);
 		}
 		guideTowardsEquality(command, "jaz_zer", hookId);
-	}
+	},
 );

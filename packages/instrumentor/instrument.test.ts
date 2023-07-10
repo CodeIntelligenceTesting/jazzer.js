@@ -25,13 +25,13 @@ describe("shouldInstrument check", () => {
 		expect(instrumentor.shouldInstrumentForFuzzing("include")).toBeTruthy();
 		expect(instrumentor.shouldInstrumentForFuzzing("exclude")).toBeFalsy();
 		expect(
-			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files"),
 		).toBeTruthy();
 		expect(
-			instrumentor.shouldInstrumentForFuzzing("/some/package/exclude/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/exclude/files"),
 		).toBeFalsy();
 		expect(
-			instrumentor.shouldInstrumentForFuzzing("/something/else")
+			instrumentor.shouldInstrumentForFuzzing("/something/else"),
 		).toBeFalsy();
 	});
 
@@ -39,32 +39,36 @@ describe("shouldInstrument check", () => {
 		const instrumentor = new Instrumentor();
 		expect(instrumentor.shouldInstrumentForFuzzing("include")).toBeTruthy();
 		expect(
-			instrumentor.shouldInstrumentForFuzzing("/something/else")
+			instrumentor.shouldInstrumentForFuzzing("/something/else"),
 		).toBeTruthy();
 	});
 
 	it("should include nothing with emtpy string", () => {
 		const instrumentorWithEmptyInclude = new Instrumentor(["include", ""]);
 		expect(
-			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("include")
+			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("include"),
 		).toBeTruthy();
 		expect(
-			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing("/something/else")
+			instrumentorWithEmptyInclude.shouldInstrumentForFuzzing(
+				"/something/else",
+			),
 		).toBeFalsy();
 
 		const instrumentorWithEmptyExclude = new Instrumentor(["include"], [""]);
 		expect(
-			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing("include")
+			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing("include"),
 		).toBeTruthy();
 		expect(
-			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing("/something/else")
+			instrumentorWithEmptyExclude.shouldInstrumentForFuzzing(
+				"/something/else",
+			),
 		).toBeFalsy();
 	});
 
 	it("should exclude with precedence", () => {
 		const instrumentor = new Instrumentor(["include"], ["*"]);
 		expect(
-			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files")
+			instrumentor.shouldInstrumentForFuzzing("/some/package/include/files"),
 		).toBeFalsy();
 	});
 });
@@ -126,7 +130,7 @@ describe("transform", () => {
 				fileName: sourceFileName,
 				inlineSourceMap: true,
 			},
-			sourceFileName
+			sourceFileName,
 		);
 
 		withSourceMap((instrumentor: Instrumentor) => {
@@ -146,7 +150,7 @@ describe("transform", () => {
 function evalWithInstrumentor(
 	instrumentor: Instrumentor,
 	content: string,
-	fileName: string
+	fileName: string,
 ) {
 	const result = instrumentor.instrument(content, fileName);
 	const fn = eval(result);

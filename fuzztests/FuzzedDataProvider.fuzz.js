@@ -28,7 +28,7 @@ describe("FuzzedDataProvider", () => {
 		(data) => {
 			const provider = new FuzzedDataProvider(data);
 			const properties = Object.getOwnPropertyNames(
-				Object.getPrototypeOf(provider)
+				Object.getPrototypeOf(provider),
 			);
 			const methodNames = properties
 				.filter((p) => provider[p] instanceof Function)
@@ -42,7 +42,7 @@ describe("FuzzedDataProvider", () => {
 			}
 			jazzer.exploreState(hash(usedMethods), 31);
 		},
-		5000
+		5000,
 	);
 });
 

@@ -170,7 +170,7 @@ describe("My describe", () => {
 		(data) => {
 			target.fuzzMe(data);
 		},
-		2000
+		2000,
 	);
 });
 ```

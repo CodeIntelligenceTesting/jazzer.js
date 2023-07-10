@@ -48,7 +48,7 @@ for (const functionName of functionNames) {
 		const firstArgument = params[0] as string;
 		if (firstArgument.includes(goal)) {
 			reportFinding(
-				`Command Injection in ${functionName}(): called with '${firstArgument}'`
+				`Command Injection in ${functionName}(): called with '${firstArgument}'`,
 			);
 		}
 		guideTowardsContainment(firstArgument, goal, hookId);

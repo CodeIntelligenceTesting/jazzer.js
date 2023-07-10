@@ -47,7 +47,7 @@ export class MatchingHooksResult {
 	verify() {
 		if (this.replaceHooks.length > 1) {
 			throw new Error(
-				`For a given target function, one REPLACE hook can be configured. Found: ${this.replaceHooks.length}`
+				`For a given target function, one REPLACE hook can be configured. Found: ${this.replaceHooks.length}`,
 			);
 		}
 
@@ -60,7 +60,7 @@ export class MatchingHooksResult {
 					this.replaceHooks.length
 				} REPLACE hooks and ${
 					this.beforeHooks.length + this.afterHooks.length
-				} BEFORE/AFTER hooks`
+				} BEFORE/AFTER hooks`,
 			);
 		}
 
@@ -70,7 +70,7 @@ export class MatchingHooksResult {
 				!this.afterHooks.every((h) => !h.async)
 			) {
 				throw new Error(
-					"For a given target function, AFTER hooks have to be either all sync or all async."
+					"For a given target function, AFTER hooks have to be either all sync or all async.",
 				);
 			}
 		}
@@ -107,7 +107,7 @@ export class HookManager {
 		target: string,
 		pkg: string,
 		async: boolean,
-		hookFn: HookFn
+		hookFn: HookFn,
 	): Hook {
 		const hook = new Hook(hookType, target, pkg, async, hookFn);
 		this._hooks.push(hook);
@@ -135,7 +135,7 @@ export class HookManager {
 					return matches;
 				},
 
-				new MatchingHooksResult()
+				new MatchingHooksResult(),
 			);
 
 		matches.verify();
@@ -156,7 +156,7 @@ export class HookManager {
 		id: number,
 		thisPtr: object,
 		params: unknown[],
-		resultOrOriginalFunction: unknown
+		resultOrOriginalFunction: unknown,
 	): unknown {
 		const hook = this._hooks[id];
 		switch (hook.type) {
@@ -169,14 +169,14 @@ export class HookManager {
 					params,
 					callSiteId(),
 					// eslint-disable-next-line @typescript-eslint/ban-types
-					resultOrOriginalFunction as Function
+					resultOrOriginalFunction as Function,
 				);
 			case HookType.After:
 				(hook.hookFunction as AfterHookFn)(
 					thisPtr,
 					params,
 					callSiteId(),
-					resultOrOriginalFunction
+					resultOrOriginalFunction,
 				);
 		}
 	}
@@ -204,7 +204,7 @@ export function registerBeforeHook(
 	target: string,
 	pkg: string,
 	async: boolean,
-	hookFn: HookFn
+	hookFn: HookFn,
 ) {
 	hookManager.registerHook(HookType.Before, target, pkg, async, hookFn);
 }
@@ -213,7 +213,7 @@ export function registerReplaceHook(
 	target: string,
 	pkg: string,
 	async: boolean,
-	hookFn: HookFn
+	hookFn: HookFn,
 ) {
 	hookManager.registerHook(HookType.Replace, target, pkg, async, hookFn);
 }
@@ -222,7 +222,7 @@ export function registerAfterHook(
 	target: string,
 	pkg: string,
 	async: boolean,
-	hookFn: HookFn
+	hookFn: HookFn,
 ) {
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
 }

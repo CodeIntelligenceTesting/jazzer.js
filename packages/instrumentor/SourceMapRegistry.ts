@@ -36,7 +36,7 @@ export type SourceMap = {
 // encoded source map in capture group 5.
 const regex = RegExp(
 	"^\\s*?\\/[/*][@#]\\s+?sourceMappingURL=data:(((?:application|text)\\/json)(?:;charset=([^;,]+?)?)?)?(?:;(base64))?,(.*?)$",
-	"mg"
+	"mg",
 );
 
 /**
@@ -55,7 +55,7 @@ export function extractInlineSourceMap(code: string): SourceMap | undefined {
 }
 
 export function toRawSourceMap(
-	sourceMap?: SourceMap
+	sourceMap?: SourceMap,
 ): RawSourceMap | undefined {
 	if (sourceMap) {
 		return {

@@ -19,7 +19,7 @@ import { programVisitor, VisitorOptions } from "istanbul-lib-instrument";
 
 export function sourceCodeCoverage(
 	filename?: string,
-	opts: Partial<VisitorOptions> = {}
+	opts: Partial<VisitorOptions> = {},
 ): PluginTarget {
 	return ({ types }) => {
 		const ee = programVisitor(types, filename, opts);

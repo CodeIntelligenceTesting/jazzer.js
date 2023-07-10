@@ -126,7 +126,7 @@ describe("General tests", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrow(
-			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode
+			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
 		);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
 	});
@@ -157,7 +157,7 @@ describe("General tests", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
 			console.log(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
 		}
@@ -176,7 +176,7 @@ describe("General tests", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
 			console.log(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
 		}
@@ -195,7 +195,7 @@ describe("General tests", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
 			console.log(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
 		}
@@ -214,7 +214,7 @@ describe("General tests", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
 			console.log(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions"
+				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
 		}
@@ -262,7 +262,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Call with EVIL command ASYNC$"
+				"^Command Injection Jest tests Call with EVIL command ASYNC$",
 			)
 			.build();
 		expect(() => {
@@ -289,7 +289,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Call with FRIENDLY command ASYNC$"
+				"^Command Injection Jest tests Call with FRIENDLY command ASYNC$",
 			)
 			.build();
 		fuzzTest.execute();
@@ -302,7 +302,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Fuzzing mode with EVIL command$"
+				"^Command Injection Jest tests Fuzzing mode with EVIL command$",
 			)
 			.jestRunInFuzzingMode(true)
 			.runs(200)
@@ -310,7 +310,7 @@ describe("General tests", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrow(
-			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode
+			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
 		);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
 		expectErrorToBePrintedOnce(fuzzTest.stderr);
@@ -322,7 +322,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Fuzzing mode with FRIENDLY command$"
+				"^Command Injection Jest tests Fuzzing mode with FRIENDLY command$",
 			)
 			.jestRunInFuzzingMode(true)
 			.runs(200)
@@ -337,7 +337,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Call with EVIL command and done callback$"
+				"^Command Injection Jest tests Call with EVIL command and done callback$",
 			)
 			.build();
 		expect(() => {
@@ -353,7 +353,7 @@ describe("General tests", () => {
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName(
-				"^Command Injection Jest tests Call with FRIENDLY command and done callback$"
+				"^Command Injection Jest tests Call with FRIENDLY command and done callback$",
 			)
 			.build();
 		fuzzTest.execute();

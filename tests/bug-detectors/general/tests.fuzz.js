@@ -45,12 +45,12 @@ describe("Command Injection Jest tests", () => {
 
 	it.fuzz(
 		"Fuzzing mode with EVIL command",
-		makeFuzzFunctionWithInput(10, evilCommand)
+		makeFuzzFunctionWithInput(10, evilCommand),
 	);
 
 	it.fuzz(
 		"Fuzzing mode with FRIENDLY command",
-		makeFuzzFunctionWithInput(10, friendlyCommand)
+		makeFuzzFunctionWithInput(10, friendlyCommand),
 	);
 
 	it.fuzz("Call with EVIL command and done callback", (data, done) => {

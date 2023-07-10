@@ -47,7 +47,7 @@ type FunctionWithBlockBody = babel.Function & { body: babel.BlockStatement };
 function applyHooks(
 	filepath: string,
 	functionName: string,
-	functionNode: babel.Function
+	functionNode: babel.Function,
 ): boolean {
 	const matchedHooks = hookManager.matchingHooks(functionName, filepath);
 
@@ -79,7 +79,7 @@ function applyHooks(
 	if (matchedHooks.hasReplaceHooks() || matchedHooks.hasAfterHooks()) {
 		defineInternalFunctionWithOriginalImplementation(
 			functionNode as FunctionWithBlockBody,
-			origFuncName
+			origFuncName,
 		);
 	}
 
@@ -87,7 +87,7 @@ function applyHooks(
 		addReplaceHooks(
 			functionNode as FunctionWithBlockBody,
 			matchedHooks,
-			origFuncName
+			origFuncName,
 		);
 	}
 
@@ -95,7 +95,7 @@ function applyHooks(
 		addAfterHooks(
 			functionNode as FunctionWithBlockBody,
 			matchedHooks,
-			origFuncName
+			origFuncName,
 		);
 	}
 
@@ -136,14 +136,14 @@ function addElementToPath(element: string, path: string): string {
 
 function defineInternalFunctionWithOriginalImplementation(
 	functionNode: FunctionWithBlockBody,
-	origFuncName: string
+	origFuncName: string,
 ) {
 	functionNode.body = types.blockStatement([
 		createInternalFunctionFromBody(
 			origFuncName,
 			//TODO check this
 			functionNode.params as Array<babel.Identifier>,
-			functionNode.body
+			functionNode.body,
 		),
 	]);
 }
@@ -151,12 +151,12 @@ function defineInternalFunctionWithOriginalImplementation(
 function addAfterHooks(
 	functionNode: FunctionWithBlockBody,
 	matchesResult: MatchingHooksResult,
-	origFuncName: string
+	origFuncName: string,
 ) {
 	const retVal = types.identifier(origFuncName + "_result");
 	const origCal = callOriginalFunctionExpression(
 		origFuncName,
-		functionNode.params as Array<babel.Identifier>
+		functionNode.params as Array<babel.Identifier>,
 	);
 
 	if (matchesResult.afterHooks[0].async) {
@@ -168,9 +168,9 @@ function addAfterHooks(
 					asyncHookThenExpression(
 						afterHook,
 						functionNode.params as Array<babel.Identifier>,
-						retVal
+						retVal,
 					),
-				]
+				],
 			);
 		}
 		functionNode.body.body.push(types.returnStatement(thenChainCallExpr));
@@ -178,7 +178,7 @@ function addAfterHooks(
 		functionNode.body.body.push(
 			types.variableDeclaration("const", [
 				types.variableDeclarator(retVal, origCal),
-			])
+			]),
 		);
 		for (const afterHook of matchesResult.afterHooks) {
 			functionNode.body.body.push(
@@ -186,9 +186,9 @@ function addAfterHooks(
 					callHookExpression(
 						afterHook,
 						functionNode.params as Array<babel.Identifier>,
-						[retVal]
-					)
-				)
+						[retVal],
+					),
+				),
 			);
 		}
 		functionNode.body.body.push(types.returnStatement(retVal));
@@ -198,35 +198,35 @@ function addAfterHooks(
 function addReplaceHooks(
 	functionNode: FunctionWithBlockBody,
 	matchesResult: MatchingHooksResult,
-	origFuncName: string
+	origFuncName: string,
 ) {
 	assert(
 		babel.isBlockStatement(functionNode.body),
-		"the function node must be a block statement"
+		"the function node must be a block statement",
 	);
 	functionNode.body.body.push(
 		types.returnStatement(
 			callHookExpression(
 				matchesResult.replaceHooks[0],
 				functionNode.params as Array<babel.Identifier>,
-				[types.identifier(origFuncName)]
-			)
-		)
+				[types.identifier(origFuncName)],
+			),
+		),
 	);
 }
 
 function addBeforeHooks(
 	functionNode: FunctionWithBlockBody,
-	matchesResult: MatchingHooksResult
+	matchesResult: MatchingHooksResult,
 ) {
 	for (const beforeHook of matchesResult.beforeHooks.reverse()) {
 		functionNode.body.body.unshift(
 			types.expressionStatement(
 				callHookExpression(
 					beforeHook,
-					functionNode.params as Array<babel.Identifier>
-				)
-			)
+					functionNode.params as Array<babel.Identifier>,
+				),
+			),
 		);
 	}
 }
@@ -240,12 +240,12 @@ function assert(value: boolean, message: string) {
 function createInternalFunctionFromBody(
 	name: string,
 	params: Array<babel.Identifier>,
-	body: babel.BlockStatement
+	body: babel.BlockStatement,
 ): babel.VariableDeclaration {
 	return types.variableDeclaration("const", [
 		types.variableDeclarator(
 			types.identifier(name),
-			types.arrowFunctionExpression(params, body)
+			types.arrowFunctionExpression(params, body),
 		),
 	]);
 }
@@ -253,7 +253,7 @@ function createInternalFunctionFromBody(
 function callHookExpression(
 	hook: Hook,
 	params: Array<babel.Identifier>,
-	additionalParams: babel.Identifier[] = []
+	additionalParams: babel.Identifier[] = [],
 ): babel.CallExpression {
 	const id = hookManager.hookIndex(hook);
 	const hookArgs: babel.Expression[] = [
@@ -268,16 +268,16 @@ function callHookExpression(
 	return types.callExpression(
 		types.memberExpression(
 			types.identifier("HookManager"),
-			types.identifier("callHook")
+			types.identifier("callHook"),
 		),
-		hookArgs
+		hookArgs,
 	);
 }
 
 function asyncHookThenExpression(
 	hook: Hook,
 	params: Array<babel.Identifier>,
-	thenValue: babel.Identifier
+	thenValue: babel.Identifier,
 ): babel.FunctionExpression {
 	return types.functionExpression(
 		null,
@@ -285,16 +285,16 @@ function asyncHookThenExpression(
 		types.blockStatement([
 			types.expressionStatement(callHookExpression(hook, params, [thenValue])),
 			types.returnStatement(thenValue),
-		])
+		]),
 	);
 }
 
 function callOriginalFunctionExpression(
 	name: string,
-	params: Array<babel.Identifier>
+	params: Array<babel.Identifier>,
 ): babel.CallExpression {
 	return types.callExpression(
 		types.memberExpression(types.identifier(name), types.identifier("call")),
-		[types.thisExpression(), ...params]
+		[types.thisExpression(), ...params],
 	);
 }

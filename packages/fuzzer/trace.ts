@@ -30,7 +30,7 @@ function traceStrCmp(
 	s1: unknown,
 	s2: unknown,
 	operator: string,
-	id: number
+	id: number,
 ): boolean {
 	let result = false;
 	let shouldCallLibfuzzer = false;
@@ -78,7 +78,7 @@ function traceNumberCmp(
 	n1: number,
 	n2: number,
 	operator: string,
-	id: number
+	id: number,
 ): boolean {
 	if (Number.isInteger(n1) && Number.isInteger(n2)) {
 		addon.traceIntegerCompare(id, n1, n2);

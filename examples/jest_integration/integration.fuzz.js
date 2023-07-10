@@ -29,7 +29,7 @@ describe("My describe", () => {
 		async (data) => {
 			target.fuzzMe(data);
 		},
-		1000
+		1000,
 	);
 
 	it.fuzz(
@@ -37,7 +37,7 @@ describe("My describe", () => {
 		(data) => {
 			target.fuzzMe(data);
 		},
-		1000
+		1000,
 	);
 
 	it.fuzz("My callback fuzz test", (data, done) => {

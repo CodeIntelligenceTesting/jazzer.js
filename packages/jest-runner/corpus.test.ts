@@ -46,7 +46,7 @@ describe("Corpus", () => {
 			const inputsDir = path.parse(corpus.seedInputsDirectory);
 			expect(inputsDir.name).toEqual("fuzz");
 			expect(inputsDir.dir).toEqual(
-				[testFile.dir, testFile.name, "describe", "sub"].join(path.sep)
+				[testFile.dir, testFile.name, "describe", "sub"].join(path.sep),
 			);
 			expect(inputsDir.ext).toBeFalsy();
 			expect(fs.existsSync(corpus.seedInputsDirectory)).toBeTruthy();
@@ -78,7 +78,7 @@ describe("Corpus", () => {
 			const corpus = new Corpus(fuzzTest, []);
 			const testFile = path.parse(fuzzTest);
 			expect(corpus.generatedInputsDirectory).toEqual(
-				path.join(testFile.dir, ".cifuzz-corpus", testFile.name, path.sep)
+				path.join(testFile.dir, ".cifuzz-corpus", testFile.name, path.sep),
 			);
 			expect(fs.existsSync(corpus.generatedInputsDirectory)).toBeTruthy();
 		});
@@ -108,7 +108,7 @@ function mockFuzzTest({
 	for (let i = 0; i < seedFiles; i++) {
 		fs.writeFileSync(
 			path.join(tmpDir, fuzzTestName, i.toString()),
-			i.toString()
+			i.toString(),
 		);
 	}
 	for (let i = 0; i < subDirs; i++) {

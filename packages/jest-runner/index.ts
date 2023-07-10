@@ -48,7 +48,7 @@ class FuzzRunner extends CallbackTestRunner {
 		onStart: OnTestStart,
 		onResult: OnTestSuccess,
 		onFailure: OnTestFailure,
-		options: TestRunnerOptions // eslint-disable-line @typescript-eslint/no-unused-vars
+		options: TestRunnerOptions, // eslint-disable-line @typescript-eslint/no-unused-vars
 	): Promise<void> {
 		const config = loadConfig();
 		config.coverage = this.shouldCollectCoverage;
@@ -63,7 +63,7 @@ class FuzzRunner extends CallbackTestRunner {
 		watcher: TestWatcher,
 		onStart: OnTestStart,
 		onResult: OnTestSuccess,
-		onFailure: OnTestFailure
+		onFailure: OnTestFailure,
 	) {
 		process.env.JEST_WORKER_ID = "1";
 		return tests.reduce((promise, test) => {
@@ -82,7 +82,7 @@ class FuzzRunner extends CallbackTestRunner {
 					(error) => {
 						error.stack = cleanupJestRunnerStack(error.stack);
 						onFailure(test, error);
-					}
+					},
 				);
 			});
 		}, Promise.resolve());

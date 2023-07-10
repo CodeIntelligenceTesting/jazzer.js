@@ -29,12 +29,12 @@ export class Corpus {
 	constructor(testSourceFilePath: string, testJestPathElements: string[]) {
 		this._seedInputsDirectory = directoryPathForTest(
 			testSourceFilePath,
-			testJestPathElements
+			testJestPathElements,
 		);
 		this._generatedInputsDirectory = directoryPathForTest(
 			testSourceFilePath,
 			testJestPathElements,
-			Corpus.defaultCorpusDirectory
+			Corpus.defaultCorpusDirectory,
 		);
 		this.createMissingDirectories();
 	}
@@ -54,7 +54,7 @@ export class Corpus {
 				(entry) =>
 					!fs
 						.lstatSync(path.join(this.seedInputsDirectory, entry))
-						.isDirectory()
+						.isDirectory(),
 			)
 			.map((file) => [file, path.join(this._seedInputsDirectory, file)]);
 	}
@@ -68,21 +68,21 @@ export class Corpus {
 const directoryPathForTest = (
 	testSourceFilePath: string,
 	testJestPathElements: string[],
-	addToProjectRoot = ""
+	addToProjectRoot = "",
 ): string => {
 	const rootDirectory = buildRootDirectory(
 		testSourceFilePath,
-		addToProjectRoot
+		addToProjectRoot,
 	);
 	const safeTestJestPathElements = testJestPathElements.map(
-		replaceSpacesWithUnderscore
+		replaceSpacesWithUnderscore,
 	);
 	return path.join(rootDirectory, ...safeTestJestPathElements, path.sep);
 };
 
 const buildRootDirectory = (
 	testSourceFilePath: string,
-	projectCorpusRoot: string
+	projectCorpusRoot: string,
 ): string => {
 	const inputsRoot = path.parse(testSourceFilePath);
 	const testName = inputsRoot.name;
@@ -92,7 +92,7 @@ const buildRootDirectory = (
 		mainDir = path.join(
 			findDirectoryWithPackageJson(inputsRoot).dir,
 			projectCorpusRoot,
-			testName
+			testName,
 		);
 	} else {
 		mainDir = path.join(inputsRoot.dir, testName);
@@ -101,7 +101,7 @@ const buildRootDirectory = (
 };
 
 const findDirectoryWithPackageJson = (
-	directory: path.ParsedPath
+	directory: path.ParsedPath,
 ): path.ParsedPath => {
 	while (!fs.readdirSync(directory.dir).includes("package.json")) {
 		directory = path.parse(directory.dir);

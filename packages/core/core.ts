@@ -89,8 +89,8 @@ export async function initFuzzing(options: Options) {
 			options.dryRun,
 			options.idSyncFile !== undefined
 				? new FileSyncIdStrategy(options.idSyncFile)
-				: new MemorySyncIdStrategy()
-		)
+				: new MemorySyncIdStrategy(),
+		),
 	);
 	// Loads custom hook files and adds them to the hook manager.
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
@@ -101,7 +101,7 @@ export async function initFuzzing(options: Options) {
 	// using this function, which loads each bug detector relative to the bug-detectors directory. E.g., in Jazzer
 	// (without the .js) there is no distinction between custom hooks and bug detectors.
 	await loadBugDetectors(
-		options.disableBugDetectors.map((pattern: string) => new RegExp(pattern))
+		options.disableBugDetectors.map((pattern: string) => new RegExp(pattern)),
 	);
 
 	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
@@ -118,7 +118,7 @@ async function hookBuiltInFunctions(hookManager: hooking.HookManager) {
 				if (process.env.JAZZER_DEBUG) {
 					console.log(
 						"DEBUG: [Hook] Error when trying to hook the built-in function: " +
-							e
+							e,
 					);
 				}
 			}
@@ -142,7 +142,7 @@ export async function startFuzzing(options: Options) {
 				options.expectedErrors,
 				options.coverageDirectory,
 				options.coverageReporters,
-				options.sync
+				options.sync,
 			);
 		},
 		(err: unknown) => {
@@ -151,9 +151,9 @@ export async function startFuzzing(options: Options) {
 				options.expectedErrors,
 				options.coverageDirectory,
 				options.coverageReporters,
-				options.sync
+				options.sync,
 			);
-		}
+		},
 	);
 }
 
@@ -167,7 +167,7 @@ function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
 
 export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
-	options: Options
+	options: Options,
 ) {
 	const fuzzerOptions = buildFuzzerOptions(options);
 	logInfoAboutFuzzerOptions(fuzzerOptions);
@@ -187,7 +187,7 @@ function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
 		(flag) =>
 			flag.startsWith("-fork=") ||
 			flag.startsWith("-jobs=") ||
-			flag.startsWith("-merge=")
+			flag.startsWith("-merge="),
 	);
 
 	if (!libFuzzerSpawnsProcess) {
@@ -201,7 +201,7 @@ function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
 
 function createWrapperScript(fuzzerOptions: string[]) {
 	const jazzerArgs = process.argv.filter(
-		(arg) => arg !== "--" && fuzzerOptions.indexOf(arg) === -1
+		(arg) => arg !== "--" && fuzzerOptions.indexOf(arg) === -1,
 	);
 
 	if (jazzerArgs.indexOf("--id_sync_file") === -1) {
@@ -237,7 +237,7 @@ function stopFuzzing(
 	expectedErrors: string[],
 	coverageDirectory: string,
 	coverageReporters: reports.ReportType[],
-	sync: boolean
+	sync: boolean,
 ) {
 	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
 	if (process.env.JAZZER_DEBUG) {
@@ -253,7 +253,7 @@ function stopFuzzing(
 			coverageMap: coverageMap,
 		});
 		coverageReporters.forEach((reporter) =>
-			reports.create(reporter).execute(context)
+			reports.create(reporter).execute(context),
 		);
 	}
 
@@ -261,7 +261,7 @@ function stopFuzzing(
 	if (!err) {
 		if (expectedErrors.length) {
 			console.error(
-				`ERROR: Received no error, but expected one of [${expectedErrors}].`
+				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
 			);
 			stopFuzzing(ERROR_UNEXPECTED_CODE);
 		}
@@ -277,7 +277,7 @@ function stopFuzzing(
 		} else {
 			printError(err);
 			console.error(
-				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`
+				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`,
 			);
 			stopFuzzing(ERROR_UNEXPECTED_CODE);
 		}
@@ -341,7 +341,7 @@ function cleanErrorStack(error: Error): string {
 		// finding.
 		const stack = error.stack.split("\n");
 		const index = stack.findIndex((line) =>
-			line.includes("jazzer.js/packages/hooking/manager")
+			line.includes("jazzer.js/packages/hooking/manager"),
 		);
 		if (index !== undefined && index >= 0) {
 			error.stack = stack.slice(index + 1).join("\n");
@@ -384,13 +384,13 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 	const fuzzTarget = await importModule(options.fuzzTarget);
 	if (!fuzzTarget) {
 		throw new Error(
-			`${options.fuzzTarget} could not be imported successfully"`
+			`${options.fuzzTarget} could not be imported successfully"`,
 		);
 	}
 	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.fuzzEntryPoint];
 	if (typeof fuzzFn !== "function") {
 		throw new Error(
-			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`
+			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`,
 		);
 	}
 	return wrapFuzzFunctionForBugDetection(fuzzFn);
@@ -401,7 +401,7 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
  * Ensures that errors thrown by bug detectors have higher priority than errors in the fuzz target.
  */
 export function wrapFuzzFunctionForBugDetection(
-	originalFuzzFn: fuzzer.FuzzTarget
+	originalFuzzFn: fuzzer.FuzzTarget,
 ): fuzzer.FuzzTarget {
 	if (originalFuzzFn.length === 1) {
 		return (data: Buffer): void | Promise<void> => {
@@ -419,7 +419,7 @@ export function wrapFuzzFunctionForBugDetection(
 						},
 						(reason) => {
 							return throwIfError(reason);
-						}
+						},
 					);
 				}
 			} catch (e) {
@@ -430,7 +430,7 @@ export function wrapFuzzFunctionForBugDetection(
 	} else {
 		return (
 			data: Buffer,
-			done: (err?: Error) => void
+			done: (err?: Error) => void,
 		): void | Promise<void> => {
 			try {
 				// Return result of fuzz target to enable sanity checks in C++ part.

@@ -51,7 +51,7 @@ export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
 	function makeCounterIncExpr(): Expression {
 		return types.callExpression(
 			types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-			[types.numericLiteral(idStrategy.nextEdgeId())]
+			[types.numericLiteral(idStrategy.nextEdgeId())],
 		);
 	}
 
@@ -76,7 +76,7 @@ export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
 				},
 				SwitchStatement(path: NodePath<SwitchStatement>) {
 					path.node.cases.forEach((caseStmt) =>
-						caseStmt.consequent.unshift(makeCounterIncStmt())
+						caseStmt.consequent.unshift(makeCounterIncStmt()),
 					);
 					path.insertAfter(makeCounterIncStmt());
 				},

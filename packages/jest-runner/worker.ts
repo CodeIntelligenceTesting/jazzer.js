@@ -131,7 +131,7 @@ export class JazzerWorker {
 		await this.runDescribeBlock(
 			state.rootDescribeBlock,
 			state.hasFocusedTests,
-			config.testNamePattern ?? ""
+			config.testNamePattern ?? "",
 		);
 		this.#testSummary.end = performance.now();
 
@@ -140,7 +140,7 @@ export class JazzerWorker {
 			result.testResults,
 			test.context.config,
 			config,
-			test.path
+			test.path,
 		);
 		return result;
 	}
@@ -162,7 +162,7 @@ export class JazzerWorker {
 		block: Circus.DescribeBlock,
 		hasFocusedTests: boolean,
 		testNamePattern: string,
-		ancestors: string[] = []
+		ancestors: string[] = [],
 	) {
 		const adjustedPattern = this.adjustTestPattern(ancestors, testNamePattern);
 
@@ -188,7 +188,7 @@ export class JazzerWorker {
 					child,
 					hasFocusedTests,
 					testNamePattern,
-					nextAncestors
+					nextAncestors,
 				);
 				await this.runHooks("afterEach", block, true);
 			} else if (child.type === "test") {
@@ -203,7 +203,7 @@ export class JazzerWorker {
 
 	private async runTestEntry(
 		testEntry: Circus.TestEntry,
-		ancestors: string[] = []
+		ancestors: string[] = [],
 	) {
 		expect.setState({
 			suppressedErrors: [],
@@ -256,7 +256,7 @@ export class JazzerWorker {
 	private async runHooks(
 		hookType: string,
 		block: Circus.DescribeBlock,
-		shouldRunInAncestors = false
+		shouldRunInAncestors = false,
 	) {
 		const hooks =
 			shouldRunInAncestors && block.parent ? block.parent.hooks : block.hooks;
@@ -269,7 +269,7 @@ export class JazzerWorker {
 	private async runHook(
 		block: Circus.DescribeBlock,
 		hook: Circus.Hook,
-		timeout: number
+		timeout: number,
 	) {
 		let timeoutID: NodeJS.Timeout;
 		return new Promise((resolve, reject) => {
@@ -277,10 +277,10 @@ export class JazzerWorker {
 				reject(
 					removeTopFramesFromError(
 						new Error(
-							`Exceeded timeout of ${timeout} ms for "${hook.type}" of "${block.name}".\nIncrease the timeout value, if this is a long-running test.`
+							`Exceeded timeout of ${timeout} ms for "${hook.type}" of "${block.name}".\nIncrease the timeout value, if this is a long-running test.`,
 						),
-						1
-					)
+						1,
+					),
 				);
 			}, timeout);
 			this.executeHook(block, hook, resolve, reject);
@@ -296,7 +296,7 @@ export class JazzerWorker {
 				timeoutID?.unref?.();
 				clearTimeout(timeoutID);
 				throw error;
-			}
+			},
 		);
 	}
 
@@ -304,7 +304,7 @@ export class JazzerWorker {
 		block: Circus.DescribeBlock,
 		hook: Circus.Hook,
 		resolve: (value: unknown) => void,
-		reject: (reason?: unknown) => void
+		reject: (reason?: unknown) => void,
 	) {
 		let result;
 		if (hook.fn.length > 0) {
@@ -316,13 +316,13 @@ export class JazzerWorker {
 						// there could be quite some time until this one, there is not much we
 						// can do besides printing an error message.
 						console.error(
-							`Expected done to be called once, but it was called multiple times in "${hook.type}" of "${block.name}".`
+							`Expected done to be called once, but it was called multiple times in "${hook.type}" of "${block.name}".`,
 						);
 					}
 					doneCalled = true;
 					if (typeof doneMsg === "string") {
 						reject(
-							removeTopFramesFromError(new Error(`Failed: ${doneMsg}`), 1)
+							removeTopFramesFromError(new Error(`Failed: ${doneMsg}`), 1),
 						);
 					} else if (doneMsg) {
 						reject(doneMsg);
@@ -337,19 +337,19 @@ export class JazzerWorker {
 					reject(
 						removeTopFramesFromError(
 							new Error(
-								`Using done callback in async "${hook.type}" hook of "${block.name}" is not allowed.`
+								`Using done callback in async "${hook.type}" hook of "${block.name}" is not allowed.`,
 							),
-							1
-						)
+							1,
+						),
 					);
 				} else if (isGeneratorFunction(hookResult)) {
 					reject(
 						removeTopFramesFromError(
 							new Error(
-								`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`
+								`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`,
 							),
-							1
-						)
+							1,
+						),
 					);
 				}
 			});
@@ -364,10 +364,10 @@ export class JazzerWorker {
 			reject(
 				removeTopFramesFromError(
 					new Error(
-						`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`
+						`Generators are currently not supported by Jazzer.js but used in "${hook.type}" of "${block.name}".`,
 					),
-					1
-				)
+					1,
+				),
 			);
 		} else {
 			resolve(result);
@@ -443,7 +443,7 @@ export class JazzerWorker {
 	 */
 	private adjustTestPattern(
 		ancestors: string[],
-		testNamePattern: string
+		testNamePattern: string,
 	): string {
 		// IntelliJ interprets our fuzz extension as a test and thus appends a dollar sign
 		// to the fuzz test pattern when started from the IDE. This is fine for the fuzzing mode

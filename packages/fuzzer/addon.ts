@@ -19,18 +19,18 @@ import { default as bind } from "bindings";
 export type FuzzTargetAsyncOrValue = (data: Buffer) => void | Promise<void>;
 export type FuzzTargetCallback = (
 	data: Buffer,
-	done: (e?: Error) => void
+	done: (e?: Error) => void,
 ) => void;
 export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
 export type FuzzOpts = string[];
 
 export type StartFuzzingSyncFn = (
 	fuzzFn: FuzzTarget,
-	fuzzOpts: FuzzOpts
+	fuzzOpts: FuzzOpts,
 ) => void;
 export type StartFuzzingAsyncFn = (
 	fuzzFn: FuzzTarget,
-	fuzzOpts: FuzzOpts
+	fuzzOpts: FuzzOpts,
 ) => Promise<void>;
 
 type NativeAddon = {
@@ -40,18 +40,18 @@ type NativeAddon = {
 	traceUnequalStrings: (
 		hookId: number,
 		current: string,
-		target: string
+		target: string,
 	) => void;
 
 	traceStringContainment: (
 		hookId: number,
 		needle: string,
-		haystack: string
+		haystack: string,
 	) => void;
 	traceIntegerCompare: (
 		hookId: number,
 		current: number,
-		target: number
+		target: number,
 	) => void;
 
 	tracePcIndir: (hookId: number, state: number) => void;

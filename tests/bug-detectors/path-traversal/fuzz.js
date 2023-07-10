@@ -54,33 +54,33 @@ module.exports.PathTraversalFsMkdirSafeSync = makeFnCalledOnce((data) => {
 module.exports.PathTraversalFsMkdirEvilAsync = makeFnCalledOnce(
 	async (data) => {
 		fs.mkdir(evil_path, () => {});
-	}
+	},
 );
 
 module.exports.PathTraversalFsMkdirSafeAsync = makeFnCalledOnce(
 	async (data) => {
 		fs.mkdir(safe_path, () => {});
-	}
+	},
 );
 
 // Test fsp module
 module.exports.PathTraversalFspMkdirSafeAsync = makeFnCalledOnce(
 	async (data) => {
 		await fsp.mkdir(safe_path);
-	}
+	},
 );
 
 module.exports.PathTraversalFspMkdirEvilAsync = makeFnCalledOnce(
 	async (data) => {
 		return fsp.mkdir(evil_path);
-	}
+	},
 );
 
 module.exports.PathTraversalFspOpenEvilAsync = makeFnCalledOnce(
 	async (data) => {
 		return callWithTimeout(() => fsp.open(evil_path, "r"), 500);
 	},
-	1
+	1,
 );
 
 // Test path module

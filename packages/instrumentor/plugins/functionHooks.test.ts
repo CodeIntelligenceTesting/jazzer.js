@@ -23,7 +23,7 @@ import * as hooking from "@jazzer.js/hooking";
 import { Hook, TrackedHook, hookTracker } from "@jazzer.js/hooking";
 
 const expectInstrumentationEval = instrumentAndEvalWith(
-	functionHooks("pkg/lib/a")
+	functionHooks("pkg/lib/a"),
 );
 
 registerHookManagerGlobally();
@@ -37,7 +37,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Before,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -77,7 +77,7 @@ describe("function hooks instrumentation", () => {
 				"baz",
 				hooking.HookType.Before,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -118,7 +118,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Before,
 				2,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -160,7 +160,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Before,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|const foo = function (arg1, arg2) {
@@ -200,7 +200,7 @@ describe("function hooks instrumentation", () => {
 				"A.foo",
 				hooking.HookType.Before,
 				1,
-				[2]
+				[2],
 			);
 			const input = `
 			|class A {
@@ -268,7 +268,7 @@ describe("function hooks instrumentation", () => {
 				"A.foo",
 				hooking.HookType.Before,
 				1,
-				[2]
+				[2],
 			);
 			const input = `
 			|const A = class {
@@ -335,7 +335,7 @@ describe("function hooks instrumentation", () => {
 				"A.foo",
 				hooking.HookType.Before,
 				1,
-				[2]
+				[2],
 			);
 			const input = `
 			|const A = {
@@ -383,7 +383,7 @@ describe("function hooks instrumentation", () => {
 				"obj.foo",
 				hooking.HookType.Before,
 				1,
-				[2]
+				[2],
 			);
 			const input = `
 			|const obj = {
@@ -430,7 +430,7 @@ describe("function hooks instrumentation", () => {
 				"foo.bar",
 				hooking.HookType.Before,
 				1,
-				[2]
+				[2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -479,7 +479,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.After,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -524,7 +524,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.After,
 				2,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -573,7 +573,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.After,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -616,7 +616,7 @@ describe("function hooks instrumentation", () => {
 						expectTrackedHooks(hookTracker.applied, ["foo"]);
 						expectTrackedHooks(hookTracker.available, ["bar"]);
 						expectTrackedHooksUnknown(hookCallMap, 0);
-					}
+					},
 				);
 			});
 			expectLogHooks(dbgMock, 1, "After", "foo");
@@ -630,7 +630,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.After,
 				2,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -677,7 +677,7 @@ describe("function hooks instrumentation", () => {
 						expectTrackedHooks(hookTracker.applied, ["foo"]);
 						expectTrackedHooks(hookTracker.available, ["bar"]);
 						expectTrackedHooksUnknown(hookCallMap, 0);
-					}
+					},
 				);
 			});
 			expectLogHooks(dbgMock, 2, "After", "foo");
@@ -691,7 +691,7 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Replace,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -734,7 +734,7 @@ describe("function hooks instrumentation", () => {
 				"a.foo",
 				hooking.HookType.Replace,
 				1,
-				[]
+				[],
 			);
 			const input = `
 			|function a(arg1, arg2) {
@@ -786,13 +786,13 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Before,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const afterHookCallMap = registerSyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -843,13 +843,13 @@ describe("function hooks instrumentation", () => {
 				"foo",
 				hooking.HookType.Before,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const afterHookCallMap = registerAsyncFunctionHook(
 				"foo",
 				hooking.HookType.After,
 				1,
-				[1, 2]
+				[1, 2],
 			);
 			const input = `
 			|function foo(arg1, arg2) {
@@ -885,20 +885,21 @@ describe("function hooks instrumentation", () => {
 			|
 			|foo(1, 2);`;
 
-			const dbgMock = withDebug(() =>
-				expectInstrumentationEval<Promise<number>>(input, output)?.then(
-					(result: number) => {
-						expect(result).toEqual(3);
-						expect(beforeHookCallMap.size).toEqual(1);
-						expectHook(0, beforeHookCallMap);
-						expect(afterHookCallMap.size).toEqual(1);
-						expectHook(0, afterHookCallMap);
-						expectTrackedHooks(hookTracker.applied, ["foo"]);
-						expectTrackedHooks(hookTracker.available, ["bar"]);
-						expectTrackedHooksUnknown(beforeHookCallMap, 0);
-						expectTrackedHooksUnknown(afterHookCallMap, 0);
-					}
-				)
+			const dbgMock = withDebug(
+				() =>
+					expectInstrumentationEval<Promise<number>>(input, output)?.then(
+						(result: number) => {
+							expect(result).toEqual(3);
+							expect(beforeHookCallMap.size).toEqual(1);
+							expectHook(0, beforeHookCallMap);
+							expect(afterHookCallMap.size).toEqual(1);
+							expectHook(0, afterHookCallMap);
+							expectTrackedHooks(hookTracker.applied, ["foo"]);
+							expectTrackedHooks(hookTracker.available, ["bar"]);
+							expectTrackedHooksUnknown(beforeHookCallMap, 0);
+							expectTrackedHooksUnknown(afterHookCallMap, 0);
+						},
+					),
 			);
 
 			expectLogHooks(dbgMock, 2, "Before", "foo");
@@ -916,7 +917,7 @@ function registerSyncFunctionHook(
 	target: string,
 	hookType: hooking.HookType,
 	numHooks: number,
-	expectedParams: number[]
+	expectedParams: number[],
 ) {
 	return registerHook(target, hookType, numHooks, expectedParams, false, false);
 }
@@ -924,7 +925,7 @@ function registerAsyncFunctionHook(
 	target: string,
 	hookType: hooking.HookType,
 	numHooks: number,
-	expectedParams: number[]
+	expectedParams: number[],
 ) {
 	return registerHook(target, hookType, numHooks, expectedParams, false, true);
 }
@@ -932,7 +933,7 @@ function registerMethodHook(
 	target: string,
 	hookType: hooking.HookType,
 	numHooks: number,
-	expectedParams: number[]
+	expectedParams: number[],
 ) {
 	return registerHook(target, hookType, numHooks, expectedParams, true, false);
 }
@@ -943,7 +944,7 @@ function registerHook(
 	numHooks: number,
 	expectedParams: number[],
 	isMethod: boolean,
-	isAsync: boolean
+	isAsync: boolean,
 ) {
 	const hookCallMap = new Map<number, [number, Hook]>();
 	for (let i = 0; i < numHooks; i++) {
@@ -958,7 +959,7 @@ function registerHook(
 				params: number[],
 				_hookId: number,
 				// eslint-disable-next-line @typescript-eslint/ban-types
-				originalFunction: Function
+				originalFunction: Function,
 			) => {
 				const [calls, hook] = hookCallMap.get(i) as [number, Hook];
 				hookCallMap.set(i, [calls + 1, hook]);
@@ -974,7 +975,7 @@ function registerHook(
 				if (hookType === hooking.HookType.Replace) {
 					return originalFunction.call(thisPtr, ...params);
 				}
-			}
+			},
 		);
 		hookCallMap.set(i, [0, hook]);
 	}
@@ -1001,7 +1002,7 @@ function expectLogHooks(
 	mock: jest.Mock<any, any>,
 	callsites: number,
 	hookType: string,
-	hookName: string
+	hookName: string,
 ) {
 	expect(mock).toBeCalledTimes(callsites);
 	if (callsites > 0) {
@@ -1015,17 +1016,17 @@ function expectLogHooks(
 // Only given functionNames (and none else) should be present in trackedHooks.
 function expectTrackedHooks(
 	trackedHooks: TrackedHook[],
-	functionNames: string[]
+	functionNames: string[],
 ) {
 	expect(
-		trackedHooks.every((h) => functionNames.includes(h.target))
+		trackedHooks.every((h) => functionNames.includes(h.target)),
 	).toBeTruthy();
 	expect(trackedHooks.length).toEqual(functionNames.length);
 }
 
 function expectTrackedHooksUnknown(
 	hookMap: Map<number, [number, Hook]>,
-	id: number
+	id: number,
 ) {
 	const [_calls, hooks] = hookMap.get(id) as [number, Hook];
 	hookTracker.categorizeUnknown([hooks]);
