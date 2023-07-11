@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-constant-condition: 0 */
-
 const target = require("./target.js");
 
 describe("My describe", () => {
@@ -55,7 +53,7 @@ describe("My describe", () => {
 	// finding and shut down the whole process with exit code 70.
 	it.skip.fuzz("Sync timeout", () => {
 		// noinspection InfiniteLoopJS
-		while (true) {
+		for (;;) {
 			// Ignore
 		}
 	});
