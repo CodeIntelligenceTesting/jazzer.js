@@ -56,7 +56,6 @@ describe("Hooks", () => {
 		let test = 0;
 		// Busy wait, do nothing
 		for (let i = 0; i < 1000; i++) {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			test++;
 		}
 		addCallLog("My describe: afterEach");

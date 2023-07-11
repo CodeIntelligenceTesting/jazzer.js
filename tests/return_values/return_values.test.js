@@ -68,7 +68,6 @@ function executeFuzzTest(sync, verbose, dir) {
 	// Specify mode
 	if (sync) options.push("--sync");
 	options.push("--");
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const process = spawnSync("npx", options, {
 		stdio: "pipe",
 		cwd: dir,

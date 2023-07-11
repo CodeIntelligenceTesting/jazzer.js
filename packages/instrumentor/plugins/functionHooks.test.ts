@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint @typescript-eslint/no-unused-vars: 0 */
-/* eslint @typescript-eslint/no-empty-function: 0 */
-
 import { instrumentAndEvalWith } from "./testhelpers";
 import { functionHooks } from "./functionHooks";
 import * as hooking from "@jazzer.js/hooking";

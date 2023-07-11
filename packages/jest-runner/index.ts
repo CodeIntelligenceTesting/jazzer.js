@@ -48,7 +48,7 @@ class FuzzRunner extends CallbackTestRunner {
 		onStart: OnTestStart,
 		onResult: OnTestSuccess,
 		onFailure: OnTestFailure,
-		options: TestRunnerOptions, // eslint-disable-line @typescript-eslint/no-unused-vars
+		options: TestRunnerOptions,
 	): Promise<void> {
 		const config = loadConfig();
 		config.coverage = this.shouldCollectCoverage;

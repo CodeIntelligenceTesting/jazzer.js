@@ -1,6 +1,3 @@
-// noinspection JSUnusedLocalSymbols
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 /*
  * Copyright 2022 Code Intelligence GmbH
  *
@@ -32,7 +29,7 @@ registerReplaceHook(
 	"JpegImage.jpegImage.constructor.prototype.copyToImageData.copyToImageData",
 	"jpeg-js",
 	false,
-	(thisPtr, params, hookId, origFn) => {
+	(thisPtr, params) => {
 		if (params[0].data[0] === 0) {
 			// we are only interested in image frames in which data[0] equals zero
 			throw Error(
@@ -101,7 +98,7 @@ registerBeforeHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.readDataBlock",
 	"jpeg-js",
 	false,
-	(thisPtr, params, hookId) => {
+	() => {
 		console.log(
 			`[jpeg-js] [before] Called hooked function before calling resetMaxMemoryUsage()`,
 		);

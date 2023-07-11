@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 const child_process = require("child_process");
@@ -81,7 +80,6 @@ function test(data) {
 function makeFuzzFunctionWithInput(n, input) {
 	assert(n > 0);
 	let i = n;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	return function (data) {
 		i--;
 		if (i === 0) {
