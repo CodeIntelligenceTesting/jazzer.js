@@ -2,46 +2,46 @@
 	"codeCoverage.fuzz.js": {
 		"statementMap": {
 			"0": {
-				"start": { "line": 19, "column": 15 },
-				"end": { "line": 19, "column": 35 }
+				"start": { "line": 17, "column": 15 },
+				"end": { "line": 17, "column": 35 }
 			},
 			"1": {
-				"start": { "line": 21, "column": 0 },
-				"end": { "line": 25, "column": 3 }
+				"start": { "line": 19, "column": 0 },
+				"end": { "line": 23, "column": 3 }
 			},
 			"2": {
-				"start": { "line": 22, "column": 1 },
-				"end": { "line": 24, "column": 4 }
+				"start": { "line": 20, "column": 1 },
+				"end": { "line": 22, "column": 4 }
 			},
 			"3": {
-				"start": { "line": 23, "column": 2 },
-				"end": { "line": 23, "column": 20 }
+				"start": { "line": 21, "column": 2 },
+				"end": { "line": 21, "column": 20 }
 			}
 		},
 		"fnMap": {
 			"0": {
 				"name": "(anonymous_0)",
 				"decl": {
-					"start": { "line": 21, "column": 24 },
-					"end": { "line": 21, "column": 25 }
+					"start": { "line": 19, "column": 24 },
+					"end": { "line": 19, "column": 25 }
 				},
 				"loc": {
-					"start": { "line": 21, "column": 30 },
-					"end": { "line": 25, "column": 1 }
+					"start": { "line": 19, "column": 30 },
+					"end": { "line": 23, "column": 1 }
 				},
-				"line": 21
+				"line": 19
 			},
 			"1": {
 				"name": "(anonymous_1)",
 				"decl": {
-					"start": { "line": 22, "column": 25 },
-					"end": { "line": 22, "column": 26 }
+					"start": { "line": 20, "column": 25 },
+					"end": { "line": 20, "column": 26 }
 				},
 				"loc": {
-					"start": { "line": 22, "column": 35 },
-					"end": { "line": 24, "column": 2 }
+					"start": { "line": 20, "column": 35 },
+					"end": { "line": 22, "column": 2 }
 				},
-				"line": 22
+				"line": 20
 			}
 		},
 		"branchMap": {},

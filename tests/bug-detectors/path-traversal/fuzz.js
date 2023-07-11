@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-empty-function */
 
@@ -22,7 +21,7 @@ const fs = require("fs");
 const fsp = require("fs").promises;
 const path = require("path");
 
-const { makeFnCalledOnce } = require("../../helpers");
+const { makeFnCalledOnce, callWithTimeout } = require("../../helpers");
 
 const evil_path = "../../jaz_zer/";
 const safe_path = "../../safe_path/";

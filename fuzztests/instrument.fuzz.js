@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
-
 const { Instrumentor } = require("@jazzer.js/instrumentor");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0, no-constant-condition: 0 */
-
 const target = require("./fuzz.js");
 
 describe("My describe", () => {

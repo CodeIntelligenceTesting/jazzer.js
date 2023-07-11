@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0, no-constant-condition: 0 */
+/* eslint no-constant-condition: 0 */
 
 const target = require("./target.js");
 
