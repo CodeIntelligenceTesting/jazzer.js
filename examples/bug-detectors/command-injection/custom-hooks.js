@@ -16,7 +16,7 @@
  * Examples showcasing the custom hooks API
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires,@typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 const { registerReplaceHook } = require("@jazzer.js/hooking");
 const { reportFinding } = require("@jazzer.js/bug-detectors");

@@ -21,7 +21,6 @@ import { Instrumentor } from "../instrument";
 import * as libCoverage from "istanbul-lib-coverage";
 import { sourceCodeCoverage } from "./sourceCodeCoverage";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fuzzer = require("@jazzer.js/fuzzer").fuzzer;
 jest.mock("@jazzer.js/fuzzer");
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment

@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { spawnSync } = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fs = require("fs");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 const assert = require("assert");
 
 // This is used to distinguish an error thrown during fuzzing from other errors,

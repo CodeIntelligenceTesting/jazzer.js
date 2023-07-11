@@ -15,12 +15,7 @@
  */
 
 /* eslint no-undef: 0 */
-const {
-	FuzzTestBuilder,
-	describeSkipOnPlatform,
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-} = require("../helpers.js");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { FuzzTestBuilder, describeSkipOnPlatform } = require("../helpers.js");
 const path = require("path");
 
 // Signal handling in Node.js on Windows is only rudimentary supported.

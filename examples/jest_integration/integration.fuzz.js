@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0, no-constant-condition: 0, @typescript-eslint/no-var-requires:0 */
+/* eslint no-undef: 0, no-constant-condition: 0 */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const target = require("./target.js");
 
 describe("My describe", () => {

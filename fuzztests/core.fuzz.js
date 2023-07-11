@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef, @typescript-eslint/no-var-requires */
+/* eslint-disable no-undef */
 
 const { ensureFilepath } = require("@jazzer.js/core");
 

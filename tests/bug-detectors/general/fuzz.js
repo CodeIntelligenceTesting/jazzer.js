@@ -15,7 +15,6 @@
  */
 
 /* eslint no-undef: 0 */
-/* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-empty-function */
 

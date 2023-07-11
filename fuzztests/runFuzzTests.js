@@ -3,8 +3,6 @@
 // Helper script that searches for Jest fuzz tests in the current directory and
 // executes them in new processes using the found fuzz test names.
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-
 const fs = require("fs/promises");
 const { spawn } = require("child_process");
 

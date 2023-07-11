@@ -2,7 +2,6 @@
 // https://gitlab.com/gitlab-org/security-products/analyzers/fuzzers/jsfuzz/-/blob/34a694a8c73bfe0895c4e24784ba5b6dfe964b94/examples/jpeg/fuzz.js
 // The original code is available under the Apache License 2.0.
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 import { decode } from "jpeg-js";
 
 /**
