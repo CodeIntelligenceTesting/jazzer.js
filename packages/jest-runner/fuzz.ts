@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-
 import { Global } from "@jest/types";
 import {
 	FuzzTarget,

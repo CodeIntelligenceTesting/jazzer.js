@@ -908,7 +908,6 @@ describe("function hooks instrumentation", () => {
 });
 
 function registerHookManagerGlobally() {
-	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
 	global.HookManager = hooking.hookManager;
 }

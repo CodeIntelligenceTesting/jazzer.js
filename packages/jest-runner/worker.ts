@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-
 import { Test } from "jest-runner";
 import { Circus, Config } from "@jest/types";
 import { TestResult } from "@jest/test-result";
