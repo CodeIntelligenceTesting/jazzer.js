@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-empty-function */
-
 const child_process = require("child_process");
-const path = require("path");
 const fs = require("fs");
 const assert = require("assert");
 const { platform } = require("os");
