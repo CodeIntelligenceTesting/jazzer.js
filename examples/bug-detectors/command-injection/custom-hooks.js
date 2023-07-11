@@ -16,8 +16,6 @@
  * Examples showcasing the custom hooks API
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 const { registerReplaceHook } = require("@jazzer.js/hooking");
 const { reportFinding } = require("@jazzer.js/bug-detectors");
 const { guideTowardsEquality } = require("@jazzer.js/fuzzer");
@@ -29,7 +27,7 @@ registerReplaceHook(
 	"execSync",
 	"child_process",
 	false,
-	(thisPtr, params, hookId, origFn) => {
+	(thisPtr, params, hookId) => {
 		if (params === undefined || params.length === 0) {
 			return;
 		}

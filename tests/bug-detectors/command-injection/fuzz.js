@@ -23,22 +23,18 @@ const evilCommand = "jaz_zer";
 const friendlyCommand =
 	(process.platform === "win32" ? "copy NUL " : "touch ") + friendlyFile;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execEVIL = async function (data) {
 	child_process.exec(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execFRIENDLY = async function (data) {
 	child_process.exec(friendlyCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execFileEVIL = async function (data) {
 	child_process.execFile(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execFileFRIENDLY = async function (data) {
 	const command = process.platform === "win32" ? "copy" : "touch";
 	const args =
@@ -47,12 +43,10 @@ module.exports.execFileFRIENDLY = async function (data) {
 	await execFile(command, args, { shell: true });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execFileSyncEVIL = function (data) {
 	child_process.execFileSync(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.execFileSyncFRIENDLY = function (data) {
 	const command = process.platform === "win32" ? "copy" : "touch";
 	const args =
@@ -61,12 +55,10 @@ module.exports.execFileSyncFRIENDLY = function (data) {
 	child_process.execFileSync(command, args, options);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.spawnEVIL = async function (data) {
 	child_process.spawn(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.spawnFRIENDLY = async function (data) {
 	const command = process.platform === "win32" ? "copy" : "touch";
 	const args =
@@ -82,12 +74,10 @@ module.exports.spawnFRIENDLY = async function (data) {
 	});
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.spawnSyncEVIL = function (data) {
 	child_process.spawnSync(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.spawnSyncFRIENDLY = function (data) {
 	const command = process.platform === "win32" ? "copy" : "touch";
 	const args =
@@ -95,12 +85,10 @@ module.exports.spawnSyncFRIENDLY = function (data) {
 	child_process.spawnSync(command, args, { shell: true });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.forkEVIL = function (data) {
 	child_process.fork(evilCommand);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.forkFRIENDLY = function (data) {
 	child_process.fork("makeFRIENDLY.js");
 };

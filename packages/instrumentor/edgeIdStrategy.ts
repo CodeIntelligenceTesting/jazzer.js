@@ -60,12 +60,10 @@ export class MemorySyncIdStrategy extends IncrementingEdgeIdStrategy {
 		super(0);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	startForSourceFile(filename: string): void {
 		// nothing to do here
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	commitIdCount(filename: string) {
 		// nothing to do here
 	}
@@ -240,12 +238,10 @@ export class ZeroEdgeIdStrategy implements EdgeIdStrategy {
 		return 0;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	startForSourceFile(filename: string): void {
 		// Nothing to do here
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	commitIdCount(filename: string): void {
 		// Nothing to do here
 	}

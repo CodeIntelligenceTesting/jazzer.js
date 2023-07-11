@@ -73,7 +73,6 @@ describe("My describe", () => {
 	// regression and fuzzing mode. libFuzzer shuts down the process after Jest
 	// received the error and displayed its result.
 	// Two parameters are required to execute the done callback branch.
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	it.skip.fuzz("Done callback timeout", (ignore, ignore2) => {
 		// don't call done
 	});

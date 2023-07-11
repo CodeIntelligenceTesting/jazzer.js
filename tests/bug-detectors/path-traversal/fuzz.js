@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 const fs = require("fs");
@@ -38,7 +37,7 @@ module.exports.PathTraversalFsOpenEvilSync = makeFnCalledOnce((data) => {
 });
 
 module.exports.PathTraversalFsOpenEvilAsync = makeFnCalledOnce(async (data) => {
-	fs.open(evil_path, "r", (err, f) => {});
+	fs.open(evil_path, "r", () => {});
 });
 
 module.exports.PathTraversalFsMkdirEvilSync = makeFnCalledOnce((data) => {

@@ -1,6 +1,5 @@
 const { registerReplaceHook } = require("@jazzer.js/hooking");
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-registerReplaceHook("foo", "lib", false, (thisPtr, params, hookId, origFn) => {
+registerReplaceHook("foo", "lib", false, () => {
 	console.log("CUSTOM HOOKS CALLED!");
 });

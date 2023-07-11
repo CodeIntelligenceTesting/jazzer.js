@@ -16,7 +16,6 @@
 
 let i = 0;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.SIGINT_SYNC = (data) => {
 	if (i === 1000) {
 		console.log("kill with SIGINT");
@@ -28,7 +27,6 @@ module.exports.SIGINT_SYNC = (data) => {
 	i++;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 module.exports.SIGINT_ASYNC = (data) => {
 	// Raising SIGINT in async mode does not stop the fuzzer directly,
 	// as the event is handled asynchronously in the event loop.

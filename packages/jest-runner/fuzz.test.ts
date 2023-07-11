@@ -151,7 +151,6 @@ describe("fuzz", () => {
 					runInRegressionMode(
 						"fuzz",
 						// Parameters needed to pass in done callback.
-						// eslint-disable-next-line @typescript-eslint/no-unused-vars
 						(ignored: Buffer, ignored2: (e?: Error) => void) => {
 							return new Promise(() => {
 								// promise is ignored due to done callback
@@ -172,7 +171,6 @@ describe("fuzz", () => {
 					withMockTest(() => {
 						runInRegressionMode(
 							"fuzz",
-							// eslint-disable-next-line @typescript-eslint/no-unused-vars
 							(ignored: Buffer, done: (e?: Error) => void) => {
 								done();
 								done();
