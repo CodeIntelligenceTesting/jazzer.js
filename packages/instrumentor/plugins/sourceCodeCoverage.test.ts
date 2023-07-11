@@ -23,7 +23,6 @@ import { sourceCodeCoverage } from "./sourceCodeCoverage";
 
 const fuzzer = require("@jazzer.js/fuzzer").fuzzer;
 jest.mock("@jazzer.js/fuzzer");
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 global.Fuzzer = fuzzer;
 

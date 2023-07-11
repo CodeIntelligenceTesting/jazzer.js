@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint @typescript-eslint/ban-ts-comment:0 */
-
 import * as ts from "typescript";
 import { Instrumentor } from "./instrument";
 

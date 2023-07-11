@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 /*
  * Copyright 2022 Code Intelligence GmbH
  *
