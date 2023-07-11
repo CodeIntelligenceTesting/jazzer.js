@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-empty-function */
-
 const fs = require("fs");
 const fsp = require("fs").promises;
 const path = require("path");
@@ -37,7 +35,9 @@ module.exports.PathTraversalFsOpenEvilSync = makeFnCalledOnce((data) => {
 });
 
 module.exports.PathTraversalFsOpenEvilAsync = makeFnCalledOnce(async (data) => {
-	fs.open(evil_path, "r", () => {});
+	fs.open(evil_path, "r", () => {
+		/* empty */
+	});
 });
 
 module.exports.PathTraversalFsMkdirEvilSync = makeFnCalledOnce((data) => {
@@ -50,13 +50,17 @@ module.exports.PathTraversalFsMkdirSafeSync = makeFnCalledOnce((data) => {
 
 module.exports.PathTraversalFsMkdirEvilAsync = makeFnCalledOnce(
 	async (data) => {
-		fs.mkdir(evil_path, () => {});
+		fs.mkdir(evil_path, () => {
+			/* empty */
+		});
 	},
 );
 
 module.exports.PathTraversalFsMkdirSafeAsync = makeFnCalledOnce(
 	async (data) => {
-		fs.mkdir(safe_path, () => {});
+		fs.mkdir(safe_path, () => {
+			/* empty */
+		});
 	},
 );
 

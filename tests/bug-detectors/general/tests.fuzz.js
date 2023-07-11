@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-empty-function */
-
 const child_process = require("child_process");
 const assert = require("assert");
 
@@ -69,7 +67,7 @@ function test(data) {
 	try {
 		child_process.execSync(data);
 	} catch (e) {
-		// eslint-disable-line no-empty
+		// Ignored
 	}
 }
 

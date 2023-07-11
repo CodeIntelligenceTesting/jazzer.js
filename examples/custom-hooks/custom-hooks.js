@@ -128,6 +128,7 @@ registerReplaceHook(
 	"JpegImage.jpegImage.constructor.prototype.parse.parse.NonExistingFunc",
 	"jpeg-js",
 	false,
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	() => {},
+	() => {
+		/* empty */
+	},
 );

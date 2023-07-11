@@ -1,7 +1,6 @@
 import { hookManager } from "./manager";
 import { HookType } from "./hook";
 
-/* eslint @typescript-eslint/no-empty-function: 0 */
 /* eslint @typescript-eslint/ban-types: 0 */
 
 describe("Hooks manager", () => {
@@ -100,18 +99,18 @@ function registerHook(
 ) {
 	switch (hookType) {
 		case HookType.Before:
-			hookManager.registerHook(HookType.Before, target, pkg, isAsync, () => {});
+			hookManager.registerHook(HookType.Before, target, pkg, isAsync, () => {
+				/* empty */
+			});
 			break;
 		case HookType.Replace:
-			hookManager.registerHook(
-				HookType.Replace,
-				target,
-				pkg,
-				isAsync,
-				() => {},
-			);
+			hookManager.registerHook(HookType.Replace, target, pkg, isAsync, () => {
+				/* empty */
+			});
 			break;
 		case HookType.After:
-			hookManager.registerHook(HookType.After, target, pkg, isAsync, () => {});
+			hookManager.registerHook(HookType.After, target, pkg, isAsync, () => {
+				/* empty */
+			});
 	}
 }

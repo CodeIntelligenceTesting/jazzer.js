@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-empty-function: 0 */
 import { fuzzer } from "./fuzzer";
 
 describe("compare hooks", () => {
