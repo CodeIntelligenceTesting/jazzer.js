@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
-
 const { SIGINT_SYNC, SIGINT_ASYNC } = require("./fuzz.js");
 
 describe("Jest", () => {

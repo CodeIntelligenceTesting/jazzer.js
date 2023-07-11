@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
-
 import * as target from "./target";
 
 describe("My describe", () => {

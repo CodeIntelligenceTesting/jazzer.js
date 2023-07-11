@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
-
 describe("My describe", () => {
 	it("My normal Jest test", () => {
 		expect(1).toEqual(1);

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0 */
 const {
 	FuzzTestBuilder,
 	FuzzingExitCode,

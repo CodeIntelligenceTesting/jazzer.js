@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
-
 const { FuzzedDataProvider, jazzer } = require("@jazzer.js/core");
 
 describe("FuzzedDataProvider", () => {
 	// In this fuzz test we try to guide the fuzzer to use as many functions on
 	// FuzzedDataProvider as possible, before invoking a terminating one
 	// like consumeRemainingXY. Strange combinations of functions could produce a
-	// one off error.
+	// one-off error.
 	it.fuzz(
 		"consumes the provided input",
 		(data) => {

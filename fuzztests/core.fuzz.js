@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-undef */
-
 const { ensureFilepath } = require("@jazzer.js/core");
 
 const cwd = process.cwd();
