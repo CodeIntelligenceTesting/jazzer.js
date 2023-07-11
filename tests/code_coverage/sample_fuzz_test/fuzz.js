@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const lib = require("./lib");
 
 /**

@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { registerReplaceHook } = require("@jazzer.js/hooking");
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

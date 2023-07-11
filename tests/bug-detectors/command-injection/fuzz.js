@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const child_process = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { promisify } = require("util");
 
 const friendlyFile = "FRIENDLY";

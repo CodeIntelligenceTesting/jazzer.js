@@ -250,7 +250,6 @@ describe("compare hooks instrumentation", () => {
 // This is normally done by the jest environment. Here we replace every
 // API function with a jest mock, which can be configured in the test.
 function mockFuzzerApi() {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const fuzzer = require("@jazzer.js/fuzzer").fuzzer;
 	jest.mock("@jazzer.js/fuzzer");
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -260,7 +259,6 @@ function mockFuzzerApi() {
 }
 
 function mockHelpers() {
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const helpers = require("./helpers");
 	jest.mock("./helpers");
 	return helpers;

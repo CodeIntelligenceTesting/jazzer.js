@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
 const code = require("../exampleCode/code");
 
 let syncCtr = 0;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* eslint no-undef: 0, @typescript-eslint/no-var-requires: 0 */
+/* eslint no-undef: 0 */
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");

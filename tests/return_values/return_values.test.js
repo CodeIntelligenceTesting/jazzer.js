@@ -15,9 +15,7 @@
  */
 
 /* eslint no-undef: 0 */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { spawnSync } = require("child_process");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
 const SyncInfo =
 	"Exclusively observed synchronous return values from fuzzed function. Fuzzing in synchronous mode seems benefical!";

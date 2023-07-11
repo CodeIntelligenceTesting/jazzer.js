@@ -15,7 +15,6 @@
  */
 
 /* eslint no-undef: 0 */
-/* eslint-disable @typescript-eslint/no-var-requires */
 
 const { SIGINT_SYNC, SIGINT_ASYNC } = require("./fuzz.js");
 

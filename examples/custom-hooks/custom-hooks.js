@@ -1,5 +1,5 @@
 // noinspection JSUnusedLocalSymbols
-/* eslint-disable @typescript-eslint/no-var-requires,@typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 /*
  * Copyright 2022 Code Intelligence GmbH

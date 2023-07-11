@@ -15,14 +15,8 @@
  */
 
 /* eslint no-undef: 0 */
-const {
-	FuzzTestBuilder,
-	FuzzingExitCode,
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
-} = require("../helpers.js");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { FuzzTestBuilder, FuzzingExitCode } = require("../helpers.js");
 const path = require("path");
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const fs = require("fs");
 
 describe("Command injection", () => {

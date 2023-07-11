@@ -16,7 +16,6 @@
 
 /* eslint no-undef: 0 */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const target = require("./target");
 
 const startupTeardownCalls = [];
