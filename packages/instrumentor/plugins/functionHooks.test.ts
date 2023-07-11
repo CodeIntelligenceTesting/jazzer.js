@@ -562,8 +562,7 @@ describe("function hooks instrumentation", () => {
 			expectTrackedHooksUnknown(hookCallMap, 0);
 		});
 
-		//eslint-disable-next-line @typescript-eslint/no-explicit-any
-		it("one hook called after an async function", (): any => {
+		it("one hook called after an async function", () => {
 			hooking.hookManager.clearHooks();
 			hookTracker.clear();
 			const hookCallMap = registerAsyncFunctionHook(
@@ -619,8 +618,7 @@ describe("function hooks instrumentation", () => {
 			expectLogHooks(dbgMock, 1, "After", "foo");
 		});
 
-		//eslint-disable-next-line @typescript-eslint/no-explicit-any
-		it("two hooks called after an async function", (): any => {
+		it("two hooks called after an async function", () => {
 			hooking.hookManager.clearHooks();
 			hookTracker.clear();
 			const hookCallMap = registerAsyncFunctionHook(
@@ -832,8 +830,7 @@ describe("function hooks instrumentation", () => {
 			expectTrackedHooksUnknown(beforeHookCallMap, 0);
 			expectTrackedHooksUnknown(afterHookCallMap, 0);
 		});
-		//eslint-disable-next-line @typescript-eslint/no-explicit-any
-		it("one Before and ond After hook for an async function", (): any => {
+		it("one Before and ond After hook for an async function", () => {
 			hooking.hookManager.clearHooks();
 			hookTracker.clear();
 			const beforeHookCallMap = registerSyncFunctionHook(

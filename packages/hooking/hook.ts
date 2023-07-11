@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/* eslint @typescript-eslint/no-explicit-any: 0 */
+
 export interface TrackedHook {
 	target: string;
 	pkg: string;
@@ -143,7 +145,6 @@ export function logHooks(hooks: Hook[]) {
 
 export const hookTracker = new HookTracker();
 
-/*eslint @typescript-eslint/no-explicit-any: 0 */
 export enum HookType {
 	Before,
 	After,
