@@ -405,6 +405,11 @@ function buildFuzzerOptions(options: Options): string[] {
 	}
 	const inSeconds = Math.ceil(options.timeout / 1000);
 	opts = opts.concat(`-timeout=${inSeconds}`);
+
+	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
+	// with the Node.js signal handling.
+	opts = opts.concat("-handle_int=0", "-handle_term=0");
+
 	return [prepareLibFuzzerArg0(opts), ...opts];
 }
 
