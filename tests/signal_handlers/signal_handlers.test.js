@@ -17,10 +17,17 @@
 /* eslint no-undef: 0 */
 const {
 	FuzzTestBuilder,
+	describeSkipOnPlatform,
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 } = require("../helpers.js");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require("path");
+
+// Signal handling in Node.js on Windows is only rudimentary supported.
+// Specifically using `process.kill`, like the test does to interrupt itself,
+// will unconditionally terminate the process. The signal processing works in
+// manual tests, though.
+const describe = describeSkipOnPlatform("win32");
 
 describe("SIGINT handlers", () => {
 	let fuzzTestBuilder;
@@ -35,13 +42,6 @@ describe("SIGINT handlers", () => {
 
 	describe("in standalone fuzzing mode", () => {
 		it("stop sync fuzzing on SIGINT", () => {
-			// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.
-			if (process.platform === "win32") {
-				console.log(
-					"// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.",
-				);
-				return;
-			}
 			const fuzzTest = fuzzTestBuilder
 				.sync(true)
 				.fuzzEntryPoint("SIGINT_SYNC")
@@ -50,13 +50,6 @@ describe("SIGINT handlers", () => {
 			assertSigintMessagesLogged(fuzzTest);
 		});
 		it("stop async fuzzing on SIGINT", () => {
-			// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.
-			if (process.platform === "win32") {
-				console.log(
-					"// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.",
-				);
-				return;
-			}
 			const fuzzTest = fuzzTestBuilder
 				.sync(false)
 				.fuzzEntryPoint("SIGINT_ASYNC")
@@ -68,13 +61,6 @@ describe("SIGINT handlers", () => {
 
 	describe("in Jest fuzzing mode", () => {
 		it("stop sync fuzzing on SIGINT", () => {
-			// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.
-			if (process.platform === "win32") {
-				console.log(
-					"// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.",
-				);
-				return;
-			}
 			const fuzzTest = fuzzTestBuilder
 				.jestTestFile("tests.fuzz.js")
 				.jestTestName("^Jest Sync$")
@@ -84,13 +70,6 @@ describe("SIGINT handlers", () => {
 			assertSigintMessagesLogged(fuzzTest);
 		});
 		it("stop async fuzzing on SIGINT", () => {
-			// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.
-			if (process.platform === "win32") {
-				console.log(
-					"// TODO: make the SIGINT handling produce coverage reports on Windows on exit too.",
-				);
-				return;
-			}
 			const fuzzTest = fuzzTestBuilder
 				.jestTestFile("tests.fuzz.js")
 				.jestTestName("^Jest Async$")

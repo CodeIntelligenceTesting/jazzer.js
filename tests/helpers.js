@@ -23,8 +23,8 @@ const path = require("path");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const assert = require("assert");
 
-// This is used to distinguish an error thrown during fuzzing from other errors, such as wrong
-// `fuzzEntryPoint` (which would return a "1")
+// This is used to distinguish an error thrown during fuzzing from other errors,
+// such as wrong `fuzzEntryPoint`, which would return a "1".
 const FuzzingExitCode = "77";
 const JestRegressionExitCode = "1";
 const WindowsExitCode = "1";
@@ -321,9 +321,19 @@ function callWithTimeout(fn, timeout) {
 	});
 }
 
+/**
+ * Returns a Jest describe function that is skipped if the current platform is not the given one.
+ * @param platform
+ * @returns describe(.skip) function
+ */
+function describeSkipOnPlatform(platform) {
+	return process.platform === platform ? global.describe.skip : global.describe;
+}
+
 module.exports.FuzzTestBuilder = FuzzTestBuilder;
 module.exports.FuzzingExitCode = FuzzingExitCode;
 module.exports.JestRegressionExitCode = JestRegressionExitCode;
 module.exports.WindowsExitCode = WindowsExitCode;
 module.exports.makeFnCalledOnce = makeFnCalledOnce;
 module.exports.callWithTimeout = callWithTimeout;
+module.exports.describeSkipOnPlatform = describeSkipOnPlatform;
