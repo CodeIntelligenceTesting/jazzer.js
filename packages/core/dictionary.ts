@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,24 @@
  * limitations under the License.
  */
 
-export * from "./hook";
-export * from "./manager";
-export * from "./tracker";
+/**
+ * Dictionaries can be used to provide additional mutation suggestions to the
+ * fuzzer.
+ */
+export class Dictionaries {
+	private _dictionary: string[] = [];
+
+	get dictionary() {
+		return this._dictionary;
+	}
+
+	addDictionary(dictionary: string[]) {
+		this._dictionary.push(dictionary.join("\n"));
+	}
+}
+
+export const dictionaries = new Dictionaries();
+
+export function addDictionary(...dictionary: string[]) {
+	dictionaries.addDictionary(dictionary);
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,34 +21,66 @@ import {
 	HookFn,
 	HookType,
 	ReplaceHookFn,
-	logHooks,
-	hookTracker,
 } from "./hook";
-import { PluginTarget } from "@babel/core";
+import { hookTracker, logHooks } from "./tracker";
 
 export class MatchingHooksResult {
-	public beforeHooks: Hook[] = [];
-	public replaceHooks: Hook[] = [];
-	public afterHooks: Hook[] = [];
+	private _beforeHooks: Hook[] = [];
+	private _replaceHooks: Hook[] = [];
+	private _afterHooks: Hook[] = [];
+
+	get hooks() {
+		return this._beforeHooks.concat(this._afterHooks, this._replaceHooks);
+	}
+
+	hasHooks() {
+		return (
+			this.hasBeforeHooks() || this.hasReplaceHooks() || this.hasAfterHooks()
+		);
+	}
+
+	get beforeHooks(): Hook[] {
+		return this._beforeHooks;
+	}
+
+	hasBeforeHooks() {
+		return this._beforeHooks.length !== 0;
+	}
+
+	get replaceHooks(): Hook[] {
+		return this._replaceHooks;
+	}
+
+	hasReplaceHooks() {
+		return this._replaceHooks.length !== 0;
+	}
+
+	get afterHooks(): Hook[] {
+		return this._afterHooks;
+	}
+
+	hasAfterHooks() {
+		return this._afterHooks.length !== 0;
+	}
 
 	addHook(h: Hook) {
 		switch (h.type) {
 			case HookType.Before:
-				this.beforeHooks.push(h);
+				this._beforeHooks.push(h);
 				break;
 			case HookType.Replace:
-				this.replaceHooks.push(h);
+				this._replaceHooks.push(h);
 				break;
 			case HookType.After:
-				this.afterHooks.push(h);
+				this._afterHooks.push(h);
 				break;
 		}
 	}
 
 	verify() {
-		if (this.replaceHooks.length > 1) {
+		if (this._replaceHooks.length > 1) {
 			throw new Error(
-				`For a given target function, one REPLACE hook can be configured. Found: ${this.replaceHooks.length}`,
+				`For a given target function, one REPLACE hook can be configured. Found: ${this._replaceHooks.length}`,
 			);
 		}
 
@@ -58,17 +90,17 @@ export class MatchingHooksResult {
 		) {
 			throw new Error(
 				`For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found ${
-					this.replaceHooks.length
+					this._replaceHooks.length
 				} REPLACE hooks and ${
-					this.beforeHooks.length + this.afterHooks.length
+					this._beforeHooks.length + this._afterHooks.length
 				} BEFORE/AFTER hooks`,
 			);
 		}
 
 		if (this.hasAfterHooks()) {
 			if (
-				!this.afterHooks.every((h) => h.async) &&
-				!this.afterHooks.every((h) => !h.async)
+				!this._afterHooks.every((h) => h.async) &&
+				!this._afterHooks.every((h) => !h.async)
 			) {
 				throw new Error(
 					"For a given target function, AFTER hooks have to be either all sync or all async.",
@@ -76,36 +108,10 @@ export class MatchingHooksResult {
 			}
 		}
 	}
-
-	hooks() {
-		return this.beforeHooks.concat(this.afterHooks, this.replaceHooks);
-	}
-
-	hasHooks() {
-		return (
-			this.hasBeforeHooks() || this.hasReplaceHooks() || this.hasAfterHooks()
-		);
-	}
-
-	hasBeforeHooks() {
-		return this.beforeHooks.length !== 0;
-	}
-
-	hasReplaceHooks() {
-		return this.replaceHooks.length !== 0;
-	}
-
-	hasAfterHooks() {
-		return this.afterHooks.length !== 0;
-	}
 }
 
 export class HookManager {
 	private _hooks: Hook[] = [];
-	private afterEachCallbacks: Array<Thunk> = [];
-	private beforeEachCallbacks: Array<Thunk> = [];
-	private dictionaries: Array<string> = [];
-	private instrumentationPlugins: Array<() => PluginTarget> = [];
 
 	registerHook(
 		hookType: HookType,
@@ -185,68 +191,10 @@ export class HookManager {
 				);
 		}
 	}
-
-	registerAfterEachCallback(callback: Thunk) {
-		this.afterEachCallbacks.push(callback);
-	}
-
-	registerBeforeEachCallback(callback: Thunk) {
-		this.beforeEachCallbacks.push(callback);
-	}
-
-	addDictionary(libFuzzerDictionary: string[]) {
-		this.dictionaries.push(this.compileFuzzerDictionary(libFuzzerDictionary));
-	}
-
-	registerInstrumentationPlugin(plugin: () => PluginTarget) {
-		this.instrumentationPlugins.push(plugin);
-	}
-
-	getDictionaries() {
-		return this.dictionaries;
-	}
-
-	getInstrumentationPlugins() {
-		return this.instrumentationPlugins;
-	}
-
-	runAfterEachCallbacks() {
-		for (const afterEachCallback of this.afterEachCallbacks) {
-			afterEachCallback();
-		}
-	}
-
-	runBeforeEachCallbacks() {
-		for (const beforeEachCallback of this.beforeEachCallbacks) {
-			beforeEachCallback();
-		}
-	}
-
-	private compileFuzzerDictionary(lines: string[]): string {
-		return lines.join("\n");
-	}
 }
-
-export function callSiteId(...additionalArguments: unknown[]): number {
-	const stackTrace = additionalArguments?.join(",") + new Error().stack;
-	if (!stackTrace || stackTrace.length === 0) {
-		return 0;
-	}
-	let hash = 0,
-		i,
-		chr;
-	for (i = 0; i < stackTrace.length; i++) {
-		chr = stackTrace.charCodeAt(i);
-		hash = (hash << 5) - hash + chr;
-		hash |= 0; // Convert to 32bit integer
-	}
-	return hash;
-}
-
-type Thunk = () => void;
 
 export const hookManager = new HookManager();
-// convenience functions to register hooks
+
 export function registerBeforeHook(
 	target: string,
 	pkg: string,
@@ -272,22 +220,6 @@ export function registerAfterHook(
 	hookFn: HookFn,
 ) {
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
-}
-
-export function registerAfterEachCallback(callback: Thunk) {
-	hookManager.registerAfterEachCallback(callback);
-}
-
-export function registerBeforeEachCallback(callback: Thunk) {
-	hookManager.registerBeforeEachCallback(callback);
-}
-
-export function addDictionary(...libFuzzerDictionary: string[]) {
-	hookManager.addDictionary(libFuzzerDictionary);
-}
-
-export function registerInstrumentationPlugin(plugin: () => PluginTarget) {
-	hookManager.registerInstrumentationPlugin(plugin);
 }
 
 /**
@@ -319,34 +251,22 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	hookTracker.addApplied(hook.pkg, hook.target);
 }
 
-// Keep track of statements and expressions that should not be instrumented.
-// This is necessary to avoid infinite recursion when instrumenting code.
-class InstrumentationGuard {
-	private map: Map<string, Set<string>> = new Map();
-
-	/**
-	 * Add a tag and a value to the guard. This can be used to look up if the value.
-	 * The value will be stringified internally before being added to the guard.
-	 * @example instrumentationGuard.add("AssignmentExpression", node.left);
-	 */
-	add(tag: string, value: unknown) {
-		if (!this.map.has(tag)) {
-			this.map.set(tag, new Set());
-		}
-		this.map.get(tag)?.add(JSON.stringify(value));
+/**
+ * Returns a unique id for the call site of the function that called this function.
+ * @param additionalArguments additional arguments to be included in the hash
+ */
+export function callSiteId(...additionalArguments: unknown[]): number {
+	const stackTrace = additionalArguments?.join(",") + new Error().stack;
+	if (!stackTrace || stackTrace.length === 0) {
+		return 0;
 	}
-
-	/**
-	 * Check if a value with a given tag exists in the guard. The value will be stringified internally before being checked.
-	 * @example instrumentationGuard.has("AssignmentExpression", node.object);
-	 */
-	has(expression: string, value: unknown): boolean {
-		return (
-			(this.map.has(expression) &&
-				this.map.get(expression)?.has(JSON.stringify(value))) ??
-			false
-		);
+	let hash = 0,
+		i,
+		chr;
+	for (i = 0; i < stackTrace.length; i++) {
+		chr = stackTrace.charCodeAt(i);
+		hash = (hash << 5) - hash + chr;
+		hash |= 0; // Convert to 32bit integer
 	}
+	return hash;
 }
-
-export const instrumentationGuard = new InstrumentationGuard();

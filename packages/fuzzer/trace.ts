@@ -157,11 +157,16 @@ export const tracer: Tracer = {
  * @param target a string that `current` should become equal to, but currently isn't
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
-export function guideTowardsEquality(
-	current: string,
-	target: string,
-	id: number,
-) {
+function guideTowardsEquality(current: string, target: string, id: number) {
+	// Check types as JavaScript fuzz targets could provide wrong ones.
+	// noinspection SuspiciousTypeOfGuard
+	if (
+		typeof current !== "string" ||
+		typeof target !== "string" ||
+		typeof id !== "number"
+	) {
+		return;
+	}
 	tracer.traceUnequalStrings(id, current, target);
 }
 
@@ -177,13 +182,14 @@ export function guideTowardsEquality(
  * @param haystack a non-constant string observed during fuzz target execution
  * @param id a (probabilistically) unique identifier for this particular compare hint
  */
-export function guideTowardsContainment(
-	needle: string,
-	haystack: string,
-	id: number,
-) {
-	// needle and haystack should be both strings
-	if (typeof needle !== "string" || typeof haystack !== "string") {
+function guideTowardsContainment(needle: string, haystack: string, id: number) {
+	// Check types as JavaScript fuzz targets could provide wrong ones.
+	// noinspection SuspiciousTypeOfGuard
+	if (
+		typeof needle !== "string" ||
+		typeof haystack !== "string" ||
+		typeof id !== "number"
+	) {
 		return;
 	}
 	tracer.traceStringContainment(id, needle, haystack);
@@ -204,5 +210,10 @@ export function guideTowardsContainment(
  * @param id a (probabilistically) unique identifier for this particular state hint
  */
 export function exploreState(state: number, id: number) {
+	// Check types as JavaScript fuzz targets could provide wrong ones.
+	// noinspection SuspiciousTypeOfGuard
+	if (typeof state !== "string" || typeof id !== "number") {
+		return;
+	}
 	tracer.tracePcIndir(id, state);
 }

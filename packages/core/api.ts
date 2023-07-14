@@ -16,6 +16,18 @@
 
 import { fuzzer } from "@jazzer.js/fuzzer";
 
+// Central place to export all public API functions to be used in fuzz targets,
+// hooks and bug detectors. Don't use internal functions directly from those.
+
+export {
+	registerInstrumentationPlugin,
+	instrumentationGuard,
+} from "@jazzer.js/instrumentor";
+export {
+	registerAfterEachCallback,
+	registerBeforeEachCallback,
+} from "./callback";
+export { addDictionary } from "./dictionary";
 export { reportFinding } from "./finding";
 
 export const guideTowardsEquality = fuzzer.tracer.guideTowardsEquality;
