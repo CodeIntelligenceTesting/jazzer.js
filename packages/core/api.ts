@@ -1,6 +1,5 @@
-#!/usr/bin/env node
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +16,14 @@
 
 import { fuzzer } from "@jazzer.js/fuzzer";
 
-export interface Jazzer {
-	guideTowardsEquality: typeof fuzzer.tracer.guideTowardsEquality;
-	guideTowardsContainment: typeof fuzzer.tracer.guideTowardsContainment;
-	exploreState: typeof fuzzer.tracer.exploreState;
-}
+export { reportFinding } from "./finding";
 
-export const jazzer: Jazzer = {
+export const guideTowardsEquality = fuzzer.tracer.guideTowardsEquality;
+export const guideTowardsContainment = fuzzer.tracer.guideTowardsContainment;
+export const exploreState = fuzzer.tracer.exploreState;
+
+// Export jazzer object for backwards compatibility.
+export const jazzer = {
 	guideTowardsEquality: fuzzer.tracer.guideTowardsEquality,
 	guideTowardsContainment: fuzzer.tracer.guideTowardsContainment,
 	exploreState: fuzzer.tracer.exploreState,

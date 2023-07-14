@@ -16,7 +16,7 @@
 
 import { AssignmentExpression, Identifier, Node } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { reportFinding } from "../findings";
+import { reportFinding } from "@jazzer.js/core";
 import {
 	addDictionary,
 	instrumentationGuard,

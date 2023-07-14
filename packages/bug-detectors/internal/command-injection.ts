@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { reportFinding } from "../findings";
-import { fuzzer } from "@jazzer.js/fuzzer";
+import { guideTowardsContainment, reportFinding } from "@jazzer.js/core";
 import { registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -51,7 +50,7 @@ for (const functionName of functionNames) {
 				`Command Injection in ${functionName}(): called with '${firstArgument}'`,
 			);
 		}
-		fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
+		guideTowardsContainment(firstArgument, goal, hookId);
 	};
 
 	registerBeforeHook(functionName, moduleName, false, beforeHook);

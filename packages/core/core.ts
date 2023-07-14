@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import path from "path";
+import { builtinModules } from "module";
+import * as process from "process";
 import * as tmp from "tmp";
 import * as fs from "fs";
 
@@ -23,19 +25,13 @@ import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
-import {
-	clearFirstFinding,
-	Finding,
-	getFilteredBugDetectorPaths,
-	getFirstFinding,
-} from "@jazzer.js/bug-detectors";
+import { clearFirstFinding, Finding, getFirstFinding } from "./finding";
 import {
 	FileSyncIdStrategy,
 	Instrumentor,
 	MemorySyncIdStrategy,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
-import { builtinModules } from "module";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -119,6 +115,45 @@ export async function initFuzzing(options: Options): Promise<void> {
 
 	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
 	await hookBuiltInFunctions(hooking.hookManager);
+}
+
+// Filters out disabled bug detectors and prepares all the others for dynamic import.
+function getFilteredBugDetectorPaths(
+	bugDetectorsDirectory: string,
+	disableBugDetectors: string[],
+): string[] {
+	const disablePatterns = disableBugDetectors.map(
+		(pattern: string) => new RegExp(pattern),
+	);
+	return (
+		fs
+			.readdirSync(bugDetectorsDirectory)
+			// The compiled "internal" directory contains several files such as .js.map and .d.ts.
+			// We only need the .js files.
+			// Here we also filter out bug detectors that should be disabled.
+			.filter((bugDetectorPath) => {
+				if (!bugDetectorPath.endsWith(".js")) {
+					return false;
+				}
+
+				// Dynamic imports need .js files.
+				const bugDetectorName = path.basename(bugDetectorPath, ".js");
+
+				// Checks in the global options if the bug detector should be loaded.
+				const shouldDisable = disablePatterns.some((pattern) =>
+					pattern.test(bugDetectorName),
+				);
+
+				if (shouldDisable) {
+					console.log(
+						`Skip loading bug detector "${bugDetectorName}" because of user-provided pattern.`,
+					);
+				}
+				return !shouldDisable;
+			})
+			// Get absolute paths for each bug detector.
+			.map((file) => path.join(bugDetectorsDirectory, file))
+	);
 }
 
 // Built-in functions cannot be hooked by the instrumentor. We hook them by overwriting them at the module level.
@@ -600,6 +635,6 @@ export function ensureFilepath(filePath: string): string {
 		: fullPath + ".js";
 }
 
-export type { Jazzer } from "./jazzer";
-export { jazzer } from "./jazzer";
+// Export public API from within core module for easy access.
+export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";

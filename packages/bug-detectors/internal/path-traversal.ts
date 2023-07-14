@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { reportFinding } from "../findings";
-import { fuzzer } from "@jazzer.js/fuzzer";
+import { reportFinding, guideTowardsContainment } from "@jazzer.js/core";
 import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -138,7 +137,7 @@ for (const module of modulesToHook) {
 					`Path Traversal in ${functionName}(): called with '${firstArgument}'`,
 				);
 			}
-			fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
+			guideTowardsContainment(firstArgument, goal, hookId);
 		};
 
 		registerBeforeHook(functionName, module.moduleName, false, beforeHook);
@@ -184,14 +183,10 @@ for (const module of functionsWithTwoTargets) {
 							` and '${secondArgument}'`,
 					);
 				}
-				fuzzer.tracer.guideTowardsContainment(firstArgument, goal, hookId);
+				guideTowardsContainment(firstArgument, goal, hookId);
 				// We don't want to confuse the fuzzer guidance with the same hookId for both function arguments.
 				// Therefore, we use an extra hookId for the second argument.
-				fuzzer.tracer.guideTowardsContainment(
-					secondArgument,
-					goal,
-					extraHookId,
-				);
+				guideTowardsContainment(secondArgument, goal, extraHookId);
 			};
 		};
 
