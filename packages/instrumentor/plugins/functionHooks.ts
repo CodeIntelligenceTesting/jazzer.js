@@ -60,7 +60,7 @@ function applyHooks(
 		return false;
 	}
 
-	for (const hook of matchedHooks.hooks()) {
+	for (const hook of matchedHooks.hooks) {
 		hookTracker.addApplied(hook.pkg, hook.target);
 	}
 
@@ -103,7 +103,7 @@ function applyHooks(
 		addBeforeHooks(functionNode as FunctionWithBlockBody, matchedHooks);
 	}
 
-	logHooks(matchedHooks.hooks());
+	logHooks(matchedHooks.hooks);
 
 	return true;
 }

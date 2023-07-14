@@ -32,6 +32,8 @@ import {
 	MemorySyncIdStrategy,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
+import { callbacks } from "./callback";
+import { dictionaries } from "./dictionary";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -473,7 +475,7 @@ function buildFuzzerOptions(options: Options): string[] {
 	let dictionary = "";
 
 	// Extract dictionaries from bug detectors.
-	for (const dict of hooking.hookManager.getDictionaries()) {
+	for (const dict of dictionaries.dictionary) {
 		// Make an empty dictionary file.
 		if (!shouldUseDictionaries) {
 			shouldUseDictionaries = true;
@@ -552,7 +554,7 @@ export function wrapFuzzFunctionForBugDetection(
 			let fuzzTargetError: unknown;
 			let result: void | Promise<void> = undefined;
 			try {
-				hooking.hookManager.runBeforeEachCallbacks();
+				callbacks.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
 				// Explicitly set promise handlers to process findings, but still return
 				// the fuzz target result directly, so that sync execution is still
@@ -560,7 +562,7 @@ export function wrapFuzzFunctionForBugDetection(
 				if (result instanceof Promise) {
 					result = result.then(
 						(result) => {
-							hooking.hookManager.runAfterEachCallbacks();
+							callbacks.runAfterEachCallbacks();
 							return throwIfError() ?? result;
 						},
 						(reason) => {
@@ -573,7 +575,7 @@ export function wrapFuzzFunctionForBugDetection(
 			}
 			// Promises are handled above, so we only need to handle sync results here.
 			if (!(result instanceof Promise)) {
-				hooking.hookManager.runAfterEachCallbacks();
+				callbacks.runAfterEachCallbacks();
 			}
 			return throwIfError(fuzzTargetError) ?? result;
 		};
@@ -584,18 +586,18 @@ export function wrapFuzzFunctionForBugDetection(
 		): void | Promise<void> => {
 			let result: void | Promise<void> = undefined;
 			try {
-				hooking.hookManager.runBeforeEachCallbacks();
+				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
 				result = originalFuzzFn(data, (err?: Error) => {
 					const finding = getFirstFinding();
 					if (finding !== undefined) {
 						clearFirstFinding();
 					}
-					hooking.hookManager.runAfterEachCallbacks();
+					callbacks.runAfterEachCallbacks();
 					done(finding ?? err);
 				});
 			} catch (e) {
-				hooking.hookManager.runAfterEachCallbacks();
+				callbacks.runAfterEachCallbacks();
 				throwIfError(e);
 			}
 			return result;

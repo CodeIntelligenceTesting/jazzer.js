@@ -16,13 +16,13 @@
 
 import { AssignmentExpression, Identifier, Node } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
-import { reportFinding } from "@jazzer.js/core";
 import {
-	addDictionary,
-	instrumentationGuard,
+	reportFinding,
 	registerAfterEachCallback,
+	addDictionary,
 	registerInstrumentationPlugin,
-} from "@jazzer.js/hooking";
+	instrumentationGuard,
+} from "@jazzer.js/core";
 
 import { bugDetectorConfigurations } from "../configuration";
 

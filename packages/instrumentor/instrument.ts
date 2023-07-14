@@ -22,6 +22,7 @@ import {
 } from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
 import { hookManager } from "@jazzer.js/hooking";
+import { instrumentationPlugins } from "./plugin";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
@@ -33,6 +34,8 @@ import {
 	toRawSourceMap,
 } from "./SourceMapRegistry";
 
+export { instrumentationGuard } from "./guard";
+export { registerInstrumentationPlugin } from "./plugin";
 export {
 	EdgeIdStrategy,
 	FileSyncIdStrategy,
@@ -74,7 +77,7 @@ export class Instrumentor {
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
 		if (shouldInstrumentFile) {
 			transformations.push(
-				...hookManager.getInstrumentationPlugins(),
+				...instrumentationPlugins.plugins,
 				codeCoverage(this.idStrategy),
 				compareHooks,
 			);
