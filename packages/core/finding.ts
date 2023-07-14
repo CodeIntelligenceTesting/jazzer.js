@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Code Intelligence GmbH
+ * Copyright 2023 Code Intelligence GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,28 @@
 
 export class Finding extends Error {}
 
-// The first finding found by any bug detector will be saved here.
-// This is a global variable shared between the core-library (read, reset) and the bug detectors (write).
-// It is cleared every time when the fuzzer is finished processing an input (only relevant for modes where the fuzzing
-// continues after finding an error, e.g. fork mode, Jest regression mode, fuzzing that ignores errors mode, etc.).
+// The first finding reported by any bug detector will be saved here.
+// This variable has to be cleared every time when the fuzzer is finished
+// processing an input (only relevant for modes where the fuzzing continues
+// after finding an error, e.g. fork mode, Jest regression mode, fuzzing that
+// ignores errors mode, etc.).
 let firstFinding: Finding | undefined;
 
 export function getFirstFinding(): Finding | undefined {
 	return firstFinding;
 }
 
-// Clear the finding saved by the bug detector before the fuzzer continues with a new input.
 export function clearFirstFinding(): void {
 	firstFinding = undefined;
 }
 
 /**
- * Saves the first finding found by any bug detector and throws it.
+ * Save the first finding reported by any bug detector and throw it to
+ * potentially abort the current execution.
  *
  * @param findingMessage - The finding to be saved and thrown.
  */
-export function reportFinding(findingMessage: string): void {
+export function reportFinding(findingMessage: string): void | never {
 	// After saving the first finding, ignore all subsequent errors.
 	if (firstFinding) {
 		return;

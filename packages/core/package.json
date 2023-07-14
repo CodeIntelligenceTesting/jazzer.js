@@ -19,9 +19,10 @@
 		"jazzer": "dist/cli.js"
 	},
 	"dependencies": {
+		"@jazzer.js/bug-detectors": "*",
+		"@jazzer.js/fuzzer": "*",
 		"@jazzer.js/hooking": "*",
 		"@jazzer.js/instrumentor": "*",
-		"@jazzer.js/bug-detectors": "*",
 		"tmp": "^0.2.1",
 		"istanbul-lib-coverage": "^3.2.0",
 		"istanbul-lib-report": "^3.0.0",

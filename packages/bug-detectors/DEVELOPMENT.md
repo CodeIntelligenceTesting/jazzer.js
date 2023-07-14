@@ -84,30 +84,34 @@ instrumentationGuard.add("VariableDeclaration", resultDeclarator);
 
 ## Guiding the fuzzing process
 
-Import the fuzzer object from the `@jazzer.js/fuzzer` package:
+Import the guiding functions from the `@jazzer.js/core` package:
 
 ```typescript
-import { fuzzer } from "@jazzer.js/fuzzer";
+import {
+	guideTowardsEquality,
+	guideTowardsContainment,
+	exploreState,
+} from "@jazzer.js/core";
 ```
 
 There are several ways to guide the fuzzing process:
 
 - ```typescript
-  fuzzer.tracer.guideTowardsEquality(current: string, target: string, id: number)
+  guideTowardsEquality(current: string, target: string, id: number)
   ```
 
   Instructs the fuzzer to guide its mutations towards making `current` equal to
   `target`.
 
 - ```typescript
-    fuzzer.tracer.guideTowardsContainment(needle: string, haystack: string, id: number)
+    guideTowardsContainment(needle: string, haystack: string, id: number)
   ```
 
   Instructs the fuzzer to guide its mutations towards making `haystack` contain
   `needle` as a substring.
 
 - ```typescript
-    fuzzer.tracer.exploreState(state: number, id: number)
+    exploreState(state: number, id: number)
   ```
 
   Instructs the fuzzer to attain as many possible values for the absolute value
@@ -128,10 +132,10 @@ syntax used by the dictionary is documented
 
 ## Report findings
 
-To report a finding, use the `reportFinding` function from
-`@jazzer.js/bug-detectors`:
+To report a finding, use the `reportFinding` function from `@jazzer.js/core`:
 
 ```typescript
+import { reportFinding } from "@jazzer.js/core";
 reportFinding(findingMessage: string)
 ```
 

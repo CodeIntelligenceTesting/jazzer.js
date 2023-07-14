@@ -10,9 +10,6 @@
 		},
 		{
 			"path": "../hooking"
-		},
-		{
-			"path": "../bug-detectors"
 		}
 	]
 }
