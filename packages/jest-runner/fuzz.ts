@@ -188,7 +188,7 @@ const doneCallbackPromise = (
 				// there could be quite some time until this one, there is not much we
 				// can do besides printing an error message.
 				console.error(
-					"Expected done to be called once, but it was called multiple times.",
+					"ERROR: Expected done to be called once, but it was called multiple times.",
 				);
 			}
 			doneCalled = true;
