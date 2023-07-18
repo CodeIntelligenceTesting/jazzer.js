@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { builtinModules } from "module";
 import {
 	AfterHookFn,
 	BeforeHookFn,
@@ -113,6 +114,35 @@ export class MatchingHooksResult {
 export class HookManager {
 	private _hooks: Hook[] = [];
 
+	/**
+	 * Finalizes the registration of new hooks and performs necessary
+	 * initialization steps for the hooks to work. This method must be called
+	 * after all hooks have been registered.
+	 */
+	async finalizeHooks() {
+		// Built-in functions cannot be hooked by the instrumentor, so that is
+		// explicitly done here instead.
+		// Loading build-in modules is asynchronous, so we need to wait, which
+		// is not possible in the instrumentor.
+		for (const builtinModule of builtinModules) {
+			const matchedHooks = this._hooks.filter((hook) =>
+				builtinModule.includes(hook.pkg),
+			);
+			for (const hook of matchedHooks) {
+				try {
+					await hookBuiltInFunction(hook);
+				} catch (e) {
+					if (process.env.JAZZER_DEBUG) {
+						console.log(
+							"DEBUG: [Hook] Error when trying to hook the built-in function: " +
+								e,
+						);
+					}
+				}
+			}
+		}
+	}
+
 	registerHook(
 		hookType: HookType,
 		target: string,
@@ -157,10 +187,6 @@ export class HookManager {
 		return (
 			this._hooks.find((hook) => filepath.includes(hook.pkg)) !== undefined
 		);
-	}
-
-	getMatchingHooks(filepath: string): Hook[] {
-		return this._hooks.filter((hook) => filepath.includes(hook.pkg));
 	}
 
 	callHook(

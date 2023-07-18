@@ -15,6 +15,8 @@
  *
  */
 
+import process from "process";
+
 export class Finding extends Error {}
 
 // The first finding reported by any bug detector will be saved here.
@@ -45,4 +47,64 @@ export function reportFinding(findingMessage: string): void | never {
 	}
 	firstFinding = new Finding(findingMessage);
 	throw firstFinding;
+}
+
+/**
+ * Prints a finding, or more generally some kind of error, to stdout.
+ */
+export function printFinding(error: unknown) {
+	let errorMessage = `==${process.pid}== `;
+	if (!(error instanceof Finding)) {
+		errorMessage += "Uncaught Exception: Jazzer.js: ";
+	}
+
+	if (error instanceof Error) {
+		errorMessage += error.message;
+		console.log(errorMessage);
+		if (error.stack) {
+			console.log(cleanErrorStack(error));
+		}
+	} else if (typeof error === "string" || error instanceof String) {
+		errorMessage += error;
+		console.log(errorMessage);
+	} else {
+		errorMessage += "unknown";
+		console.log(errorMessage);
+	}
+}
+
+function cleanErrorStack(error: Error): string {
+	if (error.stack === undefined) return "";
+
+	// This cleans up the stack of a finding. The changes are independent of each other, since a finding can be
+	// thrown from the hooking library, by the custom hooks, or by the fuzz target.
+	if (error instanceof Finding) {
+		// Remove the message from the stack trace. Also remove the subsequent line of the remaining stack trace that
+		// always contains `reportFinding()`, which is not relevant for the user.
+		error.stack = error.stack
+			?.replace(`Error: ${error.message}\n`, "")
+			.replace(/.*\n/, "");
+
+		// Remove all lines up to and including the line that mentions the hooking library from the stack trace of a
+		// finding.
+		const stack = error.stack.split("\n");
+		const index = stack.findIndex((line) =>
+			line.includes("jazzer.js/packages/hooking/manager"),
+		);
+		if (index !== undefined && index >= 0) {
+			error.stack = stack.slice(index + 1).join("\n");
+		}
+
+		// also delete all lines that mention "jazzer.js/packages/"
+		error.stack = error.stack.replace(/.*jazzer.js\/packages\/.*\n/g, "");
+	}
+
+	const result: string[] = [];
+	for (const line of error.stack.split("\n")) {
+		if (line.includes("jazzer.js/packages/core/core.ts")) {
+			break;
+		}
+		result.push(line);
+	}
+	return result.join("\n");
 }

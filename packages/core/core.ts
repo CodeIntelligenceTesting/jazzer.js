@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 import path from "path";
-import { builtinModules } from "module";
-import * as process from "process";
 import * as tmp from "tmp";
 import * as fs from "fs";
 
@@ -25,7 +23,7 @@ import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
-import { clearFirstFinding, Finding, getFirstFinding } from "./finding";
+import { clearFirstFinding, getFirstFinding, printFinding } from "./finding";
 import {
 	FileSyncIdStrategy,
 	Instrumentor,
@@ -33,7 +31,8 @@ import {
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
 import { callbacks } from "./callback";
-import { dictionaries } from "./dictionary";
+import { ensureFilepath, importModule } from "./utils";
+import { buildFuzzerOption } from "./options";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -63,10 +62,6 @@ export interface Options {
 	disableBugDetectors: string[];
 	mode?: "fuzzing" | "regression";
 	verbose?: boolean;
-}
-
-interface FuzzModule {
-	[fuzzEntryPoint: string]: fuzzer.FuzzTarget;
 }
 
 /* eslint no-var: 0 */
@@ -115,11 +110,18 @@ export async function initFuzzing(options: Options): Promise<void> {
 
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
-	// Built-in functions cannot be hooked by the instrumentor, so we manually hook them here.
-	await hookBuiltInFunctions(hooking.hookManager);
+	await hooking.hookManager.finalizeHooks();
+}
+
+function registerGlobals(options: Options) {
+	globalThis.Fuzzer = fuzzer.fuzzer;
+	globalThis.HookManager = hooking.hookManager;
+	globalThis.options = options;
 }
 
 // Filters out disabled bug detectors and prepares all the others for dynamic import.
+// This functionality belongs to the bug-detector module but no dependency from
+// core to bug-detectors is allowed.
 function getFilteredBugDetectorPaths(
 	bugDetectorsDirectory: string,
 	disableBugDetectors: string[],
@@ -158,30 +160,6 @@ function getFilteredBugDetectorPaths(
 	);
 }
 
-// Built-in functions cannot be hooked by the instrumentor. We hook them by overwriting them at the module level.
-async function hookBuiltInFunctions(hookManager: hooking.HookManager) {
-	for (const builtinModule of builtinModules) {
-		for (const hook of hookManager.getMatchingHooks(builtinModule)) {
-			try {
-				await hooking.hookBuiltInFunction(hook);
-			} catch (e) {
-				if (process.env.JAZZER_DEBUG) {
-					console.log(
-						"DEBUG: [Hook] Error when trying to hook the built-in function: " +
-							e,
-					);
-				}
-			}
-		}
-	}
-}
-
-export function registerGlobals(options: Options) {
-	globalThis.Fuzzer = fuzzer.fuzzer;
-	globalThis.HookManager = hooking.hookManager;
-	globalThis.options = options;
-}
-
 export async function startFuzzing(options: Options) {
 	await initFuzzing(options);
 	const fuzzFn = await loadFuzzFunction(options);
@@ -208,14 +186,6 @@ export async function startFuzzing(options: Options) {
 	);
 }
 
-function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
-	fuzzerOptions.slice(1).forEach((element) => {
-		if (element.length > 0 && element[0] != "-") {
-			console.error("INFO: using inputs from:", element);
-		}
-	});
-}
-
 export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	options: Options,
@@ -235,15 +205,8 @@ export async function startFuzzingNoInit(
 		);
 	};
 
-	const fuzzerOptions = buildFuzzerOptions(options);
-	logInfoAboutFuzzerOptions(fuzzerOptions);
-	// in verbose mode print the configuration
-	if (process.env.JAZZER_DEBUG) {
-		console.debug("DEBUG: [core] Jazzer.js initial arguments: ");
-		console.debug(options);
-		console.debug("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");
-		console.debug(fuzzerOptions);
-	}
+	const fuzzerOptions = buildFuzzerOption(options);
+
 	if (options.sync) {
 		return Promise.resolve().then(() =>
 			Fuzzer.startFuzzing(
@@ -260,59 +223,6 @@ export async function startFuzzingNoInit(
 		process.on("SIGINT", signalHandler);
 		return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 	}
-}
-
-function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
-	// When we run in a libFuzzer mode that spawns subprocesses, we create a wrapper script
-	// that can be used as libFuzzer's argv[0]. In the fork mode, the main libFuzzer process
-	// uses argv[0] to spawn further processes that perform the actual fuzzing.
-	const libFuzzerSpawnsProcess = fuzzerOptions.some(
-		(flag) =>
-			flag.startsWith("-fork=") ||
-			flag.startsWith("-jobs=") ||
-			flag.startsWith("-merge="),
-	);
-
-	if (!libFuzzerSpawnsProcess) {
-		// Return a fake argv[0] to start the fuzzer if libFuzzer does not spawn new processes.
-		return "unused_arg0_report_a_bug_if_you_see_this";
-	} else {
-		// Create a wrapper script and return its path.
-		return createWrapperScript(fuzzerOptions);
-	}
-}
-
-function createWrapperScript(fuzzerOptions: string[]) {
-	const jazzerArgs = process.argv.filter(
-		(arg) => arg !== "--" && fuzzerOptions.indexOf(arg) === -1,
-	);
-
-	if (jazzerArgs.indexOf("--id_sync_file") === -1) {
-		const idSyncFile = tmp.fileSync({
-			mode: 0o600,
-			prefix: "jazzer.js",
-			postfix: "idSync",
-		});
-		jazzerArgs.push("--id_sync_file", idSyncFile.name);
-		fs.closeSync(idSyncFile.fd);
-	}
-
-	const isWindows = process.platform === "win32";
-
-	const scriptContent = `${isWindows ? "@echo off" : "#!/usr/bin/env sh"}
-cd "${process.cwd()}"
-${jazzerArgs.map((s) => '"' + s + '"').join(" ")} -- ${isWindows ? "%*" : "$@"}
-`;
-
-	const scriptTempFile = tmp.fileSync({
-		mode: 0o700,
-		prefix: "jazzer.js",
-		postfix: "libfuzzer" + (isWindows ? ".bat" : ".sh"),
-	});
-	fs.writeFileSync(scriptTempFile.name, scriptContent);
-	fs.closeSync(scriptTempFile.fd);
-
-	return scriptTempFile.name;
 }
 
 function stopFuzzing(
@@ -361,7 +271,7 @@ function stopFuzzing(
 			console.error(`INFO: Received expected error "${name}".`);
 			stopFuzzing(ERROR_EXPECTED_CODE);
 		} else {
-			printError(err);
+			printFinding(err);
 			console.error(
 				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`,
 			);
@@ -372,7 +282,7 @@ function stopFuzzing(
 
 	// Error found, but no specific one expected. This case is used for normal
 	// fuzzing runs, so no dedicated exit code is given to the stop fuzzing function.
-	printError(err);
+	printFinding(err);
 	stopFuzzing();
 }
 
@@ -388,142 +298,6 @@ function errorName(error: unknown): string {
 		// not be stated as expected error.
 		return "unknown";
 	}
-}
-
-function printError(error: unknown) {
-	let errorMessage = `==${process.pid}== `;
-	if (!(error instanceof Finding)) {
-		errorMessage += "Uncaught Exception: Jazzer.js: ";
-	}
-
-	if (error instanceof Error) {
-		errorMessage += error.message;
-		console.log(errorMessage);
-		if (error.stack) {
-			console.log(cleanErrorStack(error));
-		}
-	} else if (typeof error === "string" || error instanceof String) {
-		errorMessage += error;
-		console.log(errorMessage);
-	} else {
-		errorMessage += "unknown";
-		console.log(errorMessage);
-	}
-}
-
-function cleanErrorStack(error: Error): string {
-	if (error.stack === undefined) return "";
-
-	// This cleans up the stack of a finding. The changes are independent of each other, since a finding can be
-	// thrown from the hooking library, by the custom hooks, or by the fuzz target.
-	if (error instanceof Finding) {
-		// Remove the message from the stack trace. Also remove the subsequent line of the remaining stack trace that
-		// always contains `reportFinding()`, which is not relevant for the user.
-		error.stack = error.stack
-			?.replace(`Error: ${error.message}\n`, "")
-			.replace(/.*\n/, "");
-
-		// Remove all lines up to and including the line that mentions the hooking library from the stack trace of a
-		// finding.
-		const stack = error.stack.split("\n");
-		const index = stack.findIndex((line) =>
-			line.includes("jazzer.js/packages/hooking/manager"),
-		);
-		if (index !== undefined && index >= 0) {
-			error.stack = stack.slice(index + 1).join("\n");
-		}
-
-		// also delete all lines that mention "jazzer.js/packages/"
-		error.stack = error.stack.replace(/.*jazzer.js\/packages\/.*\n/g, "");
-	}
-
-	const result: string[] = [];
-	for (const line of error.stack.split("\n")) {
-		if (line.includes("jazzer.js/packages/core/core.ts")) {
-			break;
-		}
-		result.push(line);
-	}
-	return result.join("\n");
-}
-
-function buildFuzzerOptions(options: Options): string[] {
-	if (!options || !options.fuzzerOptions) {
-		return [];
-	}
-
-	let opts = options.fuzzerOptions;
-	if (options.mode === "regression") {
-		// the last provided option takes precedence
-		opts = opts.concat("-runs=0");
-	}
-
-	if (options.timeout <= 0) {
-		throw new Error("timeout must be > 0");
-	}
-	const inSeconds = Math.ceil(options.timeout / 1000);
-	opts = opts.concat(`-timeout=${inSeconds}`);
-
-	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
-	// with the Node.js signal handling.
-	opts = opts.concat("-handle_int=0", "-handle_term=0");
-
-	// Dictionary handling. This diverges from the libfuzzer behavior, which allows only one dictionary (the last one).
-	// We merge all dictionaries into one and pass that to libfuzzer.
-	let shouldUseDictionaries = false;
-	const mergedDictionary = `.JazzerJs-merged-dictionaries`;
-	let dictionary = "";
-
-	// Extract dictionaries from bug detectors.
-	for (const dict of dictionaries.dictionary) {
-		// Make an empty dictionary file.
-		if (!shouldUseDictionaries) {
-			shouldUseDictionaries = true;
-		}
-		// Append the contents of dict to the .jazzer-merged-dictionaries file.
-		dictionary = dictionary.concat(dict);
-	}
-
-	// Merge all dictionaries into one: .jazzer-all-dictionaries.
-	for (const option of options.fuzzerOptions) {
-		if (option.startsWith("-dict=")) {
-			const dict = option.substring(6);
-			// if the dictionary is the same as the merged dictionary, skip it.
-			if (dict === mergedDictionary) {
-				continue;
-			}
-			// Make an empty dictionary file.
-			if (!shouldUseDictionaries) {
-				shouldUseDictionaries = true;
-			}
-
-			// Preserve the file name in a comment before merging dictionary contents.
-			dictionary = dictionary.concat(`\n# ${dict}:\n`);
-			dictionary = dictionary.concat(fs.readFileSync(dict).toString());
-			// Drop the dictionary from the list of options.
-			opts = opts.filter((o) => o !== option);
-		}
-	}
-
-	if (shouldUseDictionaries) {
-		// Add a comment to the top of the dictionary file.
-		dictionary =
-			"# This file was automatically generated. Do not edit.\n" + dictionary;
-		// Check if the merged dictionary already exists and has the same contents.
-		if (fs.existsSync(mergedDictionary)) {
-			const existingDictionary = fs.readFileSync(mergedDictionary).toString();
-			// Overwrite only if the dictionary contents differ.
-			if (existingDictionary !== dictionary) {
-				fs.writeFileSync(mergedDictionary, dictionary);
-			}
-		} else {
-			// Otherwise, create the file.
-			fs.writeFileSync(mergedDictionary, dictionary);
-		}
-		opts = opts.concat(`-dict=${mergedDictionary}`);
-	}
-
-	return [prepareLibFuzzerArg0(opts), ...opts];
 }
 
 async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
@@ -549,6 +323,18 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget,
 ): fuzzer.FuzzTarget {
+	function throwIfError(fuzzTargetError?: unknown): undefined | never {
+		const error = getFirstFinding();
+		if (error !== undefined) {
+			// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
+			clearFirstFinding();
+			throw error;
+		} else if (fuzzTargetError) {
+			throw fuzzTargetError;
+		}
+		return undefined;
+	}
+
 	if (originalFuzzFn.length === 1) {
 		return (data: Buffer): void | Promise<void> => {
 			let fuzzTargetError: unknown;
@@ -603,38 +389,6 @@ export function wrapFuzzFunctionForBugDetection(
 			return result;
 		};
 	}
-}
-
-function throwIfError(fuzzTargetError?: unknown) {
-	const error = getFirstFinding();
-	if (error !== undefined) {
-		// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
-		clearFirstFinding();
-		throw error;
-	} else if (fuzzTargetError) {
-		throw fuzzTargetError;
-	}
-	return undefined;
-}
-
-async function importModule(name: string): Promise<FuzzModule | void> {
-	return import(name);
-}
-
-export function ensureFilepath(filePath: string): string {
-	if (!filePath) {
-		throw Error("Empty filepath provided");
-	}
-
-	const absolutePath = path.isAbsolute(filePath)
-		? filePath
-		: path.join(process.cwd(), filePath);
-
-	// file: schema is required on Windows
-	const fullPath = "file://" + absolutePath;
-	return [".js", ".mjs", ".cjs"].some((suffix) => fullPath.endsWith(suffix))
-		? fullPath
-		: fullPath + ".js";
 }
 
 // Export public API from within core module for easy access.
