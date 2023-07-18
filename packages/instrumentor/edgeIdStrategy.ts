@@ -156,7 +156,9 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 						break;
 					default:
 						this.releaseLockOnSyncFile();
-						console.error(`Multiple entries for ${filename} in ID sync file`);
+						console.error(
+							`ERROR: Multiple entries for ${filename} in ID sync file`,
+						);
 						process.exit(FileSyncIdStrategy.fatalExitCode);
 				}
 				break;
@@ -197,7 +199,7 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 		} else {
 			if (this.releaseLockOnSyncFile === undefined) {
 				console.error(
-					`Lock on ID sync file is not acquired by the first processing instrumenting: ${filename}`,
+					`ERROR: Lock on ID sync file is not acquired by the first processing instrumenting: ${filename}`,
 				);
 				process.exit(FileSyncIdStrategy.fatalExitCode);
 			}

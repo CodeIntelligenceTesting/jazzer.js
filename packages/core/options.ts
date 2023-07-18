@@ -46,7 +46,7 @@ export function buildFuzzerOption(options: Options) {
 function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
 	fuzzerOptions.slice(1).forEach((element) => {
 		if (element.length > 0 && element[0] != "-") {
-			console.error("INFO: using inputs from:", element);
+			console.log("INFO: using inputs from:", element);
 		}
 	});
 }

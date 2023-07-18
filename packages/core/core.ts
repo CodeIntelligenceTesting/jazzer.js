@@ -268,7 +268,7 @@ function stopFuzzing(
 	if (expectedErrors.length) {
 		const name = errorName(err);
 		if (expectedErrors.includes(name)) {
-			console.error(`INFO: Received expected error "${name}".`);
+			console.log(`INFO: Received expected error "${name}".`);
 			stopFuzzing(ERROR_EXPECTED_CODE);
 		} else {
 			printFinding(err);
