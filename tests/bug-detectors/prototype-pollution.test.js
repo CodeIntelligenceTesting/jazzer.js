@@ -230,6 +230,68 @@ describe("Prototype Pollution", () => {
 		expect(fuzzTest.stdout).toContain("Prototype Pollution");
 	});
 
+	it("Async assignment instrumentation", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.customHooks([
+				path.join(bugDetectorDirectory, "instrument-all.config.js"),
+			])
+			.dir(bugDetectorDirectory)
+			.fuzzEntryPoint("AsyncAssignment")
+			.verbose(true)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrowError(FuzzingExitCode);
+		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+	});
+
+	it("Async variable declaration instrumentation", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.customHooks([
+				path.join(bugDetectorDirectory, "instrument-all.config.js"),
+			])
+			.dir(bugDetectorDirectory)
+			.fuzzEntryPoint("AsyncVariableDeclaration")
+			.verbose(true)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrowError(FuzzingExitCode);
+		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+	});
+
+	it("Equal assignments should be instrumented", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.customHooks([
+				path.join(bugDetectorDirectory, "instrument-all.config.js"),
+			])
+			.dir(bugDetectorDirectory)
+			.fuzzEntryPoint("EqualExpressionInstrumentation")
+			.sync(true)
+			.verbose(true)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrowError(FuzzingExitCode);
+		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+	});
+
+	it("Equal variable declarations should be instrumented", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.customHooks([
+				path.join(bugDetectorDirectory, "instrument-all.config.js"),
+			])
+			.dir(bugDetectorDirectory)
+			.fuzzEntryPoint("EqualVariableDeclarationsInstrumentation")
+			.sync(true)
+			.verbose(true)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrowError(FuzzingExitCode);
+		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+	});
+
 	// Challenge to the future developer: make this test pass!
 	// it("Two-stage prototype pollution using instrumentation", () => {
 	// 	const fuzzTest = new FuzzTestBuilder()

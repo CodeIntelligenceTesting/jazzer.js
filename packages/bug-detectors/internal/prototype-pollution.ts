@@ -130,11 +130,10 @@ registerInstrumentationPlugin((): PluginTarget => {
 		visitor: {
 			// Wraps assignment expression in a lambda, and checks if __proto__ of the identifier contains any non-function values.
 			// For example, the expression "a = 10;" will be transpiled to:
-			// "a = (() => {
-			// 	const _jazzerPP_result0 = a = 10;
-			// 	PrototypePollution.detectPrototypePollution(a, "a");
-			// 	return _jazzerPP_result0;
-			// })();"
+			// "((_unused0) => {
+			// 	  PrototypePollution.detectPrototypePollution(a, "a");
+			// 	  return a;
+			// })(a = 10);"
 			// This expression will be further instrumented by the regular Jazzer.js instrumentation plugins.
 			AssignmentExpression(path: NodePath<types.AssignmentExpression>) {
 				if (
@@ -153,46 +152,39 @@ registerInstrumentationPlugin((): PluginTarget => {
 					return;
 				}
 
-				// Wrap the whole expression in a lambda and check for __proto__ changes
-				const result = path.scope.generateUidIdentifier("jazzerPP_result");
-				instrumentationGuard.add("AssignmentExpression", path.node);
-				// Copy path.node because it will be replaced by a lambda.
-				const resultDeclarator = types.variableDeclarator(
-					result,
-					JSON.parse(JSON.stringify(path.node)),
-				);
-				instrumentationGuard.add("AssignmentExpression", resultDeclarator);
-				instrumentationGuard.add("VariableDeclaration", resultDeclarator);
+				// Copy the original assignment expression since we will replace it.
+				const originalAssignment = JSON.parse(JSON.stringify(path.node));
 
-				const newAssignment = types.callExpression(
-					types.arrowFunctionExpression(
-						[],
-						types.blockStatement([
-							types.variableDeclaration("const", [resultDeclarator]),
-							// check for __proto__ changes
-							types.expressionStatement(
-								types.callExpression(
-									types.identifier(
-										"PrototypePollution.detectPrototypePollution",
+				// Add the original assignment to the instrumentation guard to avoid its re-instrumentation.
+				instrumentationGuard.add("AssignmentExpression", originalAssignment);
+
+				path.replaceWith(
+					types.callExpression(
+						types.arrowFunctionExpression(
+							[path.scope.generateUidIdentifier("unused")],
+							types.blockStatement([
+								types.expressionStatement(
+									types.callExpression(
+										types.identifier(
+											"PrototypePollution.detectPrototypePollution",
+										),
+										[identifier, types.stringLiteral("" + identifier.name)],
 									),
-									[identifier, types.stringLiteral("" + identifier.name)],
 								),
-							),
-							// return the original assignment
-							types.returnStatement(result),
-						]),
+								// Return the result of the original assignment.
+								types.returnStatement(identifier),
+							]),
+						),
+						[originalAssignment],
 					),
-					[],
 				);
-				path.replaceWith(newAssignment);
 			},
 			// Wraps variable declaration in a lambda, and checks if __proto__ of the identifier contains any non-function properties.
 			// For example: "const a = 10;" will be transpiled to:
-			// "const a = (() => {
-			//           const _jazzerPP0 = 10;
-			//           PrototypePollution.detectPrototypePollution(_jazzerPP0, "a");
+			// "const a = ((_jazzerPP_a0) => {
+			//           PrototypePollution.detectPrototypePollution(_jazzerPP_a0, "a");
 			//           return _jazzerPP0;
-			//         })();"
+			//         })(10);"
 			// This expression will be further instrumented by the regular Jazzer.js instrumentation plugins.
 			VariableDeclarator(path: NodePath<types.VariableDeclarator>) {
 				if (
@@ -201,42 +193,36 @@ registerInstrumentationPlugin((): PluginTarget => {
 				) {
 					return;
 				}
-				// wrap the initializer in a lambda and check for __proto__ changes
 				if (path.node.init) {
 					if (instrumentationGuard.has("VariableDeclaration", path.node)) {
 						return;
 					}
 
-					const newVariable = path.scope.generateUidIdentifier("jazzerPP");
-					const markedDeclarator = types.variableDeclarator(
-						newVariable,
-						path.node.init,
+					const variableName = (path.node.id as types.Identifier).name;
+					const newVariable = path.scope.generateUidIdentifier(
+						"jazzerPP_" + variableName,
 					);
 
-					const variable = path.node.id as types.Identifier;
-					instrumentationGuard.add("VariableDeclaration", markedDeclarator);
 					if (types.isAssignmentExpression(path.node.init))
 						instrumentationGuard.add("AssignmentExpression", path.node.init);
 
 					path.node.init = types.callExpression(
 						types.arrowFunctionExpression(
-							[],
+							[newVariable],
 							types.blockStatement([
-								types.variableDeclaration("const", [markedDeclarator]),
-								// check for __proto__ changes
 								types.expressionStatement(
 									types.callExpression(
 										types.identifier(
 											"PrototypePollution.detectPrototypePollution",
 										),
-										[newVariable, types.stringLiteral("" + variable.name)],
+										[newVariable, types.stringLiteral("" + variableName)],
 									),
 								),
 								// return the original initializer
 								types.returnStatement(newVariable),
 							]),
 						),
-						[],
+						[path.node.init],
 					);
 					instrumentationGuard.add("VariableDeclaration", path.node.init);
 				}
