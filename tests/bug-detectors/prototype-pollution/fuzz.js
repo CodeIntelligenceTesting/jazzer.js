@@ -107,3 +107,59 @@ module.exports.TwoStagePollution = function (data) {
 	const b = a["__proto__"];
 	b.polluted = true; // This can currently not be detected.
 };
+
+module.exports.AsyncAssignment = async function (data) {
+	const fn = async () => {
+		return { __proto__: { polluted: true } };
+	};
+	let a;
+	a = await fn();
+};
+
+module.exports.AsyncVariableDeclaration = async function (data) {
+	const fn = async () => {
+		return { __proto__: { polluted: true } };
+	};
+	const a = await fn();
+};
+
+module.exports.EqualExpressionInstrumentation = function (data) {
+	const makeStatefulFn = () => {
+		let i = -1;
+		return () => {
+			i++;
+			if (i === 1) {
+				return { __proto__: { polluted: true } };
+			} else {
+				return {};
+			}
+		};
+	};
+	const fn = makeStatefulFn();
+	let a;
+	// PP instrumentation adds the next line to the instrumentation guard.
+	a = fn();
+	// If the next line is not instrumented, prototype pollution will not be detected.
+	a = fn();
+};
+
+module.exports.EqualVariableDeclarationsInstrumentation = function (data) {
+	const makeStatefulFn = () => {
+		let i = -1;
+		return () => {
+			i++;
+			if (i === 1) {
+				return { __proto__: { polluted: true } };
+			} else {
+				return {};
+			}
+		};
+	};
+	const fn = makeStatefulFn();
+
+	const a = fn();
+
+	(() => {
+		const a = fn();
+	})();
+};
