@@ -16,7 +16,8 @@
  */
 
 import yargs, { Argv } from "yargs";
-import { startFuzzing, ensureFilepath } from "./core";
+import { startFuzzing } from "./core";
+import { ensureFilepath } from "./utils";
 
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")

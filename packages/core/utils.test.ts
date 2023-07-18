@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ensureFilepath } from "./core";
+import { ensureFilepath } from "./utils";
 
 import path from "path";
 

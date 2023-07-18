@@ -15,9 +15,11 @@
  */
 
 const path = require("path");
-const { readFileSync } = require("fs");
-const { FuzzTestBuilder, FuzzingExitCode } = require("../helpers.js");
-const { JestRegressionExitCode } = require("../helpers");
+const {
+	FuzzTestBuilder,
+	FuzzingExitCode,
+	JestRegressionExitCode,
+} = require("../helpers.js");
 
 describe("Prototype Pollution", () => {
 	const bugDetectorDirectory = path.join(__dirname, "prototype-pollution");
@@ -244,53 +246,6 @@ describe("Prototype Pollution", () => {
 	// 	}).toThrowError(FuzzingExitCode);
 	// 	expect(fuzzTest.stdout).toContain("Prototype Pollution");
 	// });
-});
-
-describe("Prototype Pollution Dictionary Tests", () => {
-	const bugDetectorDirectory = path.join(__dirname, "prototype-pollution");
-
-	it("One user dictionary", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.dictionaries(["01-UserDictionary.txt"])
-			.dir(bugDetectorDirectory)
-			.fuzzEntryPoint("DictionaryTest")
-			.sync(true)
-			.verbose(true)
-			.build();
-		fuzzTest.execute();
-		// Check if the contents of the user dictionary are in the merged dictionary
-		const userDictionary = readFileSync(
-			path.join(bugDetectorDirectory, "01-UserDictionary.txt"),
-		);
-		const mergedDictionary = readFileSync(
-			path.join(bugDetectorDirectory, ".JazzerJs-merged-dictionaries"),
-		);
-		expect(mergedDictionary.toString()).toContain(userDictionary.toString());
-	});
-
-	it("Two user dictionaries", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.dictionaries(["01-UserDictionary.txt", "02-UserDictionary.txt"])
-			.dir(bugDetectorDirectory)
-			.fuzzEntryPoint("DictionaryTest")
-			.sync(true)
-			.verbose(true)
-			.build();
-		fuzzTest.execute();
-		// Check if the contents of the user dictionaries are in the merged dictionary
-		const userDictionary1 =
-			readFileSync(
-				path.join(bugDetectorDirectory, "01-UserDictionary.txt"),
-			).toString() + "\n";
-		const userDictionary2 = readFileSync(
-			path.join(bugDetectorDirectory, "01-UserDictionary.txt"),
-		).toString();
-		const mergedDictionary = readFileSync(
-			path.join(bugDetectorDirectory, ".JazzerJs-merged-dictionaries"),
-		).toString();
-		expect(mergedDictionary).toContain(userDictionary1);
-		expect(mergedDictionary).toContain(userDictionary2);
-	});
 });
 
 describe("Prototype Pollution Jest tests", () => {

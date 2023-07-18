@@ -51,5 +51,3 @@ node_modules/
 
 # Output of 'npm pack'
 *.tgz
-
-.JazzerJs-merged-dictionaries
