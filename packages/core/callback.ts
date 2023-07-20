@@ -33,11 +33,15 @@ export class Callbacks {
 	}
 
 	runAfterEachCallbacks() {
-		this._afterEachCallbacks.forEach((c) => c());
+		for (const c of this._afterEachCallbacks) {
+			c();
+		}
 	}
 
 	runBeforeEachCallbacks() {
-		this._beforeEachCallbacks.forEach((c) => c());
+		for (const c of this._beforeEachCallbacks) {
+			c();
+		}
 	}
 }
 
