@@ -16,11 +16,13 @@
 
 import { default as bind } from "bindings";
 
-export type FuzzTargetAsyncOrValue = (data: Buffer) => void | Promise<void>;
+export type FuzzTargetAsyncOrValue = (
+	data: Buffer,
+) => unknown | Promise<unknown>;
 export type FuzzTargetCallback = (
 	data: Buffer,
 	done: (e?: Error) => void,
-) => void;
+) => unknown;
 export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
 export type FuzzOpts = string[];
 
