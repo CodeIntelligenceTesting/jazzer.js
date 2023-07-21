@@ -349,9 +349,9 @@ export function wrapFuzzFunctionForBugDetection(
 	}
 
 	if (originalFuzzFn.length === 1) {
-		return (data: Buffer): void | Promise<void> => {
+		return (data: Buffer): unknown | Promise<unknown> => {
 			let fuzzTargetError: unknown;
-			let result: void | Promise<void> = undefined;
+			let result: unknown | Promise<unknown> = undefined;
 			try {
 				callbacks.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
@@ -382,8 +382,8 @@ export function wrapFuzzFunctionForBugDetection(
 		return (
 			data: Buffer,
 			done: (err?: Error) => void,
-		): void | Promise<void> => {
-			let result: void | Promise<void> = undefined;
+		): unknown | Promise<unknown> => {
+			let result: unknown | Promise<unknown> = undefined;
 			try {
 				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
