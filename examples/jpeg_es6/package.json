@@ -14,6 +14,6 @@
 		"dryRun": "jazzer fuzz -i jpeg-js --sync -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
-		"@jazzer.js/core": "file:../../packages/core"
+		"@jazzer.js/core": "file:../jazzer.js-core.tgz"
 	}
 }

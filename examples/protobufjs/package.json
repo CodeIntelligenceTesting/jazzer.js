@@ -11,6 +11,6 @@
 		"tempy": "^3.0.0"
 	},
 	"devDependencies": {
-		"@jazzer.js/cli": "file:../../packages/core"
+		"@jazzer.js/cli": "file:../jazzer.js-core.tgz"
 	}
 }

@@ -9,6 +9,6 @@
 		"@stoplight/spectral-parsers": "^1.0.1"
 	},
 	"devDependencies": {
-		"@jazzer.js/core": "file:../../packages/core"
+		"@jazzer.js/core": "file:../jazzer.js-core.tgz"
 	}
 }
