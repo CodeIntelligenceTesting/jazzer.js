@@ -17,9 +17,9 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 const SyncInfo =
-	"Exclusively observed synchronous return values from fuzzed function. Fuzzing in synchronous mode seems benefical!";
+	"Exclusively observed synchronous return values from fuzzed function. Fuzzing in synchronous mode seems beneficial!";
 const AsyncInfo =
-	"Observed asynchronous return values from fuzzed function. Fuzzing in asynchronous mode seems benefical!";
+	"Observed asynchronous return values from fuzzed function. Fuzzing in asynchronous mode seems beneficial!";
 
 // current working directory
 const testDirectory = __dirname;
