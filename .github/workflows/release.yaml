@@ -23,3 +23,21 @@ jobs:
         run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_ACCESS_TOKEN}}
+
+  end-to-end:
+    name: end-to-end
+    runs-on: ubuntu-20.04
+    needs: ["release"]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+          registry-url: https://registry.npmjs.org
+      - name: build-example
+        run: cd end-to-end && npm install && npm run build
+      - name: run tests
+        run: cd end-to-end && npx jest
