@@ -41,7 +41,7 @@ describe("SIGINT handlers", () => {
 				.fuzzEntryPoint("SIGINT_SYNC")
 				.build();
 			fuzzTest.execute();
-			assertSigintMessagesLogged(fuzzTest);
+			assertSignalMessagesLogged(fuzzTest);
 		});
 		it("stop async fuzzing on SIGINT", () => {
 			const fuzzTest = fuzzTestBuilder
@@ -49,7 +49,7 @@ describe("SIGINT handlers", () => {
 				.fuzzEntryPoint("SIGINT_ASYNC")
 				.build();
 			fuzzTest.execute();
-			assertSigintMessagesLogged(fuzzTest);
+			assertSignalMessagesLogged(fuzzTest);
 		});
 	});
 
@@ -61,7 +61,7 @@ describe("SIGINT handlers", () => {
 				.jestRunInFuzzingMode(true)
 				.build();
 			fuzzTest.execute();
-			assertSigintMessagesLogged(fuzzTest);
+			assertSignalMessagesLogged(fuzzTest);
 		});
 		it("stop async fuzzing on SIGINT", () => {
 			const fuzzTest = fuzzTestBuilder
@@ -70,13 +70,70 @@ describe("SIGINT handlers", () => {
 				.jestRunInFuzzingMode(true)
 				.build();
 			fuzzTest.execute();
-			assertSigintMessagesLogged(fuzzTest);
+			assertSignalMessagesLogged(fuzzTest);
 		});
 	});
 });
 
-function assertSigintMessagesLogged(fuzzTest) {
-	expect(fuzzTest.stdout).toContain("kill with SIGINT");
+describe("SIGSEGV handlers", () => {
+	let fuzzTestBuilder;
+	const errorMessage = "= Segmentation Fault";
+
+	beforeEach(() => {
+		fuzzTestBuilder = new FuzzTestBuilder()
+			.runs(20000)
+			.dir(path.join(__dirname, "SIGSEGV"))
+			.coverage(true)
+			.verbose(true);
+	});
+
+	describe("in standalone fuzzing mode", () => {
+		it("stop sync fuzzing on SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(true)
+				.fuzzEntryPoint("SIGSEGV_SYNC")
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertSignalMessagesLogged(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop async fuzzing on SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(false)
+				.fuzzEntryPoint("SIGSEGV_ASYNC")
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertSignalMessagesLogged(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+	});
+
+	describe("in Jest fuzzing mode", () => {
+		it("stop sync fuzzing on SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Sync$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertSignalMessagesLogged(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop async fuzzing on SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Async$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertSignalMessagesLogged(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+	});
+});
+
+function assertSignalMessagesLogged(fuzzTest) {
+	expect(fuzzTest.stdout).toContain("kill with signal");
 
 	// We asked for a coverage report. Here we only look for the universal part of its header.
 	expect(fuzzTest.stdout).toContain(
@@ -85,6 +142,11 @@ function assertSigintMessagesLogged(fuzzTest) {
 
 	// "SIGINT handler called more than once" should not be printed in sync mode.
 	expect(fuzzTest.stdout).not.toContain(
-		"SIGINT has not stopped the fuzzing process",
+		"Signal has not stopped the fuzzing process",
 	);
+}
+
+function assertErrorAndCrashFileLogged(fuzzTest, errorMessage) {
+	expect(fuzzTest.stdout).toContain(errorMessage);
+	expect(fuzzTest.stderr).toContain("Test unit written to ");
 }

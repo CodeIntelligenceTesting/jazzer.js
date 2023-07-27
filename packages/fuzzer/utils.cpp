@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "napi.h"
 #include "shared/libfuzzer.h"
+#include <csignal>
 #include <iostream>
 
 void StartLibFuzzer(const std::vector<std::string> &args,
@@ -96,6 +97,10 @@ int StopFuzzingHandleExit(const Napi::CallbackInfo &info) {
 
   if (info[0].IsNumber()) {
     exitCode = info[0].As<Napi::Number>().Int32Value();
+
+    if (exitCode == SIGSEGV) {
+      libfuzzer::PrintCrashingInput();
+    }
   } else {
     // If a dedicated status code is provided, the run is executed as internal
     // test and the crashing input does not need to be printed/saved.

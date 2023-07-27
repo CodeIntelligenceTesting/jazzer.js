@@ -23,7 +23,12 @@ import * as reports from "istanbul-reports";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
-import { clearFirstFinding, getFirstFinding, printFinding } from "./finding";
+import {
+	clearFirstFinding,
+	getFirstFinding,
+	printFinding,
+	Finding,
+} from "./finding";
 import {
 	FileSyncIdStrategy,
 	Instrumentor,
@@ -41,6 +46,8 @@ tmp.setGracefulCleanup();
 // failed error expectations.
 const ERROR_EXPECTED_CODE = 0;
 const ERROR_UNEXPECTED_CODE = 78;
+
+const SIGSEGV = 11;
 
 export interface Options {
 	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
@@ -190,18 +197,18 @@ export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	options: Options,
 ) {
-	// Signal handler that stops fuzzing when the process receives a SIGINT,
+	// Signal handler that stops fuzzing when the process receives a SIGINT/SIGSEGV,
 	// necessary to generate coverage reports and print debug information.
 	// The handler stops the process via `stopFuzzing`, as resolving the "fuzzing
 	// promise" does not work in sync mode due to the blocked event loop.
-	const signalHandler = () => {
+	const signalHandler = (exitCode: number) => {
 		stopFuzzing(
 			undefined,
 			options.expectedErrors,
 			options.coverageDirectory,
 			options.coverageReporters,
 			options.sync,
-			0,
+			exitCode,
 		);
 	};
 
@@ -212,15 +219,16 @@ export async function startFuzzingNoInit(
 			Fuzzer.startFuzzing(
 				fuzzFn,
 				fuzzerOptions,
-				// In synchronous mode, we cannot use the SIGINT handler in Node,
+				// In synchronous mode, we cannot use the SIGINT/SIGSEGV handler in Node,
 				// because it won't be called until the fuzzing process is finished.
 				// Hence, we pass a callback function to the native fuzzer.
+				// The appropriate exitCode for the signalHandler will be added by the native fuzzer.
 				signalHandler,
 			),
 		);
 	} else {
-		// Add a Node SIGINT handler to stop fuzzing gracefully.
-		process.on("SIGINT", signalHandler);
+		process.on("SIGINT", () => signalHandler(0));
+		process.on("SIGSEGV", () => signalHandler(SIGSEGV));
 		return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 	}
 }
@@ -251,6 +259,11 @@ function stopFuzzing(
 		);
 	}
 
+	// Prioritize findings over segfaults.
+	if (forceShutdownWithCode === SIGSEGV && !(err instanceof Finding)) {
+		err = new Finding("Segmentation Fault");
+	}
+
 	// No error found, check if one is expected or an exit code should be enforced.
 	if (!err) {
 		if (expectedErrors.length) {
@@ -258,7 +271,7 @@ function stopFuzzing(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
 			);
 			stopFuzzing(ERROR_UNEXPECTED_CODE);
-		} else if (forceShutdownWithCode !== undefined) {
+		} else if (forceShutdownWithCode === 0) {
 			stopFuzzing(forceShutdownWithCode);
 		}
 		return;

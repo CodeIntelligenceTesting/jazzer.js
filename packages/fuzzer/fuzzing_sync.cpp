@@ -24,7 +24,7 @@ namespace {
 struct FuzzTargetInfo {
   Napi::Env env;
   Napi::Function target;
-  Napi::Function stopFunction;
+  Napi::Function jsStopCallback; // JS stop function used by signal handling.
 };
 
 // The JS fuzz target. We need to store the function pointer in a global
@@ -70,9 +70,16 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
     SyncReturnsHandler();
   }
 
-  // Execute the signal handler in context of the node application.
   if (gSignalStatus != 0) {
-    gFuzzTarget->stopFunction.Call({});
+    // Non-zero exit codes will produce crash files.
+    auto exitCode = Napi::Number::New(gFuzzTarget->env, 0);
+
+    if (gSignalStatus != SIGINT) {
+      exitCode = Napi::Number::New(gFuzzTarget->env, gSignalStatus);
+    }
+
+    // Execute the signal handler in context of the node application.
+    gFuzzTarget->jsStopCallback.Call({exitCode});
   }
 
   return EXIT_SUCCESS;
@@ -99,11 +106,12 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
 
   // Store the JS fuzz target and corresponding environment globally, so that
   // our C++ fuzz target can use them to call back into JS. Also store the stop
-  // function that will be called in case of a SIGINT.
+  // function that will be called in case of a SIGINT/SIGSEGV.
   gFuzzTarget = {info.Env(), info[0].As<Napi::Function>(),
                  info[2].As<Napi::Function>()};
 
   signal(SIGINT, sigintHandler);
+  signal(SIGSEGV, sigintHandler);
 
   StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
   // Explicitly reset the global function pointer because the JS
