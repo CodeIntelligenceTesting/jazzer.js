@@ -946,6 +946,11 @@ describe("FuzzedDataProvider checks", () => {
 		expect(strings).toContain("m dol");
 		expect(strings).toContain("or si");
 		expect(strings).toContain("t ame");
+		const moreStrings = data.consumeStringArray(5, 0);
+		expect(moreStrings).toHaveLength(5);
+		for (const str of moreStrings) {
+			expect(str).toHaveLength(0);
+		}
 	});
 	it("verifyPrintableString", () => {
 		const data = new FuzzedDataProvider(Buffer.from(Data));
