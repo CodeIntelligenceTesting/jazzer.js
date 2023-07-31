@@ -481,7 +481,7 @@ export class FuzzedDataProvider {
 		const strs = [];
 		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
 			const str = this.consumeString(maxStringLength, encoding, printable);
-			if (str) {
+			if (str || str === "") {
 				strs.push(str);
 			}
 		}
