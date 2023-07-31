@@ -15,59 +15,25 @@
  */
 
 import { cosmiconfigSync } from "cosmiconfig";
-import { Options } from "@jazzer.js/core";
+import { processOptions, Options } from "@jazzer.js/core";
 
-export const defaultOptions: Options = {
-	dryRun: true,
-	includes: ["*"],
-	excludes: ["node_modules"],
-	fuzzTarget: "",
-	fuzzEntryPoint: "",
-	customHooks: [],
-	fuzzerOptions: [],
-	sync: false,
-	expectedErrors: [],
-	timeout: 5000, // default Jest timeout
-	coverage: false,
-	coverageDirectory: "coverage",
-	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
-	disableBugDetectors: [],
-	mode: "regression",
-	verbose: false,
-};
-
-// Looks up Jazzer.js options via the `jazzer-runner` configuration from
-// within different configuration files.
-export function loadConfig(optionsKey = "jazzerjs"): Options {
+// Lookup `Options` via the `.jazzerjsrc` configuration files.
+export function loadConfig(
+	options: Partial<Options> = {},
+	optionsKey = "jazzerjs",
+): Options {
 	const result = cosmiconfigSync(optionsKey).search();
-	const defaultOptionsCopy = JSON.parse(JSON.stringify(defaultOptions));
-	let config;
-	if (result === null) {
-		config = defaultOptionsCopy;
-	} else {
-		config = Object.keys(defaultOptions).reduce(
-			(config: Options, key: string) => {
-				if (key in result.config) {
-					config = { ...config, [key]: result.config[key] };
-				}
-				return config;
-			},
-			defaultOptionsCopy,
-		);
+	const config = result?.config ?? {};
+	// Jazzer.js normally runs in "fuzzing" mode, but,
+	// if not specified otherwise, Jest uses "regression" mode.
+	if (!config.mode) {
+		config.mode = "regression";
 	}
-
 	// Switch to fuzzing mode if environment variable `JAZZER_FUZZ` is set.
 	if (process.env.JAZZER_FUZZ) {
 		config.mode = "fuzzing";
 	}
-
-	if (config.mode === "fuzzing") {
-		config.dryRun = false;
-	}
-
-	if (config.verbose) {
-		process.env.JAZZER_DEBUG = "1";
-	}
-
-	return config;
+	// Merge explicitly passed in options.
+	Object.assign(config, options);
+	return processOptions(config);
 }

@@ -16,8 +16,169 @@
 
 import * as tmp from "tmp";
 import fs from "fs";
-import { Options } from "./core";
 import { useDictionaryByParams } from "./dictionary";
+
+/**
+ * Jazzer.js options structure expected by the fuzzer.
+ *
+ * Entry functions, like the CLI or test framework integrations, need to build
+ * this structure and should use the same property names for exposing their own
+ * options.
+ */
+export interface Options {
+	// `fuzzTarget` is the name of a module exporting the fuzz function `fuzzEntryPoint`.
+	fuzzTarget: string;
+	// Name of the function that is called by the fuzzer exported by `fuzzTarget`.
+	fuzzEntryPoint: string;
+	// Part of filepath names to include in the instrumentation.
+	includes: string[];
+	// Part of filepath names to exclude in the instrumentation.
+	excludes: string[];
+	// Whether to add fuzzing instrumentation or not.
+	dryRun: boolean;
+	// Whether to run the fuzzer in sync mode or not.
+	sync: boolean;
+	// Options to pass on to the underlying fuzzing engine.
+	fuzzerOptions: string[];
+	// Files to load that contain custom hooks.
+	customHooks: string[];
+	// Expected error name that won't trigger the fuzzer to stop with an error exit code.
+	expectedErrors: string[];
+	// Timeout for one fuzzing iteration in milliseconds.
+	timeout: number;
+	// Internal: File to sync coverage IDs in fork mode.
+	idSyncFile?: string;
+	// Enable source code coverage report generation.
+	coverage: boolean;
+	// Directory to write coverage reports to.
+	coverageDirectory: string;
+	// Coverage reporters to use during report generation.
+	coverageReporters: string[];
+	// Disable bug detectors by name.
+	disableBugDetectors: string[];
+	// Fuzzing mode.
+	mode: "fuzzing" | "regression";
+	// Verbose logging.
+	verbose?: boolean;
+}
+
+export const defaultOptions: Options = {
+	fuzzTarget: "",
+	fuzzEntryPoint: "fuzz",
+	includes: ["*"],
+	excludes: ["node_modules"],
+	dryRun: false,
+	sync: false,
+	fuzzerOptions: [],
+	customHooks: [],
+	expectedErrors: [],
+	timeout: 5000, // default Jest timeout
+	idSyncFile: "",
+	coverage: false,
+	coverageDirectory: "coverage",
+	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
+	disableBugDetectors: [],
+	mode: "fuzzing",
+	verbose: false,
+};
+
+export type KeyFormatSource = (key: string) => string;
+export const fromCamelCase: KeyFormatSource = (key: string): string => key;
+export const fromSnakeCase: KeyFormatSource = (key: string): string => {
+	return key
+		.toLowerCase()
+		.replaceAll(/(_[a-z0-9])/g, (group) =>
+			group.toUpperCase().replace("_", ""),
+		);
+};
+export const fromSnakeCaseWithPrefix: (prefix: string) => KeyFormatSource = (
+	prefix: string,
+): KeyFormatSource => {
+	const prefixKey = prefix.toLowerCase() + "_";
+	return (key: string): string => {
+		return key.toLowerCase().startsWith(prefixKey)
+			? fromSnakeCase(key.substring(prefixKey.length))
+			: key;
+	};
+};
+
+/**
+ * Builds a complete `Option` object based on default options, environment variables and
+ * the partially given input options.
+ * Keys in the given option object can be transformed by the `transformKey` function.
+ * Environment variables need to be set in snake case with the prefix`JAZZER_`.
+ */
+export function processOptions(
+	inputs: Partial<Options> = {},
+	transformKey: KeyFormatSource = fromCamelCase,
+	defaults: Options = defaultOptions,
+): Options {
+	// Includes and excludes must be set together.
+	if (inputs && inputs.includes && !inputs.excludes) {
+		inputs.excludes = [];
+	} else if (inputs && inputs.excludes && !inputs.includes) {
+		inputs.includes = [];
+	}
+
+	const defaultsWithEnv = mergeOptions(
+		process.env,
+		defaults,
+		fromSnakeCaseWithPrefix("JAZZER"),
+		false,
+	);
+	const options = mergeOptions(inputs, defaultsWithEnv, transformKey);
+	// Set verbose mode environment variable via option or node DEBUG environment variable.
+	if (options.verbose || process.env.DEBUG) {
+		process.env.JAZZER_DEBUG = "1";
+	}
+	return options;
+}
+
+function mergeOptions(
+	input: unknown,
+	defaults: Options,
+	transformKey: (key: string) => string,
+	errorOnUnknown = true,
+): Options {
+	// Deep close the default options to avoid mutation.
+	const options: Options = JSON.parse(JSON.stringify(defaults));
+	if (!input || typeof input !== "object") {
+		return options;
+	}
+	Object.keys(input as object).forEach((key) => {
+		const transformedKey = transformKey(key);
+		if (!Object.hasOwn(options, transformedKey)) {
+			if (errorOnUnknown) {
+				throw new Error(`Unknown Jazzer.js option '${key}'`);
+			}
+			return;
+		}
+		// No way to dynamically resolve the types here, use (implicit) any for now.
+		// @ts-ignore
+		let resultValue = input[key];
+		// Try to parse strings as JSON values to support setting arrays and
+		// objects via environment variables.
+		if (typeof resultValue === "string" || resultValue instanceof String) {
+			try {
+				resultValue = JSON.parse(resultValue.toString());
+			} catch (ignore) {
+				// Ignore parsing errors and continue with the string value.
+			}
+		}
+		//@ts-ignore
+		const keyType = typeof options[transformedKey];
+		if (typeof resultValue !== keyType) {
+			// @ts-ignore
+			throw new Error(
+				`Invalid type for Jazzer.js option '${key}', expected type '${keyType}'`,
+			);
+		}
+		// Deep clone value to avoid reference keeping and unintended mutations.
+		// @ts-ignore
+		options[transformedKey] = JSON.parse(JSON.stringify(resultValue));
+	});
+	return options;
+}
 
 export function buildFuzzerOption(options: Options) {
 	if (process.env.JAZZER_DEBUG) {

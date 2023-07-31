@@ -18,6 +18,13 @@
 import yargs, { Argv } from "yargs";
 import { startFuzzing } from "./core";
 import { ensureFilepath } from "./utils";
+import { defaultOptions, processOptions, fromSnakeCase } from "./options";
+
+// Use yargs to parse command line arguments and provide a nice CLI experience.
+// Default values are provided by the options module and must not be set by yargs.
+// To still display the default values in the help message, they are only set as
+// descriptions.
+// Handling of unsupported parameters is also done via the options module.
 
 yargs(process.argv.slice(2))
 	.scriptName("jazzer")
@@ -39,8 +46,9 @@ yargs(process.argv.slice(2))
 			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
 			"(libFuzzer) to stop the fuzzing run after 60 seconds.",
 	)
+	.epilogue("Happy fuzzing!")
 	.command(
-		"$0 <target> [corpus..]",
+		"$0 <fuzz_target> [corpus..]",
 		"Coverage-guided, in-process fuzzer for the Node.js platform. \n\n" +
 			'The "target" module has to export a function "fuzz" which accepts ' +
 			"a byte array as first parameter and uses that to invoke the actual " +
@@ -53,183 +61,186 @@ yargs(process.argv.slice(2))
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
 			yargs
-				.positional("target", {
+				.positional("fuzz_target", {
+					demandOption: true,
 					describe: "Name of the module that exports the fuzz target function.",
 					type: "string",
 				})
-				.demandOption("target")
 
-				.array("corpus")
 				.positional("corpus", {
+					array: true,
 					describe:
 						"Paths to the corpus directories. If not given, no initial " +
 						"seeds are used nor interesting inputs saved.",
 					type: "string",
 				})
 
-				.option("fuzz_function", {
+				.option("fuzz_entry_point", {
+					alias: ["f", "fuzz_function"],
+					defaultDescription: defaultOptions.fuzzEntryPoint,
 					describe:
 						"Name of the fuzz test entry point. It must be an exported " +
 						"function with a single Buffer parameter",
-					alias: "f",
+					group: "Fuzzer:",
 					type: "string",
-					default: "fuzz",
-					group: "Fuzzer:",
 				})
-
-				.option("id_sync_file", {
-					describe:
-						"File used to sync edge ID generation. " +
-						"Needed when fuzzing in multi-process modes",
-					type: "string",
-					default: undefined,
-					group: "Fuzzer:",
-				})
-				.hide("id_sync_file")
-
-				.option("sync", {
-					describe: "Run the fuzz target synchronously.",
-					type: "boolean",
-					default: false,
-					group: "Fuzzer:",
-				})
-				.array("instrumentation_includes")
-				.option("instrumentation_includes", {
+				.option("includes", {
+					alias: ["i", "instrumentation_includes"],
+					array: true,
+					defaultDescription: `${JSON.stringify(defaultOptions.includes)}`,
 					describe:
 						"Part of filepath names to include in the instrumentation. " +
 						'A tailing "/" should be used to include directories and prevent ' +
 						'confusion with filenames. "*" can be used to include all files.\n' +
-						"Can be specified multiple times. By default all files will be " +
-						"included.",
-					type: "string",
-					alias: "i",
+						"Can be specified multiple times.",
 					group: "Fuzzer:",
+					type: "string",
 				})
-
-				.array("instrumentation_excludes")
-				.option("instrumentation_excludes", {
+				.option("excludes", {
+					alias: ["e", "instrumentation_excludes"],
+					array: true,
+					defaultDescription: `${JSON.stringify(defaultOptions.excludes)}`,
 					describe:
 						"Part of filepath names to exclude in the instrumentation. " +
 						'A tailing "/" should be used to exclude directories and prevent ' +
 						'confusion with filenames. "*" can be used to exclude all files.\n' +
-						'Can be specified multiple times. By default, "node_modules/" will ' +
-						"be excluded.",
+						"Can be specified multiple times.",
+					group: "Fuzzer:",
 					type: "string",
-					alias: "e",
-					group: "Fuzzer:",
 				})
-				.option("dry_run", {
+
+				.option("id_sync_file", {
+					defaultDescription: `${JSON.stringify(defaultOptions.idSyncFile)}`,
 					describe:
-						"Perform a dry run with the fuzzing instrumentation disabled. " +
-						"A dry run only executes the fuzz test with the inputs from the " +
-						"corpus and returns directly. That is, no fuzzing is performed. " +
-						"This option can then be used when reporting code coverage for " +
-						"a fuzz test",
-					type: "boolean",
-					alias: "d",
+						"File used for sync edge ID generation. " +
+						"Needed when fuzzing in multi-process modes",
 					group: "Fuzzer:",
-					default: false,
+					hidden: true,
+					type: "string",
 				})
-				.array("custom_hooks")
 				.option("custom_hooks", {
+					alias: "h",
+					array: true,
+					defaultDescription: `${JSON.stringify(defaultOptions.customHooks)}`,
 					describe:
 						"Allow users to hook functions. This can be used for writing " +
 						"bug detectors, for stubbing, and for writing feedback functions " +
 						"for the fuzzer.",
-					type: "string",
-					alias: "h",
 					group: "Fuzzer:",
-					default: [],
+					type: "string",
 				})
-				.array("expected_errors")
 				.option("expected_errors", {
+					alias: "x",
+					array: true,
+					defaultDescription: `${JSON.stringify(
+						defaultOptions.expectedErrors,
+					)}`,
 					describe:
 						"Expected errors can be specified as the class name of the " +
 						"thrown error object or value of a thrown string. If expected " +
 						"errors are defined, but none, or none of the expected ones are " +
 						"raised during execution, the test execution fails." +
 						'Examples: -x Error -x "My thrown error string"',
+					group: "Fuzzer:",
+					hidden: true,
 					type: "string",
-					alias: "x",
-					group: "Fuzzer:",
-					default: [],
 				})
-				.hide("expected_errors")
-				.boolean("verbose")
-				.option("verbose", {
-					describe: "Enable verbose debugging logs.",
-					type: "boolean",
-					alias: "v",
-					group: "Fuzzer:",
-					default: false,
-				})
-				.boolean("cov")
-				.option("cov", {
-					describe: "Enable code coverage.",
-					alias: "coverage",
-					type: "boolean",
-					group: "Fuzzer:",
-					default: false,
-				})
-				.option("cov_dir", {
-					describe: "Directory for storing coverage reports.",
-					alias: "coverage_directory",
-					type: "string",
-					default: "coverage",
-					group: "Fuzzer:",
-				})
-				.array("cov_reporters")
-				.option("cov_reporters", {
-					describe: "A list of reporter names for writing coverage reports.",
-					alias: "coverage_reporters",
-					type: "string",
-					group: "Fuzzer:",
-					default: ["json", "text", "lcov", "clover"],
-				})
-				.option("timeout", {
-					describe: "Timeout in milliseconds for each fuzz test execution.",
-					type: "number",
-					group: "Fuzzer:",
-					default: 5000,
-				})
-				.array("disable_bug_detectors")
 				.option("disable_bug_detectors", {
+					array: true,
+					defaultDescription: `${JSON.stringify(
+						defaultOptions.disableBugDetectors,
+					)}`,
 					describe:
 						"A list of patterns to disable internal bug detectors. By default all internal " +
 						"bug detectors are enabled. To disable all, use the '.*' pattern." +
 						"Following bug detectors are available: " +
 						"    command-injection\n" +
-						"    path-traversal\n",
-					type: "string",
+						"    path-traversal\n" +
+						"    prototype-pollution\n",
 					group: "Fuzzer:",
-					default: [],
+					type: "string",
+				})
+
+				.option("mode", {
+					alias: "m",
+					defaultDescription: `${JSON.stringify(defaultOptions.mode)}`,
+					describe:
+						"Configure if fuzzing should be performed, 'fuzzing' mode, " +
+						"or if the fuzz target should only be invoked using existing corpus " +
+						"entries, 'regression' mode." +
+						"Regression mode is helpful if only coverage reports should be generated.",
+					group: "Fuzzer:",
+					type: "string",
+				})
+				.option("dry_run", {
+					alias: "d",
+					defaultDescription: `${JSON.stringify(defaultOptions.dryRun)}`,
+					describe: "Perform a run with the fuzzing instrumentation disabled.",
+					group: "Fuzzer:",
+					type: "boolean",
+				})
+				.option("timeout", {
+					defaultDescription: `${JSON.stringify(defaultOptions.timeout)}`,
+					describe: "Timeout in milliseconds for each fuzz test execution.",
+					group: "Fuzzer:",
+					type: "number",
+				})
+				.option("sync", {
+					defaultDescription: `${JSON.stringify(defaultOptions.sync)}`,
+					describe: "Run the fuzz target synchronously.",
+					group: "Fuzzer:",
+					type: "boolean",
+				})
+				.option("verbose", {
+					alias: "v",
+					defaultDescription: `${JSON.stringify(defaultOptions.verbose)}`,
+					describe: "Enable verbose debugging logs.",
+					group: "Fuzzer:",
+					type: "boolean",
+				})
+
+				.option("coverage", {
+					alias: "cov",
+					defaultDescription: `${JSON.stringify(defaultOptions.coverage)}`,
+					describe: "Enable code coverage.",
+					group: "Coverage:",
+					type: "boolean",
+				})
+				.option("coverage_directory", {
+					alias: "cov_dir",
+					defaultDescription: `${JSON.stringify(
+						defaultOptions.coverageDirectory,
+					)}`,
+					describe: "Directory for storing coverage reports.",
+					group: "Coverage:",
+					type: "string",
+				})
+				.option("coverage_reporters", {
+					alias: "cov_reporters",
+					array: true,
+					defaultDescription: `${JSON.stringify(
+						defaultOptions.coverageReporters,
+					)}`,
+					describe: "A list of reporter names for writing coverage reports.",
+					group: "Coverage:",
+					type: "string",
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			// Set verbose mode environment variable. If the environment variable is
-			// set, the verbose mode flag is ignored.
-			if (args.verbose) {
-				process.env.JAZZER_DEBUG = "1";
-			}
+			// Transform arguments to common format, add compound properties and
+			// remove framework specific ones.
+			const options = {
+				...args,
+				fuzz_target: ensureFilepath(args.fuzz_target),
+				fuzzer_options: (args.corpus ?? []).concat(args._),
+			};
+			delete options._;
+			delete options.corpus;
+			delete options.$0;
+
 			// noinspection JSIgnoredPromiseFromCall
-			startFuzzing({
-				fuzzTarget: ensureFilepath(args.target),
-				fuzzEntryPoint: args.fuzz_function,
-				includes: args.instrumentation_includes,
-				excludes: args.instrumentation_excludes,
-				dryRun: args.dry_run,
-				sync: args.sync,
-				timeout: args.timeout,
-				fuzzerOptions: args.corpus.concat(args._),
-				customHooks: args.custom_hooks,
-				expectedErrors: args.expected_errors,
-				idSyncFile: args.id_sync_file,
-				coverage: args.cov,
-				coverageDirectory: args.cov_dir,
-				coverageReporters: args.cov_reporters,
-				disableBugDetectors: args.disable_bug_detectors,
-			});
+			startFuzzing(processOptions(options, fromSnakeCase));
 		},
 	)
 	.help().argv;

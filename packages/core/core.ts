@@ -37,7 +37,7 @@ import {
 } from "@jazzer.js/instrumentor";
 import { callbacks } from "./callback";
 import { ensureFilepath, importModule } from "./utils";
-import { buildFuzzerOption } from "./options";
+import { buildFuzzerOption, Options } from "./options";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -48,28 +48,6 @@ const ERROR_EXPECTED_CODE = 0;
 const ERROR_UNEXPECTED_CODE = 78;
 
 const SIGSEGV = 11;
-
-export interface Options {
-	// `fuzzTarget` is the name of an external module containing a `fuzzer.FuzzTarget`
-	// that is resolved by `fuzzEntryPoint`.
-	fuzzTarget: string;
-	fuzzEntryPoint: string;
-	includes: string[];
-	excludes: string[];
-	dryRun: boolean;
-	sync: boolean;
-	fuzzerOptions: string[];
-	customHooks: string[];
-	expectedErrors: string[];
-	timeout: number;
-	idSyncFile?: string;
-	coverage: boolean; // Enables source code coverage report generation.
-	coverageDirectory: string;
-	coverageReporters: reports.ReportType[];
-	disableBugDetectors: string[];
-	mode?: "fuzzing" | "regression";
-	verbose?: boolean;
-}
 
 /* eslint no-var: 0 */
 declare global {
@@ -89,7 +67,7 @@ export async function initFuzzing(options: Options): Promise<void> {
 			options.customHooks,
 			options.coverage,
 			options.dryRun,
-			options.idSyncFile !== undefined
+			options.idSyncFile
 				? new FileSyncIdStrategy(options.idSyncFile)
 				: new MemorySyncIdStrategy(),
 		),
@@ -237,7 +215,7 @@ function stopFuzzing(
 	err: unknown,
 	expectedErrors: string[],
 	coverageDirectory: string,
-	coverageReporters: reports.ReportType[],
+	coverageReporters: string[],
 	sync: boolean,
 	forceShutdownWithCode?: number,
 ) {
@@ -255,7 +233,7 @@ function stopFuzzing(
 			coverageMap: coverageMap,
 		});
 		coverageReporters.forEach((reporter) =>
-			reports.create(reporter).execute(context),
+			reports.create(reporter as keyof reports.ReportOptions).execute(context),
 		);
 	}
 
@@ -407,3 +385,4 @@ export function wrapFuzzFunctionForBugDetection(
 // Export public API from within core module for easy access.
 export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";
+export { Options, processOptions, defaultOptions } from "./options";
