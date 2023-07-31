@@ -46,6 +46,7 @@ class FuzzTest {
 		sync,
 		verbose,
 		coverage,
+		expectedErrors,
 	) {
 		this.includes = includes;
 		this.excludes = excludes;
@@ -65,6 +66,7 @@ class FuzzTest {
 		this.sync = sync;
 		this.verbose = verbose;
 		this.coverage = coverage;
+		this.expectedErrors = expectedErrors;
 	}
 
 	execute() {
@@ -92,6 +94,9 @@ class FuzzTest {
 		}
 		for (const customHook of this.customHooks) {
 			options.push("--custom_hooks=" + customHook);
+		}
+		for (const expectedError of this.expectedErrors) {
+			options.push("-x=" + expectedError);
 		}
 		options.push("--");
 		if (this.runs !== undefined) options.push("-runs=" + this.runs);
@@ -201,6 +206,7 @@ class FuzzTestBuilder {
 	_jestRunInFuzzingMode = undefined;
 	_dictionaries = [];
 	_coverage = false;
+	_expectedErrors = [];
 
 	/**
 	 * @param {boolean} sync - whether to run the fuzz test in synchronous mode.
@@ -362,6 +368,11 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	expectedErrors(...expectedError) {
+		this._expectedErrors = expectedError;
+		return this;
+	}
+
 	build() {
 		if (this._jestTestFile === "" && this._fuzzEntryPoint === "") {
 			throw new Error("fuzzEntryPoint or jestTestFile are not set.");
@@ -390,6 +401,7 @@ class FuzzTestBuilder {
 			this._sync,
 			this._verbose,
 			this._coverage,
+			this._expectedErrors,
 		);
 	}
 }
