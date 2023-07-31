@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-const { spawnSync } = require("child_process");
 const path = require("path");
-const SyncInfo =
-	"Exclusively observed synchronous return values from fuzzed function. Fuzzing in synchronous mode seems beneficial!";
-const AsyncInfo =
-	"Observed asynchronous return values from fuzzed function. Fuzzing in asynchronous mode seems beneficial!";
+const { FuzzTestBuilder } = require("../helpers.js");
 
-// current working directory
 const testDirectory = __dirname;
+const syncInfo =
+	"Exclusively observed synchronous return values from fuzzed function. Fuzzing in synchronous mode seems beneficial!";
+const asyncInfo =
+	"Observed asynchronous return values from fuzzed function. Fuzzing in asynchronous mode seems beneficial!";
 
 describe("Execute a sync runner", () => {
 	it("Expect a hint due to async and sync return values", () => {
 		const testCaseDir = path.join(testDirectory, "syncRunnerMixedReturns");
-		const log = executeFuzzTest(true, false, testCaseDir);
-		expect(log).toContain(AsyncInfo.trim());
+		const log = executeFuzzTest(true, true, testCaseDir);
+		expect(log).toContain(asyncInfo.trim());
 	});
 	it("Expect a hint due to exclusively async return values", () => {
 		const testCaseDir = path.join(testDirectory, "syncRunnerAsyncReturns");
 		const log = executeFuzzTest(true, false, testCaseDir);
-		expect(log.trim()).toContain(AsyncInfo.trim());
+		expect(log.trim()).toContain(asyncInfo.trim());
 	});
 	it("Expect no hint due to strict synchronous return values", () => {
 		const testCaseDir = path.join(testDirectory, "syncRunnerSyncReturns");
 		const log = executeFuzzTest(true, false, testCaseDir);
-		expect(log.includes(SyncInfo)).toBeFalsy();
-		expect(log.includes(AsyncInfo)).toBeFalsy();
+		expect(log.includes(syncInfo)).toBeFalsy();
+		expect(log.includes(asyncInfo)).toBeFalsy();
 	});
 });
 
@@ -47,34 +46,31 @@ describe("Execute a async runner", () => {
 	it("Expect no hint due to async and sync return values", () => {
 		const testCaseDir = path.join(testDirectory, "asyncRunnerMixedReturns");
 		const log = executeFuzzTest(false, false, testCaseDir);
-		expect(log.includes(SyncInfo)).toBeFalsy();
-		expect(log.includes(AsyncInfo)).toBeFalsy();
+		expect(log.includes(syncInfo)).toBeFalsy();
+		expect(log.includes(asyncInfo)).toBeFalsy();
 	});
 	it("Expect a hint due to exclusively sync return values", () => {
 		const testCaseDir = path.join(testDirectory, "asyncRunnerSyncReturns");
 		const log = executeFuzzTest(false, false, testCaseDir);
-		expect(log.trim()).toContain(SyncInfo.trim());
+		expect(log.trim()).toContain(syncInfo.trim());
 	});
 	it("Expect no hint due to strict asynchronous return values", () => {
 		const testCaseDir = path.join(testDirectory, "asyncRunnerAsyncReturns");
 		const log = executeFuzzTest(false, false, testCaseDir);
-		expect(log.includes(SyncInfo)).toBeFalsy();
-		expect(log.includes(AsyncInfo)).toBeFalsy();
+		expect(log.includes(syncInfo)).toBeFalsy();
+		expect(log.includes(asyncInfo)).toBeFalsy();
 	});
 });
 
 function executeFuzzTest(sync, verbose, dir) {
-	let options = ["jazzer", "fuzz"];
-	// Specify mode
-	if (sync) options.push("--sync");
-	options.push("--");
-	const process = spawnSync("npx", options, {
-		stdio: "pipe",
-		cwd: dir,
-		shell: true,
-		windowsHide: true,
-	});
-	let stdout = process.output.toString();
-	if (verbose) console.log(stdout);
-	return stdout;
+	const fuzzTest = new FuzzTestBuilder()
+		.fuzzEntryPoint("fuzz")
+		.runs(5000)
+		.dir(dir)
+		.sync(sync)
+		.verbose(verbose)
+		.expectedErrors("Error")
+		.build();
+	fuzzTest.execute();
+	return fuzzTest.stderr;
 }
