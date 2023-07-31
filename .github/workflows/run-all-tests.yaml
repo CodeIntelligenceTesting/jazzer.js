@@ -75,11 +75,30 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all fuzz tests
         run: node fuzztests/runFuzzTests.js
+  end-to-end:
+    name: end-to-end
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+          registry-url: https://registry.npmjs.org
+      - name: pack jazzer.js
+        run: cd end-to-end && ./package-jazzer-js.sh
+      - name: build example
+        run: cd end-to-end && npm install --save-dev *.tgz && npm run build
+      - name: run tests
+        run: cd end-to-end && npx jest
   auto-merge:
     needs:
       - linting
       - unit_tests
       - fuzz_tests
+      - end-to-end
     permissions:
       pull-requests: write
       contents: write

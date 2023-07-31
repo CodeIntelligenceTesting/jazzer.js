@@ -9,7 +9,12 @@
 		"coverage": "jest --coverage"
 	},
 	"devDependencies": {
-		"@jazzer.js/jest-runner": "*",
+		"@jazzer.js/bug-detectors": "file:jazzer.js-bug-detectors.tgz",
+		"@jazzer.js/core": "file:jazzer.js-core.tgz",
+		"@jazzer.js/fuzzer": "file:jazzer.js-fuzzer.tgz",
+		"@jazzer.js/hooking": "file:jazzer.js-hooking.tgz",
+		"@jazzer.js/instrumentor": "file:jazzer.js-instrumentor.tgz",
+		"@jazzer.js/jest-runner": "file:jazzer.js-jest-runner.tgz",
 		"@types/jest": "^29.4.0",
 		"jest": "^29.4.1",
 		"ts-jest": "^29.0.5",
