@@ -393,6 +393,24 @@ describe("Prototype Pollution Jest tests", () => {
 			"Prototype Pollution: Prototype of Object changed",
 		);
 	});
+
+	it("Fuzzing mode instrumentation off - variable declaration", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.customHooks([
+				path.join(bugDetectorDirectory, "instrument-all.config.js"),
+			])
+			.dir(bugDetectorDirectory)
+			.dryRun(true)
+			.jestRunInFuzzingMode(true)
+			.jestTestFile("tests.fuzz.js")
+			.jestTestName("Variable declarations")
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow();
+		expect(fuzzTest.stderr).toContain("[Prototype Pollution Configuration]");
+	});
 });
 
 describe("Prototype Pollution instrumentation correctness tests", () => {
@@ -448,6 +466,7 @@ describe("Prototype Pollution instrumentation correctness tests", () => {
 			.dryRun(false)
 			.fuzzEntryPoint("LambdaVariableDeclaration")
 			.fuzzFile(fuzzFile)
+			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});

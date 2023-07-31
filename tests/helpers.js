@@ -80,7 +80,7 @@ class FuzzTest {
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
 		if (this.coverage) options.push("--coverage");
-		if (this.dryRun !== undefined) options.push("--dryRun=" + this.dryRun);
+		if (this.dryRun !== undefined) options.push("--dry_run=" + this.dryRun);
 		for (const include of this.includes) {
 			options.push("-i=" + include);
 		}

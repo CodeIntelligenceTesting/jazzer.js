@@ -49,9 +49,11 @@ class FuzzRunner extends CallbackTestRunner {
 		onFailure: OnTestFailure,
 		options: TestRunnerOptions,
 	): Promise<void> {
-		const config = loadConfig();
-		config.coverage = this.shouldCollectCoverage;
-		config.coverageReporters = this.coverageReporters as reports.ReportType[];
+		// Prefer Jest coverage configuration.
+		const config = loadConfig({
+			coverage: this.shouldCollectCoverage,
+			coverageReporters: this.coverageReporters as reports.ReportType[],
+		});
 
 		await initFuzzing(config);
 		return this.#runTestsInBand(tests, watcher, onStart, onResult, onFailure);

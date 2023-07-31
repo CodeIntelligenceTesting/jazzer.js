@@ -168,39 +168,40 @@ jazzer <fuzzTarget> <fuzzerFlags> [corpus...] [-- <fuzzingEngineFlags>]
 Detailed documentation and some example calls are available using the `--help`
 flag, so that only the most important parameters are discussed here.
 
-| Parameter                                                               | Description                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `<fuzzTarget>`                                                          | Import path to the fuzz target module.                                                                                                                                                                                                                                                                                                                                                |
-| `[corpus...]`                                                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                                                                                                |
-| `-f`, `--fuzz_function`                                                 | Name of the fuzz test entry point. It must be an exported function with a single [Buffer](https://nodejs.org/api/buffer.html) parameter. Default is `fuzz`.                                                                                                                                                                                                                           |
-| `-i`, `--instrumentation_includes` / `-e`, `--instrumentation_excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. If either of these flags are set the default value for the other is ignored. |
-| `--sync`                                                                | Enables synchronous fuzzing. **May only be used for entirely synchronous code**.                                                                                                                                                                                                                                                                                                      |
-| `-h`, `--custom_hooks`                                                  | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](fuzz-settings.md).                                                                                                                                                                                                                                                   |
-| `--help`                                                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                                                                                                           |
-| `-- <fuzzingEngineFlags>`                                               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                                                                                                   |
+| Parameter                               | Description                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<fuzzTarget>`                          | Import path to the fuzz target module.                                                                                                                                                                                                                                                                                                                                                |
+| `[corpus...]`                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                                                                                                |
+| `-f`, `--fuzz_function`                 | Name of the fuzz test entry point. It must be an exported function with a single [Buffer](https://nodejs.org/api/buffer.html) parameter. Default is `fuzz`.                                                                                                                                                                                                                           |
+| `-i`, `--includes` / `-e`, `--excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. If either of these flags are set the default value for the other is ignored. |
+| `--sync`                                | Enables synchronous fuzzing. **May only be used for entirely synchronous code**.                                                                                                                                                                                                                                                                                                      |
+| `-h`, `--custom_hooks`                  | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](fuzz-settings.md).                                                                                                                                                                                                                                                   |
+| `--help`                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                                                                                                           |
+| `-- <fuzzingEngineFlags>`               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                                                                                                   |
 
 ## Coverage report generation
 
-To generate a coverage report, add the `--cov`/`--coverage` flag to the
-Jazzer.js CLI. In the following example, the `--cov` flag is combined with the
-dry run flag `-d` that disables internal instrumentation used by the fuzzer.
+To generate a coverage report, add the `--coverage` flag to the Jazzer.js CLI.
+In the following example, the `--coverage` flag is combined with the mode flag
+`-m=regression` that only uses existing corpus entries without performing any
+fuzzing.
 
 ```shell
-npx jazzer -d <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>
+npx jazzer -m=regression <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>
 ```
 
 Alternatively, you can add a new script to your `package.json`:
 
 ```json
 "scripts": {
- "coverage": "jazzer -d -i target -i another_target <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>"
+ "coverage": "jazzer -m regression -i target -i another_target <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>"
 }
 ```
 
-Files matched by the flags `--instrumentation_includes` or `--custom_hooks`, and
-not matched by the flag `--instrumentation_excludes` will be included in the
-coverage report. It is recommended to disable coverage report generation during
-fuzzing, because of the substantial overhead that it adds.
+Files matched by the flags `--includes` or `--custom_hooks`, and not matched by
+the flag `--excludes` will be included in the coverage report. It is recommended
+to disable coverage report generation during fuzzing, because of the substantial
+overhead that it adds.
 
 ### Coverage report directory
 
