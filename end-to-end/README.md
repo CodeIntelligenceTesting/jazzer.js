@@ -11,7 +11,7 @@ jazzer.js than the other examples.
 
 ## Running Locally
 
-```
+```bash
 ./package-jazzer-js.sh
 npm install --save-dev *.tgz
 npx jest
