@@ -39,3 +39,26 @@ export function ensureFilepath(filePath: string): string {
 		? fullPath
 		: fullPath + ".js";
 }
+
+/**
+ * Transform arguments to common format, add compound properties and
+ * remove framework specific ones, so that the result can be passed on to the
+ * regular option handling code.
+ *
+ * The function is extracted to "utils" as importing "cli" in tests directly
+ * tries to parse command line arguments.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function prepareArgs(args: any) {
+	const options = {
+		...args,
+		fuzz_target: ensureFilepath(args.fuzz_target),
+		fuzzer_options: (args.corpus ?? [])
+			.concat(args._)
+			.map((e: unknown) => e + ""),
+	};
+	delete options._;
+	delete options.corpus;
+	delete options.$0;
+	return options;
+}

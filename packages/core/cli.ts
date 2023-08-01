@@ -17,7 +17,7 @@
 
 import yargs, { Argv } from "yargs";
 import { startFuzzing } from "./core";
-import { ensureFilepath } from "./utils";
+import { prepareArgs } from "./utils";
 import { defaultOptions, processOptions, fromSnakeCase } from "./options";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.
@@ -228,17 +228,7 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			// Transform arguments to common format, add compound properties and
-			// remove framework specific ones.
-			const options = {
-				...args,
-				fuzz_target: ensureFilepath(args.fuzz_target),
-				fuzzer_options: (args.corpus ?? []).concat(args._),
-			};
-			delete options._;
-			delete options.corpus;
-			delete options.$0;
-
+			const options = prepareArgs(args);
 			// noinspection JSIgnoredPromiseFromCall
 			startFuzzing(processOptions(options, fromSnakeCase));
 		},
