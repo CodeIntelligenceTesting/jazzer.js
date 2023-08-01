@@ -14,7 +14,3 @@ sed_version_and_mv() {
 }
 
 npm pack --workspaces | sed_version_and_mv 
-
-cd examples
-
-npm install
