@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ensureFilepath } from "./utils";
+import { ensureFilepath, prepareArgs } from "./utils";
 
 import path from "path";
 
@@ -33,6 +33,26 @@ describe("core", () => {
 		it("adds current working directory to filename", () => {
 			const expectedPath = path.join(process.cwd(), "filename.js");
 			expect(ensureFilepath("filename.js")).toMatch(expectedPath);
+		});
+	});
+	describe("prepareArgs", () => {
+		it("converts fuzzer args to strings", () => {
+			const args = {
+				_: ["-some_arg=value", "-other_arg", 123],
+				corpus: ["directory1", "directory2"],
+				fuzz_target: "filename.js",
+			};
+			const options = prepareArgs(args);
+			expect(options).toEqual({
+				fuzz_target: "file://" + path.join(process.cwd(), "filename.js"),
+				fuzzer_options: [
+					"directory1",
+					"directory2",
+					"-some_arg=value",
+					"-other_arg",
+					"123",
+				],
+			});
 		});
 	});
 });
