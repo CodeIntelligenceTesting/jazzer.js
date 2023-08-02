@@ -135,9 +135,12 @@ export class HookManager {
 				} catch (e) {
 					if (process.env.JAZZER_DEBUG) {
 						console.error(
-							"DEBUG: [Hook] Error when trying to hook the built-in function: " +
-								e,
+							"DEBUG: [hooking] Could not hook built-in function: " +
+								hook.pkg +
+								" : " +
+								hook.target,
 						);
+						console.error(e);
 					}
 				}
 			}
@@ -249,28 +252,102 @@ export function registerAfterHook(
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
 }
 
+export function getFunction(
+	module: object,
+	propertyAccessors: string[],
+): unknown {
+	let current = module;
+
+	for (const propertyAccessor of propertyAccessors) {
+		try {
+			// @ts-ignore
+			current = current[propertyAccessor];
+		} catch (e) {
+			return undefined;
+		}
+	}
+	return current;
+}
+
+export function setFunction(
+	module: object,
+	propertyAccessors: string[],
+	newFunction: unknown,
+): void {
+	if (!(newFunction instanceof Function || typeof newFunction === "function")) {
+		if (process.env.JAZZER_DEBUG) {
+			console.error(
+				"DEBUG: [hooking] Could not hook built-in function: " +
+					propertyAccessors.join(".") +
+					"\n" +
+					"   provided newFunction is not a function",
+			);
+		}
+		return;
+	}
+
+	let current = module;
+	for (const propertyAccessor of propertyAccessors.slice(0, -1)) {
+		try {
+			// @ts-ignore
+			current = current[propertyAccessor];
+		} catch (e) {
+			if (process.env.JAZZER_DEBUG) {
+				console.error(
+					"DEBUG: [hooking] Could not hook built-in function: " +
+						propertyAccessors.join("."),
+				);
+			}
+			return;
+		}
+	}
+	// @ts-ignore
+	current[propertyAccessors[propertyAccessors.length - 1]] = newFunction;
+}
+
 /**
  * Replaces a built-in function with a custom implementation while preserving
  * the original function for potential use within the replacement function.
  */
 export async function hookBuiltInFunction(hook: Hook): Promise<void> {
+	if (hook.registered) return;
+	hook.registered = true;
 	const { default: module } = await import(hook.pkg);
-	const originalFn = module[hook.target];
+
+	const targetPropertyAccessors = hook.target.split(".");
+	const originalFn = getFunction(module, targetPropertyAccessors);
+
+	if (!(originalFn instanceof Function || typeof originalFn === "function")) {
+		if (process.env.JAZZER_DEBUG) {
+			console.error(
+				"DEBUG: [hooking] Could not hook built-in function: " +
+					hook.pkg +
+					" : " +
+					hook.target,
+			);
+		}
+		return;
+	}
 	const id = callSiteId(hookManager.hookIndex(hook), hook.pkg, hook.target);
 	if (hook.type == HookType.Before) {
-		module[hook.target] = (...args: unknown[]) => {
-			(hook.hookFunction as BeforeHookFn)(null, args, id);
-			return originalFn(...args);
-		};
+		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			(hook.hookFunction as BeforeHookFn)(this, args, id);
+			// @ts-ignore
+			return originalFn.apply(this, args);
+		});
 	} else if (hook.type == HookType.Replace) {
-		module[hook.target] = (...args: unknown[]) => {
-			return (hook.hookFunction as ReplaceHookFn)(null, args, id, originalFn);
-		};
+		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			return (hook.hookFunction as ReplaceHookFn)(this, args, id, originalFn);
+		});
 	} else if (hook.type == HookType.After) {
-		module[hook.target] = (...args: unknown[]) => {
-			const result: unknown = originalFn(...args);
-			return (hook.hookFunction as AfterHookFn)(null, args, id, result);
-		};
+		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			const result: unknown = originalFn.apply(this, args);
+			// @ts-ignore
+			return (hook.hookFunction as AfterHookFn)(this, args, id, result);
+		});
 	} else {
 		throw new Error(`Unknown hook type ${hook.type}`);
 	}

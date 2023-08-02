@@ -168,12 +168,15 @@ for (const module of functionsWithTwoTargets) {
 	for (const functionName of module.functionNames) {
 		const makeBeforeHook = (extraHookId: number) => {
 			return (thisPtr: unknown, params: unknown[], hookId: number) => {
-				if (params === undefined || params.length < 2) {
+				if (params === undefined || params.length < 1) {
 					return;
 				}
 				// We don't want to confuse the fuzzer guidance with the same hookId for both function arguments.
 				// Therefore, we use an extra hookId for the second argument.
 				detectFindingAndGuideFuzzing(params[0], goal, hookId, functionName);
+				if (params.length < 2) {
+					return;
+				}
 				detectFindingAndGuideFuzzing(
 					params[1],
 					goal,

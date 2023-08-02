@@ -15,7 +15,7 @@
  */
 
 import { HookType } from "./hook";
-import { hookManager } from "./manager";
+import { getFunction, hookManager, setFunction } from "./manager";
 
 describe("Hooks manager", () => {
 	describe("Matching hooks", () => {
@@ -101,6 +101,49 @@ describe("Hooks manager", () => {
 			expect(() => hookManager.matchingHooks("foo", "path/lib/pkg")).toThrow(
 				"For a given target function, REPLACE hooks cannot be mixed up with BEFORE/AFTER hooks. Found 1 REPLACE hooks and 1 BEFORE/AFTER hooks",
 			);
+		});
+	});
+
+	describe("getFunction", () => {
+		it("non-existing function", () => {
+			expect(getFunction({}, ["foo", "bar", "lambda"])).toBeUndefined();
+		});
+
+		it("non-existing function", () => {
+			expect(
+				getFunction({ foo: { bar: { lambda: "test" } } }, [
+					"foo",
+					"bar",
+					"lambda",
+				]),
+			).toBe("test");
+		});
+	});
+
+	describe("setFunction", () => {
+		it("non-existing function", () => {
+			const obj = {};
+			setFunction(obj, ["foo", "bar", "lambda"], () => {});
+			expect(obj).toStrictEqual({});
+		});
+
+		it("change an existing function to a number - should fail", () => {
+			const originalFn = () => {};
+			const obj = { foo: { bar: { lambda: originalFn } } };
+			const accessorChain = ["foo", "bar", "lambda"];
+			setFunction(obj, accessorChain, 10);
+			expect(getFunction(obj, accessorChain)).toStrictEqual(originalFn);
+		});
+
+		it("change an existing function to a new function", () => {
+			const originalFn = () => {};
+			const newFunction = (a: number) => {
+				return a;
+			};
+			const obj = { foo: { bar: { lambda: originalFn } } };
+			const accessorChain = ["foo", "bar", "lambda"];
+			setFunction(obj, accessorChain, newFunction);
+			expect(getFunction(obj, accessorChain)).toStrictEqual(newFunction);
 		});
 	});
 });
