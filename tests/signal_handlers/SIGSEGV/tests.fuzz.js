@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-let i = 0;
+const { SIGSEGV_ASYNC, SIGSEGV_SYNC } = require("./fuzz.js");
 
-module.exports.SIGINT_SYNC = (data) => {
-	if (i === 1000) {
-		console.log("kill with signal");
-		process.kill(process.pid, "SIGINT");
-	}
-	if (i > 1000) {
-		console.log("Signal has not stopped the fuzzing process");
-	}
-	i++;
-};
-
-module.exports.SIGINT_ASYNC = (data) => {
-	// Raising SIGINT in async mode does not stop the fuzzer directly,
-	// as the event is handled asynchronously in the event loop.
-	if (i === 1000) {
-		console.log("kill with signal");
-		process.kill(process.pid, "SIGINT");
-	}
-	i++;
-};
+describe("Jest", () => {
+	it.fuzz("Sync", SIGSEGV_SYNC);
+	it.fuzz("Async", SIGSEGV_ASYNC);
+});

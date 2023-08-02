@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "napi.h"
 #include "shared/libfuzzer.h"
+#include <csignal>
 #include <iostream>
 
 void StartLibFuzzer(const std::vector<std::string> &args,
@@ -75,7 +76,7 @@ void ReturnValueInfo(bool is_sync_runner) {
           << "\n== Jazzer.js:\n"
           << "  Exclusively observed synchronous return values from fuzzed "
              "function."
-          << " Fuzzing in synchronous mode seems benefical!\n"
+          << " Fuzzing in synchronous mode seems beneficial!\n"
           << "  To enable it, append a `--sync` to your Jazzer.js invocation."
           << std::endl;
     }
@@ -84,7 +85,7 @@ void ReturnValueInfo(bool is_sync_runner) {
       std::cerr << "\n== Jazzer.js:\n"
                 << "  Observed asynchronous return values from "
                    "fuzzed function."
-                << " Fuzzing in asynchronous mode seems benefical!\n"
+                << " Fuzzing in asynchronous mode seems beneficial!\n"
                 << "  Remove the `--sync` flag from your Jazzer.js invocation."
                 << std::endl;
     }
@@ -96,6 +97,10 @@ int StopFuzzingHandleExit(const Napi::CallbackInfo &info) {
 
   if (info[0].IsNumber()) {
     exitCode = info[0].As<Napi::Number>().Int32Value();
+
+    if (exitCode == SIGSEGV) {
+      libfuzzer::PrintCrashingInput();
+    }
   } else {
     // If a dedicated status code is provided, the run is executed as internal
     // test and the crashing input does not need to be printed/saved.

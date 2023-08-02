@@ -33,7 +33,7 @@ export function buildFuzzerOption(options: Options) {
 
 	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
 	// with the Node.js signal handling.
-	params = params.concat("-handle_int=0", "-handle_term=0");
+	params = params.concat("-handle_int=0", "-handle_term=0", "-handle_segv=0");
 
 	if (process.env.JAZZER_DEBUG) {
 		console.debug("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");

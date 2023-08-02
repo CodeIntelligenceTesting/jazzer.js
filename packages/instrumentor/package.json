@@ -22,14 +22,14 @@
 		"@jazzer.js/hooking": "*",
 		"istanbul-lib-hook": "^3.0.0",
 		"proper-lockfile": "^4.1.2",
-		"istanbul-lib-instrument": "^5.2.1",
+		"istanbul-lib-instrument": "^6.0.0",
 		"source-map-support": "^0.5.21"
 	},
 	"devDependencies": {
 		"@types/babel__core": "^7.20.1",
 		"@types/istanbul-lib-hook": "^2.0.1",
 		"@types/istanbul-lib-instrument": "^1.7.4",
-		"@types/node": "^20.4.2",
+		"@types/node": "^20.4.5",
 		"@types/proper-lockfile": "^4.1.2",
 		"@types/source-map-support": "^0.5.6",
 		"typescript": "^5.1.6"

@@ -27,7 +27,7 @@ export type FuzzOpts = string[];
 export type StartFuzzingSyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
-	sigintCallback: () => void,
+	jsStopCallback: (signal: number) => void,
 ) => void;
 export type StartFuzzingAsyncFn = (
 	fuzzFn: FuzzTarget,
