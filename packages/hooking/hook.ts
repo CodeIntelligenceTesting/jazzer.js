@@ -42,6 +42,7 @@ export type AfterHookFn = (
 export type HookFn = BeforeHookFn | ReplaceHookFn | AfterHookFn;
 
 export class Hook {
+	registered = false;
 	constructor(
 		public readonly type: HookType,
 		public readonly target: string,

@@ -241,8 +241,8 @@ function mergeOptions(
 
 export function buildFuzzerOption(options: Options) {
 	if (process.env.JAZZER_DEBUG) {
-		console.debug("DEBUG: [core] Jazzer.js initial fuzzer arguments: ");
-		console.debug(options);
+		console.error("DEBUG: [core] Jazzer.js initial fuzzer arguments: ");
+		console.error(options);
 	}
 
 	let params: string[] = [];
@@ -255,8 +255,8 @@ export function buildFuzzerOption(options: Options) {
 	params = params.concat("-handle_int=0", "-handle_term=0", "-handle_segv=0");
 
 	if (process.env.JAZZER_DEBUG) {
-		console.debug("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");
-		console.debug(params);
+		console.error("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");
+		console.error(params);
 	}
 	logInfoAboutFuzzerOptions(params);
 	return params;
