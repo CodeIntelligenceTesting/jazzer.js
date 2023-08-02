@@ -86,7 +86,6 @@ jobs:
         with:
           node-version: 16
           cache: "npm"
-          registry-url: https://registry.npmjs.org
       - name: pack jazzer.js
         run: cd end-to-end && ./package-jazzer-js.sh
       - name: build example
