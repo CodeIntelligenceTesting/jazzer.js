@@ -154,6 +154,7 @@ describe("Command injection", () => {
 			.sync(false)
 			.fuzzEntryPoint("forkFRIENDLY")
 			.dir(bugDetectorDirectory)
+			.verbose(true)
 			.build();
 		fuzzTest.execute();
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();

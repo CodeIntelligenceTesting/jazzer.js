@@ -266,6 +266,7 @@ function stopFuzzing(
 
 	// No error found, check if one is expected or an exit code should be enforced.
 	if (!err) {
+		console.log("[DEBUG]: forceShutdownWithCode: ", forceShutdownWithCode);
 		if (expectedErrors.length) {
 			console.error(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
