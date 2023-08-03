@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const host = "localhost";
+const hostIPv6 = "::1";
 
-const protobuf = require("protobufjs");
+const okPort = 8080;
+const okPortHttps = 8181;
+const notOkPort = 9090;
+const notOkPortHttps = 9191;
 
-module.exports.fuzz = async function (data) {
-	try {
-		protobuf.parse(data.toString());
-	} catch (e) {
-		// ignore
-	}
+const okPortIPv6 = 6060;
+
+const okMessage = "Connection allowed.";
+const notOkMessage = "Connection not allowed.";
+
+module.exports = {
+	host,
+	hostIPv6,
+	okPort,
+	okPortHttps,
+	notOkPort,
+	notOkPortHttps,
+	okPortIPv6,
+	okMessage,
+	notOkMessage,
 };

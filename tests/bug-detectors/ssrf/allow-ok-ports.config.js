@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-const protobuf = require("protobufjs");
+const {
+	getBugDetectorConfiguration,
+} = require("../../../packages/bug-detectors");
 
-module.exports.fuzz = async function (data) {
-	try {
-		protobuf.parse(data.toString());
-	} catch (e) {
-		// ignore
-	}
-};
+const {
+	host,
+	hostIPv6,
+	okPort,
+	okPortHttps,
+	okPortIPv6,
+} = require("./connection-settings.js");
+
+getBugDetectorConfiguration("ssrf")
+	?.addPermittedTCPConnection(host, okPort)
+	?.addPermittedTCPConnection(host, okPortHttps)
+	?.addPermittedUDPConnection(host, okPort)
+	?.addPermittedUDPConnection(hostIPv6, okPortIPv6);

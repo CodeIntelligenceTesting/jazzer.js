@@ -307,6 +307,28 @@ Jest:
 { "disableBugDetectors": ["prototype-pollution"] }
 ```
 
+### Server-Side Request Forgery (SSRF)
+
+Reports a finding upon detection of outgoing communication that originates from
+the built-in libraries `net`, `tls`, `http`, `http/2`, `https`, and `dgram`.
+
+_Configuration:_ Permitted TCP and UDP connections can be configured in the
+[custom hooks](#custom-hooks) file.
+
+```javascript
+const { getBugDetectorConfiguration } = require("@jazzer.js/bug-detectors");
+
+getBugDetectorConfiguration("ssrf")
+	?.addPermittedTCPConnection("localhost", 8080)
+	.addPermittedUDPConnection("localhost", 9090);
+```
+
+_Disable with:_ `--disable_bug_detectors=ssrf`, or when using Jest:
+
+```json
+{ "disableBugDetectors": ["ssrf"] }
+```
+
 For implementation details see
 [../packages/bug-detectors/internal](../packages/bug-detectors/internal).
 

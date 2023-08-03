@@ -15,7 +15,7 @@
  */
 
 const assert = require("assert");
-const { spawnSync } = require("child_process");
+const { spawnSync, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -85,7 +85,11 @@ class FuzzTest {
 		return this;
 	}
 
-	executeWithCli() {
+	spawn() {
+		return this.executeWithCli(false);
+	}
+
+	executeWithCli(useSpawnSync = true) {
 		const options = ["jazzer", this.fuzzFile];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
@@ -115,7 +119,11 @@ class FuzzTest {
 		for (const dictionary of this.dictionaries) {
 			options.push("-dict=" + dictionary);
 		}
-		this.runTest("npx", options, { ...process.env });
+		if (useSpawnSync) {
+			this.runTest("npx", options, { ...process.env });
+		} else {
+			return this.runTestAsync("npx", options, { ...process.env });
+		}
 	}
 
 	executeWithJest() {
@@ -211,6 +219,45 @@ class FuzzTest {
 		if (this.status !== 0 && this.status !== null) {
 			throw new Error(this.status.toString());
 		}
+	}
+
+	runTestAsync(cmd, options, env) {
+		return new Promise((resolve, reject) => {
+			if (this.logTestOutput) {
+				console.log("COMMAND: " + cmd + " " + options.join(" "));
+			}
+			const proc = spawn(cmd, options, {
+				stdio: "pipe",
+				cwd: this.dir,
+				shell: true,
+				windowsHide: true,
+				env: env,
+			});
+			this.stdout = "";
+			this.stderr = "";
+			proc.stdout.on("data", (data) => {
+				this.stdout += data;
+			});
+
+			proc.stderr.on("data", (data) => {
+				this.stderr += data;
+			});
+
+			// wait for process to finish
+			proc.on("exit", () => {
+				this.status = proc.exitCode.toString();
+				if (this.logTestOutput) {
+					console.log("STDOUT: " + this.stdout);
+					console.log("STDERR: " + this.stderr);
+					console.log("STATUS: " + this.status);
+				}
+				if (this.status !== "0") {
+					reject(new Error(this.status.toString()));
+				} else {
+					resolve(this.status.toString());
+				}
+			});
+		});
 	}
 }
 
