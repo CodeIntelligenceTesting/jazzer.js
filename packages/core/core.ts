@@ -144,11 +144,14 @@ function getFilteredBugDetectorPaths(
 	return (
 		fs
 			.readdirSync(bugDetectorsDirectory)
-			// The compiled "internal" directory contains several files such as .js.map and .d.ts.
-			// We only need the .js files.
-			// Here we also filter out bug detectors that should be disabled.
+			// The compiled "internal" directory contains several files such as .js.map and .d.ts. We only need the .js files.
+			// Here we also filter out bug detectors that should be disabled; and tests for the bug detectors that
+			// usually end with ".test.js".
 			.filter((bugDetectorPath) => {
-				if (!bugDetectorPath.endsWith(".js")) {
+				if (
+					!bugDetectorPath.endsWith(".js") ||
+					bugDetectorPath.endsWith(".test.js")
+				) {
 					return false;
 				}
 

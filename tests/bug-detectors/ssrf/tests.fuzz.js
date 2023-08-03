@@ -13,13 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+const targets = require("./fuzz-http");
 
-const protobuf = require("protobufjs");
+it.fuzz("http.request", async (data) => {
+	return targets.HttpRequestAllowed(data);
+});
 
-module.exports.fuzz = async function (data) {
-	try {
-		protobuf.parse(data.toString());
-	} catch (e) {
-		// ignore
-	}
-};
+it.fuzz("udp.connect IPv6", async (data) => {
+	return targets.udpIPv6ConnectAllowed(data);
+});
+
+it.fuzz("net.connect(options, callback)", async (data) => {
+	return targets.netConnectOptions(data);
+});
+
+it.fuzz("udp.connect(port, host, callback)", async (data) => {
+	return targets.udpConnect(data);
+});
