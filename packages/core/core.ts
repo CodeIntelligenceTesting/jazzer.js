@@ -271,8 +271,9 @@ function stopFuzzing(
 				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
 			);
 			stopFuzzing(ERROR_UNEXPECTED_CODE);
-		} else if (forceShutdownWithCode === 0) {
-			stopFuzzing(forceShutdownWithCode);
+		} else {
+			// No error received, no error expected.
+			stopFuzzing(0);
 		}
 		return;
 	}
