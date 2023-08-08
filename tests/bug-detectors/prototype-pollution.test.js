@@ -26,6 +26,7 @@ describe("Prototype Pollution", () => {
 
 	it("{} Pollution", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("BaseObjectPollution")
 			.sync(true)
@@ -38,6 +39,7 @@ describe("Prototype Pollution", () => {
 
 	it("{} Pollution using square braces", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("BaseObjectPollutionWithSquareBraces")
 			.sync(true)
@@ -50,6 +52,7 @@ describe("Prototype Pollution", () => {
 
 	it("[] Pollution", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("ArrayObjectPollution")
 			.sync(true)
@@ -62,10 +65,10 @@ describe("Prototype Pollution", () => {
 
 	it("Function Pollution", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("FunctionObjectPollution")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -77,6 +80,7 @@ describe("Prototype Pollution", () => {
 
 	it('"" Pollution', () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("StringObjectPollution")
 			.sync(true)
@@ -91,6 +95,7 @@ describe("Prototype Pollution", () => {
 
 	it("0 Pollution", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("NumberObjectPollution")
 			.sync(true)
@@ -105,6 +110,7 @@ describe("Prototype Pollution", () => {
 
 	it("Boolean Pollution", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("BooleanObjectPollution")
 			.sync(true)
@@ -119,6 +125,7 @@ describe("Prototype Pollution", () => {
 
 	it("Pollute using constructor.prototype", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -136,6 +143,7 @@ describe("Prototype Pollution", () => {
 
 	it("Test instrumentation and local pollution with single assignment", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -151,23 +159,23 @@ describe("Prototype Pollution", () => {
 
 	it("Test no instrumentation and polluting __proto__ of a class", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("PollutingAClass")
 			.sync(true)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
 
 	it("Instrumentation on and polluting __proto__ of a class", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("PollutingAClass")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -177,23 +185,23 @@ describe("Prototype Pollution", () => {
 
 	it("Instrumentation on with excluded exact match", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all-exclude-one.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("PollutingAClass")
 			.sync(true)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
 
 	it("Detect changed toString() of {}", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("ChangedToString")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -203,10 +211,10 @@ describe("Prototype Pollution", () => {
 
 	it("Detect deleted toString() of {}", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("DeletedToString")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -216,13 +224,13 @@ describe("Prototype Pollution", () => {
 
 	it("Two-stage prototype pollution with object creation", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("TwoStagePollutionWithObjectCreation")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -232,12 +240,12 @@ describe("Prototype Pollution", () => {
 
 	it("Async assignment instrumentation", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("AsyncAssignment")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -247,12 +255,12 @@ describe("Prototype Pollution", () => {
 
 	it("Async variable declaration instrumentation", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("AsyncVariableDeclaration")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -262,13 +270,13 @@ describe("Prototype Pollution", () => {
 
 	it("Equal assignments should be instrumented", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("EqualExpressionInstrumentation")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -278,13 +286,13 @@ describe("Prototype Pollution", () => {
 
 	it("Equal variable declarations should be instrumented", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("EqualVariableDeclarationsInstrumentation")
 			.sync(true)
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -315,11 +323,11 @@ describe("Prototype Pollution Jest tests", () => {
 
 	it("PP pollution of Object", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.dryRun(true)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Pollution of Object")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -331,6 +339,7 @@ describe("Prototype Pollution Jest tests", () => {
 
 	it("Instrumentation of assignment expressions", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -338,7 +347,6 @@ describe("Prototype Pollution Jest tests", () => {
 			.dryRun(false)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Assignments")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -350,6 +358,7 @@ describe("Prototype Pollution Jest tests", () => {
 
 	it("Instrumentation of variable declarations", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -357,7 +366,6 @@ describe("Prototype Pollution Jest tests", () => {
 			.dryRun(false)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Variable declarations")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -369,12 +377,12 @@ describe("Prototype Pollution Jest tests", () => {
 
 	it("Fuzzing mode pollution of Object", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.dir(bugDetectorDirectory)
 			.dryRun(true)
 			.jestRunInFuzzingMode(true)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Fuzzing mode pollution of Object")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -388,6 +396,7 @@ describe("Prototype Pollution Jest tests", () => {
 
 	it("Fuzzing mode instrumentation off - variable declaration", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -396,7 +405,6 @@ describe("Prototype Pollution Jest tests", () => {
 			.jestRunInFuzzingMode(true)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Variable declarations")
-			.verbose(true)
 			.build();
 		expect(() => {
 			fuzzTest.execute();
@@ -411,45 +419,46 @@ describe("Prototype Pollution instrumentation correctness tests", () => {
 
 	it("Basic assignment", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("OnePlusOne")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
 
 	it("Assign to called lambda", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("LambdaAssignmentAndExecution")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
 
 	it("Assign to lambda and then execute", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
 			.dir(bugDetectorDirectory)
 			.fuzzEntryPoint("LambdaAssignmentAndExecutionLater")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
 
 	it("Lambda variable declaration", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.customHooks([
 				path.join(bugDetectorDirectory, "instrument-all.config.js"),
 			])
@@ -457,7 +466,6 @@ describe("Prototype Pollution instrumentation correctness tests", () => {
 			.dryRun(false)
 			.fuzzEntryPoint("LambdaVariableDeclaration")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});

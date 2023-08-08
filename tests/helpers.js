@@ -28,6 +28,8 @@ const WindowsExitCode = "1";
 
 class FuzzTest {
 	constructor(
+		includes,
+		excludes,
 		customHooks,
 		dictionaries,
 		dir,
@@ -45,6 +47,8 @@ class FuzzTest {
 		verbose,
 		coverage,
 	) {
+		this.includes = includes;
+		this.excludes = excludes;
 		this.customHooks = customHooks;
 		this.dictionaries = dictionaries;
 		this.dir = dir;
@@ -64,26 +68,35 @@ class FuzzTest {
 	}
 
 	execute() {
-		if (this.jestTestFile !== "") {
+		if (this.jestTestFile) {
 			this.executeWithJest();
-			return;
+		} else {
+			this.executeWithCli();
 		}
+	}
+
+	executeWithCli() {
 		const options = ["jazzer", this.fuzzFile];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
+		if (this.coverage) options.push("--coverage");
+		if (this.dryRun !== undefined) options.push("--dryRun=" + this.dryRun);
+		for (const include of this.includes) {
+			options.push("-i=" + include);
+		}
+		for (const exclude of this.excludes) {
+			options.push("-e=" + exclude);
+		}
 		for (const bugDetector of this.disableBugDetectors) {
 			options.push("--disable_bug_detectors=" + bugDetector);
 		}
-
-		if (this.customHooks) {
-			options.push("--custom_hooks=" + this.customHooks);
+		for (const customHook of this.customHooks) {
+			options.push("--custom_hooks=" + customHook);
 		}
-		options.push("--dryRun=" + this.dryRun);
-		if (this.coverage) options.push("--coverage");
 		options.push("--");
-		options.push("-runs=" + this.runs);
+		if (this.runs !== undefined) options.push("-runs=" + this.runs);
 		if (this.forkMode) options.push("-fork=" + this.forkMode);
-		options.push("-seed=" + this.seed);
+		if (this.seed) options.push("-seed=" + this.seed);
 		for (const dictionary of this.dictionaries) {
 			options.push("-dict=" + dictionary);
 		}
@@ -91,23 +104,43 @@ class FuzzTest {
 	}
 
 	executeWithJest() {
-		// Put together the libfuzzer options.
-		const fuzzerOptions = ["-runs=" + this.runs, "-seed=" + this.seed];
+		const fuzzerOptions = [];
+		if (this.runs) {
+			fuzzerOptions.push("-runs=" + this.runs);
+		}
+		if (this.seed) {
+			fuzzerOptions.push("-seed=" + this.seed);
+		}
 		const dictionaries = this.dictionaries.map(
 			(dictionary) => "-dict=" + dictionary,
 		);
 		fuzzerOptions.push(...dictionaries);
 
-		// Put together the jest config.
-		const config = {
-			sync: this.sync,
-			include: [this.jestTestFile],
-			disableBugDetectors: this.disableBugDetectors,
-			fuzzerOptions: fuzzerOptions,
-			customHooks: this.customHooks,
-			dryRun: this.dryRun,
-			mode: this.jestRunInFuzzingMode ? "fuzzing" : "regression",
-		};
+		const config = {};
+		if (this.sync !== undefined) {
+			config.sync = this.sync;
+		}
+		if (this.dryRun !== undefined) {
+			config.dryRun = this.dryRun;
+		}
+		if (this.includes.length > 0) {
+			config.includes = this.includes;
+		}
+		if (this.excludes.length > 0) {
+			config.excludes = this.excludes;
+		}
+		if (this.disableBugDetectors.length > 0) {
+			config.disableBugDetectors = this.disableBugDetectors;
+		}
+		if (fuzzerOptions.length > 0) {
+			config.fuzzerOptions = fuzzerOptions;
+		}
+		if (this.customHooks.length > 0) {
+			config.customHooks = this.customHooks;
+		}
+		if (this.jestRunInFuzzingMode !== undefined) {
+			config.mode = this.jestRunInFuzzingMode ? "fuzzing" : "regression";
+		}
 
 		// Write jest config file even if it exists
 		fs.writeFileSync(
@@ -125,6 +158,9 @@ class FuzzTest {
 	}
 
 	runTest(cmd, options, env) {
+		if (this.verbose) {
+			console.log("COMMAND: " + cmd + " " + options.join(" "));
+		}
 		const proc = spawnSync(cmd, options, {
 			stdio: "pipe",
 			cwd: this.dir,
@@ -147,20 +183,22 @@ class FuzzTest {
 }
 
 class FuzzTestBuilder {
-	_sync = false;
-	_runs = 0;
+	_sync = undefined;
+	_dryRun = undefined;
+	_runs = undefined;
 	_verbose = false;
-	_dryRun = false;
 	_fuzzEntryPoint = "";
 	_dir = "";
 	_fuzzFile = "fuzz";
+	_includes = [];
+	_excludes = [];
 	_disableBugDetectors = [];
-	_customHooks = undefined;
+	_customHooks = [];
 	_forkMode = 0;
 	_seed = 100;
 	_jestTestFile = "";
 	_jestTestName = "";
-	_jestRunInFuzzingMode = false;
+	_jestRunInFuzzingMode = undefined;
 	_dictionaries = [];
 	_coverage = false;
 
@@ -217,6 +255,28 @@ class FuzzTestBuilder {
 
 	fuzzFile(fuzzFile) {
 		this._fuzzFile = fuzzFile;
+		return this;
+	}
+
+	/**
+	 * @param {string[]} includes - instrumentation include pattern
+	 */
+	includes(includes) {
+		if (!Array.isArray(includes)) {
+			includes = [includes];
+		}
+		this._includes = includes;
+		return this;
+	}
+
+	/**
+	 * @param {string[]} excludes - instrumentation excludes pattern
+	 */
+	excludes(excludes) {
+		if (!Array.isArray(excludes)) {
+			excludes = [excludes];
+		}
+		this._excludes = excludes;
 		return this;
 	}
 
@@ -312,6 +372,8 @@ class FuzzTestBuilder {
 			);
 		}
 		return new FuzzTest(
+			this._includes,
+			this._excludes,
 			this._customHooks,
 			this._dictionaries,
 			this._dir,
