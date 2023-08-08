@@ -1,0 +1,12 @@
+{
+	"name": "jazzerjs-jest-integration-tests",
+	"version": "1.0.0",
+	"description": "Jest integration tests.",
+	"scripts": {
+		"fuzz": "jest"
+	},
+	"devDependencies": {
+		"@types/jest": "^29.5.3",
+		"jest": "^29.6.2"
+	}
+}

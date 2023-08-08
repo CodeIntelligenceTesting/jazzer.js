@@ -1,0 +1,29 @@
+{
+	"name": "jazzerjs-jest-integration-tests-project",
+	"version": "1.0.0",
+	"scripts": {
+		"test": "jest",
+		"fuzz": "JAZZER_FUZZ=1 jest "
+	},
+	"devDependencies": {
+		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner",
+		"jest": "^29.3.1"
+	},
+	"jest": {
+		"projects": [
+			{
+				"displayName": "test"
+			},
+			{
+				"runner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
+	}
+}

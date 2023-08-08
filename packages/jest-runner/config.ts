@@ -61,6 +61,10 @@ export function loadConfig(optionsKey = "jazzerjs"): Options {
 		config.mode = "fuzzing";
 	}
 
+	if (config.mode === "fuzzing") {
+		config.dryRun = false;
+	}
+
 	if (config.verbose) {
 		process.env.JAZZER_DEBUG = "1";
 	}
