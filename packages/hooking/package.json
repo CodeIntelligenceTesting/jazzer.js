@@ -16,7 +16,7 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
 	"dependencies": {
-		"@babel/core": "^7.22.9"
+		"@babel/core": "^7.22.10"
 	},
 	"devDependencies": {
 		"@types/babel__core": "^7.20.1"
