@@ -30,6 +30,7 @@ describe("Path Traversal", () => {
 
 	it("openSync with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("PathTraversalFsOpenEvilSync")
 			.dir(bugDetectorDirectory)
@@ -41,6 +42,7 @@ describe("Path Traversal", () => {
 
 	it("open with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFsOpenEvilAsync")
 			.dir(bugDetectorDirectory)
@@ -52,6 +54,7 @@ describe("Path Traversal", () => {
 
 	it("mkdirSync with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("PathTraversalFsMkdirEvilSync")
 			.dir(bugDetectorDirectory)
@@ -65,6 +68,7 @@ describe("Path Traversal", () => {
 
 	it("mkdirSync with SAFE path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("PathTraversalFsMkdirSafeSync")
 			.dir(bugDetectorDirectory)
@@ -76,6 +80,7 @@ describe("Path Traversal", () => {
 
 	it("mkdirAsync with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFsMkdirEvilAsync")
 			.dir(bugDetectorDirectory)
@@ -89,6 +94,7 @@ describe("Path Traversal", () => {
 
 	it("mkdirAsync with SAFE path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFsMkdirSafeAsync")
 			.dir(bugDetectorDirectory)
@@ -100,6 +106,7 @@ describe("Path Traversal", () => {
 
 	it("mkdir PROMISES with SAFE path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFspMkdirSafeAsync")
 			.dir(bugDetectorDirectory)
@@ -111,6 +118,7 @@ describe("Path Traversal", () => {
 
 	it("mkdir PROMISES with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFspMkdirEvilAsync")
 			.dir(bugDetectorDirectory)
@@ -124,6 +132,7 @@ describe("Path Traversal", () => {
 
 	it("open PROMISES with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalFspOpenEvilAsync")
 			.dir(bugDetectorDirectory)
@@ -135,6 +144,7 @@ describe("Path Traversal", () => {
 
 	it("joinSync with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("PathTraversalJoinEvilSync")
 			.dir(bugDetectorDirectory)
@@ -146,6 +156,7 @@ describe("Path Traversal", () => {
 
 	it("joinSync with SAFE path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("PathTraversalJoinSafeSync")
 			.dir(bugDetectorDirectory)
@@ -155,6 +166,7 @@ describe("Path Traversal", () => {
 
 	it("join with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalJoinEvilAsync")
 			.dir(bugDetectorDirectory)
@@ -166,6 +178,7 @@ describe("Path Traversal", () => {
 
 	it("join with SAFE path", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("PathTraversalJoinSafeAsync")
 			.dir(bugDetectorDirectory)

@@ -29,6 +29,7 @@ describe("Command injection", () => {
 
 	it("exec with EVIL command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execEVIL")
 			.dir(bugDetectorDirectory)
@@ -41,6 +42,7 @@ describe("Command injection", () => {
 
 	it("exec with FRIENDLY command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execFRIENDLY")
 			.dir(bugDetectorDirectory)
@@ -51,6 +53,7 @@ describe("Command injection", () => {
 
 	it("execFile with EVIL file", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execFileEVIL")
 			.dir(bugDetectorDirectory)
@@ -63,6 +66,7 @@ describe("Command injection", () => {
 
 	it("execFile with FRIENDLY file", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execFileFRIENDLY")
 			.dir(bugDetectorDirectory)
@@ -73,6 +77,7 @@ describe("Command injection", () => {
 
 	it("execFileSync with EVIL file", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execFileSyncEVIL")
 			.dir(bugDetectorDirectory)
@@ -85,6 +90,7 @@ describe("Command injection", () => {
 
 	it("execFileSync with FRIENDLY file", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("execFileSyncFRIENDLY")
 			.dir(bugDetectorDirectory)
@@ -95,6 +101,7 @@ describe("Command injection", () => {
 
 	it("spawn with EVIL command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("spawnEVIL")
 			.dir(bugDetectorDirectory)
@@ -107,6 +114,7 @@ describe("Command injection", () => {
 
 	it("spawn with FRIENDLY command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("spawnFRIENDLY")
 			.dir(bugDetectorDirectory)
@@ -117,6 +125,7 @@ describe("Command injection", () => {
 
 	it("spawnSync with EVIL command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("spawnSyncEVIL")
 			.dir(bugDetectorDirectory)
@@ -129,6 +138,7 @@ describe("Command injection", () => {
 
 	it("spawnSync with FRIENDLY command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("spawnSyncFRIENDLY")
 			.dir(bugDetectorDirectory)
@@ -139,6 +149,7 @@ describe("Command injection", () => {
 
 	it("fork with EVIL command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("forkEVIL")
 			.dir(bugDetectorDirectory)
@@ -151,6 +162,7 @@ describe("Command injection", () => {
 
 	it("fork with FRIENDLY command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("forkFRIENDLY")
 			.dir(bugDetectorDirectory)

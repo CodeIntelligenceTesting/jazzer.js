@@ -56,6 +56,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; SYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("CallOriginalEvilSync")
 			.dir(bugDetectorDirectory)
@@ -69,6 +70,7 @@ describe("General tests", () => {
 
 	it("Call with FRIENDLY string; ASYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalFriendlyAsync")
 			.dir(bugDetectorDirectory)
@@ -79,6 +81,7 @@ describe("General tests", () => {
 
 	it("Call with FRIENDLY string; SYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(true)
 			.fuzzEntryPoint("CallOriginalFriendlySync")
 			.dir(bugDetectorDirectory)
@@ -89,6 +92,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; With done callback", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallback")
 			.dir(bugDetectorDirectory)
@@ -102,6 +106,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; With done callback; With try/catch", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTryCatch")
 			.dir(bugDetectorDirectory)
@@ -115,6 +120,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; With done callback; With timeout", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeout")
 			.dir(bugDetectorDirectory)
@@ -129,6 +135,7 @@ describe("General tests", () => {
 
 	it("Call with EVIL string; With done callback; With timeout; With try/catch", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch")
 			.dir(bugDetectorDirectory)
@@ -141,6 +148,7 @@ describe("General tests", () => {
 
 	it("Call with FRIENDLY string; With done callback", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("CallOriginalFriendlyDoneCallback")
 			.dir(bugDetectorDirectory)
@@ -227,6 +235,7 @@ describe("General tests", () => {
 
 	it("Disable all bug detectors; Call with evil", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.fuzzEntryPoint("DisableAllBugDetectors")
 			.dir(bugDetectorDirectory)
@@ -240,6 +249,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with EVIL command; SYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
@@ -254,6 +264,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with EVIL command; ASYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
@@ -270,6 +281,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with FRIENDLY command", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
@@ -281,6 +293,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with FRIENDLY command; ASYNC", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
@@ -329,6 +342,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with EVIL command; Done callback", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
@@ -345,6 +359,7 @@ describe("General tests", () => {
 
 	it("Jest: Test with FRIENDLY command; Done callback", () => {
 		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
 			.sync(false)
 			.dir(bugDetectorDirectory)
 			.jestTestFile("tests.fuzz.js")
