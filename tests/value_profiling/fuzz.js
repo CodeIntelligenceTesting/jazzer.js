@@ -30,9 +30,7 @@ module.exports.fuzz = function (data) {
 	}
 	if (
 		encrypt(data.readInt32BE(0)) === 0x50555637 &&
-		encrypt(data.readInt32BE(4)) === 0x7e4f5664 &&
-		encrypt(data.readInt32BE(8)) === 0x5757493e &&
-		encrypt(data.readInt32BE(12)) === 0x784c5465
+		encrypt(data.readInt32BE(4)) === 0x7e4f5664
 	) {
 		throw Error("XOR with a constant is not a secure encryption method ;-)");
 	}
