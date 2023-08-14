@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
+export class FloatLengthError extends Error {
+	constructor() {
+		super();
+		this.name = "FLOAT_LENGTH_ERROR";
+		this.cause = "non-integer length given";
+		this.message = "length value must be an integer";
+	}
+}
+
 /**
  * Helper class for reading primitive types from the bytes of the raw fuzzer input.
  * Arrays are read from the beginning of the data buffer, whereas individual elements are read
@@ -89,6 +98,9 @@ export class FuzzedDataProvider {
 	 * @returns an integral
 	 */
 	consumeIntegral(maxNumBytes: number, isSigned = false): number {
+		if (!Number.isInteger(maxNumBytes)) {
+			throw new FloatLengthError();
+		}
 		return this.consumeIntegralLEorBE(maxNumBytes, isSigned, true);
 	}
 
@@ -112,6 +124,9 @@ export class FuzzedDataProvider {
 	 * @returns a big integral
 	 */
 	consumeBigIntegral(maxNumBytesToConsume: number, isSigned = false): bigint {
+		if (!Number.isInteger(maxNumBytesToConsume)) {
+			throw new FloatLengthError();
+		}
 		return this.consumeBigIntegralLEorBE(maxNumBytesToConsume, isSigned, true);
 	}
 
@@ -277,6 +292,9 @@ export class FuzzedDataProvider {
 	 * @returns an array of booleans
 	 */
 	consumeBooleans(maxLength: number): boolean[] {
+		if (!Number.isInteger(maxLength)) {
+			throw new FloatLengthError();
+		}
 		const arrayLength = Math.min(this._remainingBytes, maxLength);
 		const result = new Array<boolean>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
@@ -301,6 +319,12 @@ export class FuzzedDataProvider {
 		numBytesPerIntegral: number,
 		isSigned = false,
 	): number[] {
+		if (
+			!Number.isInteger(maxLength) ||
+			!Number.isInteger(numBytesPerIntegral)
+		) {
+			throw new FloatLengthError();
+		}
 		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
 		const result = new Array<number>();
 		for (let i = 0; i < arrayLength; i++) {
@@ -327,6 +351,12 @@ export class FuzzedDataProvider {
 		numBytesPerIntegral: number,
 		isSigned = false,
 	): bigint[] {
+		if (
+			!Number.isInteger(maxLength) ||
+			!Number.isInteger(numBytesPerIntegral)
+		) {
+			throw new FloatLengthError();
+		}
 		const arrayLength = this.computeArrayLength(maxLength, numBytesPerIntegral);
 		const result: bigint[] = new Array<bigint>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
@@ -347,6 +377,9 @@ export class FuzzedDataProvider {
 	 * @returns an array of numbers
 	 */
 	consumeNumbers(maxLength: number): number[] {
+		if (!Number.isInteger(maxLength)) {
+			throw new FloatLengthError();
+		}
 		const arrayLength = this.computeArrayLength(maxLength, 8);
 		const result: number[] = new Array(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
@@ -363,6 +396,9 @@ export class FuzzedDataProvider {
 	 * @returns a byte array of length at most `maxLength`
 	 */
 	consumeBytes(maxLength: number): number[] {
+		if (!Number.isInteger(maxLength)) {
+			throw new FloatLengthError();
+		}
 		const arrayLength = Math.min(this._remainingBytes, maxLength);
 		const result = new Array<number>(arrayLength);
 		for (let i = 0; i < arrayLength; i++) {
@@ -399,6 +435,9 @@ export class FuzzedDataProvider {
 		printable: boolean | undefined = false,
 	): string {
 		if (maxLength < 0) throw new Error("maxLength must be non-negative");
+		if (!Number.isInteger(maxLength)) {
+			throw new FloatLengthError();
+		}
 		let result;
 		const arrayLength = Math.min(maxLength, this._remainingBytes);
 
@@ -478,6 +517,12 @@ export class FuzzedDataProvider {
 		encoding: BufferEncoding | undefined = "ascii",
 		printable: boolean | undefined = false,
 	) {
+		if (
+			!Number.isInteger(maxArrayLength) ||
+			!Number.isInteger(maxStringLength)
+		) {
+			throw new FloatLengthError();
+		}
 		const strs = [];
 		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
 			const str = this.consumeString(maxStringLength, encoding, printable);
@@ -561,6 +606,9 @@ export class FuzzedDataProvider {
 				"maxNumBytes must be between 0 and 6: use the corresponding *BigIntegral function instead",
 			);
 		}
+		if (!Number.isInteger(maxNumBytes)) {
+			throw new FloatLengthError();
+		}
 		const min = isSigned ? -(2 ** (8 * maxNumBytes - 1)) : 0;
 		const max = isSigned
 			? 2 ** (8 * maxNumBytes - 1) - 1
@@ -631,6 +679,9 @@ export class FuzzedDataProvider {
 		isSigned = false,
 		isLittleEndian = true,
 	): bigint {
+		if (!Number.isInteger(maxNumBytes)) {
+			throw new FloatLengthError();
+		}
 		let min, max;
 		if (isSigned) {
 			min = BigInt(-(2 ** (maxNumBytes * 8 - 1)));
