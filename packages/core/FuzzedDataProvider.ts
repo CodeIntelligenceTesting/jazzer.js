@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/**
+ * Error class for functions that accept a length value which is thrown if that length is not a whole number to ensure
+ * the fuzzed data buffer is only ever indexed by whole numbers.
+ */
 export class FloatLengthError extends Error {
 	constructor() {
 		super();
