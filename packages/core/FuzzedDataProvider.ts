@@ -22,7 +22,6 @@ export class FloatLengthError extends Error {
 	constructor() {
 		super();
 		this.name = "FLOAT_LENGTH_ERROR";
-		this.cause = "non-integer length given";
 		this.message = "length value must be an integer";
 	}
 }
@@ -477,7 +476,7 @@ export class FuzzedDataProvider {
 	 * @param encoding - a valid `BufferEncoding`.
 	 * @returns a string that was sanitized and only contains printable characters
 	 */
-	bufToPrintableString(
+	private bufToPrintableString(
 		buf: Buffer,
 		min: number,
 		max: number,
@@ -548,6 +547,9 @@ export class FuzzedDataProvider {
 	 */
 	pickValues<Type>(array: Array<Type>, numValues: number): Array<Type> {
 		if (array.length == 0) throw new Error("array must not be empty");
+		if (!Number.isInteger(numValues)) {
+			throw new FloatLengthError();
+		}
 		if (numValues < 0) throw new Error("numValues must not be negative");
 		if (numValues > array.length)
 			throw new Error("numValues must not be greater than the array length");
@@ -609,9 +611,6 @@ export class FuzzedDataProvider {
 			throw new Error(
 				"maxNumBytes must be between 0 and 6: use the corresponding *BigIntegral function instead",
 			);
-		}
-		if (!Number.isInteger(maxNumBytes)) {
-			throw new FloatLengthError();
 		}
 		const min = isSigned ? -(2 ** (8 * maxNumBytes - 1)) : 0;
 		const max = isSigned
@@ -678,14 +677,11 @@ export class FuzzedDataProvider {
 	 * @param isLittleEndian - whether the integer is little endian or not
 	 * @returns an integral
 	 */
-	consumeBigIntegralLEorBE(
+	private consumeBigIntegralLEorBE(
 		maxNumBytes: number,
 		isSigned = false,
 		isLittleEndian = true,
 	): bigint {
-		if (!Number.isInteger(maxNumBytes)) {
-			throw new FloatLengthError();
-		}
 		let min, max;
 		if (isSigned) {
 			min = BigInt(-(2 ** (maxNumBytes * 8 - 1)));

@@ -601,6 +601,9 @@ describe("FuzzedDataProvider checks", () => {
 	it("pickValues", () => {
 		let data = new FuzzedDataProvider(Data);
 		let array = [5, 2, 3, 4, 1];
+		expect(() => {
+			data.pickValues(array, 1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.pickValues(array, 1)).toStrictEqual([1]);
 		expect(data.remainingBytes).toBe(1023);
 		expect(data.pickValues(array, 1)).toStrictEqual([2]);
