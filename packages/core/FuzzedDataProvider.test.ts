@@ -33,6 +33,9 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeBooleans", () => {
 		const data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeBooleans(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeBooleans(5)).toStrictEqual([
 			false,
 			true,
@@ -178,6 +181,9 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeBytes", () => {
 		const data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeBytes(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeBytes(4)).toStrictEqual([0x8a, 0x19, 0x0d, 0x44]);
 		expect(data.remainingBytes).toBe(1020);
 		expect(data.consumeBytes(3)).toStrictEqual([0x37, 0x0d, 0x38]);
@@ -204,6 +210,12 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeIntegrals", () => {
 		const data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeIntegrals(1.5, 1);
+		}).toThrow("length value must be an integer");
+		expect(() => {
+			data.consumeIntegrals(2, 1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeIntegrals(2, 1)).toStrictEqual([0x8a, 0x19]);
 		expect(data.remainingBytes).toBe(1022);
 		expect(data.consumeIntegrals(2, 2)).toStrictEqual([0x0d44, 0x370d]);
@@ -291,6 +303,12 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeBigIntegrals", () => {
 		let data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeBigIntegrals(1.5, 1);
+		}).toThrow("length value must be an integer");
+		expect(() => {
+			data.consumeBigIntegrals(2, 1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeBigIntegrals(2, 1)).toStrictEqual([
 			BigInt(0x8a),
 			BigInt(0x19),
@@ -399,6 +417,9 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeIntegral (tests from libfuzzer)", () => {
 		const data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeIntegral(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeIntegral(4, true)).toBe(-903266865);
 		expect(data.remainingBytes).toBe(1020);
 		expect(data.consumeIntegral(4)).toBe(372863811);
@@ -580,6 +601,9 @@ describe("FuzzedDataProvider checks", () => {
 	it("pickValues", () => {
 		let data = new FuzzedDataProvider(Data);
 		let array = [5, 2, 3, 4, 1];
+		expect(() => {
+			data.pickValues(array, 1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.pickValues(array, 1)).toStrictEqual([1]);
 		expect(data.remainingBytes).toBe(1023);
 		expect(data.pickValues(array, 1)).toStrictEqual([2]);
@@ -839,6 +863,9 @@ describe("FuzzedDataProvider checks", () => {
 				0x00, 0x00, 0x00, 0x00, 0x40, 0x37,
 			]),
 		);
+		expect(() => {
+			data.consumeNumbers(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeNumbers(3)).toStrictEqual([23, 23, 23]);
 		expect(data.remainingBytes).toBe(0);
 		data = new FuzzedDataProvider(Data);
@@ -871,6 +898,9 @@ describe("FuzzedDataProvider checks", () => {
 
 	it("consumeBigIntegral", () => {
 		let data = new FuzzedDataProvider(Data);
+		expect(() => {
+			data.consumeBigIntegral(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.consumeBigIntegral(1)).toBe(BigInt(0x4a));
 		expect(data.remainingBytes).toBe(1023);
 		expect(data.consumeBigIntegral(2)).toBe(BigInt(0x293d));
@@ -897,6 +927,9 @@ describe("FuzzedDataProvider checks", () => {
 		expect(() => {
 			data.consumeIntegral(1023021031337);
 		}).toThrow();
+		expect(() => {
+			data.consumeIntegral(1.5);
+		}).toThrow("length value must be an integer");
 		expect(data.remainingBytes).toBe(1024);
 		expect(data.consumeIntegral(6)).toBe(0x4a293dcf1639);
 		expect(data.remainingBytes).toBe(1018);
@@ -921,6 +954,10 @@ describe("FuzzedDataProvider checks", () => {
 		const data = new FuzzedDataProvider(Buffer.from(byteArray));
 		expect(data.consumeString(0)).toBe("");
 		expect(data.remainingBytes).toBe(testString.length);
+		expect(() => {
+			data.consumeString(1.5);
+		}).toThrow("length value must be an integer");
+		expect(data.remainingBytes).toBe(testString.length);
 		expect(data.consumeString(10, "utf8")).toBe("Lorem ipsu");
 		expect(data.remainingBytes).toBe(testString.length - 10);
 		expect(data.consumeString(20, "ascii")).toBe("m dolor sit amet, co");
@@ -939,6 +976,12 @@ describe("FuzzedDataProvider checks", () => {
 		const testString = "Lorem ipsum dolor sit amet";
 		const byteArray = new TextEncoder().encode(testString);
 		const data = new FuzzedDataProvider(Buffer.from(byteArray));
+		expect(() => {
+			data.consumeStringArray(1.5, 1);
+		}).toThrow("length value must be an integer");
+		expect(() => {
+			data.consumeStringArray(1, 1.5);
+		}).toThrow("length value must be an integer");
 		const strings = data.consumeStringArray(5, 5);
 		expect(strings).toHaveLength(5);
 		expect(strings).toContain("Lorem");
