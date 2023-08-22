@@ -1,7 +1,7 @@
 {
 	"name": "@jazzer.js/jest-runner",
 	"version": "1.6.1",
-	"description": "",
+	"description": "Jazzer.js Jest runner",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
@@ -20,8 +20,12 @@
 		"cosmiconfig": "^8.2.0",
 		"istanbul-reports": "^3.1.6"
 	},
+	"peerDependencies": {
+		"jest": "^29.0.0"
+	},
 	"devDependencies": {
 		"@types/tmp": "^0.2.3",
+		"@types/jest": "^29.5.3",
 		"tmp": "^0.2.1"
 	},
 	"engines": {
