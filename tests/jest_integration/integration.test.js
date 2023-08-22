@@ -21,6 +21,7 @@ const {
 } = require("../helpers.js");
 const path = require("path");
 const fs = require("fs");
+const { JestRegressionExitCode } = require("../helpers");
 
 describe("Jest integration", () => {
 	const projectDir = path.join(__dirname, "jest_project");
@@ -84,6 +85,17 @@ describe("Jest integration", () => {
 				fuzzTest.execute();
 			}).toThrow(fuzzingExitCode);
 		});
+
+		it("execute a mocked test", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestName("mock test function")
+				.verbose(true)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(fuzzingExitCode);
+			expect(fuzzTest.stdout).toContain("the function was mocked");
+		});
 	});
 
 	describe("Regression mode", () => {
@@ -117,6 +129,17 @@ describe("Jest integration", () => {
 				.jestTestName("execute async test using a callback")
 				.build()
 				.execute();
+		});
+
+		it("execute a mocked test", () => {
+			const fuzzTest = regressionTestBuilder
+				.jestTestName("mock test function")
+				.verbose(true)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(JestRegressionExitCode);
+			expect(fuzzTest.stdout).toContain("the function was mocked");
 		});
 	});
 });

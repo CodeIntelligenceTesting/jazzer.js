@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-import { Global } from "@jest/types";
+import { Circus, Global } from "@jest/types";
 import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
 } from "@jazzer.js/fuzzer";
-import { loadConfig } from "./config";
-import { JazzerWorker } from "./worker";
+import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";
-import * as circus from "jest-circus";
 import * as fs from "fs";
 import { removeTopFramesFromError } from "./errorUtils";
 import {
 	Options,
+	defaultOptions,
 	startFuzzingNoInit,
 	wrapFuzzFunctionForBugDetection,
 } from "@jazzer.js/core";
@@ -41,68 +40,83 @@ export class FuzzerError extends Error {}
 // Error indicating that the fuzzer was already started.
 export class FuzzerStartError extends FuzzerError {}
 
-// Use Jests global object definition.
-const g = globalThis as unknown as Global.Global;
-
 export type FuzzTest = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	timeout?: number,
 ) => void;
 
-export const skip: FuzzTest = (name) => {
-	g.test.skip(toTestName(name), () => {
-		return;
-	});
-};
+export const skip: (globals: Global.Global) => FuzzTest =
+	(globals: Global.Global) => (name) => {
+		globals.test.skip(toTestName(name), () => {
+			return;
+		});
+	};
 
-export const fuzz: FuzzTest = (name, fn, timeout) => {
-	const testName = toTestName(name);
+type fuzz = (
+	globals: Global.Global,
+	testFile: string,
+	fuzzingConfig: Options,
+	currentTestState: () => Circus.DescribeBlock | undefined,
+	currentTestTimeout: () => number | undefined,
+) => FuzzTest;
 
-	// Request the current test file path from the worker to create appropriate
-	// corpus directory hierarchies. It is set by the worker that imports the
-	// actual test file and changes during execution of multiple test files.
-	const testFile = JazzerWorker.currentTestPath;
+export const fuzz: fuzz = (
+	globals,
+	testFile,
+	fuzzingConfig,
+	currentTestState,
+	currentTestTimeout,
+) => {
+	return (name, fn, timeout) => {
+		const state = currentTestState();
+		if (!state) {
+			throw new Error("No test state found");
+		}
+		const corpus = new Corpus(
+			testFile,
+			currentTestStatePath(toTestName(name), state),
+		);
 
-	// Build up the names of test block elements (describe, test, it) pointing
-	// to the currently executed fuzz function, based on the circus runner state.
-	// The used state changes during test file import but, at this point,
-	// points to the element containing the fuzz function.
-	const testStatePath = currentTestStatePath(testName);
+		// Timeout priority is:
+		// 1. Use timeout directly defined in test function
+		// 2. Use timeout defined in fuzzing config
+		// 3. Use jest timeout
+		if (timeout != undefined) {
+			fuzzingConfig.timeout = timeout;
+		} else {
+			const jestTimeout = currentTestTimeout();
+			if (jestTimeout != undefined && fuzzingConfig.timeout == undefined) {
+				fuzzingConfig.timeout = jestTimeout;
+			} else if (fuzzingConfig.timeout === TIMEOUT_PLACEHOLDER) {
+				fuzzingConfig.timeout = defaultOptions.timeout;
+			}
+		}
 
-	const corpus = new Corpus(testFile, testStatePath);
+		const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
-	const fuzzingConfig = loadConfig();
-
-	// Timeout priority is: test timeout > config timeout > default timeout.
-	if (!timeout) {
-		timeout = fuzzingConfig.timeout;
-	} else {
-		fuzzingConfig.timeout = timeout;
-	}
-
-	const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
-
-	if (fuzzingConfig.mode === "regression") {
-		runInRegressionMode(name, wrappedFn, corpus, timeout);
-	} else if (fuzzingConfig.mode === "fuzzing") {
-		runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig);
-	} else {
-		throw new Error(`Unknown mode ${fuzzingConfig.mode}`);
-	}
+		if (fuzzingConfig.mode === "regression") {
+			runInRegressionMode(name, wrappedFn, corpus, fuzzingConfig, globals);
+		} else if (fuzzingConfig.mode === "fuzzing") {
+			runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig, globals);
+		} else {
+			throw new Error(`Unknown mode ${fuzzingConfig.mode}`);
+		}
+	};
 };
 
 export const runInFuzzingMode = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
-	config: Options,
+	options: Options,
+	globals: Global.Global,
 ) => {
-	config.fuzzerOptions.unshift(corpus.seedInputsDirectory);
-	config.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
-	config.fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
-	g.test(name, () => {
-		// Fuzzing is only allowed to start once in a single nodejs instance.
+	options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
+	options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
+	options.fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
+	globals.test(name, () => {
+		// Fuzzing is only allowed to start once in a single Node.js instance.
 		if (fuzzerStarted) {
 			const message = `Fuzzer already started. Please provide single fuzz test using --testNamePattern. Skipping test "${toTestName(
 				name,
@@ -113,7 +127,7 @@ export const runInFuzzingMode = (
 			throw error;
 		}
 		fuzzerStarted = true;
-		return startFuzzingNoInit(fn, config);
+		return startFuzzingNoInit(fn, options);
 	});
 };
 
@@ -121,16 +135,17 @@ export const runInRegressionMode = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
-	timeout: number,
+	options: Options,
+	globals: Global.Global,
 ) => {
-	g.describe(name, () => {
+	globals.describe(name, () => {
 		function executeTarget(content: Buffer) {
 			let timeoutID: NodeJS.Timeout;
 			return new Promise((resolve, reject) => {
 				// Register a timeout for every fuzz test function invocation.
 				timeoutID = setTimeout(() => {
-					reject(new FuzzerError(`Timeout reached ${timeout}`));
-				}, timeout);
+					reject(new FuzzerError(`Timeout reached ${options.timeout}`));
+				}, options.timeout);
 
 				// Fuzz test expects a done callback, if more than one parameter is specified.
 				if (fn.length > 1) {
@@ -158,11 +173,13 @@ export const runInRegressionMode = (
 		}
 
 		// Always execute target function with an empty buffer.
-		g.test("<empty>", async () => executeTarget(Buffer.from("")));
+		globals.test("<empty>", async () => executeTarget(Buffer.from("")));
 
-		// Execute fuzz test with each input file as no libFuzzer is required.
+		// Execute the fuzz test with each input file as no libFuzzer is required.
 		corpus.inputsPaths().forEach(([seed, path]) => {
-			g.test(seed, async () => executeTarget(await fs.promises.readFile(path)));
+			globals.test(seed, async () =>
+				executeTarget(await fs.promises.readFile(path)),
+			);
 		});
 	});
 };
@@ -224,10 +241,13 @@ const toTestName = (name: Global.TestNameLike): string => {
 	throw new FuzzerError(`Invalid test name "${name}"`);
 };
 
-const currentTestStatePath = (testName: string): string[] => {
-	const elements = [testName];
-	let describeBlock = circus.getState().currentDescribeBlock;
-	while (describeBlock !== circus.getState().rootDescribeBlock) {
+const currentTestStatePath = (
+	name: string,
+	state: Circus.DescribeBlock,
+): string[] => {
+	const elements = [name];
+	let describeBlock = state;
+	while (describeBlock.parent) {
 		elements.unshift(describeBlock.name);
 		if (describeBlock.parent) {
 			describeBlock = describeBlock.parent;

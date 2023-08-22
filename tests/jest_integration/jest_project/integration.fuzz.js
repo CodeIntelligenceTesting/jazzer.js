@@ -15,6 +15,12 @@
  */
 
 const target = require("./target.js");
+jest.mock("./target.js", () => ({
+	...jest.requireActual("./target.js"),
+	originalFn: () => {
+		throw "the function was mocked";
+	},
+}));
 
 describe("Jest Integration", () => {
 	it.fuzz("execute sync test", (data) => {
@@ -31,5 +37,9 @@ describe("Jest Integration", () => {
 
 	it.fuzz("execute async test using a callback", (data, done) => {
 		target.callbackFuzzMe(data, done);
+	});
+
+	it.fuzz("mock test function", (data) => {
+		target.originalFn(data);
 	});
 });

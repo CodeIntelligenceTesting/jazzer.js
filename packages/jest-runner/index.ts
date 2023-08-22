@@ -14,90 +14,244 @@
  * limitations under the License.
  */
 
+import * as reports from "istanbul-reports";
+import Runtime from "jest-runtime";
+import {
+	CallerTransformOptions,
+	TransformedSource,
+	TransformResult,
+} from "@jest/transform";
+import { TestResult } from "@jest/test-result";
+import { Circus, Config } from "@jest/types";
+import type { JestEnvironment } from "@jest/environment";
+
+import { initFuzzing, Options } from "@jazzer.js/core";
+import { Instrumentor } from "@jazzer.js/instrumentor";
+
 import { loadConfig } from "./config";
 import { cleanupJestRunnerStack } from "./errorUtils";
-import { FuzzTest } from "./fuzz";
-import { JazzerWorker } from "./worker";
-import { initFuzzing } from "@jazzer.js/core";
-import {
-	CallbackTestRunner,
-	OnTestFailure,
-	OnTestStart,
-	OnTestSuccess,
-	Test,
-	TestRunnerContext,
-	TestRunnerOptions,
-	TestWatcher,
-} from "jest-runner";
-import { Config } from "@jest/types";
-import * as reports from "istanbul-reports";
+import { fuzz, FuzzTest, skip } from "./fuzz";
 
-class FuzzRunner extends CallbackTestRunner {
-	shouldCollectCoverage: boolean;
-	coverageReporters: Config.CoverageReporters;
-	constructor(globalConfig: Config.GlobalConfig, context: TestRunnerContext) {
-		super(globalConfig, context);
-		this.shouldCollectCoverage = globalConfig.collectCoverage;
-		this.coverageReporters = globalConfig.coverageReporters;
-	}
+export default async function jazzerTestRunner(
+	globalConfig: Config.GlobalConfig,
+	config: Config.ProjectConfig,
+	environment: JestEnvironment,
+	runtime: Runtime,
+	testPath: string,
+	sendMessageToJest?: boolean,
+): Promise<TestResult> {
+	// TODO:
+	// - Error handling / skipped tests
+	//  - In fuzzing mode, don't throw error on subsequent test but rather only create the first fuzz test as Jest test and the next ones as skipped tests
+	// - Import runner without require
+	//  - Investigate how to require JS files
+	// - Instrumentation!
+	//  - Cleanup
+	//  - Apologies for the bad hack
+	//  - Implement correct source map handling
+	// - Write mock test
 
-	async runTests(
-		tests: Array<Test>,
-		watcher: TestWatcher,
-		onStart: OnTestStart,
-		onResult: OnTestSuccess,
-		onFailure: OnTestFailure,
-		options: TestRunnerOptions,
-	): Promise<void> {
-		// Prefer Jest coverage configuration.
-		const config = loadConfig({
-			coverage: this.shouldCollectCoverage,
-			coverageReporters: this.coverageReporters as reports.ReportType[],
-		});
+	const circusRunner = await require("jest-circus/runner");
 
-		await initFuzzing(config);
-		return this.#runTestsInBand(tests, watcher, onStart, onResult, onFailure);
-	}
+	const jazzerConfig = loadConfig({
+		coverage: globalConfig.collectCoverage,
+		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
+	});
+	const globalEnvironments = [environment.getVmContext(), globalThis];
 
-	async #runTestsInBand(
-		tests: Array<Test>,
-		watcher: TestWatcher,
-		onStart: OnTestStart,
-		onResult: OnTestSuccess,
-		onFailure: OnTestFailure,
-	) {
-		process.env.JEST_WORKER_ID = "1";
-		return tests.reduce((promise, test) => {
-			return promise.then(async () => {
-				if (watcher.isInterrupted()) {
-					throw new CancelRun();
-				}
+	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
+	const { currentTestState, currentTestTimeout } =
+		interceptCurrentStateAndTimeout(environment, jazzerConfig);
+	interceptScriptTransformerCalls(runtime, instrumentor);
 
-				// Execute every test in a dedicated worker instance.
-				// Currently, this is only in band but the structure supports parallel
-				// execution in the future.
-				await onStart(test);
-				const worker = new JazzerWorker();
-				return worker.run(test, this._globalConfig).then(
-					(result) => onResult(test, result),
-					(error) => {
-						error.stack = cleanupJestRunnerStack(error.stack);
-						onFailure(test, error);
-					},
-				);
-			});
-		}, Promise.resolve());
-	}
+	interceptGlobals(
+		runtime,
+		testPath,
+		jazzerConfig,
+		currentTestState,
+		currentTestTimeout,
+	);
+
+	return circusRunner(
+		globalConfig,
+		config,
+		environment,
+		runtime,
+		testPath,
+		sendMessageToJest,
+	).then(
+		(result: TestResult) => {
+			return result;
+		},
+		(error: unknown) => {
+			if (error instanceof Error) {
+				error.stack = cleanupJestRunnerStack(error.stack);
+			}
+			return Promise.reject(error);
+		},
+	);
 }
 
-class CancelRun extends Error {
-	constructor(message?: string) {
-		super(message);
-		this.name = "CancelRun";
-	}
+function interceptCurrentStateAndTimeout(
+	environment: JestEnvironment,
+	jazzerConfig: Options,
+) {
+	let testState: Circus.DescribeBlock | undefined;
+	let testTimeout: number | undefined;
+	const handleTestEvent = environment.handleTestEvent?.bind(environment);
+	environment.handleTestEvent = (event: Circus.Event, state: Circus.State) => {
+		if (event.name === "test_start") {
+			if (state.testNamePattern?.test(testName(event.test))) {
+				XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX;
+			}
+			console.log(event.test);
+		} else if (event.name === "test_fn_start") {
+			// Disable Jest timeout in fuzzing mode by setting it to a high value.
+			if (jazzerConfig.mode === "fuzzing") {
+				state.testTimeout = 1000 * 60 * 24 * 365;
+			} else {
+				testTimeout = state.testTimeout;
+			}
+		}
+		if (event.name === "start_describe_definition") {
+			testState = state.currentDescribeBlock;
+		}
+		if (handleTestEvent) {
+			return handleTestEvent(event as Circus.AsyncEvent, state);
+		}
+	};
+	return {
+		currentTestState: () => testState?.parent,
+		currentTestTimeout: () => testTimeout,
+	};
 }
 
-export default FuzzRunner;
+function interceptGlobals(
+	runtime: Runtime,
+	testPath: string,
+	jazzerConfig: Options,
+	currentTestState: () => Circus.DescribeBlock | undefined,
+	currentTestTimeout: () => number | undefined,
+) {
+	const originalSetGlobalsForRuntime =
+		runtime.setGlobalsForRuntime.bind(runtime);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	runtime.setGlobalsForRuntime = (globals: any) => {
+		globals.it.fuzz = fuzz(
+			globals,
+			testPath,
+			jazzerConfig,
+			currentTestState,
+			currentTestTimeout,
+		);
+		globals.it.skip.fuzz = skip(globals);
+		globals.test.fuzz = fuzz(
+			globals,
+			testPath,
+			jazzerConfig,
+			currentTestState,
+			currentTestTimeout,
+		);
+		globals.test.skip.fuzz = skip(globals);
+		originalSetGlobalsForRuntime(globals);
+	};
+}
+
+function interceptScriptTransformerCalls(
+	runtime: Runtime,
+	instrumentor: Instrumentor,
+) {
+	const scriptTransformer = runtime["_scriptTransformer"];
+	const originalBuildTransformResult =
+		scriptTransformer._buildTransformResult.bind(scriptTransformer);
+	scriptTransformer._buildTransformResult = (
+		filename: string,
+		cacheFilePath: string,
+		content: string,
+		transformer: Transformer | undefined,
+		shouldCallTransform: boolean,
+		options: CallerTransformOptions,
+		processed: TransformedSource | null,
+		sourceMapPath: string | null,
+	): TransformResult => {
+		if (processed?.code) {
+			const newResult = instrumentor.instrumentFoo(filename, processed?.code);
+			processed = {
+				code: newResult?.code ?? processed?.code,
+			};
+		}
+		return originalBuildTransformResult(
+			filename,
+			cacheFilePath,
+			content,
+			transformer,
+			shouldCallTransform,
+			options,
+			processed,
+			sourceMapPath,
+		);
+	};
+
+	const originalTransformAndBuildScript =
+		scriptTransformer._transformAndBuildScript.bind(scriptTransformer);
+	scriptTransformer._transformAndBuildScript = (
+		filename: string,
+		options: unknown,
+		transformOptions: unknown,
+		fileSource?: string,
+	): TransformResult => {
+		const result = originalTransformAndBuildScript(
+			filename,
+			options,
+			transformOptions,
+			fileSource,
+		);
+		const newResult = instrumentor.instrumentFoo(filename, result.code);
+		if (newResult) {
+			return {
+				code: newResult.code ?? result.code,
+				originalCode: result.originalCode,
+				sourceMapPath: result.sourceMapPath,
+			};
+		}
+		return result;
+	};
+
+	const originalTransformAndBuildScriptAsync =
+		scriptTransformer._transformAndBuildScriptAsync.bind(scriptTransformer);
+	scriptTransformer._transformAndBuildScriptAsync = async (
+		filename: string,
+		options: unknown,
+		transformOptions: unknown,
+		fileSource?: string,
+	): Promise<TransformResult> => {
+		const result = await originalTransformAndBuildScriptAsync(
+			filename,
+			options,
+			transformOptions,
+			fileSource,
+		);
+		const newResult = instrumentor.instrumentFoo(filename, result.code);
+		if (newResult) {
+			return {
+				code: newResult.code ?? result.code,
+				originalCode: result.originalCode,
+				sourceMapPath: result.sourceMapPath,
+			};
+		}
+		return result;
+	};
+}
+
+function testName(test: Circus.TestEntry): string {
+	const titles = [];
+	let parent: Circus.TestEntry | Circus.DescribeBlock | undefined = test;
+	do {
+		titles.unshift(parent.name);
+	} while ((parent = parent.parent));
+	titles.shift();
+	return titles.join(" ");
+}
 
 // Global definition of the Jest fuzz test extension function.
 // This is required to allow the Typescript compiler to recognize it.

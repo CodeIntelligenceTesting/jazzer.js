@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js integrates with Jest",
 	"scripts": {
-		"test": "jest",
+		"test": "jest --verbose false",
 		"dryRun": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest --coverage --testNamePattern=\"My describe\"",
 		"coverage": "jest --coverage"
@@ -20,7 +20,7 @@
 				"displayName": "test"
 			},
 			{
-				"runner": "@jazzer.js/jest-runner",
+				"testRunner": "@jazzer.js/jest-runner",
 				"displayName": {
 					"name": "Jazzer.js",
 					"color": "cyan"

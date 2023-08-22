@@ -57,21 +57,23 @@ declare global {
 	var options: Options;
 }
 
-export async function initFuzzing(options: Options): Promise<void> {
-	registerGlobals(options);
+export async function initFuzzing(
+	options: Options,
+	globals?: unknown[],
+): Promise<Instrumentor> {
+	registerGlobals(options, globals);
 
-	registerInstrumentor(
-		new Instrumentor(
-			options.includes,
-			options.excludes,
-			options.customHooks,
-			options.coverage,
-			options.dryRun,
-			options.idSyncFile
-				? new FileSyncIdStrategy(options.idSyncFile)
-				: new MemorySyncIdStrategy(),
-		),
+	const instrumentor = new Instrumentor(
+		options.includes,
+		options.excludes,
+		options.customHooks,
+		options.coverage,
+		options.dryRun,
+		options.idSyncFile
+			? new FileSyncIdStrategy(options.idSyncFile)
+			: new MemorySyncIdStrategy(),
 	);
+	registerInstrumentor(instrumentor);
 
 	// Dynamic import works only with javascript files, so we have to manually specify the directory with the
 	// transpiled bug detector files.
@@ -96,12 +98,17 @@ export async function initFuzzing(options: Options): Promise<void> {
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
 	await hooking.hookManager.finalizeHooks();
+
+	return instrumentor;
 }
 
-function registerGlobals(options: Options) {
-	globalThis.Fuzzer = fuzzer.fuzzer;
-	globalThis.HookManager = hooking.hookManager;
-	globalThis.options = options;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function registerGlobals(options: Options, globals: any[] = [globalThis]) {
+	globals.forEach((global) => {
+		global.Fuzzer = fuzzer.fuzzer;
+		global.HookManager = hooking.hookManager;
+		global.options = options;
+	});
 }
 
 // Filters out disabled bug detectors and prepares all the others for dynamic import.
@@ -194,7 +201,7 @@ export async function startFuzzingNoInit(
 
 	if (options.sync) {
 		return Promise.resolve().then(() =>
-			Fuzzer.startFuzzing(
+			fuzzer.fuzzer.startFuzzing(
 				fuzzFn,
 				fuzzerOptions,
 				// In synchronous mode, we cannot use the SIGINT/SIGSEGV handler in Node,
@@ -207,7 +214,7 @@ export async function startFuzzingNoInit(
 	} else {
 		process.on("SIGINT", () => signalHandler(0));
 		process.on("SIGSEGV", () => signalHandler(SIGSEGV));
-		return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+		return fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 	}
 }
 

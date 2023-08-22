@@ -15,9 +15,14 @@
  */
 
 const fuzzMe = function (data) {
+	console.log("not mocked");
 	if (data.toString() === "Awesome") {
 		throw Error("Welcome to Awesome Fuzzing!");
 	}
+};
+
+const originalFn = function () {
+	console.log("original result");
 };
 
 const asyncFuzzMe = function (data) {

@@ -15,7 +15,9 @@
  */
 
 import { cosmiconfigSync } from "cosmiconfig";
-import { processOptions, Options } from "@jazzer.js/core";
+import { Options, processOptions } from "@jazzer.js/core";
+
+export const TIMEOUT_PLACEHOLDER = Number.MIN_SAFE_INTEGER;
 
 // Lookup `Options` via the `.jazzerjsrc` configuration files.
 export function loadConfig(
@@ -24,6 +26,12 @@ export function loadConfig(
 ): Options {
 	const result = cosmiconfigSync(optionsKey).search();
 	const config = result?.config ?? {};
+	// If no timeout is specified, use a placeholder value so that no
+	// default timeout is used. Afterwards remove the placeholder value,
+	// if not already overwritten by the user.
+	if (config.timeout === undefined) {
+		config.timeout = TIMEOUT_PLACEHOLDER;
+	}
 	// Jazzer.js normally runs in "fuzzing" mode, but,
 	// if not specified otherwise, Jest uses "regression" mode.
 	if (!config.mode) {

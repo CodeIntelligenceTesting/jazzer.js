@@ -30,6 +30,7 @@ import { functionHooks } from "./plugins/functionHooks";
 import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 import {
 	extractInlineSourceMap,
+	SourceMap,
 	SourceMapRegistry,
 	toRawSourceMap,
 } from "./SourceMapRegistry";
@@ -68,10 +69,15 @@ export class Instrumentor {
 		return this.sourceMapRegistry.installSourceMapSupport();
 	}
 
-	instrument(code: string, filename: string): string {
+	instrument(code: string, filename: string, sourceMap?: SourceMap): string {
+		const result = this.instrumentFoo(filename, code, sourceMap);
+		return result?.code || code;
+	}
+
+	instrumentFoo(filename: string, code: string, sourceMap?: SourceMap) {
 		// Extract inline source map from code string and use it as input source map
 		// in further transformations.
-		const inputSourceMap = extractInlineSourceMap(code);
+		const inputSourceMap = sourceMap ?? extractInlineSourceMap(code);
 		const transformations: PluginItem[] = [];
 
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
@@ -100,19 +106,16 @@ export class Instrumentor {
 			this.idStrategy.startForSourceFile(filename);
 		}
 
-		const transformedCode =
-			this.transform(
-				filename,
-				code,
-				transformations,
-				this.asInputSourceOption(inputSourceMap),
-			)?.code || code;
-
+		const result = this.transform(
+			filename,
+			code,
+			transformations,
+			this.asInputSourceOption(inputSourceMap),
+		);
 		if (shouldInstrumentFile) {
 			this.idStrategy.commitIdCount(filename);
 		}
-
-		return transformedCode;
+		return result;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
