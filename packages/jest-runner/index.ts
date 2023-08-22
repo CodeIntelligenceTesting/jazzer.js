@@ -53,7 +53,7 @@ export default async function jazzerTestRunner(
 	const globalEnvironments = [environment.getVmContext(), globalThis];
 
 	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
-	const { currentTestState, currentTestTimeout } =
+	const { currentTestState, currentTestTimeout, originalTestNamePattern } =
 		interceptCurrentStateAndTimeout(environment, jazzerConfig);
 	interceptScriptTransformerCalls(runtime, instrumentor);
 
@@ -63,6 +63,7 @@ export default async function jazzerTestRunner(
 		jazzerConfig,
 		currentTestState,
 		currentTestTimeout,
+		originalTestNamePattern,
 	);
 
 	const circusRunner = await runtime[
@@ -92,9 +93,16 @@ function interceptCurrentStateAndTimeout(
 	let testState: Circus.DescribeBlock | undefined;
 	let testTimeout: number | undefined;
 	let firstFuzzTestEncountered: boolean | undefined;
+	let originalTestNamePattern: RegExp | undefined;
 
 	environment.handleTestEvent = (event: Circus.Event, state: Circus.State) => {
-		//console.log(event);
+		testState = state.currentDescribeBlock;
+		if (
+			originalTestNamePattern === undefined &&
+			state.testNamePattern?.source !== undefined
+		) {
+			originalTestNamePattern = new RegExp(state.testNamePattern.source);
+		}
 		if (event.name === "setup") {
 		} else if (event.name === "test_start") {
 			if (jazzerConfig.mode === "fuzzing") {
@@ -106,27 +114,28 @@ function interceptCurrentStateAndTimeout(
 				} else {
 					event.test.mode = "skip";
 				}
-			} else if (jazzerConfig.mode === "regression") {
-				// && state.testNamePattern?.source.endsWith("$")) {
-				// state.testNamePattern = new RegExp(state.testNamePattern.source.slice(0, -1));
+			} else {
+				if (state.testNamePattern?.source.endsWith("$")) {
+					state.testNamePattern = new RegExp(
+						state.testNamePattern?.source.slice(0, -1),
+					);
+				}
 			}
 		} else if (event.name === "test_fn_start") {
 			// Disable Jest timeout in fuzzing mode by setting it to a high value.
 			if (jazzerConfig.mode === "fuzzing") {
 				state.testTimeout = 1000 * 60 * 24 * 365;
-			} else {
-				testTimeout = state.testTimeout;
 			}
-		} else if (event.name === "start_describe_definition") {
-			testState = state.currentDescribeBlock;
+			testTimeout = state.testTimeout;
 		}
 		if (originalHandleTestEvent) {
 			return originalHandleTestEvent(event as Circus.AsyncEvent, state);
 		}
 	};
 	return {
-		currentTestState: () => testState?.parent,
+		currentTestState: () => testState,
 		currentTestTimeout: () => testTimeout,
+		originalTestNamePattern: () => originalTestNamePattern,
 	};
 }
 
@@ -136,6 +145,7 @@ function interceptGlobals(
 	jazzerConfig: Options,
 	currentTestState: () => Circus.DescribeBlock | undefined,
 	currentTestTimeout: () => number | undefined,
+	originalTestNamePattern: () => RegExp | undefined,
 ) {
 	const originalSetGlobalsForRuntime =
 		runtime.setGlobalsForRuntime.bind(runtime);
@@ -147,6 +157,7 @@ function interceptGlobals(
 			jazzerConfig,
 			currentTestState,
 			currentTestTimeout,
+			originalTestNamePattern,
 		);
 		globals.it.skip.fuzz = skip(globals);
 		globals.test.fuzz = fuzz(
@@ -155,6 +166,7 @@ function interceptGlobals(
 			jazzerConfig,
 			currentTestState,
 			currentTestTimeout,
+			originalTestNamePattern,
 		);
 		globals.test.skip.fuzz = skip(globals);
 		originalSetGlobalsForRuntime(globals);

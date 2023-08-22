@@ -53,6 +53,7 @@ type fuzz = (
 	fuzzingConfig: Options,
 	currentTestState: () => Circus.DescribeBlock | undefined,
 	currentTestTimeout: () => number | undefined,
+	originalTestNamePattern: () => RegExp | undefined,
 ) => FuzzTest;
 
 export const fuzz: fuzz = (
@@ -61,6 +62,7 @@ export const fuzz: fuzz = (
 	fuzzingConfig,
 	currentTestState,
 	currentTestTimeout,
+	originalTestNamePattern,
 ) => {
 	return (name, fn, timeout) => {
 		const state = currentTestState();
@@ -68,10 +70,19 @@ export const fuzz: fuzz = (
 			throw new Error("No test state found");
 		}
 
-		const corpus = new Corpus(
-			testFile,
-			currentTestStatePath(toTestName(name), state),
-		);
+		// Add all tests that don't match the test name pattern as skipped.
+		const testStatePath = currentTestStatePath(toTestName(name), state);
+		const testNamePattern = originalTestNamePattern();
+		if (
+			testStatePath !== undefined &&
+			testNamePattern != undefined &&
+			!testNamePattern.test(testStatePath.join(" "))
+		) {
+			globals.describe.skip(name, () => {});
+			return;
+		}
+
+		const corpus = new Corpus(testFile, testStatePath);
 
 		// Timeout priority is:
 		// 1. Use timeout directly defined in test function
@@ -91,7 +102,14 @@ export const fuzz: fuzz = (
 		const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
 		if (fuzzingConfig.mode === "regression") {
-			runInRegressionMode(name, wrappedFn, corpus, fuzzingConfig, globals);
+			runInRegressionMode(
+				name,
+				wrappedFn,
+				corpus,
+				fuzzingConfig,
+				globals,
+				originalTestNamePattern(),
+			);
 		} else if (fuzzingConfig.mode === "fuzzing") {
 			runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig, globals);
 		} else {
@@ -123,6 +141,7 @@ export const runInRegressionMode = (
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,
+	originalTestNamePattern: RegExp | undefined,
 ) => {
 	globals.describe(name, () => {
 		function executeTarget(content: Buffer) {
@@ -159,12 +178,18 @@ export const runInRegressionMode = (
 		}
 
 		// Always execute target function with an empty buffer.
-		globals.test("<empty>", async () => executeTarget(Buffer.from("")));
+		globals.test(
+			"<empty>",
+			async () => executeTarget(Buffer.from("")),
+			options.timeout,
+		);
 
 		// Execute the fuzz test with each input file as no libFuzzer is required.
 		corpus.inputsPaths().forEach(([seed, path]) => {
-			globals.test(seed, async () =>
-				executeTarget(await fs.promises.readFile(path)),
+			globals.test(
+				seed,
+				async () => executeTarget(await fs.promises.readFile(path)),
+				options.timeout,
 			);
 		});
 	});
