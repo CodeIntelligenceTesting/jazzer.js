@@ -45,6 +45,17 @@ export default async function jazzerTestRunner(
 	//  - Cleanup
 	//  - Apologies for the bad hack
 	//  - Implement correct source map handling
+	//  - Prototype pollution (and other bug detectors) should be added to the vm
+	//    - Command injection/path traversal seem to work because they hook builtin node functions
+	//      that are shared between vm and host (my guess)
+	//    - PP is a ATM host-only and never ran in vm.
+	//    - There might be several solutions:
+	//      1) Bug detectors and fuzzer core are loaded directly into the VM. Since BDs talk to hook manager
+	//         and some things should be run after each input, the fuzzer should also be loaded into vm.
+	//      2) Load bug detectors into VM and run fuzzer in host, but provide a way to communicate
+	//         between VM and host.
+	//  - Check: Custom hooks should also not work ATM, since they are loaded by the fuzzer in the host.
+	// - Add (or convert to ticket): .only.fuzz, .failing.fuzz,  .todo.fuzz, .only.failing.fuzz
 
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
