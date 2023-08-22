@@ -94,7 +94,7 @@ describe("Source code coverage reports", () => {
 	});
 
 	describe("for our custom Jest runner", () => {
-		it("Expect no coverage reports", () => {
+		it("expect no coverage reports", () => {
 			executeJestRunner("**.fuzz.js", false, false, true);
 			expect(defaultCoverageDirectory).toBeCreated();
 			const coverageJson = readCoverageJson(defaultCoverageDirectory);

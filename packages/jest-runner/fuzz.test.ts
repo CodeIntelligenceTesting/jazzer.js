@@ -81,6 +81,16 @@ describe("fuzz", () => {
 	});
 
 	describe("runInRegressionMode", () => {
+		it("always invoke tests with an empty input", async () => {
+			mockInputPaths();
+			const corpus: Corpus = new Corpus("", []);
+			const testFn = jest.fn();
+			await withMockTest(() => {
+				runInRegressionMode("fuzz", testFn, corpus, 1000);
+			});
+			expect(testFn).toBeCalledWith(Buffer.from(""));
+		});
+
 		it("execute one test per seed file", async () => {
 			const inputPaths = mockInputPaths("file1", "file2");
 			const corpus = new Corpus("", []);
@@ -188,17 +198,6 @@ describe("fuzz", () => {
 			});
 			expect(consoleErrorMock).toHaveBeenCalledTimes(1);
 		});
-
-		it("skips tests without seed files", async () => {
-			mockInputPaths();
-			const corpus: Corpus = new Corpus("", []);
-			const testFn = jest.fn();
-			await withMockTest(() => {
-				runInRegressionMode("fuzz", testFn, corpus, 1000);
-			});
-			expect(testFn).not.toBeCalled();
-			expect(skipMock).toHaveBeenCalled();
-		});
 	});
 });
 
@@ -253,6 +252,6 @@ const mockInputPaths = (...inputPaths: string[]) => {
 };
 
 const mockDefaultCorpus = () => {
-	mockInputPaths("seed");
+	mockInputPaths();
 	return new Corpus("", []);
 };

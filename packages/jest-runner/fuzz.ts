@@ -124,52 +124,45 @@ export const runInRegressionMode = (
 	timeout: number,
 ) => {
 	g.describe(name, () => {
-		const inputsPaths = corpus.inputsPaths();
+		function executeTarget(content: Buffer) {
+			let timeoutID: NodeJS.Timeout;
+			return new Promise((resolve, reject) => {
+				// Register a timeout for every fuzz test function invocation.
+				timeoutID = setTimeout(() => {
+					reject(new FuzzerError(`Timeout reached ${timeout}`));
+				}, timeout);
 
-		// Mark fuzz tests with empty inputs as skipped to suppress Jest error.
-		if (inputsPaths.length === 0) {
-			g.test.skip(name, () => {
-				return;
-			});
-			return;
+				// Fuzz test expects a done callback, if more than one parameter is specified.
+				if (fn.length > 1) {
+					return doneCallbackPromise(fn, content, resolve, reject);
+				} else {
+					// Support sync and async fuzz tests.
+					return Promise.resolve()
+						.then(() => (fn as FuzzTargetAsyncOrValue)(content))
+						.then(resolve, reject);
+				}
+			}).then(
+				(value: unknown) => {
+					// Remove timeout to enable clean shutdown.
+					timeoutID?.unref?.();
+					clearTimeout(timeoutID);
+					return value;
+				},
+				(error: unknown) => {
+					// Remove timeout to enable clean shutdown.
+					timeoutID?.unref?.();
+					clearTimeout(timeoutID);
+					throw error;
+				},
+			);
 		}
 
-		// Execute the fuzz test with each input file as no libFuzzer is required.
-		// Custom hooks are already registered via the jest-runner.
-		inputsPaths.forEach(([seed, path]) => {
-			g.test(seed, async () => {
-				const content = await fs.promises.readFile(path);
-				let timeoutID: NodeJS.Timeout;
-				return new Promise((resolve, reject) => {
-					// Register a timeout for every fuzz test function invocation.
-					timeoutID = setTimeout(() => {
-						reject(new FuzzerError(`Timeout reached ${timeout}`));
-					}, timeout);
+		// Always execute target function with an empty buffer.
+		g.test("<empty>", async () => executeTarget(Buffer.from("")));
 
-					// Fuzz test expects a done callback, if more than one parameter is specified.
-					if (fn.length > 1) {
-						return doneCallbackPromise(fn, content, resolve, reject);
-					} else {
-						// Support sync and async fuzz tests.
-						return Promise.resolve()
-							.then(() => (fn as FuzzTargetAsyncOrValue)(content))
-							.then(resolve, reject);
-					}
-				}).then(
-					(value: unknown) => {
-						// Remove timeout to enable clean shutdown.
-						timeoutID?.unref?.();
-						clearTimeout(timeoutID);
-						return value;
-					},
-					(error: unknown) => {
-						// Remove timeout to enable clean shutdown.
-						timeoutID?.unref?.();
-						clearTimeout(timeoutID);
-						throw error;
-					},
-				);
-			});
+		// Execute fuzz test with each input file as no libFuzzer is required.
+		corpus.inputsPaths().forEach(([seed, path]) => {
+			g.test(seed, async () => executeTarget(await fs.promises.readFile(path)));
 		});
 	});
 };

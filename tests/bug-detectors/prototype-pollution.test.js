@@ -466,7 +466,6 @@ describe("Prototype Pollution instrumentation correctness tests", () => {
 			.dryRun(false)
 			.fuzzEntryPoint("LambdaVariableDeclaration")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});
