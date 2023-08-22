@@ -22,7 +22,7 @@ import { jestExpect as expect } from "@jest/expect";
 import * as circus from "jest-circus";
 import { formatResultsErrors } from "jest-message-util";
 import { inspect } from "util";
-import { fuzz, FuzzerStartError, skip } from "./fuzz";
+import { fuzz, skip } from "./fuzz";
 import { cleanupJestRunnerStack, removeTopFramesFromError } from "./errorUtils";
 import { createScriptTransformer } from "@jest/transform";
 
@@ -215,9 +215,6 @@ export class JazzerWorker {
 			.then(testEntry.fn)
 			.catch((error) => {
 				// Mark fuzzer tests as skipped and not as error.
-				if (error instanceof FuzzerStartError) {
-					skipTest = true;
-				}
 				errors.push(error);
 			});
 

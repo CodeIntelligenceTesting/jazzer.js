@@ -32,6 +32,17 @@ describe("My describe", () => {
 			// 		.map((x) => x.toString(16).padStart(2, "0"))
 			// 		.join(" "),
 			// );
+
+			target.fuzzMe(data);
+		});
+
+		it.fuzz("Should be skipped later", (data) => {
+			// console.log(
+			// 	[...new Uint8Array(data)]
+			// 		.map((x) => x.toString(16).padStart(2, "0"))
+			// 		.join(" "),
+			// );
+
 			target.fuzzMe(data);
 		});
 	});

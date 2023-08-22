@@ -42,9 +42,13 @@ describe("ErrorUtils", () => {
 	describe("clean up Jest runner frames", () => {
 		it("in errors", () => {
 			expect(cleanupJestError(undefined)).toBeUndefined();
-			expect(cleanupJestError(error)?.stack).toMatch(`Error:
+			const result = cleanupJestError(error);
+			expect(result instanceof Error).toBeTruthy();
+			if (result instanceof Error) {
+				expect(result.stack).toMatch(`Error:
     at /jest_integration/integration.fuzz.js:27:3
 `);
+			}
 		});
 
 		it("in stacks", () => {

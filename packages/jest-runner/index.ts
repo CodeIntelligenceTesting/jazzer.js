@@ -29,7 +29,7 @@ import { initFuzzing, Options } from "@jazzer.js/core";
 import { Instrumentor } from "@jazzer.js/instrumentor";
 
 import { loadConfig } from "./config";
-import { cleanupJestRunnerStack } from "./errorUtils";
+import { cleanupJestError } from "./errorUtils";
 import { fuzz, FuzzTest, skip } from "./fuzz";
 
 export default async function jazzerTestRunner(
@@ -41,17 +41,10 @@ export default async function jazzerTestRunner(
 	sendMessageToJest?: boolean,
 ): Promise<TestResult> {
 	// TODO:
-	// - Error handling / skipped tests
-	//  - In fuzzing mode, don't throw error on subsequent test but rather only create the first fuzz test as Jest test and the next ones as skipped tests
-	// - Import runner without require
-	//  - Investigate how to require JS files
 	// - Instrumentation!
 	//  - Cleanup
 	//  - Apologies for the bad hack
 	//  - Implement correct source map handling
-	// - Write mock test
-
-	const circusRunner = await require("jest-circus/runner");
 
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
@@ -72,6 +65,9 @@ export default async function jazzerTestRunner(
 		currentTestTimeout,
 	);
 
+	const circusRunner = await runtime[
+		"_scriptTransformer"
+	].requireAndTranspileModule("jest-circus/runner");
 	return circusRunner(
 		globalConfig,
 		config,
@@ -79,32 +75,41 @@ export default async function jazzerTestRunner(
 		runtime,
 		testPath,
 		sendMessageToJest,
-	).then(
-		(result: TestResult) => {
-			return result;
-		},
-		(error: unknown) => {
-			if (error instanceof Error) {
-				error.stack = cleanupJestRunnerStack(error.stack);
-			}
-			return Promise.reject(error);
-		},
-	);
+	).then((result: TestResult) => {
+		result.testResults.forEach((testResult) => {
+			testResult.failureDetails?.forEach(cleanupJestError);
+		});
+		return result;
+	});
 }
 
 function interceptCurrentStateAndTimeout(
 	environment: JestEnvironment,
 	jazzerConfig: Options,
 ) {
+	const originalHandleTestEvent =
+		environment.handleTestEvent?.bind(environment);
 	let testState: Circus.DescribeBlock | undefined;
 	let testTimeout: number | undefined;
-	const handleTestEvent = environment.handleTestEvent?.bind(environment);
+	let firstFuzzTestEncountered: boolean | undefined;
+
 	environment.handleTestEvent = (event: Circus.Event, state: Circus.State) => {
-		if (event.name === "test_start") {
-			if (state.testNamePattern?.test(testName(event.test))) {
-				XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX;
+		//console.log(event);
+		if (event.name === "setup") {
+		} else if (event.name === "test_start") {
+			if (jazzerConfig.mode === "fuzzing") {
+				if (
+					!firstFuzzTestEncountered &&
+					state.testNamePattern?.test(testName(event.test))
+				) {
+					firstFuzzTestEncountered = true;
+				} else {
+					event.test.mode = "skip";
+				}
+			} else if (jazzerConfig.mode === "regression") {
+				// && state.testNamePattern?.source.endsWith("$")) {
+				// state.testNamePattern = new RegExp(state.testNamePattern.source.slice(0, -1));
 			}
-			console.log(event.test);
 		} else if (event.name === "test_fn_start") {
 			// Disable Jest timeout in fuzzing mode by setting it to a high value.
 			if (jazzerConfig.mode === "fuzzing") {
@@ -112,12 +117,11 @@ function interceptCurrentStateAndTimeout(
 			} else {
 				testTimeout = state.testTimeout;
 			}
-		}
-		if (event.name === "start_describe_definition") {
+		} else if (event.name === "start_describe_definition") {
 			testState = state.currentDescribeBlock;
 		}
-		if (handleTestEvent) {
-			return handleTestEvent(event as Circus.AsyncEvent, state);
+		if (originalHandleTestEvent) {
+			return originalHandleTestEvent(event as Circus.AsyncEvent, state);
 		}
 	};
 	return {
@@ -176,6 +180,7 @@ function interceptScriptTransformerCalls(
 	): TransformResult => {
 		if (processed?.code) {
 			const newResult = instrumentor.instrumentFoo(filename, processed?.code);
+			console.log("instrumenting buildResult: " + filename);
 			processed = {
 				code: newResult?.code ?? processed?.code,
 			};
@@ -190,56 +195,6 @@ function interceptScriptTransformerCalls(
 			processed,
 			sourceMapPath,
 		);
-	};
-
-	const originalTransformAndBuildScript =
-		scriptTransformer._transformAndBuildScript.bind(scriptTransformer);
-	scriptTransformer._transformAndBuildScript = (
-		filename: string,
-		options: unknown,
-		transformOptions: unknown,
-		fileSource?: string,
-	): TransformResult => {
-		const result = originalTransformAndBuildScript(
-			filename,
-			options,
-			transformOptions,
-			fileSource,
-		);
-		const newResult = instrumentor.instrumentFoo(filename, result.code);
-		if (newResult) {
-			return {
-				code: newResult.code ?? result.code,
-				originalCode: result.originalCode,
-				sourceMapPath: result.sourceMapPath,
-			};
-		}
-		return result;
-	};
-
-	const originalTransformAndBuildScriptAsync =
-		scriptTransformer._transformAndBuildScriptAsync.bind(scriptTransformer);
-	scriptTransformer._transformAndBuildScriptAsync = async (
-		filename: string,
-		options: unknown,
-		transformOptions: unknown,
-		fileSource?: string,
-	): Promise<TransformResult> => {
-		const result = await originalTransformAndBuildScriptAsync(
-			filename,
-			options,
-			transformOptions,
-			fileSource,
-		);
-		const newResult = instrumentor.instrumentFoo(filename, result.code);
-		if (newResult) {
-			return {
-				code: newResult.code ?? result.code,
-				originalCode: result.originalCode,
-				sourceMapPath: result.sourceMapPath,
-			};
-		}
-		return result;
 	};
 }
 

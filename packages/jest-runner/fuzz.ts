@@ -31,14 +31,8 @@ import {
 	wrapFuzzFunctionForBugDetection,
 } from "@jazzer.js/core";
 
-// Globally track when the fuzzer is started in fuzzing mode.
-let fuzzerStarted = false;
-
 // Indicate that something went wrong executing the fuzzer.
 export class FuzzerError extends Error {}
-
-// Error indicating that the fuzzer was already started.
-export class FuzzerStartError extends FuzzerError {}
 
 export type FuzzTest = (
 	name: Global.TestNameLike,
@@ -73,6 +67,7 @@ export const fuzz: fuzz = (
 		if (!state) {
 			throw new Error("No test state found");
 		}
+
 		const corpus = new Corpus(
 			testFile,
 			currentTestStatePath(toTestName(name), state),
@@ -112,21 +107,12 @@ export const runInFuzzingMode = (
 	options: Options,
 	globals: Global.Global,
 ) => {
-	options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
-	options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
-	options.fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
 	globals.test(name, () => {
-		// Fuzzing is only allowed to start once in a single Node.js instance.
-		if (fuzzerStarted) {
-			const message = `Fuzzer already started. Please provide single fuzz test using --testNamePattern. Skipping test "${toTestName(
-				name,
-			)}"`;
-			const error = new FuzzerStartError(message);
-			// Remove stack trace as it is shown in the CLI / IDE and points to internal code.
-			error.stack = undefined;
-			throw error;
-		}
-		fuzzerStarted = true;
+		options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
+		options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
+		options.fuzzerOptions.push(
+			"-artifact_prefix=" + corpus.seedInputsDirectory,
+		);
 		return startFuzzingNoInit(fn, options);
 	});
 };
