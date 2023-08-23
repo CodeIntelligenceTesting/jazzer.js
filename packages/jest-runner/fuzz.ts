@@ -65,20 +65,27 @@ export const fuzz: fuzz = (
 	originalTestNamePattern,
 ) => {
 	return (name, fn, timeout) => {
+		// Deep clone the fuzzing config, so that each test can modify it without
+		// affecting other tests, e.g. set a test specific timeout.
+		const localConfig = JSON.parse(JSON.stringify(fuzzingConfig));
+
 		const state = currentTestState();
 		if (!state) {
 			throw new Error("No test state found");
 		}
 
-		// Add all tests that don't match the test name pattern as skipped.
+		// Add tests that don't match the test name pattern as skipped, so that
+		// only the requested tests are executed.
 		const testStatePath = currentTestStatePath(toTestName(name), state);
 		const testNamePattern = originalTestNamePattern();
-		if (
+		const skip =
 			testStatePath !== undefined &&
 			testNamePattern != undefined &&
-			!testNamePattern.test(testStatePath.join(" "))
-		) {
-			globals.describe.skip(name, () => {});
+			!testNamePattern.test(testStatePath.join(" "));
+		if (skip) {
+			globals.test.skip(name, () => {
+				// Ignore
+			});
 			return;
 		}
 
@@ -89,31 +96,24 @@ export const fuzz: fuzz = (
 		// 2. Use timeout defined in fuzzing config
 		// 3. Use jest timeout
 		if (timeout != undefined) {
-			fuzzingConfig.timeout = timeout;
+			localConfig.timeout = timeout;
 		} else {
 			const jestTimeout = currentTestTimeout();
-			if (jestTimeout != undefined && fuzzingConfig.timeout == undefined) {
-				fuzzingConfig.timeout = jestTimeout;
-			} else if (fuzzingConfig.timeout === TIMEOUT_PLACEHOLDER) {
-				fuzzingConfig.timeout = defaultOptions.timeout;
+			if (jestTimeout != undefined && localConfig.timeout == undefined) {
+				localConfig.timeout = jestTimeout;
+			} else if (localConfig.timeout === TIMEOUT_PLACEHOLDER) {
+				localConfig.timeout = defaultOptions.timeout;
 			}
 		}
 
 		const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
-		if (fuzzingConfig.mode === "regression") {
-			runInRegressionMode(
-				name,
-				wrappedFn,
-				corpus,
-				fuzzingConfig,
-				globals,
-				originalTestNamePattern(),
-			);
-		} else if (fuzzingConfig.mode === "fuzzing") {
-			runInFuzzingMode(name, wrappedFn, corpus, fuzzingConfig, globals);
+		if (localConfig.mode === "regression") {
+			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals);
+		} else if (localConfig.mode === "fuzzing") {
+			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals);
 		} else {
-			throw new Error(`Unknown mode ${fuzzingConfig.mode}`);
+			throw new Error(`Unknown mode ${localConfig.mode}`);
 		}
 	};
 };
@@ -141,40 +141,20 @@ export const runInRegressionMode = (
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,
-	originalTestNamePattern: RegExp | undefined,
 ) => {
 	globals.describe(name, () => {
 		function executeTarget(content: Buffer) {
-			let timeoutID: NodeJS.Timeout;
 			return new Promise((resolve, reject) => {
-				// Register a timeout for every fuzz test function invocation.
-				timeoutID = setTimeout(() => {
-					reject(new FuzzerError(`Timeout reached ${options.timeout}`));
-				}, options.timeout);
-
 				// Fuzz test expects a done callback, if more than one parameter is specified.
 				if (fn.length > 1) {
-					return doneCallbackPromise(fn, content, resolve, reject);
+					doneCallbackPromise(fn, content, resolve, reject);
 				} else {
 					// Support sync and async fuzz tests.
-					return Promise.resolve()
+					Promise.resolve()
 						.then(() => (fn as FuzzTargetAsyncOrValue)(content))
 						.then(resolve, reject);
 				}
-			}).then(
-				(value: unknown) => {
-					// Remove timeout to enable clean shutdown.
-					timeoutID?.unref?.();
-					clearTimeout(timeoutID);
-					return value;
-				},
-				(error: unknown) => {
-					// Remove timeout to enable clean shutdown.
-					timeoutID?.unref?.();
-					clearTimeout(timeoutID);
-					throw error;
-				},
-			);
+			});
 		}
 
 		// Always execute target function with an empty buffer.
@@ -225,6 +205,7 @@ const doneCallbackPromise = (
 		// Expecting a done callback, but returning a promise, is invalid. This is
 		// already prevented by TypeScript, but we should still check for this
 		// situation due to untyped JavaScript fuzz tests.
+		// Ignore other return values, as they are not relevant for the fuzz test.
 		// @ts-ignore
 		if (result && typeof result.then === "function") {
 			reject(

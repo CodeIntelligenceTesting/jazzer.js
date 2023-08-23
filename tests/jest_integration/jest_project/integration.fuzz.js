@@ -15,9 +15,10 @@
  */
 
 const target = require("./target.js");
+
 jest.mock("./target.js", () => ({
 	...jest.requireActual("./target.js"),
-	originalFn: () => {
+	originalFunction: () => {
 		throw "the function was mocked";
 	},
 }));
@@ -39,7 +40,35 @@ describe("Jest Integration", () => {
 		target.callbackFuzzMe(data, done);
 	});
 
+	it.fuzz("execute async timeout test", async (data) => {
+		await target.asyncTimeout(data);
+	});
+
+	it.fuzz(
+		"execute async timeout test with method timeout",
+		async (data) => {
+			await target.asyncTimeout(data);
+		},
+		10,
+	);
+
+	it.fuzz(
+		"execute async timeout test using a callback",
+		(data, done) => {
+			target.callbackTimeout(data, done);
+		},
+		10,
+	);
+
+	it.fuzz("honor test name pattern", (data) => {
+		// Do nothing, as this test is only used to check thi test name pattern.
+	});
+
+	it.fuzz("honor test name pattern as well", (data) => {
+		throw new Error("This test should not be executed!");
+	});
+
 	it.fuzz("mock test function", (data) => {
-		target.originalFn(data);
+		target.originalFunction(data);
 	});
 });

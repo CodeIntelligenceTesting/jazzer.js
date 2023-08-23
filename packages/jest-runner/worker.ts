@@ -208,7 +208,7 @@ export class JazzerWorker {
 			currentTestName: this.fullTestPath(ancestors.concat(testEntry.name)),
 		});
 
-		let skipTest = false;
+		const skipTest = false;
 		let errors = [];
 		await Promise.resolve()
 			// @ts-ignore

@@ -67,7 +67,6 @@ export default async function jazzerTestRunner(
 	const { currentTestState, currentTestTimeout, originalTestNamePattern } =
 		interceptCurrentStateAndTimeout(environment, jazzerConfig);
 	interceptScriptTransformerCalls(runtime, instrumentor);
-
 	interceptGlobals(
 		runtime,
 		testPath,
@@ -108,14 +107,22 @@ function interceptCurrentStateAndTimeout(
 
 	environment.handleTestEvent = (event: Circus.Event, state: Circus.State) => {
 		testState = state.currentDescribeBlock;
-		if (
-			originalTestNamePattern === undefined &&
-			state.testNamePattern?.source !== undefined
-		) {
-			originalTestNamePattern = new RegExp(state.testNamePattern.source);
-		}
 		if (event.name === "setup") {
+			// In regression, mode fuzz tests are added as describe block with every seed as test inside.
+			// This breaks the test name pattern matching, so we remove the $ from the end of the pattern,
+			// and skip tests not matching the original pattern in the fuzz function.
+			if (
+				jazzerConfig.mode == "regression" &&
+				state.testNamePattern?.source?.endsWith("$")
+			) {
+				originalTestNamePattern = state.testNamePattern;
+				state.testNamePattern = new RegExp(
+					state.testNamePattern.source.slice(0, -1),
+				);
+			}
 		} else if (event.name === "test_start") {
+			// In fuzzing mode, only execute the first encountered (not skipped) fuzz test
+			// and mark all others as skipped.
 			if (jazzerConfig.mode === "fuzzing") {
 				if (
 					!firstFuzzTestEncountered &&
@@ -125,15 +132,10 @@ function interceptCurrentStateAndTimeout(
 				} else {
 					event.test.mode = "skip";
 				}
-			} else {
-				if (state.testNamePattern?.source.endsWith("$")) {
-					state.testNamePattern = new RegExp(
-						state.testNamePattern?.source.slice(0, -1),
-					);
-				}
 			}
 		} else if (event.name === "test_fn_start") {
-			// Disable Jest timeout in fuzzing mode by setting it to a high value.
+			// Disable Jest timeout in fuzzing mode by setting it to a high value,
+			// otherwise Jest will kill the fuzz test after (default) 5 seconds.
 			if (jazzerConfig.mode === "fuzzing") {
 				state.testTimeout = 1000 * 60 * 24 * 365;
 			}
@@ -203,7 +205,6 @@ function interceptScriptTransformerCalls(
 	): TransformResult => {
 		if (processed?.code) {
 			const newResult = instrumentor.instrumentFoo(filename, processed?.code);
-			console.log("instrumenting buildResult: " + filename);
 			processed = {
 				code: newResult?.code ?? processed?.code,
 			};
