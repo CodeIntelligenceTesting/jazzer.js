@@ -35,7 +35,7 @@
 	},
 	"devDependencies": {
 		"@types/bindings": "^1.5.1",
-		"@types/node": "^20.5.3",
+		"@types/node": "^20.5.4",
 		"clang-format": "^1.8.0",
 		"prebuild": "^11.0.4"
 	},
