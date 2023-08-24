@@ -56,7 +56,6 @@ export default async function jazzerTestRunner(
 	//         between VM and host.
 	//  - Check: Custom hooks should also not work ATM, since they are loaded by the fuzzer in the host.
 	// - Add (or convert to ticket): .only.fuzz, .failing.fuzz,  .todo.fuzz, .only.failing.fuzz
-
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
@@ -79,6 +78,7 @@ export default async function jazzerTestRunner(
 	const circusRunner = await runtime[
 		"_scriptTransformer"
 	].requireAndTranspileModule("jest-circus/runner");
+
 	return circusRunner(
 		globalConfig,
 		config,
@@ -186,11 +186,36 @@ function interceptGlobals(
 	};
 }
 
+function instrumentIfNotInstrumented(
+	result: TransformResult,
+	instrumentor: Instrumentor,
+	filename: string,
+): TransformResult {
+	let newResult;
+	if (
+		result?.code &&
+		!result.code.includes("Fuzzer.coverageTracker.incrementCounter")
+	) {
+		newResult = instrumentor.instrumentRaw(filename, result.code);
+	}
+
+	if (newResult) {
+		return {
+			code: newResult.code ?? result.code,
+			originalCode: result.originalCode,
+			sourceMapPath: result.sourceMapPath,
+		};
+	} else {
+		return result;
+	}
+}
+
 function interceptScriptTransformerCalls(
 	runtime: Runtime,
 	instrumentor: Instrumentor,
 ) {
 	const scriptTransformer = runtime["_scriptTransformer"];
+
 	const originalBuildTransformResult =
 		scriptTransformer._buildTransformResult.bind(scriptTransformer);
 	scriptTransformer._buildTransformResult = (
@@ -203,13 +228,7 @@ function interceptScriptTransformerCalls(
 		processed: TransformedSource | null,
 		sourceMapPath: string | null,
 	): TransformResult => {
-		if (processed?.code) {
-			const newResult = instrumentor.instrumentFoo(filename, processed?.code);
-			processed = {
-				code: newResult?.code ?? processed?.code,
-			};
-		}
-		return originalBuildTransformResult(
+		const result = originalBuildTransformResult(
 			filename,
 			cacheFilePath,
 			content,
@@ -219,6 +238,45 @@ function interceptScriptTransformerCalls(
 			processed,
 			sourceMapPath,
 		);
+		return instrumentIfNotInstrumented(
+			result,
+			instrumentor,
+			filename,
+		) as TransformResult;
+	};
+
+	const originalTransformAndBuildScript =
+		scriptTransformer._transformAndBuildScript.bind(scriptTransformer);
+	scriptTransformer._transformAndBuildScript = (
+		filename: string,
+		options: unknown,
+		transformOptions: unknown,
+		fileSource?: string,
+	): TransformResult => {
+		const result: TransformResult = originalTransformAndBuildScript(
+			filename,
+			options,
+			transformOptions,
+			fileSource,
+		);
+		return instrumentIfNotInstrumented(result, instrumentor, filename);
+	};
+
+	const originalTransformAndBuildScriptAsync =
+		scriptTransformer._transformAndBuildScriptAsync.bind(scriptTransformer);
+	scriptTransformer._transformAndBuildScriptAsync = async (
+		filename: string,
+		options: unknown,
+		transformOptions: unknown,
+		fileSource?: string,
+	): Promise<TransformResult> => {
+		const result: TransformResult = await originalTransformAndBuildScriptAsync(
+			filename,
+			options,
+			transformOptions,
+			fileSource,
+		);
+		return instrumentIfNotInstrumented(result, instrumentor, filename);
 	};
 }
 

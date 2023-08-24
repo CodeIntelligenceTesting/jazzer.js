@@ -1,6 +1,7 @@
 {
-	"includes": ["target", "integration.fuzz", "worker.fuzz"],
-	"excludes": ["node_modules"],
+	"includes": ["target", "integration.fuzz", "worker.fuzz", "jpeg-js", "test"],
+	"excludes": ["@babel"],
 	"timeout": 600000000,
-	"fuzzerOptions": ["-rss_limit_mb=16000"]
+	"fuzzerOptions": ["-rss_limit_mb=16000"],
+	"customHooks": ["test.js"]
 }

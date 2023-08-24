@@ -325,7 +325,8 @@ describe("Prototype Pollution Jest tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.runs(0)
 			.dir(bugDetectorDirectory)
-			.dryRun(true)
+			.dryRun(false)
+			.verbose(true)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Pollution of Object")
 			.build();
@@ -364,6 +365,11 @@ describe("Prototype Pollution Jest tests", () => {
 			])
 			.dir(bugDetectorDirectory)
 			.dryRun(false)
+			.verbose(true)
+			.includes("*")
+			.excludes(
+				"pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+			)
 			.jestTestFile("tests.fuzz.js")
 			.jestTestName("Variable declarations")
 			.build();

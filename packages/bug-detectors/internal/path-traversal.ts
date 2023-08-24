@@ -132,6 +132,10 @@ for (const module of modulesToHook) {
 			// The first argument of the original function is typically
 			// a path or a file name.
 			const firstArgument = params[0] as string;
+			// check if firstArgument is a string
+			if (typeof firstArgument !== "string") {
+				return;
+			}
 			if (firstArgument.includes(goal)) {
 				reportFinding(
 					`Path Traversal in ${functionName}(): called with '${firstArgument}'`,

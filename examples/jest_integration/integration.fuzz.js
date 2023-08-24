@@ -15,6 +15,7 @@
  */
 
 const target = require("./target.js");
+const jpeg = require("jpeg-js");
 
 describe("My describe", () => {
 	describe("first inner describe", () => {
@@ -33,7 +34,13 @@ describe("My describe", () => {
 			// 		.join(" "),
 			// );
 
-			target.fuzzMe(data);
+			try {
+				jpeg.decode(data);
+				// no changes to the fuzz target are necessary when using custom hooks
+			} catch (error) {
+				//console.log(error);
+			}
+			//target.fuzzMe(data);
 		});
 
 		it.fuzz("Should be skipped later", (data) => {

@@ -70,11 +70,11 @@ export class Instrumentor {
 	}
 
 	instrument(code: string, filename: string, sourceMap?: SourceMap): string {
-		const result = this.instrumentFoo(filename, code, sourceMap);
+		const result = this.instrumentRaw(filename, code, sourceMap);
 		return result?.code || code;
 	}
 
-	instrumentFoo(filename: string, code: string, sourceMap?: SourceMap) {
+	instrumentRaw(filename: string, code: string, sourceMap?: SourceMap) {
 		// Extract inline source map from code string and use it as input source map
 		// in further transformations.
 		const inputSourceMap = sourceMap ?? extractInlineSourceMap(code);
@@ -115,6 +115,7 @@ export class Instrumentor {
 		if (shouldInstrumentFile) {
 			this.idStrategy.commitIdCount(filename);
 		}
+		//console.log(result?.code);
 		return result;
 	}
 
@@ -191,6 +192,9 @@ export class Instrumentor {
 			includes.find((include) => filepath.includes(include)) !== undefined;
 		const excluded =
 			excludes.find((exclude) => filepath.includes(exclude)) !== undefined;
+		if (included && !excluded) {
+			console.log("INSTRUMENTING:      " + filepath);
+		}
 		return included && !excluded;
 	}
 
