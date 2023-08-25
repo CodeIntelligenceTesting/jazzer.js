@@ -4,7 +4,7 @@
 	"main": "fuzz.js",
 	"license": "ISC",
 	"dependencies": {
-		"protobufjs": "7.2.3"
+		"protobufjs": "7.2.4"
 	},
 	"scripts": {
 		"fuzz": "jazzer fuzz -i protobufjs -i fuzz -e nothing --timeout=60000 -x Error -- -runs=1000000 -print_final_stats=1 -use_value_profile=1 -rss_limit_mb=10000 -dict=userDict.txt",
