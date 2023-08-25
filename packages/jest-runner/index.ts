@@ -25,12 +25,17 @@ import { TestResult } from "@jest/test-result";
 import { Circus, Config } from "@jest/types";
 import type { JestEnvironment } from "@jest/environment";
 
-import { initFuzzing, Options } from "@jazzer.js/core";
+import { initFuzzing, Options, reportFinding } from "@jazzer.js/core";
 import { Instrumentor } from "@jazzer.js/instrumentor";
 
 import { loadConfig } from "./config";
 import { cleanupJestError } from "./errorUtils";
 import { fuzz, FuzzTest, skip } from "./fuzz";
+import * as vm from "vm";
+import {
+	computeBasicPrototypeSnapshots,
+	detectPrototypePollutionOfBasicObjects,
+} from "./prototype-pollution";
 
 export default async function jazzerTestRunner(
 	globalConfig: Config.GlobalConfig,
@@ -55,18 +60,30 @@ export default async function jazzerTestRunner(
 	//      2) Load bug detectors into VM and run fuzzer in host, but provide a way to communicate
 	//         between VM and host.
 	//  - Check: Custom hooks should also not work ATM, since they are loaded by the fuzzer in the host.
+	//           CHECKED: Custom hooks and bug detectors that hook functions actually work!
+	//  - Prototype pollution: the problem is that the prototype of Object on host is not the
+	//    same object as the Object in VM. Polluting one won't pollute the other.
+	//    * The approach in this commit is to share the host functions that detect PP into the VM
+	//      context, and run them in the VM on the objects in the VM.
+	//    * A better approach would load the bug detectors into the VM and run them there. This has
+	//      another problem that now the before/after hooks in core/callback.ts run the functions in the host.
+	//      Or actually, the functions are not even registered, since the PP bug detector is loaded in the VM.
+	//      Jest should forward the bug detector functions to our callback.ts by:
+	//          - wiring the registration functions to the VM
+	//          - better ideas?
+	//     * Currently does not work in fuzzing mode, but the principle is clear.
 	// - Add (or convert to ticket): .only.fuzz, .failing.fuzz,  .todo.fuzz, .only.failing.fuzz
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
 	const globalEnvironments = [environment.getVmContext(), globalThis];
-
 	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
 	const { currentTestState, currentTestTimeout, originalTestNamePattern } =
 		interceptCurrentStateAndTimeout(environment, jazzerConfig);
 	interceptScriptTransformerCalls(runtime, instrumentor);
 	interceptGlobals(
+		environment,
 		runtime,
 		testPath,
 		jazzerConfig,
@@ -153,6 +170,7 @@ function interceptCurrentStateAndTimeout(
 }
 
 function interceptGlobals(
+	environment: JestEnvironment,
 	runtime: Runtime,
 	testPath: string,
 	jazzerConfig: Options,
@@ -160,11 +178,24 @@ function interceptGlobals(
 	currentTestTimeout: () => number | undefined,
 	originalTestNamePattern: () => RegExp | undefined,
 ) {
+	console.log("-------------------------------------------------------------");
+	const extendedEnvironment = environment.getVmContext() ?? {};
+	extendedEnvironment["computeBasicPrototypeSnapshots"] =
+		computeBasicPrototypeSnapshots;
+	extendedEnvironment["detectPrototypePollutionOfBasicObjects"] =
+		detectPrototypePollutionOfBasicObjects;
+	extendedEnvironment["BASIC_PROTO_SNAPSHOTS"] = vm.runInContext(
+		'computeBasicPrototypeSnapshots([{},[],"",42,true,()=>{}]);',
+		extendedEnvironment,
+	);
+	console.log("-------------------------------------------------------------");
+
 	const originalSetGlobalsForRuntime =
 		runtime.setGlobalsForRuntime.bind(runtime);
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	runtime.setGlobalsForRuntime = (globals: any) => {
 		globals.it.fuzz = fuzz(
+			extendedEnvironment,
 			globals,
 			testPath,
 			jazzerConfig,
@@ -174,6 +205,7 @@ function interceptGlobals(
 		);
 		globals.it.skip.fuzz = skip(globals);
 		globals.test.fuzz = fuzz(
+			extendedEnvironment,
 			globals,
 			testPath,
 			jazzerConfig,
@@ -228,6 +260,7 @@ function interceptScriptTransformerCalls(
 		processed: TransformedSource | null,
 		sourceMapPath: string | null,
 	): TransformResult => {
+		console.log("1 " + filename);
 		const result = originalBuildTransformResult(
 			filename,
 			cacheFilePath,
@@ -253,6 +286,7 @@ function interceptScriptTransformerCalls(
 		transformOptions: unknown,
 		fileSource?: string,
 	): TransformResult => {
+		console.log("2 " + filename);
 		const result: TransformResult = originalTransformAndBuildScript(
 			filename,
 			options,
@@ -270,6 +304,7 @@ function interceptScriptTransformerCalls(
 		transformOptions: unknown,
 		fileSource?: string,
 	): Promise<TransformResult> => {
+		console.log("3 " + filename);
 		const result: TransformResult = await originalTransformAndBuildScriptAsync(
 			filename,
 			options,

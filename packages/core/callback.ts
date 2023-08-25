@@ -33,6 +33,8 @@ export class Callbacks {
 	}
 
 	runAfterEachCallbacks() {
+		console.log("Running afterEach callbacks");
+		console.log(this._afterEachCallbacks);
 		for (const c of this._afterEachCallbacks) {
 			c();
 		}

@@ -26,6 +26,7 @@ describe("My describe", () => {
 			// 		.join(" "),
 			// );
 			target.fuzzMe(data);
+			({}).__proto__.polluted = 10;
 		});
 		it.fuzz("Should be skipped", (data) => {
 			// console.log(

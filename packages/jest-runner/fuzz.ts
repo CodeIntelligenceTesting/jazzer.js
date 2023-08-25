@@ -30,6 +30,7 @@ import {
 	startFuzzingNoInit,
 	wrapFuzzFunctionForBugDetection,
 } from "@jazzer.js/core";
+import * as vm from "vm";
 
 // Indicate that something went wrong executing the fuzzer.
 export class FuzzerError extends Error {}
@@ -48,6 +49,7 @@ export const skip: (globals: Global.Global) => FuzzTest =
 	};
 
 type fuzz = (
+	extendedEnvironment: vm.Context,
 	globals: Global.Global,
 	testFile: string,
 	fuzzingConfig: Options,
@@ -57,6 +59,7 @@ type fuzz = (
 ) => FuzzTest;
 
 export const fuzz: fuzz = (
+	extendedEnvironment,
 	globals,
 	testFile,
 	fuzzingConfig,
@@ -109,7 +112,14 @@ export const fuzz: fuzz = (
 		const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
 
 		if (localConfig.mode === "regression") {
-			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals);
+			runInRegressionMode(
+				extendedEnvironment,
+				name,
+				wrappedFn,
+				corpus,
+				localConfig,
+				globals,
+			);
 		} else if (localConfig.mode === "fuzzing") {
 			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals);
 		} else {
@@ -136,6 +146,7 @@ export const runInFuzzingMode = (
 };
 
 export const runInRegressionMode = (
+	extendedEnvironment: vm.Context,
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
 	corpus: Corpus,
@@ -151,7 +162,19 @@ export const runInRegressionMode = (
 				} else {
 					// Support sync and async fuzz tests.
 					Promise.resolve()
-						.then(() => (fn as FuzzTargetAsyncOrValue)(content))
+						.then(() => {
+							const result = (fn as FuzzTargetAsyncOrValue)(content);
+							vm.runInContext(
+								'console.log(detectPrototypePollutionOfBasicObjects(BASIC_PROTO_SNAPSHOTS, [{},[],"",42,true,()=>{}]));',
+								extendedEnvironment,
+							);
+							vm.runInContext(
+								"console.log(({}).polluted);",
+								extendedEnvironment,
+							);
+
+							return result;
+						})
 						.then(resolve, reject);
 				}
 			});

@@ -17,7 +17,7 @@
 describe("Prototype Pollution Jest tests", () => {
 	it.fuzz("Pollution of Object", (data) => {
 		const a = {};
-		a.__proto__.a = 10;
+		a.__proto__.polluted = 10;
 	});
 
 	it.fuzz("Assignments", (data) => {

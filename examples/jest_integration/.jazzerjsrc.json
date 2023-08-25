@@ -3,5 +3,5 @@
 	"excludes": ["@babel"],
 	"timeout": 600000000,
 	"fuzzerOptions": ["-rss_limit_mb=16000"],
-	"customHooks": ["test.js"]
+	"customHooks": ["custom.js"]
 }

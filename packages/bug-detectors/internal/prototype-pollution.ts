@@ -231,18 +231,6 @@ registerInstrumentationPlugin((): PluginTarget => {
 	};
 });
 
-// These objects will be used to detect prototype pollution.
-// Using global arrays for performance reasons.
-const BASIC_OBJECTS = [
-	{},
-	[],
-	"",
-	42,
-	true,
-	() => {
-		/**/
-	},
-];
 // The names are used in the Findings to print nicer messages.
 const BASIC_OBJECT_NAMES = [
 	"Object",
@@ -268,6 +256,18 @@ type ProtoSnapshot = {
 const BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots();
 
 function computeBasicPrototypeSnapshots(): BasicProtoSnapshots {
+	// These objects will be used to detect prototype pollution.
+	// Using global arrays for performance reasons.
+	const BASIC_OBJECTS = [
+		{},
+		[],
+		"",
+		42,
+		true,
+		() => {
+			/**/
+		},
+	];
 	return BASIC_OBJECTS.map(getProtoSnapshot);
 }
 
