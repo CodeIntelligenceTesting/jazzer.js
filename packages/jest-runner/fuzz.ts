@@ -41,14 +41,9 @@ export type FuzzTest = (
 	timeout?: number,
 ) => void;
 
-export const skip: (globals: Global.Global) => FuzzTest =
-	(globals: Global.Global) => (name) => {
-		globals.test.skip(toTestName(name), () => {
-			return;
-		});
-	};
+type JestTestMode = "skip" | "only" | "standard";
 
-type fuzz = (
+export function fuzz(
 	extendedEnvironment: vm.Context,
 	globals: Global.Global,
 	testFile: string,
@@ -56,17 +51,8 @@ type fuzz = (
 	currentTestState: () => Circus.DescribeBlock | undefined,
 	currentTestTimeout: () => number | undefined,
 	originalTestNamePattern: () => RegExp | undefined,
-) => FuzzTest;
-
-export const fuzz: fuzz = (
-	extendedEnvironment,
-	globals,
-	testFile,
-	fuzzingConfig,
-	currentTestState,
-	currentTestTimeout,
-	originalTestNamePattern,
-) => {
+	mode: JestTestMode,
+): FuzzTest {
 	return (name, fn, timeout) => {
 		// Deep clone the fuzzing config, so that each test can modify it without
 		// affecting other tests, e.g. set a test specific timeout.
@@ -119,14 +105,25 @@ export const fuzz: fuzz = (
 				corpus,
 				localConfig,
 				globals,
+				mode,
 			);
 		} else if (localConfig.mode === "fuzzing") {
-			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals);
+			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals, mode);
 		} else {
 			throw new Error(`Unknown mode ${localConfig.mode}`);
 		}
 	};
-};
+}
+
+function handleTestMode(mode: JestTestMode, test: Global.It | Global.Describe) {
+	switch (mode) {
+		case "skip":
+			return test.skip;
+		case "only":
+			return test.only;
+	}
+	return test;
+}
 
 export const runInFuzzingMode = (
 	name: Global.TestNameLike,
@@ -134,8 +131,9 @@ export const runInFuzzingMode = (
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,
+	mode: JestTestMode,
 ) => {
-	globals.test(name, () => {
+	handleTestMode(mode, globals.test)(name, () => {
 		options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
 		options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
 		options.fuzzerOptions.push(
@@ -152,8 +150,9 @@ export const runInRegressionMode = (
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,
+	mode: JestTestMode,
 ) => {
-	globals.describe(name, () => {
+	handleTestMode(mode, globals.describe)(name, () => {
 		function executeTarget(content: Buffer) {
 			return new Promise((resolve, reject) => {
 				// Fuzz test expects a done callback, if more than one parameter is specified.

@@ -151,9 +151,12 @@ describe("Jest integration", () => {
 	});
 
 	describe("Regression mode", () => {
-		const regressionTestBuilder = new FuzzTestBuilder()
-			.dir(projectDir)
-			.jestTestFile(jestTestFile + ".js");
+		let regressionTestBuilder;
+		beforeEach(() => {
+			regressionTestBuilder = new FuzzTestBuilder()
+				.dir(projectDir)
+				.jestTestFile(jestTestFile + ".js");
+		});
 
 		describe("execute", () => {
 			it("execute sync test", () => {
@@ -239,6 +242,30 @@ describe("Jest integration", () => {
 					fuzzTest.execute();
 				}).toThrow(JestRegressionExitCode);
 				expect(fuzzTest.stderr).toContain("the function was mocked");
+			});
+		});
+
+		describe("Run modes", () => {
+			it.concurrent("only", () => {
+				const fuzzTest = new FuzzTestBuilder()
+					.dir(projectDir)
+					.verbose()
+					.jestTestName("Run mode only and standard")
+					.jestTestFile("run-mode-only.fuzz.js")
+					.build()
+					.execute();
+				expect(fuzzTest.stdout).toContain("only test called");
+			});
+
+			it.concurrent("skipped", () => {
+				const fuzzTest = new FuzzTestBuilder()
+					.dir(projectDir)
+					.jestTestFile(jestTestFile + ".js")
+					.jestTestName("Run mode skip and standard")
+					.verbose()
+					.build()
+					.execute();
+				expect(fuzzTest.stdout).toContain("standard test called");
 			});
 		});
 	});

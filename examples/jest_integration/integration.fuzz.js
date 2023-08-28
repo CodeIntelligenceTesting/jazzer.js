@@ -19,7 +19,7 @@ const jpeg = require("jpeg-js");
 
 describe("My describe", () => {
 	describe("first inner describe", () => {
-		it.fuzz("My fuzz test", (data) => {
+		it.skip.fuzz("My fuzz test", (data) => {
 			// console.log(
 			// 	[...new Uint8Array(data)]
 			// 		.map((x) => x.toString(16).padStart(2, "0"))
@@ -28,7 +28,7 @@ describe("My describe", () => {
 			target.fuzzMe(data);
 			({}).__proto__.polluted = 10;
 		});
-		it.fuzz("Should be skipped", (data) => {
+		it.only.fuzz("Should be skipped", (data) => {
 			// console.log(
 			// 	[...new Uint8Array(data)]
 			// 		.map((x) => x.toString(16).padStart(2, "0"))

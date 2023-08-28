@@ -25,12 +25,12 @@ import { TestResult } from "@jest/test-result";
 import { Circus, Config } from "@jest/types";
 import type { JestEnvironment } from "@jest/environment";
 
-import { initFuzzing, Options, reportFinding } from "@jazzer.js/core";
+import { initFuzzing, Options } from "@jazzer.js/core";
 import { Instrumentor } from "@jazzer.js/instrumentor";
 
 import { loadConfig } from "./config";
 import { cleanupJestError } from "./errorUtils";
-import { fuzz, FuzzTest, skip } from "./fuzz";
+import { fuzz, FuzzTest } from "./fuzz";
 import * as vm from "vm";
 import {
 	computeBasicPrototypeSnapshots,
@@ -202,9 +202,9 @@ function interceptGlobals(
 			currentTestState,
 			currentTestTimeout,
 			originalTestNamePattern,
+			"standard",
 		);
-		globals.it.skip.fuzz = skip(globals);
-		globals.test.fuzz = fuzz(
+		globals.it.skip.fuzz = fuzz(
 			extendedEnvironment,
 			globals,
 			testPath,
@@ -212,8 +212,18 @@ function interceptGlobals(
 			currentTestState,
 			currentTestTimeout,
 			originalTestNamePattern,
+			"skip",
 		);
-		globals.test.skip.fuzz = skip(globals);
+		globals.it.only.fuzz = fuzz(
+			extendedEnvironment,
+			globals,
+			testPath,
+			jazzerConfig,
+			currentTestState,
+			currentTestTimeout,
+			originalTestNamePattern,
+			"only",
+		);
 		originalSetGlobalsForRuntime(globals);
 	};
 }

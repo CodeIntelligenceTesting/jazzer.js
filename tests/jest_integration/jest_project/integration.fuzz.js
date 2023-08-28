@@ -72,3 +72,15 @@ describe("Jest Integration", () => {
 		target.originalFunction(data);
 	});
 });
+
+describe("Run mode", () => {
+	describe("skip and standard", () => {
+		it.fuzz("standard test", (data) => {
+			console.log("standard test called");
+		});
+
+		it.skip.fuzz("skipped test", (data) => {
+			throw new Error("Skipped test not skipped!");
+		});
+	});
+});
