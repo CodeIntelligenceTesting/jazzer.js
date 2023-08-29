@@ -270,7 +270,7 @@ function interceptScriptTransformerCalls(
 		processed: TransformedSource | null,
 		sourceMapPath: string | null,
 	): TransformResult => {
-		console.log("1 " + filename);
+		console.log("************************************* 1 " + filename);
 		const result = originalBuildTransformResult(
 			filename,
 			cacheFilePath,
@@ -296,7 +296,7 @@ function interceptScriptTransformerCalls(
 		transformOptions: unknown,
 		fileSource?: string,
 	): TransformResult => {
-		console.log("2 " + filename);
+		console.log("************************************* 2 " + filename);
 		const result: TransformResult = originalTransformAndBuildScript(
 			filename,
 			options,
@@ -314,7 +314,7 @@ function interceptScriptTransformerCalls(
 		transformOptions: unknown,
 		fileSource?: string,
 	): Promise<TransformResult> => {
-		console.log("3 " + filename);
+		console.log("************************************* 3 " + filename);
 		const result: TransformResult = await originalTransformAndBuildScriptAsync(
 			filename,
 			options,

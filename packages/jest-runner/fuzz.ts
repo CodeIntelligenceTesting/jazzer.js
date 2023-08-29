@@ -163,12 +163,13 @@ export const runInRegressionMode = (
 					Promise.resolve()
 						.then(() => {
 							const result = (fn as FuzzTargetAsyncOrValue)(content);
+							console.log("?????????????????????????????????????????????");
 							vm.runInContext(
 								'console.log(detectPrototypePollutionOfBasicObjects(BASIC_PROTO_SNAPSHOTS, [{},[],"",42,true,()=>{}]));',
 								extendedEnvironment,
 							);
 							vm.runInContext(
-								"console.log(({}).polluted);",
+								"console.log(({}).polluted); console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++');",
 								extendedEnvironment,
 							);
 

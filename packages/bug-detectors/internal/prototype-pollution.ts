@@ -26,6 +26,9 @@ import {
 
 import { bugDetectorConfigurations } from "../configuration";
 
+// print out globals to figure out if this is loaded in the vm or in the node context
+//console.log("-------------------------- prototype-pollution.ts: globalThis", globalThis);
+
 // Allow the user to configure this bug detector in the custom-hooks file (if any).
 class PrototypePollutionConfig {
 	private _excludedExactMatches: string[] = [];
