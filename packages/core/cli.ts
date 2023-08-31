@@ -18,7 +18,12 @@
 import yargs, { Argv } from "yargs";
 import { startFuzzing } from "./core";
 import { prepareArgs } from "./utils";
-import { defaultOptions, processOptions, fromSnakeCase } from "./options";
+import {
+	buildOptions,
+	defaultOptions,
+	ParameterResolverIndex,
+	setParameterResolverValue,
+} from "./options";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.
 // Default values are provided by the options module and must not be set by yargs.
@@ -228,9 +233,12 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(args: any) => {
-			const options = prepareArgs(args);
+			setParameterResolverValue(
+				ParameterResolverIndex.CommandLineArguments,
+				prepareArgs(args),
+			);
 			// noinspection JSIgnoredPromiseFromCall
-			startFuzzing(processOptions(options, fromSnakeCase));
+			startFuzzing(buildOptions());
 		},
 	)
 	.help().argv;

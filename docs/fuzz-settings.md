@@ -14,11 +14,10 @@ In general the following preference applies with increasing priority:
 
 - Default values from the [`defaultOptions`](../packages/core/options.ts) object
   (names in camel case format, e.g. `fuzzTarget`)
+- Configuration file values (e.g. `jazzerjsrc` or Jest configuration files)
 - Environment variables (names in upper snake case format with `JAZZER_` prefix,
   e.g. `JAZZER_FUZZ_TARGET=Foo`)
 - CLI arguments (names in lower snake case format, e.g. `--fuzz_target=Foo`)
-- Integration specific configuration (e.g. `jazzerjsrc` or Jest configuration
-  files)
 
 **Note**: The CLI provides abbreviations for common arguments, e.g. `--includes`
 can be abbreviated to `-i`. Only the main argument name is supported in other

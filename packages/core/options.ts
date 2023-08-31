@@ -62,7 +62,7 @@ export interface Options {
 	verbose?: boolean;
 }
 
-export const defaultOptions: Options = {
+export const defaultOptions: Options = Object.freeze({
 	fuzzTarget: "",
 	fuzzEntryPoint: "fuzz",
 	includes: ["*"],
@@ -80,7 +80,7 @@ export const defaultOptions: Options = {
 	disableBugDetectors: [],
 	mode: "fuzzing",
 	verbose: false,
-};
+});
 
 export type KeyFormatSource = (key: string) => string;
 export const fromCamelCase: KeyFormatSource = (key: string): string => key;
@@ -102,31 +102,88 @@ export const fromSnakeCaseWithPrefix: (prefix: string) => KeyFormatSource = (
 	};
 };
 
+// Parameters can be passed in via environment variables, command line or
+// configuration file, and subsequently overwrite the default ones and each other.
+// The passed in values have to be set for externally provided parameters, e.g.
+// CLI parameters, before resolving the final options object.
+// Higher index means higher priority.
+export enum ParameterResolverIndex {
+	DefaultOptions = 1,
+	ConfigurationFile,
+	EnvironmentVariables,
+	CommandLineArguments,
+}
+type ParameterResolver = {
+	name: string;
+	transformKey: KeyFormatSource;
+	failOnUnknown: boolean;
+	parameters: object;
+};
+type ParameterResolvers = Record<ParameterResolverIndex, ParameterResolver>;
+const defaultResolvers: ParameterResolvers = {
+	[ParameterResolverIndex.DefaultOptions]: {
+		name: "Default options",
+		transformKey: fromCamelCase,
+		failOnUnknown: true,
+		parameters: defaultOptions,
+	},
+	[ParameterResolverIndex.ConfigurationFile]: {
+		name: "Configuration file",
+		transformKey: fromCamelCase,
+		failOnUnknown: true,
+		parameters: {},
+	},
+	[ParameterResolverIndex.EnvironmentVariables]: {
+		name: "Environment variables",
+		transformKey: fromSnakeCaseWithPrefix("JAZZER"),
+		failOnUnknown: false,
+		parameters: process.env as object,
+	},
+	[ParameterResolverIndex.CommandLineArguments]: {
+		name: "Command line arguments",
+		transformKey: fromSnakeCase,
+		failOnUnknown: true,
+		parameters: {},
+	},
+};
+
 /**
- * Builds a complete `Option` object based on default options, environment variables and
- * the partially given input options.
- * Keys in the given option object can be transformed by the `transformKey` function.
- * Environment variables need to be set in snake case with the prefix`JAZZER_`.
+ * Set the value object of a parameter resolver. Every resolver expects value
+ * object parameter names in a specific format, e.g. camel case or snake case,
+ * see the resolver definitions for details.
  */
-export function processOptions(
-	inputs: Partial<Options> = {},
-	transformKey: KeyFormatSource = fromCamelCase,
-	defaults: Options = defaultOptions,
-): Options {
+export function setParameterResolverValue(
+	index: ParameterResolverIndex,
+	inputs: Partial<Options>,
+) {
 	// Includes and excludes must be set together.
 	if (inputs && inputs.includes && !inputs.excludes) {
 		inputs.excludes = [];
 	} else if (inputs && inputs.excludes && !inputs.includes) {
 		inputs.includes = [];
 	}
+	defaultResolvers[index].parameters = inputs;
+}
 
-	const defaultsWithEnv = mergeOptions(
-		process.env,
-		defaults,
-		fromSnakeCaseWithPrefix("JAZZER"),
-		false,
-	);
-	const options = mergeOptions(inputs, defaultsWithEnv, transformKey);
+/**
+ * Build a complete `Option` object based on the parameter resolver chain.
+ * Add externally passed in values via the `setParameterResolverValue` function,
+ * before calling `buildOptions`.
+ */
+export function buildOptions(): Options {
+	const options = Object.keys(defaultResolvers)
+		.sort() // Don't presume an ordered object, this could be implementation specific.
+		.reduce<Options>((accumulator, currentValue) => {
+			const resolver =
+				defaultResolvers[parseInt(currentValue) as ParameterResolverIndex];
+			return mergeOptions(
+				resolver.parameters,
+				accumulator,
+				resolver.transformKey,
+				resolver.failOnUnknown,
+			);
+		}, defaultResolvers[ParameterResolverIndex.DefaultOptions].parameters as Options);
+
 	// Set verbose mode environment variable via option or node DEBUG environment variable.
 	if (options.verbose || process.env.DEBUG) {
 		process.env.JAZZER_DEBUG = "1";
