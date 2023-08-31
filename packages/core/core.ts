@@ -385,4 +385,10 @@ export function wrapFuzzFunctionForBugDetection(
 // Export public API from within core module for easy access.
 export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";
-export { Options, processOptions, defaultOptions } from "./options";
+export {
+	buildOptions,
+	defaultOptions,
+	Options,
+	ParameterResolverIndex,
+	setParameterResolverValue,
+} from "./options";

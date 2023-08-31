@@ -14,89 +14,101 @@
  * limitations under the License.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import {
+	buildOptions,
 	defaultOptions,
 	fromSnakeCase,
 	fromSnakeCaseWithPrefix,
 	Options,
-	processOptions,
+	ParameterResolverIndex,
+	setParameterResolverValue,
 } from "./options";
+
+const commandLineArguments = ParameterResolverIndex.CommandLineArguments;
+const configurationFile = ParameterResolverIndex.ConfigurationFile;
 
 describe("options", () => {
 	describe("processOptions", () => {
 		it("use default options if none given", () => {
-			expect(processOptions({})).toEqual(defaultOptions);
-			expect(processOptions(undefined as any)).toEqual(defaultOptions);
-			expect(processOptions(null as any)).toEqual(defaultOptions);
-			expect(processOptions("" as any)).toEqual(defaultOptions);
-			expect(processOptions(false as any)).toEqual(defaultOptions);
+			expect(buildOptions()).toEqual(defaultOptions);
 		});
-		it("prefer environment variables to defaults", () => {
-			withEnv("JAZZER_FUZZ_TARGET", "FOO", () => {
-				withEnv("JAZZER_INCLUDES", '["BAR", "BAZ"]', () => {
-					const options = processOptions({});
-					expect(options).toHaveProperty("fuzzTarget", "FOO");
-					expect(options).toHaveProperty("includes", ["BAR", "BAZ"]);
-					expectDefaultsExceptKeys(options, "fuzzTarget", "includes");
-				});
-			});
-		});
-		it("prefer given values to defaults and environment variables", () => {
-			withEnv("JAZZER_FUZZ_TARGET", "bar", () => {
-				const options = processOptions({ fuzzTarget: "foo" });
-				expect(options).toHaveProperty("fuzzTarget", "foo");
+		it("prefer configuration file values to defaults", () => {
+			withResolverValue(configurationFile, { fuzzTarget: "FOO" }, () => {
+				const options = buildOptions();
+				expect(options).toHaveProperty("fuzzTarget", "FOO");
 				expectDefaultsExceptKeys(options, "fuzzTarget");
 			});
 		});
+		it("prefer environment variables to configuration file values", () => {
+			withResolverValue(configurationFile, { fuzzTarget: "QUX" }, () => {
+				withEnv("JAZZER_FUZZ_TARGET", "FOO", () => {
+					withEnv("JAZZER_INCLUDES", '["BAR", "BAZ"]', () => {
+						const options = buildOptions();
+						expect(options).toHaveProperty("fuzzTarget", "FOO");
+						expect(options).toHaveProperty("includes", ["BAR", "BAZ"]);
+						expectDefaultsExceptKeys(options, "fuzzTarget", "includes");
+					});
+				});
+			});
+		});
+		it("prefer CLI parameters to environment variables", () => {
+			withEnv("JAZZER_FUZZ_TARGET", "bar", () => {
+				withResolverValue(commandLineArguments, { fuzz_target: "foo" }, () => {
+					const options = buildOptions();
+					expect(options).toHaveProperty("fuzzTarget", "foo");
+					expectDefaultsExceptKeys(options, "fuzzTarget");
+				});
+			});
+		});
 		it("includes and excludes are set together", () => {
-			expect(processOptions({ includes: ["foo"] })).toHaveProperty(
-				"excludes",
-				[],
-			);
-			expect(processOptions({ excludes: ["foo"] })).toHaveProperty(
-				"includes",
-				[],
-			);
+			withResolverValue(commandLineArguments, { includes: ["foo"] }, () => {
+				expect(buildOptions()).toHaveProperty("excludes", []);
+			});
+			withResolverValue(commandLineArguments, { excludes: ["foo"] }, () => {
+				expect(buildOptions()).toHaveProperty("includes", []);
+			});
 		});
 		it("error on unknown option", () => {
-			const inputs = { unknownOption: "foo" };
-			expect(() => processOptions(inputs as any)).toThrow("'unknownOption'");
+			withResolverValue(commandLineArguments, { unknown_option: "foo" }, () => {
+				expect(() => buildOptions()).toThrow("'unknown_option'");
+			});
 		});
 		it("error on mismatching type", () => {
-			expect(() => processOptions({ fuzzTarget: false } as any)).toThrow(
-				"expected type 'string'",
-			);
+			withResolverValue(commandLineArguments, { fuzz_target: false }, () => {
+				expect(() => buildOptions()).toThrow("expected type 'string'");
+			});
 		});
 		it("does not use parts of input", () => {
 			const input = { includes: ["foo"] };
-			const options = processOptions(input);
-			input.includes.push("bar");
-			expect(options.includes).not.toContain("bar");
-		});
-		it("lookup keys with transformer function", () => {
-			const options = processOptions(
-				{ fuzz_target: "foo" } as any,
-				fromSnakeCase,
-			);
-			expect(options).toHaveProperty("fuzzTarget", "foo");
+			withResolverValue(commandLineArguments, input, () => {
+				const options = buildOptions();
+				input.includes.push("bar");
+				expect(options.includes).not.toContain("bar");
+			});
 		});
 		it("set debug env variable", () => {
 			withEnv("JAZZER_DEBUG", "", () => {
-				processOptions({ verbose: true });
-				expect(process.env.JAZZER_DEBUG).toEqual("1");
+				withResolverValue(commandLineArguments, { verbose: true }, () => {
+					buildOptions();
+					expect(process.env.JAZZER_DEBUG).toEqual("1");
+				});
 			});
 			withEnv("JAZZER_DEBUG", "", () => {
 				withEnv("DEBUG", "1", () => {
-					processOptions({ verbose: true });
+					buildOptions();
 					expect(process.env.JAZZER_DEBUG).toEqual("1");
 				});
 			});
 		});
 		it("does not merge __proto__", () => {
 			expect(() => {
-				processOptions(JSON.parse('{"__proto__": {"polluted": 42}}') as any);
+				withResolverValue(
+					commandLineArguments,
+					JSON.parse('{"__proto__": {"polluted": 42}}'),
+					() => {
+						buildOptions();
+					},
+				);
 			}).toThrow();
 		});
 	});
@@ -157,5 +169,18 @@ function withEnv(property: string, value: string, fn: () => void) {
 		} else {
 			delete process.env[property];
 		}
+	}
+}
+
+function withResolverValue(
+	index: ParameterResolverIndex,
+	args: object,
+	fn: () => void,
+) {
+	try {
+		setParameterResolverValue(index, args);
+		fn();
+	} finally {
+		setParameterResolverValue(index, {});
 	}
 }

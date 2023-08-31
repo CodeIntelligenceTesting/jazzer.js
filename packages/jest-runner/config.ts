@@ -15,7 +15,12 @@
  */
 
 import { cosmiconfigSync } from "cosmiconfig";
-import { processOptions, Options } from "@jazzer.js/core";
+import {
+	buildOptions,
+	Options,
+	setParameterResolverValue,
+	ParameterResolverIndex,
+} from "@jazzer.js/core";
 
 // Lookup `Options` via the `.jazzerjsrc` configuration files.
 export function loadConfig(
@@ -33,7 +38,8 @@ export function loadConfig(
 	if (process.env.JAZZER_FUZZ) {
 		config.mode = "fuzzing";
 	}
-	// Merge explicitly passed in options.
+	// Merge explicitly passed in options, e.g. coverage settings from Jest.
 	Object.assign(config, options);
-	return processOptions(config);
+	setParameterResolverValue(ParameterResolverIndex.ConfigurationFile, config);
+	return buildOptions();
 }
