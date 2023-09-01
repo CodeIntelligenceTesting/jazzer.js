@@ -81,7 +81,7 @@ export async function initFuzzing(options: Options): Promise<void> {
 	);
 
 	if (process.env.JAZZER_DEBUG) {
-		console.log(
+		console.error(
 			"INFO: [BugDetector] Loading bug detectors: \n   " +
 				possibleBugDetectorFiles.join("\n   "),
 		);
@@ -134,7 +134,7 @@ function getFilteredBugDetectorPaths(
 				);
 
 				if (shouldDisable) {
-					console.log(
+					console.error(
 						`Skip loading bug detector "${bugDetectorName}" because of user-provided pattern.`,
 					);
 				}
@@ -259,7 +259,7 @@ function stopFuzzing(
 	if (expectedErrors.length) {
 		const name = errorName(err);
 		if (expectedErrors.includes(name)) {
-			console.log(`INFO: Received expected error "${name}".`);
+			console.error(`INFO: Received expected error "${name}".`);
 			stopFuzzing(ERROR_EXPECTED_CODE);
 		} else {
 			printFinding(err);

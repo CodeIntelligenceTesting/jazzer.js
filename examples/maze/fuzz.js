@@ -123,5 +123,5 @@ function hash(x, y) {
 }
 
 function printMaze() {
-	maze.forEach((line) => console.log(line.join("")));
+	maze.forEach((line) => console.error(line.join("")));
 }

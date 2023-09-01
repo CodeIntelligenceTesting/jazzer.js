@@ -62,7 +62,7 @@ registerReplaceHook(
 	"jpeg-js",
 	false,
 	() => {
-		console.log(
+		console.error(
 			`[jpeg-js] Called custom hook instead of the original function buildHuffmanTable()`,
 		);
 	},
@@ -78,7 +78,7 @@ registerReplaceHook(
 	"jpeg-js",
 	false,
 	(thisPtr, params, hookId, origFn) => {
-		console.log(
+		console.error(
 			`[jpeg-js] Called custom hook instead of the original function prepareComponents()`,
 		);
 		const frame = params[0]; // our hooked function only has one argument: frame
@@ -97,7 +97,7 @@ registerBeforeHook(
 	"jpeg-js",
 	false,
 	() => {
-		console.log(
+		console.error(
 			`[jpeg-js] [before] Called hooked function before calling resetMaxMemoryUsage()`,
 		);
 	},
@@ -113,7 +113,7 @@ registerAfterHook(
 	"jpeg-js",
 	false,
 	(thisPtr, params, hookId, origFnResult) => {
-		console.log(
+		console.error(
 			`[jpeg-js] [after] Called hooked function after calling resetMaxMemoryUsage() with original result ${origFnResult}`,
 		);
 	},

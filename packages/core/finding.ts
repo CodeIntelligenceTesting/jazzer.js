@@ -59,16 +59,16 @@ export function printFinding(error: unknown) {
 
 	if (error instanceof Error) {
 		errorMessage += error.message;
-		console.log(errorMessage);
+		console.error(errorMessage);
 		if (error.stack) {
-			console.log(cleanErrorStack(error));
+			console.error(cleanErrorStack(error));
 		}
 	} else if (typeof error === "string" || error instanceof String) {
 		errorMessage += error;
-		console.log(errorMessage);
+		console.error(errorMessage);
 	} else {
 		errorMessage += "unknown";
-		console.log(errorMessage);
+		console.error(errorMessage);
 	}
 }
 

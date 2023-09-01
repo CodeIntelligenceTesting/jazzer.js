@@ -149,7 +149,7 @@ export class Instrumentor {
 	}
 
 	private unloadInternalModules() {
-		console.log(
+		console.error(
 			"DEBUG: Unloading internal Jazzer.js modules for instrumentation...",
 		);
 		[

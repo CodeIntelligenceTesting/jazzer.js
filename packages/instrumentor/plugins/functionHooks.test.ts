@@ -42,7 +42,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -53,7 +53,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -82,7 +82,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -92,7 +92,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -123,7 +123,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -135,7 +135,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -165,7 +165,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -176,7 +176,7 @@ describe("function hooks instrumentation", () => {
 			|};
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -438,7 +438,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -453,7 +453,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -484,7 +484,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2)`;
@@ -500,7 +500,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -529,7 +529,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2)`;
@@ -546,7 +546,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -579,7 +579,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -598,7 +598,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -635,7 +635,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2)`;
@@ -657,7 +657,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -694,7 +694,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -708,7 +708,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -740,7 +740,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|a(1, 2);`;
@@ -758,7 +758,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|a(1, 2);`;
@@ -795,7 +795,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2)`;
@@ -813,7 +813,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -853,7 +853,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -874,7 +874,7 @@ describe("function hooks instrumentation", () => {
 			|}
 			|
 			|function bar(arg1) {
-			|  console.log(arg1);
+			|  console.error(arg1);
 			|}
 			|
 			|foo(1, 2);`;
@@ -977,14 +977,14 @@ function registerHook(
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 function withDebug(fn: () => void): jest.Mock<any, any> {
-	const log = console.log;
+	const error = console.error;
 	const mock = jest.fn();
-	console.log = mock;
+	console.error = mock;
 	process.env["JAZZER_DEBUG"] = "1";
 	try {
 		fn();
 	} finally {
-		console.log = log;
+		console.error = error;
 		delete process.env["JAZZER_DEBUG"];
 	}
 	return mock;

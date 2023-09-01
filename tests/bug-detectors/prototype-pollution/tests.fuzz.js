@@ -23,7 +23,7 @@ describe("Prototype Pollution Jest tests", () => {
 	it.fuzz("Assignments", (data) => {
 		let a;
 		a = { __proto__: { a: 10 } };
-		console.log(a.__proto__);
+		console.error(a.__proto__);
 	});
 
 	it.fuzz("Variable declarations", (data) => {

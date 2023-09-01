@@ -68,7 +68,6 @@ function executeFuzzTest(sync, verbose, dir) {
 		.runs(5000)
 		.dir(dir)
 		.sync(sync)
-		.verbose(verbose)
 		.expectedErrors("Error")
 		.build();
 	fuzzTest.execute();

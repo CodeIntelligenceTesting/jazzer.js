@@ -29,8 +29,8 @@ describe("General tests", () => {
 	const errorPattern =
 		/Command Injection in execSync\(\): called with 'jaz_zer'/g;
 
-	function expectErrorToBePrintedOnce(output) {
-		const matches = output.match(errorPattern);
+	function expectErrorToBePrintedOnce(fuzzTest) {
+		const matches = fuzzTest.stderr.match(errorPattern);
 		expect(matches).toBeTruthy();
 		expect(matches.length).toBe(1);
 	}
@@ -65,7 +65,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stdout);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Call with FRIENDLY string; ASYNC", () => {
@@ -101,7 +101,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stdout);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Call with EVIL string; With done callback; With try/catch", () => {
@@ -115,7 +115,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(FuzzingExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stdout);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Call with EVIL string; With done callback; With timeout", () => {
@@ -160,7 +160,7 @@ describe("General tests", () => {
 	it("Fork mode: Call with EVIL string; SYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
-			console.log(
+			console.error(
 				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
@@ -179,7 +179,7 @@ describe("General tests", () => {
 	it("Fork mode: Call with FRIENDLY string; SYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
-			console.log(
+			console.error(
 				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
@@ -198,7 +198,7 @@ describe("General tests", () => {
 	it("Fork mode: Call with EVIL string; ASYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
-			console.log(
+			console.error(
 				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
@@ -217,7 +217,7 @@ describe("General tests", () => {
 	it("Fork mode: Call with FRIENDLY string; ASYNC", () => {
 		// TODO: Fork mode does not work in the Windows-Server image used by github actions
 		if (process.platform === "win32") {
-			console.log(
+			console.error(
 				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
 			);
 			return;
@@ -259,7 +259,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stderr);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Jest: Test with EVIL command; ASYNC", () => {
@@ -276,7 +276,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stderr);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Jest: Test with FRIENDLY command", () => {
@@ -322,7 +322,7 @@ describe("General tests", () => {
 			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
 		);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stderr);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Jest: Fuzzing mode; Test with FRIENDLY command", () => {
@@ -354,7 +354,7 @@ describe("General tests", () => {
 			fuzzTest.execute();
 		}).toThrow(JestRegressionExitCode);
 		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest.stderr);
+		expectErrorToBePrintedOnce(fuzzTest);
 	});
 
 	it("Jest: Test with FRIENDLY command; Done callback", () => {
