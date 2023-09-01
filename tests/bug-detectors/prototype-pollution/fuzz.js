@@ -34,7 +34,9 @@ module.exports.FunctionObjectPollution = function (data) {
 		/* empty */
 	};
 	Function.__proto__.polluted = () => {
-		console.log("This is printed when the prototype of Function is polluted.");
+		console.error(
+			"This is printed when the prototype of Function is polluted.",
+		);
 	};
 	const c = () => {
 		/* empty */
@@ -79,7 +81,7 @@ module.exports.ChangedToString = function (data) {
 	a.__proto__.toString = () => {
 		return "test";
 	};
-	console.log(Object.getPrototypeOf(a));
+	console.error(Object.getPrototypeOf(a));
 };
 
 module.exports.DeletedToString = function (data) {
@@ -97,7 +99,7 @@ module.exports.TwoStagePollutionWithObjectCreation = function (data) {
 	const b = a["__proto__"];
 	b.polluted = true;
 	const c = new A(); // If we make a new object, PP will be detected.
-	console.log(c.polluted);
+	console.error(c.polluted);
 };
 
 // Current instrumentation does not detect this. This test is currently unused.

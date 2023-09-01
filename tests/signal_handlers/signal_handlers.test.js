@@ -30,8 +30,7 @@ describe("SIGINT handlers", () => {
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
 			.dir(path.join(__dirname, "SIGINT"))
-			.coverage(true)
-			.verbose(true);
+			.coverage(true);
 	});
 
 	describe("in standalone fuzzing mode", () => {
@@ -83,8 +82,7 @@ describe("SIGSEGV handlers", () => {
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
 			.dir(path.join(__dirname, "SIGSEGV"))
-			.coverage(true)
-			.verbose(true);
+			.coverage(true);
 	});
 
 	describe("in standalone fuzzing mode", () => {
@@ -133,26 +131,27 @@ describe("SIGSEGV handlers", () => {
 });
 
 function assertSignalMessagesLogged(fuzzTest) {
-	expect(fuzzTest.stdout).toContain("kill with signal");
+	expect(fuzzTest.stderr).toContain("kill with signal");
 
 	// We asked for a coverage report. Here we only look for the universal part of its header.
+	// Jest prints to stdout.
 	expect(fuzzTest.stdout).toContain(
 		"| % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
 	);
 
 	// Count how many times "Signal has not stopped the fuzzing process" has been printed.
-	const matches = fuzzTest.stdout.match(
+	const matches = fuzzTest.stderr.match(
 		/Signal has not stopped the fuzzing process/g,
 	);
 	const signalNotStoppedMessageCount = matches ? matches.length : 0;
 
 	// In the GH pipeline the process does not immediately stop after receiving a signal.
-	// So we check that the messas has been printed not more than 1k times out of 19k (the signal
+	// So we check that the message has been printed not more than 1k times out of 19k (the signal
 	// is sent after 1k runs, with 20k runs in total).
 	expect(signalNotStoppedMessageCount).toBeLessThan(1000);
 }
 
 function assertErrorAndCrashFileLogged(fuzzTest, errorMessage) {
-	expect(fuzzTest.stdout).toContain(errorMessage);
+	expect(fuzzTest.stderr).toContain(errorMessage);
 	expect(fuzzTest.stderr).toContain("Test unit written to ");
 }

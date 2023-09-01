@@ -34,7 +34,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("{} Pollution using square braces", () => {
@@ -47,7 +47,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("[] Pollution", () => {
@@ -60,7 +60,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Function Pollution", () => {
@@ -73,7 +73,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain(
+		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: Prototype of Function changed",
 		);
 	});
@@ -88,7 +88,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain(
+		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: Prototype of String changed",
 		);
 	});
@@ -103,7 +103,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain(
+		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: Prototype of Number changed",
 		);
 	});
@@ -118,7 +118,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain(
+		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: Prototype of Boolean changed",
 		);
 	});
@@ -136,7 +136,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain(
+		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: a.__proto__ value is ",
 		);
 	});
@@ -154,7 +154,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution: a.__proto__");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution: a.__proto__");
 	});
 
 	it("Test no instrumentation and polluting __proto__ of a class", () => {
@@ -180,7 +180,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Instrumentation on with excluded exact match", () => {
@@ -206,7 +206,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Detect deleted toString() of {}", () => {
@@ -219,7 +219,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Two-stage prototype pollution with object creation", () => {
@@ -235,7 +235,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Async assignment instrumentation", () => {
@@ -250,7 +250,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Async variable declaration instrumentation", () => {
@@ -265,7 +265,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Equal assignments should be instrumented", () => {
@@ -281,7 +281,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	it("Equal variable declarations should be instrumented", () => {
@@ -297,7 +297,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stdout).toContain("Prototype Pollution");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
 	// Challenge to the future developer: make this test pass!
@@ -314,7 +314,7 @@ describe("Prototype Pollution", () => {
 	// 	expect(() => {
 	// 		fuzzTest.execute();
 	// 	}).toThrowError(FuzzingExitCode);
-	// 	expect(fuzzTest.stdout).toContain("Prototype Pollution");
+	// 	expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	// });
 });
 
@@ -466,7 +466,6 @@ describe("Prototype Pollution instrumentation correctness tests", () => {
 			.dryRun(false)
 			.fuzzEntryPoint("LambdaVariableDeclaration")
 			.fuzzFile(fuzzFile)
-			.verbose(true)
 			.build();
 		fuzzTest.execute();
 	});

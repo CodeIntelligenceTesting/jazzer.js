@@ -133,7 +133,7 @@ export class HookManager {
 					await hookBuiltInFunction(hook);
 				} catch (e) {
 					if (process.env.JAZZER_DEBUG) {
-						console.log(
+						console.error(
 							"DEBUG: [Hook] Error when trying to hook the built-in function: " +
 								e,
 						);

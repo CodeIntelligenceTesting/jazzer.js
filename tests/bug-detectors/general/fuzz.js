@@ -56,7 +56,7 @@ module.exports.CallOriginalEvilDoneCallbackWithTryCatch = function (
 	try {
 		child_process.execSync(evilCommand);
 	} catch (e) {
-		console.log("error caught");
+		console.error("error caught");
 	}
 	done();
 };
@@ -76,7 +76,7 @@ module.exports.CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch = function (
 		try {
 			child_process.execSync(evilCommand);
 		} catch (e) {
-			console.log("error caught");
+			console.error("error caught");
 		}
 		done();
 	}, 100);

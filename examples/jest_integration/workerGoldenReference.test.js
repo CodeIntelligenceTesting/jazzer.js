@@ -107,6 +107,5 @@ describe("My describe", () => {
 });
 
 afterAll((done) => {
-	//console.log("startupTeardownCalls: ", startupTeardownCalls);
 	done();
 }, 1000);

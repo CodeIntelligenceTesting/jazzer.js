@@ -25,7 +25,7 @@ export function fuzz(data) {
 		const file = temporaryWriteSync(data);
 		const root = proto.loadSync(file);
 		if (root.toString().length >= 30) {
-			console.log("== Input: " + data.toString() + "\n== " + root.toString());
+			console.error("== Input: " + data.toString() + "\n== " + root.toString());
 		}
 	} catch (e) {
 		if (

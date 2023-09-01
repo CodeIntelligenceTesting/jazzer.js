@@ -81,18 +81,18 @@ class HookTracker {
 	private _notApplied = new HookTable();
 
 	print() {
-		console.log("DEBUG: [Hook] Summary:");
-		console.log("DEBUG: [Hook]    Not applied: " + this._notApplied.length);
+		console.error("DEBUG: [Hook] Summary:");
+		console.error("DEBUG: [Hook]    Not applied: " + this._notApplied.length);
 		this._notApplied.serialize().forEach((hook) => {
-			console.log(`DEBUG: [Hook] not applied: ${hook.pkg} -> ${hook.target}`);
+			console.error(`DEBUG: [Hook] not applied: ${hook.pkg} -> ${hook.target}`);
 		});
-		console.log("DEBUG: [Hook]    Applied: " + this._applied.length);
+		console.error("DEBUG: [Hook]    Applied: " + this._applied.length);
 		this._applied.serialize().forEach((hook) => {
-			console.log(`DEBUG: [Hook] applied:     ${hook.pkg} -> ${hook.target}`);
+			console.error(`DEBUG: [Hook] applied:     ${hook.pkg} -> ${hook.target}`);
 		});
-		console.log("DEBUG: [Hook]    Available: " + this._available.length);
+		console.error("DEBUG: [Hook]    Available: " + this._available.length);
 		this._available.serialize().forEach((hook) => {
-			console.log(`DEBUG: [Hook] available:   ${hook.pkg} -> ${hook.target}`);
+			console.error(`DEBUG: [Hook] available:   ${hook.pkg} -> ${hook.target}`);
 		});
 	}
 
@@ -144,7 +144,7 @@ export const hookTracker = new HookTracker();
 export function logHooks(hooks: Hook[]) {
 	hooks.forEach((hook) => {
 		if (process.env.JAZZER_DEBUG) {
-			console.log(
+			console.error(
 				`DEBUG: Applied %s-hook in %s#%s`,
 				HookType[hook.type],
 				hook.pkg,
