@@ -163,15 +163,17 @@ export const runInRegressionMode = (
 					Promise.resolve()
 						.then(() => {
 							const result = (fn as FuzzTargetAsyncOrValue)(content);
+							console.log("HOST: " + Fuzzer.coverageTracker.readCounter(134));
 							console.log("?????????????????????????????????????????????");
-							vm.runInContext(
-								'console.log(detectPrototypePollutionOfBasicObjects(BASIC_PROTO_SNAPSHOTS, [{},[],"",42,true,()=>{}]));',
-								extendedEnvironment,
-							);
-							vm.runInContext(
-								"console.log(({}).polluted); console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++');",
-								extendedEnvironment,
-							);
+							console.log(extendedEnvironment.JAZZER_JS_RUNTIME);
+							// vm.runInContext(
+							// 	'console.log(detectPrototypePollutionOfBasicObjects(BASIC_PROTO_SNAPSHOTS, [{},[],"",42,true,()=>{}]));',
+							// 	extendedEnvironment,
+							// );
+							// vm.runInContext(
+							// 	"console.log(({}).polluted); console.log('++++++++++++++++++++++++++++++++++++++++++++++++++++');",
+							// 	extendedEnvironment,
+							// );
 
 							return result;
 						})
@@ -183,7 +185,7 @@ export const runInRegressionMode = (
 		// Always execute target function with an empty buffer.
 		globals.test(
 			"<empty>",
-			async () => executeTarget(Buffer.from("")),
+			() => executeTarget(Buffer.from("")),
 			options.timeout,
 		);
 
@@ -191,7 +193,7 @@ export const runInRegressionMode = (
 		corpus.inputsPaths().forEach(([seed, path]) => {
 			globals.test(
 				seed,
-				async () => executeTarget(await fs.promises.readFile(path)),
+				() => executeTarget(fs.readFileSync(path)),
 				options.timeout,
 			);
 		});

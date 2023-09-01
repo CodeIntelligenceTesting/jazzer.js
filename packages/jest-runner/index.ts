@@ -36,6 +36,13 @@ import {
 	computeBasicPrototypeSnapshots,
 	detectPrototypePollutionOfBasicObjects,
 } from "./prototype-pollution";
+import * as Module from "module";
+
+type InitialModule = Omit<Module, "require" | "parent" | "paths">;
+type ModuleRegistry = Map<string, InitialModule | Module>;
+interface InternalModuleOptions extends Required<CallerTransformOptions> {
+	isInternalModule: boolean;
+}
 
 export default async function jazzerTestRunner(
 	globalConfig: Config.GlobalConfig,
@@ -73,12 +80,29 @@ export default async function jazzerTestRunner(
 	//          - better ideas?
 	//     * Currently does not work in fuzzing mode, but the principle is clear.
 	// - Add (or convert to ticket): .only.fuzz, .failing.fuzz,  .todo.fuzz, .only.failing.fuzz
+	const originalExecModule = runtime["_execModule"].bind(runtime);
+	runtime["_execModule"] = (
+		localModule: InitialModule,
+		options: InternalModuleOptions | undefined,
+		moduleRegistry: ModuleRegistry,
+		from: string | undefined,
+		moduleName?: string,
+	): unknown => {
+		// console.log("[runtime.execModule] " + moduleName + "  ---   " + from);
+		// console.log(localModule);
+		return originalExecModule(localModule, options, moduleRegistry, from);
+	};
+
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
 	const globalEnvironments = [environment.getVmContext(), globalThis];
-	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
+	const instrumentor = await initFuzzing(
+		jazzerConfig,
+		globalEnvironments,
+		"jest",
+	);
 	const { currentTestState, currentTestTimeout, originalTestNamePattern } =
 		interceptCurrentStateAndTimeout(environment, jazzerConfig);
 	interceptScriptTransformerCalls(runtime, instrumentor);

@@ -60,8 +60,9 @@ declare global {
 export async function initFuzzing(
 	options: Options,
 	globals?: unknown[],
+	mode?: "jest" | "cli",
 ): Promise<Instrumentor> {
-	registerGlobals(options, globals);
+	registerGlobals(options, globals, mode);
 
 	const instrumentor = new Instrumentor(
 		options.includes,
@@ -103,11 +104,23 @@ export async function initFuzzing(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function registerGlobals(options: Options, globals: any[] = [globalThis]) {
+function registerGlobals(
+	options: Options,
+	globals: any[] = [globalThis],
+	mode?: "jest" | "cli",
+) {
 	globals.forEach((global) => {
 		global.Fuzzer = fuzzer.fuzzer;
 		global.HookManager = hooking.hookManager;
 		global.options = options;
+		if (mode === "jest") {
+			Object.defineProperty(global, "JAZZER_JS_RUNTIME", {
+				value: "jest",
+				enumerable: true,
+				configurable: false,
+				writable: false,
+			});
+		}
 	});
 }
 
