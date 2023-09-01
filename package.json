@@ -19,7 +19,7 @@
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc -b tsconfig.build.json",
-		"clean": "rimraf -g **/node_modules **/tests/**/package-lock.json **/examples/**/package-lock.json **/dist **/coverage packages/fuzzer/build packages/fuzzer/prebuilds",
+		"clean": "git clean -dfX",
 		"compile:watch": "tsc -b tsconfig.build.json --incremental --pretty --watch",
 		"test": "run-script-os",
 		"test:jest": "jest && npm run test --ws --if-present",
