@@ -32,10 +32,6 @@ import { loadConfig } from "./config";
 import { cleanupJestError } from "./errorUtils";
 import { fuzz, FuzzTest } from "./fuzz";
 import * as vm from "vm";
-import {
-	computeBasicPrototypeSnapshots,
-	detectPrototypePollutionOfBasicObjects,
-} from "./prototype-pollution";
 import * as Module from "module";
 
 type InitialModule = Omit<Module, "require" | "parent" | "paths">;
@@ -92,17 +88,38 @@ export default async function jazzerTestRunner(
 		// console.log(localModule);
 		return originalExecModule(localModule, options, moduleRegistry, from);
 	};
+	console.log(
+		"----------------------------------------------------------------------- HERE!!!!",
+	);
+	const vmContext = environment.getVmContext();
+	Object.defineProperty(globalThis, "JazzerJS", {
+		value: new Map<string, unknown>(),
+		enumerable: true,
+		configurable: false,
+		writable: false,
+	});
+
+	if (vmContext === null) throw new Error("vmContext is undefined");
+
+	Object.defineProperty(vmContext, "JazzerJS", {
+		value: new Map<string, unknown>(),
+		enumerable: true,
+		configurable: false,
+		writable: false,
+	});
+
+	// @ts-ignore
+	globalThis.JazzerJS.set("jest", true);
+	// @ts-ignore
+	globalThis.JazzerJS.set("vmContext", vmContext);
 
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
-	const globalEnvironments = [environment.getVmContext(), globalThis];
-	const instrumentor = await initFuzzing(
-		jazzerConfig,
-		globalEnvironments,
-		"jest",
-	);
+
+	const instrumentor = await initFuzzing(jazzerConfig, [vmContext, globalThis]);
+
 	const { currentTestState, currentTestTimeout, originalTestNamePattern } =
 		interceptCurrentStateAndTimeout(environment, jazzerConfig);
 	interceptScriptTransformerCalls(runtime, instrumentor);
@@ -202,24 +219,24 @@ function interceptGlobals(
 	currentTestTimeout: () => number | undefined,
 	originalTestNamePattern: () => RegExp | undefined,
 ) {
-	console.log("-------------------------------------------------------------");
-	const extendedEnvironment = environment.getVmContext() ?? {};
-	extendedEnvironment["computeBasicPrototypeSnapshots"] =
-		computeBasicPrototypeSnapshots;
-	extendedEnvironment["detectPrototypePollutionOfBasicObjects"] =
-		detectPrototypePollutionOfBasicObjects;
-	extendedEnvironment["BASIC_PROTO_SNAPSHOTS"] = vm.runInContext(
-		'computeBasicPrototypeSnapshots([{},[],"",42,true,()=>{}]);',
-		extendedEnvironment,
-	);
-	console.log("-------------------------------------------------------------");
+	//console.log("-------------------------------------------------------------");
+	//const extendedEnvironment = environment.getVmContext() ?? {};
+	// extendedEnvironment["computeBasicPrototypeSnapshots"] =
+	// 	computeBasicPrototypeSnapshots;
+	// extendedEnvironment["detectPrototypePollutionOfBasicObjects"] =
+	// 	detectPrototypePollutionOfBasicObjects;
+	// extendedEnvironment["BASIC_PROTO_SNAPSHOTS"] = vm.runInContext(
+	// 	'computeBasicPrototypeSnapshots([{},[],"",42,true,()=>{}]);',
+	// 	extendedEnvironment,
+	// );
+	//console.log("-------------------------------------------------------------");
 
 	const originalSetGlobalsForRuntime =
 		runtime.setGlobalsForRuntime.bind(runtime);
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	runtime.setGlobalsForRuntime = (globals: any) => {
 		globals.it.fuzz = fuzz(
-			extendedEnvironment,
+			environment,
 			globals,
 			testPath,
 			jazzerConfig,
@@ -229,7 +246,7 @@ function interceptGlobals(
 			"standard",
 		);
 		globals.it.skip.fuzz = fuzz(
-			extendedEnvironment,
+			environment,
 			globals,
 			testPath,
 			jazzerConfig,
@@ -239,7 +256,7 @@ function interceptGlobals(
 			"skip",
 		);
 		globals.it.only.fuzz = fuzz(
-			extendedEnvironment,
+			environment,
 			globals,
 			testPath,
 			jazzerConfig,

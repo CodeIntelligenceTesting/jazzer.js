@@ -386,6 +386,7 @@ describe("Prototype Pollution Jest tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.runs(0)
 			.dir(bugDetectorDirectory)
+			.verbose(true)
 			.dryRun(true)
 			.jestRunInFuzzingMode(true)
 			.jestTestFile("tests.fuzz.js")

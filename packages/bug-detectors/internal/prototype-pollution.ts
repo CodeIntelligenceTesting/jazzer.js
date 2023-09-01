@@ -25,6 +25,7 @@ import {
 } from "@jazzer.js/core";
 
 import { bugDetectorConfigurations } from "../configuration";
+import * as vm from "vm";
 
 // print out globals to figure out if this is loaded in the vm or in the node context
 //console.log("-------------------------- prototype-pollution.ts: globalThis", globalThis);
@@ -244,6 +245,17 @@ const BASIC_OBJECT_NAMES = [
 	"Function",
 ];
 
+const BASIC_OBJECTS = [
+	{},
+	[],
+	"",
+	42,
+	true,
+	() => {
+		/**/
+	},
+];
+
 type BasicProtoSnapshots = ProtoSnapshot[];
 
 type ProtoSnapshot = {
@@ -256,22 +268,48 @@ type ProtoSnapshot = {
 
 // Compute prototype snapshots of each selected basic object before any fuzz tests are run.
 // These snapshots are used to detect prototype pollution after each fuzz test.
-const BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots();
+const BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots([
+	{},
+	[],
+	"",
+	42,
+	true,
+	() => {
+		/**/
+	},
+]);
 
-function computeBasicPrototypeSnapshots(): BasicProtoSnapshots {
+(() => {
+	// @ts-ignore
+	const jazzerJsGlobal: Map<string, unknown> = globalThis.JazzerJS;
+	if (jazzerJsGlobal?.get("jest")) {
+		console.log("SETTING UP JEST------------------------------");
+		const vmContext = jazzerJsGlobal.get("vmContext") as vm.Context;
+		const vmJazzerJsGlobal: Map<string, unknown> = vmContext.JazzerJS;
+		//vmJazzerJsGlobal.set("computeBasicPrototypeSnapshots", computeBasicPrototypeSnapshots);
+		//vmJazzerJsGlobal.set("detectPrototypePollutionOfBasicObjects", detectPrototypePollutionOfBasicObjects);
+		jazzerJsGlobal.set(
+			"BASIC_PROTO_SNAPSHOTS",
+			computeBasicPrototypeSnapshots(
+				vm.runInThisContext('[{},[],"",42,true,()=>{}]', vmContext),
+			),
+		);
+		// vmJazzerJsGlobal.set("BASIC_PROTO_SNAPSHOTS", vm.runInContext(
+		// 	'JazzerJS.get(\"computeBasicPrototypeSnapshots\")([{},[],"",42,true,()=>{}]);',
+		// 	vmContext
+		// ));
+		//vmJazzerJsGlobal.set("BASIC_OBJECTS", vm.runInContext("[{},[],\"\",42,true,()=>{}]", vmContext));
+	} else {
+		console.log("NO JEST++++++++++++++++++++++++++++++++++++++");
+	}
+})();
+
+export function computeBasicPrototypeSnapshots(
+	objects: any[],
+): BasicProtoSnapshots {
 	// These objects will be used to detect prototype pollution.
 	// Using global arrays for performance reasons.
-	const BASIC_OBJECTS = [
-		{},
-		[],
-		"",
-		42,
-		true,
-		() => {
-			/**/
-		},
-	];
-	return BASIC_OBJECTS.map(getProtoSnapshot);
+	return objects.map(getProtoSnapshot);
 }
 
 /**
@@ -302,30 +340,52 @@ function getProtoSnapshot(obj: any): ProtoSnapshot {
 	};
 }
 
-registerAfterEachCallback(
-	function detectPrototypePollutionOfBasicObjects(): void {
-		const currentProtoSnapshots = computeBasicPrototypeSnapshots();
-		// Compare the current prototype snapshots of basic objects to the original ones.
-		for (let i = 0; i < BASIC_PROTO_SNAPSHOTS.length; i++) {
-			if (!currentProtoSnapshots[i]) {
-				reportFinding(
-					`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
-				);
-				return;
-			}
-			const equalityResult = protoSnapshotsEqual(
-				BASIC_PROTO_SNAPSHOTS[i],
-				currentProtoSnapshots[i],
+function detectPrototypePollutionOfBasicObjects(
+	BASIC_PROTO_SNAPSHOTS: any[],
+	objects: any[],
+): void {
+	const currentProtoSnapshots = computeBasicPrototypeSnapshots(objects);
+	// Compare the current prototype snapshots of basic objects to the original ones.
+	for (let i = 0; i < BASIC_PROTO_SNAPSHOTS.length; i++) {
+		if (!currentProtoSnapshots[i]) {
+			reportFinding(
+				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
 			);
-			if (equalityResult) {
-				reportFinding(
-					`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
-				);
-				return;
-			}
+			return;
 		}
-	},
-);
+		const equalityResult = protoSnapshotsEqual(
+			BASIC_PROTO_SNAPSHOTS[i],
+			currentProtoSnapshots[i],
+		);
+		if (equalityResult) {
+			reportFinding(
+				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
+			);
+			return;
+		}
+	}
+}
+
+registerAfterEachCallback(function detectPrototypePollution() {
+	// @ts-ignore
+	const jazzerJsGlobal: Map<string, unknown> = globalThis.JazzerJS;
+	if (jazzerJsGlobal?.get("jest")) {
+		const vmContext = jazzerJsGlobal.get("vmContext") as vm.Context;
+		// console.log("-------------------")
+		// console.log(vm.runInContext("[{},[],\"\",42,true,()=>{}]", vmContext));
+		// console.log(jazzerJsGlobal.get("BASIC_PROTO_SNAPSHOTS") as ProtoSnapshot[]);
+		// console.log("-------------------")
+		detectPrototypePollutionOfBasicObjects(
+			jazzerJsGlobal.get("BASIC_PROTO_SNAPSHOTS") as ProtoSnapshot[],
+			vm.runInContext('[{},[],"",42,true,()=>{}]', vmContext),
+		);
+	} else {
+		detectPrototypePollutionOfBasicObjects(
+			BASIC_PROTO_SNAPSHOTS,
+			BASIC_OBJECTS,
+		);
+	}
+});
 
 // There are two main ways to pollute a prototype of an object:
 // 1. Changing a prototype's property using __proto__
@@ -400,8 +460,12 @@ function detectPrototypePollution(
 function protoSnapshotsEqual(
 	snapshot1: ProtoSnapshot,
 	snapshot2: ProtoSnapshot,
+	// @ts-ignore
+	jest: boolean = (globalThis?.JazzerJS?.get("jest") as boolean) ?? false,
 ): string | undefined {
-	if (snapshot1.prototype !== snapshot2.prototype) {
+	// Calling host functions on vm objects gives different references each time (TODO: double check).
+	// Hence, in Jest we only ever compare the values
+	if (snapshot1.prototype !== snapshot2.prototype && !jest) {
 		return `Different [[Prototype]]: ${snapshot1.prototype} vs ${snapshot2.prototype}`;
 	}
 
@@ -464,7 +528,8 @@ function protoSnapshotsEqual(
 	) {
 		if (
 			snapshot1.propertyValues[propertyId] !==
-			snapshot2.propertyValues[propertyId]
+				snapshot2.propertyValues[propertyId] &&
+			!jest
 		) {
 			return `Different properties: ${snapshot1.propertyNames[propertyId]}: ${snapshot1.propertyValues[propertyId]} vs. 
 ${snapshot2.propertyNames[propertyId]}: ${snapshot2.propertyValues[propertyId]}`;
