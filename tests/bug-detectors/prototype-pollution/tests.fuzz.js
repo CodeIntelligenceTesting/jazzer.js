@@ -18,7 +18,7 @@ describe("Prototype Pollution Jest tests", () => {
 	console.log(Fuzzer.coverageTracker.readCounter(134));
 	it.fuzz("Pollution of Object", (data) => {
 		const a = {};
-		//a.__proto__.polluted = 10;
+		a.__proto__.polluted = 10;
 	});
 
 	it.fuzz("Assignments", (data) => {

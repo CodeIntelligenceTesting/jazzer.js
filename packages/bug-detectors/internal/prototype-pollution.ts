@@ -286,12 +286,18 @@ const BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots([
 		console.log("SETTING UP JEST------------------------------");
 		const vmContext = jazzerJsGlobal.get("vmContext") as vm.Context;
 		const vmJazzerJsGlobal: Map<string, unknown> = vmContext.JazzerJS;
+		Object.defineProperty(vmContext, "PrototypePollution", {
+			value: PrototypePollution,
+			writable: false,
+			enumerable: true,
+			configurable: false,
+		});
 		//vmJazzerJsGlobal.set("computeBasicPrototypeSnapshots", computeBasicPrototypeSnapshots);
 		//vmJazzerJsGlobal.set("detectPrototypePollutionOfBasicObjects", detectPrototypePollutionOfBasicObjects);
 		jazzerJsGlobal.set(
 			"BASIC_PROTO_SNAPSHOTS",
 			computeBasicPrototypeSnapshots(
-				vm.runInThisContext('[{},[],"",42,true,()=>{}]', vmContext),
+				vm.runInContext('[{},[],"",42,true,()=>{}]', vmContext),
 			),
 		);
 		// vmJazzerJsGlobal.set("BASIC_PROTO_SNAPSHOTS", vm.runInContext(
@@ -460,12 +466,10 @@ function detectPrototypePollution(
 function protoSnapshotsEqual(
 	snapshot1: ProtoSnapshot,
 	snapshot2: ProtoSnapshot,
-	// @ts-ignore
-	jest: boolean = (globalThis?.JazzerJS?.get("jest") as boolean) ?? false,
 ): string | undefined {
 	// Calling host functions on vm objects gives different references each time (TODO: double check).
 	// Hence, in Jest we only ever compare the values
-	if (snapshot1.prototype !== snapshot2.prototype && !jest) {
+	if (snapshot1.prototype !== snapshot2.prototype) {
 		return `Different [[Prototype]]: ${snapshot1.prototype} vs ${snapshot2.prototype}`;
 	}
 
@@ -528,8 +532,7 @@ function protoSnapshotsEqual(
 	) {
 		if (
 			snapshot1.propertyValues[propertyId] !==
-				snapshot2.propertyValues[propertyId] &&
-			!jest
+			snapshot2.propertyValues[propertyId]
 		) {
 			return `Different properties: ${snapshot1.propertyNames[propertyId]}: ${snapshot1.propertyValues[propertyId]} vs. 
 ${snapshot2.propertyNames[propertyId]}: ${snapshot2.propertyValues[propertyId]}`;
