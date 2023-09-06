@@ -34,6 +34,8 @@ npm install --save-dev @jazzer.js/jest-runner
 This will install the custom Jest runner along with all other required Jazzer.js
 dependencies.
 
+**Note**: The Jazzer.js Jest runner requires Jest version 29 or higher.
+
 For Jest to pick up the custom fuzz test runner, it has to be added to the Jest
 configuration in the `package.json` or `jest.config.js`, as described on the
 [Configuring Jest](https://jestjs.io/docs/configuration) documentation page. The
@@ -60,12 +62,12 @@ runner.
 				"displayName": "test"
 			},
 			{
-				"runner": "@jazzer.js/jest-runner",
 				"displayName": {
 					"name": "Jazzer.js",
 					"color": "cyan"
 				},
-				"testMatch": ["<rootDir>/**/*.fuzz.js"]
+				"testMatch": ["<rootDir>/**/*.fuzz.js"],
+				"testRunner": "@jazzer.js/jest-runner"
 			}
 		]
 	}
@@ -117,9 +119,9 @@ actually include test files with the `.fuzz.ts` extension.
     color: "cyan",
   },
   preset: "ts-jest",
-  runner: "@jazzer.js/jest-runner",
   testEnvironment: "node",
   testMatch: ["<rootDir>/*.fuzz.[jt]s"],
+  testRunner: "@jazzer.js/jest-runner",
 },
 ```
 
@@ -234,14 +236,6 @@ describe("Target", () => {
 	});
 });
 ```
-
-### Setup and teardown
-
-The Jazzer.js fuzz test runner supports Jest's setup and teardown functions, as
-described on the [Setup and Teardown](https://jestjs.io/docs/setup-teardown)
-documentation page.
-
-This includes `beforeAll`, `afterAll`, `beforeEach` and `afterEach`.
 
 ## Executing Jest fuzz tests
 
@@ -402,13 +396,3 @@ enter the debugger for that particular input.
 ### IntelliJ Jest support
 
 ![IntelliJ Jest integration](pictures/jest-integration-intellij.png)
-
-## Unsupported Jest features
-
-The Jazzer.js fuzz test runner strives to provide neat Jest integration. That
-being said, some Jest features are currently not supported, as Jest does not
-offer good extension points and common test framework features have to be
-reimplemented.
-
-- Mock functions
-- Isolated workers
