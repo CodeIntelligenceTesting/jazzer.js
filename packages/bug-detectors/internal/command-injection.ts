@@ -45,6 +45,9 @@ for (const functionName of functionNames) {
 		// - the command/file path to execute in execFile/execFileSync
 		// - the module path to fork in fork
 		const firstArgument = params[0] as string;
+		if (typeof firstArgument !== "string") {
+			return;
+		}
 		if (firstArgument.includes(goal)) {
 			reportFinding(
 				`Command Injection in ${functionName}(): called with '${firstArgument}'`,

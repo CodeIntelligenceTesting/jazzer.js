@@ -130,14 +130,8 @@ for (const module of modulesToHook) {
 				return;
 			}
 			// The first argument of the original function is typically
-			// a path or a file name.
-			const firstArgument = params[0] as string;
-			if (firstArgument.includes(goal)) {
-				reportFinding(
-					`Path Traversal in ${functionName}(): called with '${firstArgument}'`,
-				);
-			}
-			guideTowardsContainment(firstArgument, goal, hookId);
+			// a path or a file name. For some functions, it can be a URL or a Buffer.
+			detectFindingAndGuideFuzzing(params[0], goal, hookId, functionName);
 		};
 
 		registerBeforeHook(functionName, module.moduleName, false, beforeHook);
@@ -174,19 +168,15 @@ for (const module of functionsWithTwoTargets) {
 				if (params === undefined || params.length < 2) {
 					return;
 				}
-				// The first two arguments are paths.
-				const firstArgument = params[0] as string;
-				const secondArgument = params[1] as string;
-				if (firstArgument.includes(goal) || secondArgument.includes(goal)) {
-					reportFinding(
-						`Path Traversal in ${functionName}(): called with '${firstArgument}'` +
-							` and '${secondArgument}'`,
-					);
-				}
-				guideTowardsContainment(firstArgument, goal, hookId);
 				// We don't want to confuse the fuzzer guidance with the same hookId for both function arguments.
 				// Therefore, we use an extra hookId for the second argument.
-				guideTowardsContainment(secondArgument, goal, extraHookId);
+				detectFindingAndGuideFuzzing(params[0], goal, hookId, functionName);
+				detectFindingAndGuideFuzzing(
+					params[1],
+					goal,
+					extraHookId,
+					functionName,
+				);
 			};
 		};
 
@@ -196,5 +186,26 @@ for (const module of functionsWithTwoTargets) {
 			false,
 			makeBeforeHook(callSiteId(functionName, module.moduleName, "secondId")),
 		);
+	}
+}
+
+function detectFindingAndGuideFuzzing(
+	input: unknown,
+	goal: string,
+	hookId: number,
+	functionName: string,
+) {
+	if (
+		typeof input === "string" ||
+		input instanceof URL ||
+		input instanceof Buffer
+	) {
+		const argument = input.toString();
+		if (argument.includes(goal)) {
+			reportFinding(
+				`Path Traversal in ${functionName}(): called with '${argument}'`,
+			);
+		}
+		guideTowardsContainment(argument, goal, hookId);
 	}
 }

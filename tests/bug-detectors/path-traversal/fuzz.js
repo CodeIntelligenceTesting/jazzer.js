@@ -100,3 +100,11 @@ module.exports.PathTraversalJoinEvilAsync = makeFnCalledOnce(async (data) => {
 module.exports.PathTraversalJoinSafeAsync = makeFnCalledOnce(async (data) => {
 	path.join(safe_path, "SAFE");
 });
+
+module.exports.invalidArgsToOpen = makeFnCalledOnce((data) => {
+	fs.openSync(0);
+});
+
+module.exports.invalidArgsToCp = makeFnCalledOnce((data) => {
+	fs.cp(0, 0, () => {});
+});

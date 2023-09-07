@@ -92,3 +92,7 @@ module.exports.forkEVIL = function (data) {
 module.exports.forkFRIENDLY = function (data) {
 	child_process.fork("makeFRIENDLY.js");
 };
+
+module.exports.execInvalid = async function (data) {
+	child_process.exec(0);
+};

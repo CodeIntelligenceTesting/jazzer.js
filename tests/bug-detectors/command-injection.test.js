@@ -171,3 +171,19 @@ describe("Command injection", () => {
 		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
 	});
 });
+
+describe("Invalid arguments", () => {
+	const bugDetectorDirectory = path.join(__dirname, "command-injection");
+	const errorMessage = /TypeError: The ".*" argument must be of type string./;
+
+	it("invalid args to exec", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(false)
+			.fuzzEntryPoint("execInvalid")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => fuzzTest.execute()).toThrow();
+		expect(fuzzTest.stderr).toMatch(errorMessage);
+	});
+});

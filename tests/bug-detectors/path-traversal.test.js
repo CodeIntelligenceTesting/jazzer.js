@@ -186,3 +186,33 @@ describe("Path Traversal", () => {
 		fuzzTest.execute();
 	});
 });
+
+describe("Path Traversal invalid input", () => {
+	const bugDetectorDirectory = path.join(__dirname, "path-traversal");
+	const errorMessage =
+		/TypeError: The ".*" argument must be of type string or an instance of Buffer or URL./;
+
+	it("Invalid args to open", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("invalidArgsToOpen")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => fuzzTest.execute()).toThrow();
+		expect(fuzzTest.stderr).toMatch(errorMessage);
+	});
+
+	it("Invalid first arg to cp", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("invalidArgsToCp")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => fuzzTest.execute()).toThrow();
+		// 'TypeError: The "src" argument must be of type string or an instance of Buffer or URL.',
+		// however the string "src" may vary from system to system, so a regexp is better
+		expect(fuzzTest.stderr).toMatch(errorMessage);
+	});
+});
