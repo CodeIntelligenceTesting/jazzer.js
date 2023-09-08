@@ -14,28 +14,12 @@
  * limitations under the License.
  */
 
-import type { Config } from "jest";
+describe("Run mode only and standard", () => {
+	it.fuzz("standard test", (data) => {
+		throw new Error("Standard test should not be called when only is used!");
+	});
 
-const config: Config = {
-	verbose: true,
-	projects: [
-		{
-			displayName: "Jest",
-			preset: "ts-jest",
-		},
-		{
-			displayName: {
-				name: "Jazzer.js",
-				color: "cyan",
-			},
-			preset: "ts-jest",
-			testRunner: "@jazzer.js/jest-runner",
-			testEnvironment: "node",
-			testMatch: ["<rootDir>/*.fuzz.[jt]s"],
-		},
-	],
-	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
-	modulePathIgnorePatterns: ["/node_modules", "/dist/"],
-};
-
-export default config;
+	it.only.fuzz("only test", (data) => {
+		console.log("only test called");
+	});
+});

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-export const cleanupJestError = (
-	error: Error | undefined,
-): Error | undefined => {
+export const cleanupJestError = (error: Error | unknown): Error | unknown => {
 	if (error == undefined) {
-		return error;
+		return undefined;
 	}
-	error.stack = cleanupJestRunnerStack(error.stack);
+	if (error instanceof Error) {
+		error.stack = cleanupJestRunnerStack(error.stack);
+	}
 	return error;
 };
 

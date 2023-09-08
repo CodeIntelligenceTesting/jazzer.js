@@ -23,6 +23,7 @@ const assert = require("assert");
 // This is used to distinguish an error thrown during fuzzing from other errors,
 // such as wrong `fuzzEntryPoint`, which would return a "1".
 const FuzzingExitCode = "77";
+const TimeoutExitCode = "70";
 const JestRegressionExitCode = "1";
 const WindowsExitCode = "1";
 
@@ -75,6 +76,7 @@ class FuzzTest {
 		} else {
 			this.executeWithCli();
 		}
+		return this;
 	}
 
 	executeWithCli() {
@@ -230,7 +232,7 @@ class FuzzTestBuilder {
 	 * default.
 	 */
 	verbose(verbose) {
-		this._verbose = verbose;
+		this._verbose = verbose === undefined ? true : verbose;
 		return this;
 	}
 
@@ -450,17 +452,18 @@ function callWithTimeout(fn, timeout) {
 
 /**
  * Returns a Jest describe function that is skipped if the current platform is not the given one.
- * @param platform
- * @returns describe(.skip) function
  */
 function describeSkipOnPlatform(platform) {
 	return process.platform === platform ? global.describe.skip : global.describe;
 }
 
-module.exports.FuzzTestBuilder = FuzzTestBuilder;
-module.exports.FuzzingExitCode = FuzzingExitCode;
-module.exports.JestRegressionExitCode = JestRegressionExitCode;
-module.exports.WindowsExitCode = WindowsExitCode;
-module.exports.makeFnCalledOnce = makeFnCalledOnce;
-module.exports.callWithTimeout = callWithTimeout;
-module.exports.describeSkipOnPlatform = describeSkipOnPlatform;
+module.exports = {
+	FuzzTestBuilder,
+	FuzzingExitCode,
+	TimeoutExitCode,
+	JestRegressionExitCode,
+	WindowsExitCode,
+	makeFnCalledOnce,
+	callWithTimeout,
+	describeSkipOnPlatform,
+};

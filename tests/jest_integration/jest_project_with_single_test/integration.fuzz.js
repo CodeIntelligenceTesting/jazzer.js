@@ -14,28 +14,10 @@
  * limitations under the License.
  */
 
-import type { Config } from "jest";
-
-const config: Config = {
-	verbose: true,
-	projects: [
-		{
-			displayName: "Jest",
-			preset: "ts-jest",
-		},
-		{
-			displayName: {
-				name: "Jazzer.js",
-				color: "cyan",
-			},
-			preset: "ts-jest",
-			testRunner: "@jazzer.js/jest-runner",
-			testEnvironment: "node",
-			testMatch: ["<rootDir>/*.fuzz.[jt]s"],
-		},
-	],
-	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
-	modulePathIgnorePatterns: ["/node_modules", "/dist/"],
-};
-
-export default config;
+describe("Jest Integration", () => {
+	test.fuzz("one test only", (data) => {
+		if (data.toString() === "Welcome") {
+			throw Error("Welcome to Awesome Fuzzing!");
+		}
+	});
+});

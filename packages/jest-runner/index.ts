@@ -14,90 +14,63 @@
  * limitations under the License.
  */
 
-import { loadConfig } from "./config";
-import { cleanupJestRunnerStack } from "./errorUtils";
-import { FuzzTest } from "./fuzz";
-import { JazzerWorker } from "./worker";
-import { initFuzzing } from "@jazzer.js/core";
-import {
-	CallbackTestRunner,
-	OnTestFailure,
-	OnTestStart,
-	OnTestSuccess,
-	Test,
-	TestRunnerContext,
-	TestRunnerOptions,
-	TestWatcher,
-} from "jest-runner";
-import { Config } from "@jest/types";
 import * as reports from "istanbul-reports";
+import Runtime from "jest-runtime";
+import { TestResult } from "@jest/test-result";
+import { Config } from "@jest/types";
+import type { JestEnvironment } from "@jest/environment";
 
-class FuzzRunner extends CallbackTestRunner {
-	shouldCollectCoverage: boolean;
-	coverageReporters: Config.CoverageReporters;
-	constructor(globalConfig: Config.GlobalConfig, context: TestRunnerContext) {
-		super(globalConfig, context);
-		this.shouldCollectCoverage = globalConfig.collectCoverage;
-		this.coverageReporters = globalConfig.coverageReporters;
-	}
+import { initFuzzing, setJazzerJsGlobal } from "@jazzer.js/core";
 
-	async runTests(
-		tests: Array<Test>,
-		watcher: TestWatcher,
-		onStart: OnTestStart,
-		onResult: OnTestSuccess,
-		onFailure: OnTestFailure,
-		options: TestRunnerOptions,
-	): Promise<void> {
-		// Prefer Jest coverage configuration.
-		const config = loadConfig({
-			coverage: this.shouldCollectCoverage,
-			coverageReporters: this.coverageReporters as reports.ReportType[],
+import { loadConfig } from "./config";
+import { cleanupJestError } from "./errorUtils";
+import { FuzzTest } from "./fuzz";
+import { interceptScriptTransformerCalls } from "./transformerInterceptor";
+import { interceptTestState } from "./testStateInterceptor";
+import { interceptGlobals } from "./globalsInterceptor";
+
+export default async function jazzerTestRunner(
+	globalConfig: Config.GlobalConfig,
+	config: Config.ProjectConfig,
+	environment: JestEnvironment,
+	runtime: Runtime,
+	testPath: string,
+	sendMessageToJest?: boolean,
+): Promise<TestResult> {
+	const vmContext = environment.getVmContext();
+	if (vmContext === null) throw new Error("vmContext is undefined");
+	setJazzerJsGlobal("vmContext", vmContext);
+
+	const jazzerConfig = loadConfig({
+		coverage: globalConfig.collectCoverage,
+		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
+	});
+	const globalEnvironments = [environment.getVmContext(), globalThis];
+	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
+	interceptScriptTransformerCalls(runtime, instrumentor);
+
+	const testState = interceptTestState(environment, jazzerConfig);
+	interceptGlobals(runtime, testPath, jazzerConfig, testState);
+
+	const circusRunner =
+		await runtime["_scriptTransformer"].requireAndTranspileModule(
+			"jest-circus/runner",
+		);
+
+	return circusRunner(
+		globalConfig,
+		config,
+		environment,
+		runtime,
+		testPath,
+		sendMessageToJest,
+	).then((result: TestResult) => {
+		result.testResults.forEach((testResult) => {
+			testResult.failureDetails?.forEach(cleanupJestError);
 		});
-
-		await initFuzzing(config);
-		return this.#runTestsInBand(tests, watcher, onStart, onResult, onFailure);
-	}
-
-	async #runTestsInBand(
-		tests: Array<Test>,
-		watcher: TestWatcher,
-		onStart: OnTestStart,
-		onResult: OnTestSuccess,
-		onFailure: OnTestFailure,
-	) {
-		process.env.JEST_WORKER_ID = "1";
-		return tests.reduce((promise, test) => {
-			return promise.then(async () => {
-				if (watcher.isInterrupted()) {
-					throw new CancelRun();
-				}
-
-				// Execute every test in a dedicated worker instance.
-				// Currently, this is only in band but the structure supports parallel
-				// execution in the future.
-				await onStart(test);
-				const worker = new JazzerWorker();
-				return worker.run(test, this._globalConfig).then(
-					(result) => onResult(test, result),
-					(error) => {
-						error.stack = cleanupJestRunnerStack(error.stack);
-						onFailure(test, error);
-					},
-				);
-			});
-		}, Promise.resolve());
-	}
+		return result;
+	});
 }
-
-class CancelRun extends Error {
-	constructor(message?: string) {
-		super(message);
-		this.name = "CancelRun";
-	}
-}
-
-export default FuzzRunner;
 
 // Global definition of the Jest fuzz test extension function.
 // This is required to allow the Typescript compiler to recognize it.

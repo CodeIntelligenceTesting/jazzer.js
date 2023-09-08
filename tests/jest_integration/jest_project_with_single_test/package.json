@@ -1,16 +1,19 @@
 {
-	"name": "jazzerjs-signal-handler-tests-sigsegv",
+	"name": "jazzerjs-jest-integration-tests-project-single-test",
 	"version": "1.0.0",
-	"description": "Tests for the SIGINT signal handler",
 	"scripts": {
 		"test": "jest",
-		"fuzz": "JAZZER_FUZZ=1 jest"
+		"fuzz": "JAZZER_FUZZ=1 jest "
 	},
 	"devDependencies": {
-		"@jazzer.js/jest-runner": "file:../../packages/jest-runner"
+		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner",
+		"jest": "^29.3.1"
 	},
 	"jest": {
 		"projects": [
+			{
+				"displayName": "test"
+			},
 			{
 				"testRunner": "@jazzer.js/jest-runner",
 				"displayName": {

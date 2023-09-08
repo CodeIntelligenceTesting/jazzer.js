@@ -24,7 +24,7 @@ const addCallLog = (uniqueId) => {
 
 beforeAll(() => {
 	return new Promise((resolve) => {
-		setTimeout(() => {
+		setImmediate(() => {
 			addCallLog("Top-level beforeAll");
 			resolve(undefined);
 		}, 100);
@@ -33,8 +33,7 @@ beforeAll(() => {
 
 describe("Hooks", () => {
 	beforeAll((done) => {
-		const callLog = "My describe: beforeAll";
-		addCallLog(callLog);
+		addCallLog("My describe: beforeAll");
 		done();
 	});
 
