@@ -18,11 +18,11 @@ let i = 0;
 
 module.exports.SIGSEGV_SYNC = (data) => {
 	if (i === 1000) {
-		console.error("kill with signal");
+		console.log("kill with signal");
 		process.kill(process.pid, "SIGSEGV");
 	}
 	if (i > 1000) {
-		console.error("Signal has not stopped the fuzzing process");
+		console.log("Signal has not stopped the fuzzing process");
 	}
 	i++;
 };
@@ -31,7 +31,7 @@ module.exports.SIGSEGV_ASYNC = (data) => {
 	// Raising SIGSEGV in async mode does not stop the fuzzer directly,
 	// as the event is handled asynchronously in the event loop.
 	if (i === 1000) {
-		console.error("kill with signal");
+		console.log("kill with signal");
 		process.kill(process.pid, "SIGSEGV");
 	}
 	i++;

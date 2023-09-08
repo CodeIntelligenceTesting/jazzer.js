@@ -94,12 +94,9 @@ describe("Source code coverage reports", () => {
 	});
 
 	describe("for our custom Jest runner", () => {
-		it("Expect no coverage reports", () => {
-			executeJestRunner("**.fuzz.js", false, false, true);
-			expect(defaultCoverageDirectory).toBeCreated();
-			const coverageJson = readCoverageJson(defaultCoverageDirectory);
-			// Jest generates an empty coverage report (unlike our non-jest fuzzer)
-			expect(coverageJson).toStrictEqual({});
+		it("expect no coverage reports", () => {
+			executeJestRunner("**.fuzz.js", false, false, false);
+			expect(defaultCoverageDirectory).not.toBeCreated();
 		});
 
 		it("want coverage, no custom hooks", () => {
@@ -193,8 +190,10 @@ function executeJestRunner(
 	const config = {
 		includes: includes,
 		excludes: excludePattern,
-		customHooks: useCustomHooks,
 	};
+	if (useCustomHooks) {
+		config.customHooks = useCustomHooks;
+	}
 	// write the config file, overwriting any existing one
 	fs.writeFileSync(
 		path.join(testDirectory, ".jazzerjsrc.json"),

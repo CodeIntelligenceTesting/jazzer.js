@@ -14,7 +14,7 @@ import "@jazzer.js/jest-runner";
 import * as target from "./target";
 
 describe("Target", () => {
-	it.fuzz("executes a method", (data: Buffer) => {
+	test.fuzz("executes a method", (data: Buffer) => {
 		target.fuzzMe(data);
 	});
 });
