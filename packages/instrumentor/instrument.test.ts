@@ -151,7 +151,10 @@ function evalWithInstrumentor(
 	fileName: string,
 ) {
 	const result = instrumentor.instrument(content, fileName);
-	const fn = eval(result);
+	if (!result?.code) {
+		throw new Error("Instrumentation failed.");
+	}
+	const fn = eval(result.code);
 	fn();
 }
 
