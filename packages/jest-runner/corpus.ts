@@ -25,8 +25,14 @@ export class Corpus {
 	private readonly _seedInputsDirectory: string;
 	// Directory containing runtime generated fuzzer inputs.
 	private readonly _generatedInputsDirectory: string;
+	// Indicate if coverage is enabled.
+	private readonly _coverage: boolean;
 
-	constructor(testSourceFilePath: string, testJestPathElements: string[]) {
+	constructor(
+		testSourceFilePath: string,
+		testJestPathElements: string[],
+		coverage: boolean = false,
+	) {
 		this._seedInputsDirectory = directoryPathForTest(
 			testSourceFilePath,
 			testJestPathElements,
@@ -36,7 +42,11 @@ export class Corpus {
 			testJestPathElements,
 			Corpus.defaultCorpusDirectory,
 		);
-		this.createMissingDirectories();
+		this._coverage = coverage;
+		createMissingDirectories(
+			this._seedInputsDirectory,
+			this._generatedInputsDirectory,
+		);
 	}
 
 	get seedInputsDirectory(): string {
@@ -48,22 +58,25 @@ export class Corpus {
 	}
 
 	inputsPaths(): [string, string][] {
-		return fs
-			.readdirSync(this._seedInputsDirectory)
-			.filter(
-				(entry) =>
-					!fs
-						.lstatSync(path.join(this.seedInputsDirectory, entry))
-						.isDirectory(),
-			)
-			.map((file) => [file, path.join(this._seedInputsDirectory, file)]);
+		const seedInputs = this.inputFiles(this._seedInputsDirectory);
+		if (this._coverage) {
+			return seedInputs.concat(this.inputFiles(this._generatedInputsDirectory));
+		}
+		return seedInputs;
 	}
 
-	private createMissingDirectories() {
-		fs.mkdirSync(this._seedInputsDirectory, { recursive: true });
-		fs.mkdirSync(this._generatedInputsDirectory, { recursive: true });
+	private inputFiles(directory: string): [string, string][] {
+		return fs
+			.readdirSync(directory)
+			.filter(
+				(entry) => !fs.lstatSync(path.join(directory, entry)).isDirectory(),
+			)
+			.map((file) => [file, path.join(directory, file)]);
 	}
 }
+
+const createMissingDirectories = (...dirs: string[]) =>
+	dirs.forEach((dir) => fs.mkdirSync(dir, { recursive: true }));
 
 const directoryPathForTest = (
 	testSourceFilePath: string,
@@ -86,18 +99,16 @@ const buildRootDirectory = (
 ): string => {
 	const inputsRoot = path.parse(testSourceFilePath);
 	const testName = inputsRoot.name;
-	let mainDir = inputsRoot.dir;
 	if (projectCorpusRoot !== "") {
 		// looking for the root directory of the project
-		mainDir = path.join(
+		return path.join(
 			findDirectoryWithPackageJson(inputsRoot).dir,
 			projectCorpusRoot,
 			testName,
 		);
 	} else {
-		mainDir = path.join(inputsRoot.dir, testName);
+		return path.join(inputsRoot.dir, testName);
 	}
-	return mainDir;
 };
 
 const findDirectoryWithPackageJson = (
@@ -109,7 +120,6 @@ const findDirectoryWithPackageJson = (
 			throw new Error("Could not find package.json in any parent directory");
 		}
 	}
-
 	return directory;
 };
 

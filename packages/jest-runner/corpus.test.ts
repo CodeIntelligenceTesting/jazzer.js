@@ -70,6 +70,14 @@ describe("Corpus", () => {
 
 			expect(corpus.inputsPaths()).toHaveLength(0);
 		});
+
+		it("include generated corpus files in fuzzing mode", () => {
+			const fuzzTest = mockFuzzTest({ seedFiles: 2, generatedInputFiles: 3 });
+
+			const corpus = new Corpus(fuzzTest, [], true);
+
+			expect(corpus.inputsPaths()).toHaveLength(5);
+		});
 	});
 
 	describe("corpusDirectory", () => {
@@ -94,6 +102,7 @@ function mockFuzzTest({
 	seedFiles = 0,
 	subDirs = 0,
 	generatePackageJson = true,
+	generatedInputFiles = 0,
 } = {}) {
 	const tmpDir = tmp.dirSync({ unsafeCleanup: true }).name;
 	const fuzzTestName = "fuzztest";
@@ -113,6 +122,17 @@ function mockFuzzTest({
 	}
 	for (let i = 0; i < subDirs; i++) {
 		fs.mkdirSync(path.join(tmpDir, fuzzTestName, i.toString()));
+	}
+	if (generatedInputFiles > 0) {
+		fs.mkdirSync(path.join(tmpDir, ".cifuzz-corpus", fuzzTestName), {
+			recursive: true,
+		});
+		for (let i = 0; i < generatedInputFiles; i++) {
+			fs.writeFileSync(
+				path.join(tmpDir, ".cifuzz-corpus", fuzzTestName, i.toString()),
+				i.toString(),
+			);
+		}
 	}
 	return fuzzTestFile;
 }
