@@ -83,7 +83,7 @@ export function fuzz(
 			return;
 		}
 
-		const corpus = new Corpus(testFile, testStatePath);
+		const corpus = new Corpus(testFile, testStatePath, localConfig.coverage);
 
 		// Timeout priority is:
 		// 1. Use timeout directly defined in test function
