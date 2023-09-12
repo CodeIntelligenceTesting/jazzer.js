@@ -18,6 +18,8 @@ const {
 	FuzzTestBuilder,
 	FuzzingExitCode,
 	JestRegressionExitCode,
+	cleanCrashFilesIn,
+	fileExists,
 } = require("../helpers.js");
 const path = require("path");
 const fs = require("fs");
@@ -36,338 +38,345 @@ describe("General tests", () => {
 	}
 
 	// Delete files created by the tests.
-	beforeEach(() => {
-		fs.rmSync(friendlyFilePath, { force: true });
-		fs.rmSync(evilFilePath, { force: true });
-		fs.rmSync("../jaz_zer", { force: true, recursive: true });
+	beforeEach(async () => {
+		await fs.promises.rm(friendlyFilePath, { force: true });
+		await fs.promises.rm(evilFilePath, { force: true });
+		await fs.promises.rm("../jaz_zer", { force: true, recursive: true });
+		await cleanCrashFilesIn(bugDetectorDirectory);
 	});
 
-	it("Call with EVIL string; ASYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.fuzzEntryPoint("CallOriginalEvilAsync")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
+	describe("CLI", () => {
+		it("Call with EVIL string; ASYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.fuzzEntryPoint("CallOriginalEvilAsync")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(FuzzingExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+		});
+
+		it("Call with EVIL string; SYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(true)
+				.fuzzEntryPoint("CallOriginalEvilSync")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(FuzzingExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
+
+		it("Call with FRIENDLY string; ASYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalFriendlyAsync")
+				.dir(bugDetectorDirectory)
+				.build();
 			fuzzTest.execute();
-		}).toThrow(FuzzingExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-	});
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
 
-	it("Call with EVIL string; SYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(true)
-			.fuzzEntryPoint("CallOriginalEvilSync")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
+		it("Call with FRIENDLY string; SYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(true)
+				.fuzzEntryPoint("CallOriginalFriendlySync")
+				.dir(bugDetectorDirectory)
+				.build();
 			fuzzTest.execute();
-		}).toThrow(FuzzingExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
 
-	it("Call with FRIENDLY string; ASYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalFriendlyAsync")
-			.dir(bugDetectorDirectory)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
+		it("Call with EVIL string; With done callback", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalEvilDoneCallback")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(FuzzingExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
 
-	it("Call with FRIENDLY string; SYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(true)
-			.fuzzEntryPoint("CallOriginalFriendlySync")
-			.dir(bugDetectorDirectory)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
+		it("Call with EVIL string; With done callback; With try/catch", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTryCatch")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(FuzzingExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
 
-	it("Call with EVIL string; With done callback", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalEvilDoneCallback")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(FuzzingExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
-
-	it("Call with EVIL string; With done callback; With try/catch", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTryCatch")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(FuzzingExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
-
-	it("Call with EVIL string; With done callback; With timeout", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeout")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(
-			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
-		);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-	});
-
-	it("Call with EVIL string; With done callback; With timeout; With try/catch", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch")
-			.dir(bugDetectorDirectory)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(FuzzingExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-	});
-
-	it("Call with FRIENDLY string; With done callback", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("CallOriginalFriendlyDoneCallback")
-			.dir(bugDetectorDirectory)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
-
-	it("Fork mode: Call with EVIL string; SYNC", () => {
-		// TODO: Fork mode does not work in the Windows-Server image used by github actions
-		if (process.platform === "win32") {
-			console.error(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+		it("Call with EVIL string; With done callback; With timeout", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeout")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(
+				process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
 			);
-			return;
-		}
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.fuzzEntryPoint("ForkModeCallOriginalEvil")
-			.dir(bugDetectorDirectory)
-			.runs(200)
-			.forkMode(3)
-			.build();
-		fuzzTest.execute(); // fork mode doesn't throw errors
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+		});
+
+		it("Call with EVIL string; With done callback; With timeout; With try/catch", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalEvilDoneCallbackWithTimeoutWithTryCatch")
+				.dir(bugDetectorDirectory)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(FuzzingExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+		});
+
+		it("Call with FRIENDLY string; With done callback", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("CallOriginalFriendlyDoneCallback")
+				.dir(bugDetectorDirectory)
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
+
+		it("Fork mode: Call with EVIL string; SYNC", async () => {
+			// TODO: Fork mode does not work in the Windows-Server image used by github actions
+			if (process.platform === "win32") {
+				console.error(
+					"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+				);
+				return;
+			}
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.fuzzEntryPoint("ForkModeCallOriginalEvil")
+				.dir(bugDetectorDirectory)
+				.runs(200)
+				.forkMode(3)
+				.build();
+			fuzzTest.execute(); // fork mode doesn't throw errors
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+		});
+
+		it("Fork mode: Call with FRIENDLY string; SYNC", async () => {
+			// TODO: Fork mode does not work in the Windows-Server image used by github actions
+			if (process.platform === "win32") {
+				console.error(
+					"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+				);
+				return;
+			}
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.fuzzEntryPoint("ForkModeCallOriginalFriendly")
+				.dir(bugDetectorDirectory)
+				.runs(200)
+				.forkMode(3)
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
+
+		it("Fork mode: Call with EVIL string; ASYNC", async () => {
+			// TODO: Fork mode does not work in the Windows-Server image used by github actions
+			if (process.platform === "win32") {
+				console.error(
+					"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+				);
+				return;
+			}
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.fuzzEntryPoint("ForkModeCallOriginalEvilAsync")
+				.dir(bugDetectorDirectory)
+				.runs(10)
+				.forkMode(3)
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+		});
+
+		it("Fork mode: Call with FRIENDLY string; ASYNC", async () => {
+			// TODO: Fork mode does not work in the Windows-Server image used by github actions
+			if (process.platform === "win32") {
+				console.error(
+					"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+				);
+				return;
+			}
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.fuzzEntryPoint("ForkModeCallOriginalFriendlyAsync")
+				.dir(bugDetectorDirectory)
+				.runs(200)
+				.forkMode(3)
+				.build();
+			fuzzTest.execute(); // fork mode doesn't throw errors
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
+
+		it("Disable all bug detectors; Call with evil", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.fuzzEntryPoint("DisableAllBugDetectors")
+				.dir(bugDetectorDirectory)
+				.disableBugDetectors([".*"])
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expect(await fileExists(evilFilePath)).toBeTruthy();
+			expect(await fileExists("../jaz_zer")).toBeTruthy();
+		});
 	});
 
-	it("Fork mode: Call with FRIENDLY string; SYNC", () => {
-		// TODO: Fork mode does not work in the Windows-Server image used by github actions
-		if (process.platform === "win32") {
-			console.error(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
+	describe("Jest", () => {
+		it("Test with EVIL command; SYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Command Injection Jest tests Call with EVIL command$")
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(JestRegressionExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
+
+		it("Test with EVIL command; ASYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Call with EVIL command ASYNC$",
+				)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(JestRegressionExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
+
+		it("Test with FRIENDLY command", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Call with FRIENDLY command$",
+				)
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
+
+		it("Test with FRIENDLY command; ASYNC", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Call with FRIENDLY command ASYNC$",
+				)
+				.build();
+			fuzzTest.execute();
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
+
+		it("Fuzzing mode; Test with EVIL command", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Fuzzing mode with EVIL command$",
+				)
+				.jestRunInFuzzingMode(true)
+				.runs(200)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(
+				process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
 			);
-			return;
-		}
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.fuzzEntryPoint("ForkModeCallOriginalFriendly")
-			.dir(bugDetectorDirectory)
-			.runs(200)
-			.forkMode(3)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
 
-	it("Fork mode: Call with EVIL string; ASYNC", () => {
-		// TODO: Fork mode does not work in the Windows-Server image used by github actions
-		if (process.platform === "win32") {
-			console.error(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
-			);
-			return;
-		}
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.fuzzEntryPoint("ForkModeCallOriginalEvilAsync")
-			.dir(bugDetectorDirectory)
-			.runs(10)
-			.forkMode(3)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-	});
-
-	it("Fork mode: Call with FRIENDLY string; ASYNC", () => {
-		// TODO: Fork mode does not work in the Windows-Server image used by github actions
-		if (process.platform === "win32") {
-			console.error(
-				"// TODO: Fork mode does not work in the Windows-Server image used by github actions",
-			);
-			return;
-		}
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.fuzzEntryPoint("ForkModeCallOriginalFriendlyAsync")
-			.dir(bugDetectorDirectory)
-			.runs(200)
-			.forkMode(3)
-			.build();
-		fuzzTest.execute(); // fork mode doesn't throw errors
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
-
-	it("Disable all bug detectors; Call with evil", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.fuzzEntryPoint("DisableAllBugDetectors")
-			.dir(bugDetectorDirectory)
-			.disableBugDetectors([".*"])
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expect(fs.existsSync(evilFilePath)).toBeTruthy();
-		expect(fs.existsSync("../jaz_zer")).toBeTruthy();
-	});
-
-	it("Jest: Test with EVIL command; SYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName("^Command Injection Jest tests Call with EVIL command$")
-			.build();
-		expect(() => {
+		it("Fuzzing mode; Test with FRIENDLY command", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Fuzzing mode with FRIENDLY command$",
+				)
+				.jestRunInFuzzingMode(true)
+				.runs(200)
+				.build();
 			fuzzTest.execute();
-		}).toThrow(JestRegressionExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
 
-	it("Jest: Test with EVIL command; ASYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Call with EVIL command ASYNC$",
-			)
-			.build();
-		expect(() => {
+		it("Test with EVIL command; Done callback", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Call with EVIL command and done callback$",
+				)
+				.build();
+			expect(() => {
+				fuzzTest.execute();
+			}).toThrow(JestRegressionExitCode);
+			expect(await fileExists(friendlyFilePath)).toBeFalsy();
+			expectErrorToBePrintedOnce(fuzzTest);
+		});
+
+		it("Test with FRIENDLY command; Done callback", async () => {
+			const fuzzTest = new FuzzTestBuilder()
+				.runs(0)
+				.sync(false)
+				.dir(bugDetectorDirectory)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName(
+					"^Command Injection Jest tests Call with FRIENDLY command and done callback$",
+				)
+				.build();
 			fuzzTest.execute();
-		}).toThrow(JestRegressionExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
-
-	it("Jest: Test with FRIENDLY command", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName("^Command Injection Jest tests Call with FRIENDLY command$")
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
-
-	it("Jest: Test with FRIENDLY command; ASYNC", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Call with FRIENDLY command ASYNC$",
-			)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
-
-	it("Jest: Fuzzing mode; Test with EVIL command", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Fuzzing mode with EVIL command$",
-			)
-			.jestRunInFuzzingMode(true)
-			.runs(200)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(
-			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
-		);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
-
-	it("Jest: Fuzzing mode; Test with FRIENDLY command", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Fuzzing mode with FRIENDLY command$",
-			)
-			.jestRunInFuzzingMode(true)
-			.runs(200)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
-	});
-
-	it("Jest: Test with EVIL command; Done callback", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Call with EVIL command and done callback$",
-			)
-			.build();
-		expect(() => {
-			fuzzTest.execute();
-		}).toThrow(JestRegressionExitCode);
-		expect(fs.existsSync(friendlyFilePath)).toBeFalsy();
-		expectErrorToBePrintedOnce(fuzzTest);
-	});
-
-	it("Jest: Test with FRIENDLY command; Done callback", () => {
-		const fuzzTest = new FuzzTestBuilder()
-			.runs(0)
-			.sync(false)
-			.dir(bugDetectorDirectory)
-			.jestTestFile("tests.fuzz.js")
-			.jestTestName(
-				"^Command Injection Jest tests Call with FRIENDLY command and done callback$",
-			)
-			.build();
-		fuzzTest.execute();
-		expect(fs.existsSync(friendlyFilePath)).toBeTruthy();
+			expect(await fileExists(friendlyFilePath)).toBeTruthy();
+		});
 	});
 });

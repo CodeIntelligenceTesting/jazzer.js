@@ -48,6 +48,8 @@ class FuzzTest {
 		verbose,
 		coverage,
 		expectedErrors,
+		asJson,
+		timeout,
 	) {
 		this.includes = includes;
 		this.excludes = excludes;
@@ -68,6 +70,8 @@ class FuzzTest {
 		this.verbose = verbose;
 		this.coverage = coverage;
 		this.expectedErrors = expectedErrors;
+		this.asJson = asJson;
+		this.timeout = timeout;
 	}
 
 	execute() {
@@ -85,6 +89,7 @@ class FuzzTest {
 		if (this.sync) options.push("--sync");
 		if (this.coverage) options.push("--coverage");
 		if (this.dryRun !== undefined) options.push("--dry_run=" + this.dryRun);
+		if (this.timeout !== undefined) options.push("--timeout=" + this.timeout);
 		for (const include of this.includes) {
 			options.push("-i=" + include);
 		}
@@ -148,6 +153,9 @@ class FuzzTest {
 		if (this.jestRunInFuzzingMode !== undefined) {
 			config.mode = this.jestRunInFuzzingMode ? "fuzzing" : "regression";
 		}
+		if (this.timeout !== undefined) {
+			config.timeout = this.timeout;
+		}
 
 		// Write jest config file even if it exists
 		fs.writeFileSync(
@@ -157,9 +165,11 @@ class FuzzTest {
 		const cmd = "npx";
 		const options = [
 			"jest",
-			this.coverage ? "--coverage" : "",
 			this.jestTestFile,
 			'--testNamePattern="' + this.jestTestNamePattern + '"',
+			"--no-colors",
+			this.asJson ? "--json" : "",
+			this.coverage ? "--coverage" : "",
 		];
 		this.runTest(cmd, options, { ...process.env });
 	}
@@ -209,6 +219,8 @@ class FuzzTestBuilder {
 	_dictionaries = [];
 	_coverage = false;
 	_expectedErrors = [];
+	_asJson = false;
+	_timeout = undefined;
 
 	/**
 	 * @param {boolean} sync - whether to run the fuzz test in synchronous mode.
@@ -375,6 +387,16 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	asJson(asJson) {
+		this._asJson = asJson === undefined ? true : asJson;
+		return this;
+	}
+
+	timeout(timeout) {
+		this._timeout = timeout;
+		return this;
+	}
+
 	build() {
 		if (this._jestTestFile === "" && this._fuzzEntryPoint === "") {
 			throw new Error("fuzzEntryPoint or jestTestFile are not set.");
@@ -404,6 +426,8 @@ class FuzzTestBuilder {
 			this._verbose,
 			this._coverage,
 			this._expectedErrors,
+			this._asJson,
+			this._timeout,
 		);
 	}
 }
@@ -457,6 +481,31 @@ function describeSkipOnPlatform(platform) {
 	return process.platform === platform ? global.describe.skip : global.describe;
 }
 
+async function getFiles(dir) {
+	const result = [];
+	const files = await fs.promises.readdir(dir);
+	for (const file of files) {
+		const filepath = path.join(dir, file);
+		result.push(filepath);
+		if ((await fs.promises.stat(filepath)).isDirectory()) {
+			result.push(...(await getFiles(filepath)));
+		}
+	}
+	return result;
+}
+
+async function fileExists(path) {
+	return !!(await fs.promises.stat(path).catch((e) => false));
+}
+
+async function cleanCrashFilesIn(path) {
+	for (const file in await getFiles(path)) {
+		if (file.match(/crash-[0-9a-f]{40}/)) {
+			await fs.promises.rm(file, { force: true });
+		}
+	}
+}
+
 module.exports = {
 	FuzzTestBuilder,
 	FuzzingExitCode,
@@ -466,4 +515,7 @@ module.exports = {
 	makeFnCalledOnce,
 	callWithTimeout,
 	describeSkipOnPlatform,
+	getFiles,
+	fileExists,
+	cleanCrashFilesIn,
 };

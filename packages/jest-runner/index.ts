@@ -23,11 +23,11 @@ import type { JestEnvironment } from "@jest/environment";
 import { initFuzzing, setJazzerJsGlobal } from "@jazzer.js/core";
 
 import { loadConfig } from "./config";
-import { cleanupJestError } from "./errorUtils";
 import { FuzzTest } from "./fuzz";
 import { interceptScriptTransformerCalls } from "./transformerInterceptor";
 import { interceptTestState } from "./testStateInterceptor";
 import { interceptGlobals } from "./globalsInterceptor";
+import { cleanupJestError, cleanupJestRunnerStack } from "./errorUtils";
 
 export default async function jazzerTestRunner(
 	globalConfig: Config.GlobalConfig,
@@ -65,11 +65,23 @@ export default async function jazzerTestRunner(
 		testPath,
 		sendMessageToJest,
 	).then((result: TestResult) => {
-		result.testResults.forEach((testResult) => {
-			testResult.failureDetails?.forEach(cleanupJestError);
-		});
-		return result;
+		return cleanupTestResultDetails(result);
 	});
+}
+
+function cleanupTestResultDetails(result: TestResult) {
+	// Some errors, like timeouts, are created in Jest's test runner and need to be
+	// post-processed to remove internal stack frames in this way.
+	result.testResults.forEach((testResult) => {
+		testResult.failureDetails?.forEach(cleanupJestError);
+		testResult.failureMessages = testResult.failureMessages?.map<string>(
+			(failureMessage) => cleanupJestRunnerStack(failureMessage) ?? "",
+		);
+	});
+	if (result.failureMessage) {
+		result.failureMessage = cleanupJestRunnerStack(result.failureMessage);
+	}
+	return result;
 }
 
 // Global definition of the Jest fuzz test extension function.

@@ -17,16 +17,17 @@
 const { FuzzTestBuilder, FuzzingExitCode } = require("../helpers.js");
 const path = require("path");
 const fs = require("fs");
+const { cleanCrashFilesIn } = require("../helpers");
 
 describe("Path Traversal", () => {
 	const SAFE = "../safe_path/";
 	const EVIL = "../evil_path/";
-
-	beforeEach(() => {
-		fs.rmSync(SAFE, { recursive: true, force: true });
-	});
-
 	const bugDetectorDirectory = path.join(__dirname, "path-traversal");
+
+	beforeEach(async () => {
+		fs.rmSync(SAFE, { recursive: true, force: true });
+		await cleanCrashFilesIn(bugDetectorDirectory);
+	});
 
 	it("openSync with EVIL path", () => {
 		const fuzzTest = new FuzzTestBuilder()
