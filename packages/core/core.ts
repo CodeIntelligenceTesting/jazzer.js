@@ -28,6 +28,7 @@ import {
 	getFirstFinding,
 	printFinding,
 	Finding,
+	cleanErrorStack,
 } from "./finding";
 import {
 	FileSyncIdStrategy,
@@ -322,15 +323,11 @@ export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget,
 ): fuzzer.FuzzTarget {
 	function throwIfError(fuzzTargetError?: unknown): undefined | never {
-		const error = getFirstFinding();
-		if (error !== undefined) {
-			// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
-			clearFirstFinding();
+		const error = clearFirstFinding() ?? fuzzTargetError;
+		if (error) {
+			cleanErrorStack(error);
 			throw error;
-		} else if (fuzzTargetError) {
-			throw fuzzTargetError;
 		}
-		return undefined;
 	}
 
 	if (originalFuzzFn.length === 1) {
@@ -350,16 +347,15 @@ export function wrapFuzzFunctionForBugDetection(
 							return throwIfError() ?? result;
 						},
 						(reason) => {
+							callbacks.runAfterEachCallbacks();
 							return throwIfError(reason);
 						},
 					);
+				} else {
+					callbacks.runAfterEachCallbacks();
 				}
 			} catch (e) {
 				fuzzTargetError = e;
-			}
-			// Promises are handled above, so we only need to handle sync results here.
-			if (!(result instanceof Promise)) {
-				callbacks.runAfterEachCallbacks();
 			}
 			return throwIfError(fuzzTargetError) ?? result;
 		};
@@ -368,23 +364,23 @@ export function wrapFuzzFunctionForBugDetection(
 			data: Buffer,
 			done: (err?: Error) => void,
 		): unknown | Promise<unknown> => {
-			let result: unknown | Promise<unknown> = undefined;
 			try {
 				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
-				result = originalFuzzFn(data, (err?: Error) => {
-					const finding = getFirstFinding();
-					if (finding !== undefined) {
-						clearFirstFinding();
-					}
+				const result = originalFuzzFn(data, (err?) => {
+					const error = clearFirstFinding() ?? err;
+					cleanErrorStack(error);
 					callbacks.runAfterEachCallbacks();
-					done(finding ?? err);
+					done(error);
 				});
+				// Check if any finding was reported by the invocation before the
+				// callback was executed. As the callback in used for control flow,
+				// don't run afterEach here.
+				return throwIfError() ?? result;
 			} catch (e) {
 				callbacks.runAfterEachCallbacks();
 				throwIfError(e);
 			}
-			return result;
 		};
 	}
 }
