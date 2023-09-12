@@ -17,14 +17,16 @@
 const { FuzzTestBuilder, FuzzingExitCode } = require("../helpers.js");
 const path = require("path");
 const fs = require("fs");
+const { cleanCrashFilesIn } = require("../helpers");
 
 describe("Command injection", () => {
 	const bugDetectorDirectory = path.join(__dirname, "command-injection");
 	const friendlyFilePath = path.join(bugDetectorDirectory, "FRIENDLY");
 
 	// Delete files created by the tests.
-	beforeEach(() => {
+	beforeEach(async () => {
 		fs.rmSync(friendlyFilePath, { force: true });
+		await cleanCrashFilesIn(bugDetectorDirectory);
 	});
 
 	it("exec with EVIL command", () => {

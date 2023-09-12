@@ -8,5 +8,8 @@
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"
+	},
+	"jest": {
+		"testTimeout": 100000
 	}
 }

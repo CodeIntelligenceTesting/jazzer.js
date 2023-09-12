@@ -105,7 +105,6 @@ describe("Jest integration", () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute sync test")
 					.runs(1)
-					.verbose()
 					.build();
 				try {
 					fuzzTest.execute();
@@ -174,11 +173,32 @@ describe("Jest integration", () => {
 			it("load by mapped module name", () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("load by mapped module name")
-					.verbose()
 					.build();
 				expect(() => {
 					fuzzTest.execute();
 				}).toThrow(fuzzingExitCode);
+			});
+
+			it("print proper stacktrace", () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync test")
+					.asJson()
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(fuzzingExitCode);
+				const result = JSON.parse(fuzzTest.stdout);
+				expect(result.numFailedTests).toBe(1);
+
+				const lines = firstFailureMessage(result).split("\n");
+				expect(lines).toHaveLength(3);
+				expect(lines[0]).toEqual("Error: Welcome to Awesome Fuzzing!");
+				expect(lines[1]).toMatch(
+					/at Object\.Error \[as fuzzMe] \(.*target\.js:\d+:\d+\)/,
+				);
+				expect(lines[2]).toMatch(
+					/at fuzzMe \(.*integration\.fuzz\.js:\d+:\d+\)/,
+				);
 			});
 		});
 	});
@@ -196,9 +216,9 @@ describe("Jest integration", () => {
 					.execute();
 			});
 
-			it("execute async test", () => {
+			it("execute async test plain", () => {
 				regressionTestBuilder
-					.jestTestName("execute async test")
+					.jestTestName("execute async test plain")
 					.build()
 					.execute();
 			});
@@ -221,7 +241,8 @@ describe("Jest integration", () => {
 		describe("timeout", () => {
 			it("execute async timeout test", () => {
 				const fuzzTest = regressionTestBuilder
-					.jestTestName("execute async timeout test")
+					.jestTestName("execute async timeout test plain")
+					.asJson()
 					.build();
 				expect(() => {
 					fuzzTest.execute();
@@ -280,6 +301,22 @@ describe("Jest integration", () => {
 					.build()
 					.execute();
 			});
+
+			it("print proper stacktrace", () => {
+				const fuzzTest = regressionTestBuilder
+					.jestTestName("execute async timeout test plain")
+					.asJson()
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+
+				const result = JSON.parse(fuzzTest.stdout);
+				const stackFrames = firstFailureMessage(result)
+					.split("\n")
+					.filter((line) => line.startsWith("    at"));
+				expect(stackFrames).toHaveLength(10);
+			});
 		});
 
 		describe("Run modes", () => {
@@ -314,4 +351,10 @@ function assertTimeoutMessageLogged(fuzzTest, expectedTimeout) {
 	// expect the actual timeout to be in the range [expectedTimeout - 1, expectedTimeout + 1]
 	expect(timeoutValue).toBeGreaterThanOrEqual(expectedTimeout - 1);
 	expect(timeoutValue).toBeLessThanOrEqual(expectedTimeout + 1);
+}
+
+function firstFailureMessage(result) {
+	return result.testResults[0].assertionResults.filter(
+		(result) => result.status === "failed",
+	)[0].failureMessages[0];
 }

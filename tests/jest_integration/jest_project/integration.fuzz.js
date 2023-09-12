@@ -41,7 +41,7 @@ describe("Jest Integration", () => {
 		target.callbackFuzzMe(data, done);
 	});
 
-	it.fuzz("execute async timeout test", async (data) => {
+	it.fuzz("execute async timeout test plain", async (data) => {
 		await target.asyncTimeout(data);
 	});
 

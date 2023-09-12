@@ -23,7 +23,7 @@ import {
 import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";
 import * as fs from "fs";
-import { removeTopFramesFromError } from "./errorUtils";
+import { cleanupJestError, removeTopFramesFromError } from "./errorUtils";
 import {
 	defaultOptions,
 	Options,
