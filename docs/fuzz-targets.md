@@ -115,20 +115,24 @@ loaded properly. If your project internally still relies on calls to
 `require()`, all of these dependencies will be hooked. However, _pure_
 ECMAScript projects will currently not be instrumented!
 
+The Jest integration can improve on this and use Jest's ESM features to properly
+transform external code and dependencies. However,
+[ESM support](https://jestjs.io/docs/ecmascript-modules) in Jest is also only
+experimental.
+
 One such example that Jazzer.js can handle just fine can be found at
-[examples/protobufjs/fuzz.js](../examples/protobufjs/fuzz.js):
+[examples/protobufjs/fuzz.js](../examples/protobufjs/protobufjs.fuzz.js):
 
 ```js
 import proto from "protobufjs";
 import { temporaryWriteSync } from "tempy";
 
-export function fuzz(data: Buffer) {
-	try {
-		// Fuzz logic
-	} catch (e) {
-		// Handle expected error logic here
-	}
-}
+describe("protobufjs", () => {
+	test.fuzz("loadSync", (data) => {
+		const file = temporaryWriteSync(data);
+		proto.loadSync(file);
+	});
+});
 ```
 
 You also have to adapt your `package.json` accordingly, by adding:

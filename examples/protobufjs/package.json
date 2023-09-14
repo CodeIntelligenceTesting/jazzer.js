@@ -3,14 +3,32 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"fuzz": "npx jazzer fuzz --sync -i protobuf",
-		"dryRun": "npx jazzer fuzz -m regression --sync -i protobuf -- -runs=100 -seed=123456789"
+		"fuzz_esm": "JAZZER_FUZZ=1 NODE_OPTIONS=--experimental-vm-modules npx jest",
+		"dryRun": "echo \"Skipped\"",
+		"dryRun_esm": "NODE_OPTIONS=--experimental-vm-modules npx jest"
 	},
 	"dependencies": {
 		"protobufjs": "^7.0.0",
 		"tempy": "^3.0.0"
 	},
 	"devDependencies": {
-		"@jazzer.js/cli": "file:../../packages/core"
+		"@jazzer.js/jest-runner": "file:../../packages/jest-runner"
+	},
+	"engines": {
+		"node": ">= 18.8.0"
+	},
+	"jest": {
+		"projects": [
+			{
+				"testRunner": "@jazzer.js/jest-runner",
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"testMatch": [
+					"<rootDir>/**/*.fuzz.js"
+				]
+			}
+		]
 	}
 }
