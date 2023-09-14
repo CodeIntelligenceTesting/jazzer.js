@@ -1,5 +1,5 @@
 {
-	"name": "jazzerjs-signal-handler-tests",
+	"name": "jazzerjs-signal-handler-tests-sigsegv",
 	"version": "1.0.0",
 	"description": "Tests for the SIGINT signal handler",
 	"scripts": {
