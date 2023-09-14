@@ -17,7 +17,7 @@
 	"types": "dist/index.d.ts",
 	"dependencies": {
 		"@jazzer.js/core": "1.7.0",
-		"cosmiconfig": "^8.3.5",
+		"cosmiconfig": "^8.3.6",
 		"istanbul-reports": "^3.1.6"
 	},
 	"devDependencies": {
