@@ -17,6 +17,7 @@
 import { AssignmentExpression, Identifier, Node } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
 import {
+	reportAndThrowFinding,
 	reportFinding,
 	registerAfterEachCallback,
 	addDictionary,
@@ -334,6 +335,7 @@ function detectPrototypePollutionOfBasicObjects(
 		if (!currentProtoSnapshots[i]) {
 			reportFinding(
 				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
+				false,
 			);
 			return;
 		}
@@ -344,6 +346,7 @@ function detectPrototypePollutionOfBasicObjects(
 		if (equalityResult) {
 			reportFinding(
 				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
+				false,
 			);
 			return;
 		}
@@ -401,7 +404,7 @@ function detectPrototypePollution(
 					message = `Prototype Pollution: __proto__ value is ${protoValue}`;
 				}
 				if (report) {
-					reportFinding(message);
+					reportAndThrowFinding(message);
 				}
 				// If prototype pollution is detected, always stop analyzing the prototype chain.
 				return;

@@ -17,24 +17,48 @@
 import process from "process";
 import { EOL } from "os";
 import { sep } from "path";
+import { getJazzerJsGlobal, setJazzerJsGlobal } from "./api";
+
+const firstFinding = "firstFinding";
 
 export class Finding extends Error {}
 
-// The first finding reported by any bug detector will be saved here.
+// The first finding reported by any bug detector will be saved in the global jazzerJs object.
 // This variable has to be cleared every time when the fuzzer is finished
 // processing an input (only relevant for modes where the fuzzing continues
 // after finding an error, e.g. fork mode, Jest regression mode, fuzzing that
 // ignores errors mode, etc.).
-let firstFinding: Finding | undefined;
 
-export function getFirstFinding(): Finding | undefined {
-	return firstFinding;
+function getFirstFinding(): Finding | undefined {
+	return getJazzerJsGlobal(firstFinding);
 }
 
 export function clearFirstFinding(): Finding | undefined {
-	const lastFinding = firstFinding;
-	firstFinding = undefined;
+	const lastFinding = getFirstFinding();
+	setJazzerJsGlobal(firstFinding, undefined);
 	return lastFinding;
+}
+
+/**
+ * Save the first finding reported by any bug detector.
+ *
+ * @param findingMessage - The finding to be saved.
+ * @param containStack - Whether the finding should contain a stack trace or not.
+ */
+export function reportFinding(
+	findingMessage: string,
+	containStack = true,
+): Finding | undefined {
+	// After saving the first finding, ignore all subsequent errors.
+	if (getFirstFinding()) {
+		return;
+	}
+	const reportedFinding = new Finding(findingMessage);
+	if (!containStack) {
+		reportedFinding.stack = findingMessage;
+	}
+	setJazzerJsGlobal(firstFinding, reportedFinding);
+	return reportedFinding;
 }
 
 /**
@@ -42,14 +66,13 @@ export function clearFirstFinding(): Finding | undefined {
  * potentially abort the current execution.
  *
  * @param findingMessage - The finding to be saved and thrown.
+ * @param containStack - Whether the finding should contain a stack trace or not.
  */
-export function reportFinding(findingMessage: string): void | never {
-	// After saving the first finding, ignore all subsequent errors.
-	if (firstFinding) {
-		return;
-	}
-	firstFinding = new Finding(findingMessage);
-	throw firstFinding;
+export function reportAndThrowFinding(
+	findingMessage: string,
+	containStack = true,
+): void | never {
+	throw reportFinding(findingMessage, containStack);
 }
 
 /**
