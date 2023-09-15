@@ -36,7 +36,7 @@
 		"fix": "npm run format:fix && npm run lint:fix"
 	},
 	"devDependencies": {
-		"@types/bindings": "^1.5.1",
+		"@types/bindings": "^1.5.2",
 		"@types/jest": "^29.5.4",
 		"@types/node": "^20.6.0",
 		"@types/yargs": "^17.0.24",
