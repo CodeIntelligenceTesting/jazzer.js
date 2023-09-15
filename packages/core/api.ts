@@ -28,7 +28,7 @@ export {
 	registerBeforeEachCallback,
 } from "./callback";
 export { addDictionary } from "./dictionary";
-export { reportFinding } from "./finding";
+export { reportAndThrowFinding, reportFinding } from "./finding";
 export { getJazzerJsGlobal, setJazzerJsGlobal } from "./globals";
 
 export const guideTowardsEquality = fuzzer.tracer.guideTowardsEquality;

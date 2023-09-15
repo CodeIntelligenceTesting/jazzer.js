@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
+export const jazzerJs = new Map<string, unknown>();
+
 export function setJazzerJsGlobal(name: string, value: unknown) {
-	// @ts-ignore
-	if (globalThis.JazzerJS === undefined) {
-		Object.defineProperty(globalThis, "JazzerJS", {
-			value: new Map<string, unknown>(),
-			enumerable: true,
-			configurable: false,
-			writable: false,
-		});
-	}
 	// @ts-ignore
 	globalThis.JazzerJS.set(name, value);
 }

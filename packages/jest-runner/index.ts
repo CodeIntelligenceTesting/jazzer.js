@@ -20,7 +20,11 @@ import { TestResult } from "@jest/test-result";
 import { Config } from "@jest/types";
 import type { JestEnvironment } from "@jest/environment";
 
-import { initFuzzing, setJazzerJsGlobal } from "@jazzer.js/core";
+import {
+	initFuzzing,
+	registerGlobals,
+	setJazzerJsGlobal,
+} from "@jazzer.js/core";
 
 import { loadConfig } from "./config";
 import { FuzzTest } from "./fuzz";
@@ -39,14 +43,16 @@ export default async function jazzerTestRunner(
 ): Promise<TestResult> {
 	const vmContext = environment.getVmContext();
 	if (vmContext === null) throw new Error("vmContext is undefined");
-	setJazzerJsGlobal("vmContext", vmContext);
 
 	const jazzerConfig = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
 	const globalEnvironments = [environment.getVmContext(), globalThis];
-	const instrumentor = await initFuzzing(jazzerConfig, globalEnvironments);
+	registerGlobals(jazzerConfig, globalEnvironments);
+	setJazzerJsGlobal("vmContext", vmContext);
+	const instrumentor = await initFuzzing(jazzerConfig);
+
 	interceptScriptTransformerCalls(runtime, instrumentor);
 
 	const testState = interceptTestState(environment, jazzerConfig);

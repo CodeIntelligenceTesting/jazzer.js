@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import { reportFinding, guideTowardsContainment } from "@jazzer.js/core";
+import {
+	reportAndThrowFinding,
+	guideTowardsContainment,
+} from "@jazzer.js/core";
 import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -202,7 +205,7 @@ function detectFindingAndGuideFuzzing(
 	) {
 		const argument = input.toString();
 		if (argument.includes(goal)) {
-			reportFinding(
+			reportAndThrowFinding(
 				`Path Traversal in ${functionName}(): called with '${argument}'`,
 			);
 		}

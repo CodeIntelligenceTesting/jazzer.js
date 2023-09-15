@@ -25,7 +25,6 @@ import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import {
 	clearFirstFinding,
-	getFirstFinding,
 	printFinding,
 	Finding,
 	cleanErrorStack,
@@ -39,6 +38,7 @@ import {
 import { callbacks } from "./callback";
 import { ensureFilepath, importModule } from "./utils";
 import { buildFuzzerOption, Options } from "./options";
+import { jazzerJs } from "./globals";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -58,12 +58,7 @@ declare global {
 	var options: Options;
 }
 
-export async function initFuzzing(
-	options: Options,
-	globals?: unknown[],
-): Promise<Instrumentor> {
-	registerGlobals(options, globals);
-
+export async function initFuzzing(options: Options): Promise<Instrumentor> {
 	const instrumentor = new Instrumentor(
 		options.includes,
 		options.excludes,
@@ -103,12 +98,16 @@ export async function initFuzzing(
 	return instrumentor;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function registerGlobals(options: Options, globals: any[] = [globalThis]) {
+export function registerGlobals(
+	options: Options,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	globals: any[] = [globalThis],
+) {
 	globals.forEach((global) => {
 		global.Fuzzer = fuzzer.fuzzer;
 		global.HookManager = hooking.hookManager;
 		global.options = options;
+		global.JazzerJS = jazzerJs;
 	});
 }
 
@@ -154,6 +153,7 @@ function getFilteredBugDetectorPaths(
 }
 
 export async function startFuzzing(options: Options) {
+	registerGlobals(options);
 	await initFuzzing(options);
 	const fuzzFn = await loadFuzzFunction(options);
 
@@ -355,6 +355,7 @@ export function wrapFuzzFunctionForBugDetection(
 					callbacks.runAfterEachCallbacks();
 				}
 			} catch (e) {
+				callbacks.runAfterEachCallbacks();
 				fuzzTargetError = e;
 			}
 			return throwIfError(fuzzTargetError) ?? result;

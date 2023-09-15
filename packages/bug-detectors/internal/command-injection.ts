@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-import { guideTowardsContainment, reportFinding } from "@jazzer.js/core";
+import {
+	guideTowardsContainment,
+	reportAndThrowFinding,
+} from "@jazzer.js/core";
 import { registerBeforeHook } from "@jazzer.js/hooking";
 
 /**
@@ -49,7 +52,7 @@ for (const functionName of functionNames) {
 			return;
 		}
 		if (firstArgument.includes(goal)) {
-			reportFinding(
+			reportAndThrowFinding(
 				`Command Injection in ${functionName}(): called with '${firstArgument}'`,
 			);
 		}

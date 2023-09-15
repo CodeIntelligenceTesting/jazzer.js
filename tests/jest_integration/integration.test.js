@@ -317,6 +317,19 @@ describe("Jest integration", () => {
 					.filter((line) => line.startsWith("    at"));
 				expect(stackFrames).toHaveLength(10);
 			});
+
+			it("prioritize finding over error", () => {
+				const fuzzTest = regressionTestBuilder
+					.jestTestName("prioritize finding over error")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				expect(fuzzTest.stderr).toContain("Finding reported!");
+				expect(fuzzTest.stderr).not.toContain(
+					"This error should not be reported!",
+				);
+			});
 		});
 
 		describe("Run modes", () => {

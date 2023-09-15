@@ -16,6 +16,7 @@
 
 const target = require("./target.js");
 const mappedTarget = require("mappedModuleName");
+const { reportFinding } = require("@jazzer.js/core");
 
 jest.mock("./target.js", () => ({
 	...jest.requireActual("./target.js"),
@@ -23,6 +24,11 @@ jest.mock("./target.js", () => ({
 		throw "the function was mocked";
 	},
 }));
+
+// These should not be seen in the stack trace, because the test
+// explicitly looks for these strings.
+const findingMessage = "Finding reported!";
+const errorMessage = "This error should not be reported!";
 
 describe("Jest Integration", () => {
 	it.fuzz("execute sync test", (data) => {
@@ -77,6 +83,11 @@ describe("Jest Integration", () => {
 
 	it.fuzz("load by mapped module name", (data) => {
 		mappedTarget.fuzzMe(data);
+	});
+
+	it.fuzz("prioritize finding over error", (data) => {
+		reportFinding(findingMessage);
+		throw new Error(errorMessage);
 	});
 });
 
