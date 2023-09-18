@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 import fs from "fs";
+import tmp from "tmp";
 import { addDictionary, useDictionaryByParams } from "./dictionary";
-
-const tmp = require("tmp");
 
 // Cleanup created files on exit
 tmp.setGracefulCleanup();
 
 describe("Dictionary", () => {
+	beforeEach(() => {
+		globalThis.JazzerJS = new Map<string, unknown>();
+	});
+
 	it("use explicit dictionary", () => {
 		const content = `
 # comment

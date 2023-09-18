@@ -16,32 +16,35 @@
 
 import fs from "fs";
 import tmp from "tmp";
+import { getOrSetJazzerJsGlobal } from "./api";
 
 /**
  * Dictionaries can be used to provide additional mutation suggestions to the
  * fuzzer.
  */
-export class Dictionaries {
-	private _dictionary: string[] = [];
+export class Dictionary {
+	private _entries: string[] = [];
 
-	get dictionary() {
-		return this._dictionary;
+	get entries() {
+		return [...this._entries];
 	}
 
-	addDictionary(dictionary: string[]) {
-		this._dictionary.push(...dictionary);
+	addEntries(dictionary: string[]) {
+		this._entries.push(...dictionary);
 	}
 }
 
-const dictionaries = new Dictionaries();
+function getDictionary(): Dictionary {
+	return getOrSetJazzerJsGlobal("dictionary", new Dictionary());
+}
 
 export function addDictionary(...dictionary: string[]) {
-	dictionaries.addDictionary(dictionary);
+	getDictionary().addEntries(dictionary);
 }
 
 export function useDictionaryByParams(options: string[]): string[] {
 	const opts = [...options];
-	const dictionary = Array.from(dictionaries.dictionary);
+	const dictionary = getDictionary().entries;
 
 	// This diverges from the libFuzzer behavior, which allows only one dictionary (the last one).
 	// We merge all dictionaries into one and pass that to libfuzzer.
