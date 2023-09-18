@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { getOrSetJazzerJsGlobal } from "./api";
+
 export type Thunk = () => void;
 
 /**
@@ -33,24 +35,23 @@ export class Callbacks {
 	}
 
 	runAfterEachCallbacks() {
-		for (const c of this._afterEachCallbacks) {
-			c();
-		}
+		this._afterEachCallbacks.forEach((c) => c());
 	}
 
 	runBeforeEachCallbacks() {
-		for (const c of this._beforeEachCallbacks) {
-			c();
-		}
+		this._beforeEachCallbacks.forEach((c) => c());
 	}
 }
 
-export const callbacks = new Callbacks();
+const defaultCallbacks = new Callbacks();
+export function getCallbacks(): Callbacks {
+	return getOrSetJazzerJsGlobal("callbacks", defaultCallbacks);
+}
 
 export function registerAfterEachCallback(callback: Thunk) {
-	callbacks.registerAfterEachCallback(callback);
+	getCallbacks().registerAfterEachCallback(callback);
 }
 
 export function registerBeforeEachCallback(callback: Thunk) {
-	callbacks.registerBeforeEachCallback(callback);
+	getCallbacks().registerBeforeEachCallback(callback);
 }
