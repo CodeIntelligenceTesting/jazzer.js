@@ -14,14 +14,31 @@
  * limitations under the License.
  */
 
+declare global {
+	// eslint-disable-next-line no-var
+	var JazzerJS: Map<string, unknown> | undefined;
+}
+
+// Require the external initialization to set this map in the globalThis object
+// before it is used here.
 export const jazzerJs = new Map<string, unknown>();
 
-export function setJazzerJsGlobal(name: string, value: unknown) {
-	// @ts-ignore
+export function setJazzerJsGlobal<T>(name: string, value: T): void {
+	if (!globalThis.JazzerJS) {
+		throw new Error("JazzerJS global not initialized");
+	}
 	globalThis.JazzerJS.set(name, value);
 }
 
-export function getJazzerJsGlobal(name: string): unknown {
-	// @ts-ignore
-	return globalThis.JazzerJS?.get(name);
+export function getJazzerJsGlobal<T>(name: string): T | undefined {
+	return globalThis.JazzerJS?.get(name) as T;
+}
+
+export function getOrSetJazzerJsGlobal<T>(name: string, defaultValue: T): T {
+	const value = getJazzerJsGlobal<T>(name);
+	if (value === undefined) {
+		setJazzerJsGlobal(name, defaultValue);
+		return defaultValue;
+	}
+	return value;
 }

@@ -29,7 +29,11 @@ export {
 } from "./callback";
 export { addDictionary } from "./dictionary";
 export { reportAndThrowFinding, reportFinding } from "./finding";
-export { getJazzerJsGlobal, setJazzerJsGlobal } from "./globals";
+export {
+	getJazzerJsGlobal,
+	setJazzerJsGlobal,
+	getOrSetJazzerJsGlobal,
+} from "./globals";
 
 export const guideTowardsEquality = fuzzer.tracer.guideTowardsEquality;
 export const guideTowardsContainment = fuzzer.tracer.guideTowardsContainment;
