@@ -35,7 +35,7 @@ import {
 	MemorySyncIdStrategy,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
-import { callbacks } from "./callback";
+import { getCallbacks } from "./callback";
 import { ensureFilepath, importModule } from "./utils";
 import { buildFuzzerOption, Options } from "./options";
 import { jazzerJs } from "./globals";
@@ -334,6 +334,7 @@ export function wrapFuzzFunctionForBugDetection(
 		return (data: Buffer): unknown | Promise<unknown> => {
 			let fuzzTargetError: unknown;
 			let result: unknown | Promise<unknown> = undefined;
+			const callbacks = getCallbacks();
 			try {
 				callbacks.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
@@ -365,6 +366,7 @@ export function wrapFuzzFunctionForBugDetection(
 			data: Buffer,
 			done: (err?: Error) => void,
 		): unknown | Promise<unknown> => {
+			const callbacks = getCallbacks();
 			try {
 				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
