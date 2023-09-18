@@ -16,7 +16,7 @@
 	"main": "dist/instrument.js",
 	"types": "dist/instrument.d.js",
 	"dependencies": {
-		"@babel/core": "^7.22.19",
+		"@babel/core": "^7.22.20",
 		"@babel/generator": "^7.22.15",
 		"@jazzer.js/fuzzer": "1.7.0",
 		"@jazzer.js/hooking": "1.7.0",
@@ -26,7 +26,7 @@
 		"source-map-support": "^0.5.21"
 	},
 	"devDependencies": {
-		"@types/babel__core": "^7.20.1",
+		"@types/babel__core": "^7.20.2",
 		"@types/istanbul-lib-hook": "^2.0.1",
 		"@types/istanbul-lib-instrument": "^1.7.4",
 		"@types/node": "^20.6.2",
