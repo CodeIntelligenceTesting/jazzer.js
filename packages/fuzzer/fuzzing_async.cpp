@@ -14,6 +14,8 @@
 
 #include "napi.h"
 #include <cstdlib>
+#include <csignal>
+#include <csetjmp>
 #include <future>
 #include <iostream>
 
@@ -66,31 +68,47 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
+const std::string SEGFAULT_ERROR_MESSAGE = "Segmentation fault found in fuzz target";
+
+volatile std::sig_atomic_t gSignalStatus;
+std::jmp_buf errorBuffer;
+
+void ErrorSignalHandler(int signum) {
+  gSignalStatus = signum;
+  std::longjmp(errorBuffer, signum);
+}
+
 // The libFuzzer callback when fuzzing asynchronously.
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
   auto input = DataType{Data, Size, &promise};
 
-  auto future = promise.get_future();
-  auto status = gTSFN.BlockingCall(&input);
-  if (status != napi_ok) {
-    Napi::Error::Fatal(
-        "FuzzCallbackAsync",
-        "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
+  if(setjmp(errorBuffer) == 0) {
+    auto future = promise.get_future();
+    auto status = gTSFN.BlockingCall(&input);
+    if (status != napi_ok) {
+      Napi::Error::Fatal(
+          "FuzzCallbackAsync",
+          "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
+    }
+    // Wait until the JavaScript fuzz target has finished.
+    try {
+      future.get();
+    } catch (JSException &exception) {
+      throw;
+    } catch (std::exception &exception) {
+      std::cerr << "==" << (unsigned long)GetPID()
+                << "== Jazzer.js: unexpected Error: " << exception.what()
+                << std::endl;
+      libfuzzer::PrintCrashingInput();
+      // We call exit to immediately terminates the process without performing any
+      // cleanup including libfuzzer exit handlers.
+      _Exit(libfuzzer::ExitErrorCode);
+    }
   }
-  // Wait until the JavaScript fuzz target has finished.
-  try {
-    future.get();
-  } catch (JSException &exception) {
-    throw;
-  } catch (std::exception &exception) {
-    std::cerr << "==" << (unsigned long)GetPID()
-              << "== Jazzer.js: unexpected Error: " << exception.what()
-              << std::endl;
-    libfuzzer::PrintCrashingInput();
-    // We call exit to immediately terminates the process without performing any
-    // cleanup including libfuzzer exit handlers.
-    _Exit(libfuzzer::ExitErrorCode);
+  if (gSignalStatus) {
+    std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
+    exit(139);
   }
   return EXIT_SUCCESS;
 }
@@ -257,6 +275,8 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
                            "Need two arguments, which must be the fuzz target "
                            "function and an array of libfuzzer arguments");
   }
+
+  signal(SIGSEGV, ErrorSignalHandler);
 
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
 

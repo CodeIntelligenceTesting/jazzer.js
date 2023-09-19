@@ -18,7 +18,7 @@
 	"scripts": {
 		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
 		"install": "prebuild-install --runtime napi || npm run prebuild",
-		"build": "cmake-js build --out build",
+		"build": "cmake-js build --out build --debug",
 		"format:fix": "clang-format -i *.cpp shared/*.cpp shared/*.h",
 		"lint": "find . -path ./build -prune -type f -o -iname '*.h' -o -iname '*.cpp' | xargs clang-tidy"
 	},
