@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "Tests for Jazzer.js' signal handlers",
 	"scripts": {
+		"install": "cd native-signal && npm install",
 		"fuzz": "jest --verbose",
 		"test": "jest --verbose"
 	},

@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
+		"install": "npm run build",
 		"build": "cmake-js build && tsc"
 	},
 	"author": "",
