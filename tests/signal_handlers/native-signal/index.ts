@@ -22,6 +22,6 @@ type NativeAddon = {
 
 const addon: NativeAddon = bind("signal_impl");
 
-export function sigsev(loc: number) {
+export function sigsegv(loc: number) {
 	addon.sigsegv(loc);
 }

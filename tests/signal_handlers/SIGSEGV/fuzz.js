@@ -42,7 +42,7 @@ module.exports.SIGSEGV_ASYNC = (data) => {
 module.exports.NATIVE_SIGSEGV_SYNC = (data) => {
 	if (i === 1000) {
 		console.log("kill with signal");
-		native.sigsev(0);
+		native.sigsegv(0);
 	}
 	if (i > 1000) {
 		console.log("Signal has not stopped the fuzzing process");
@@ -53,7 +53,7 @@ module.exports.NATIVE_SIGSEGV_SYNC = (data) => {
 module.exports.NATIVE_SIGSEGV_ASYNC = async (data) => {
 	if (i === 1000) {
 		console.log("kill with signal");
-		native.sigsev(0);
+		native.sigsegv(0);
 	}
 	i++;
 };
