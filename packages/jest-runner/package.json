@@ -17,11 +17,11 @@
 	"types": "dist/index.d.ts",
 	"dependencies": {
 		"@jazzer.js/core": "1.7.0",
-		"cosmiconfig": "^8.3.4",
+		"cosmiconfig": "^8.3.6",
 		"istanbul-reports": "^3.1.6"
 	},
 	"devDependencies": {
-		"@types/tmp": "^0.2.3",
+		"@types/tmp": "^0.2.4",
 		"tmp": "^0.2.1"
 	},
 	"engines": {
