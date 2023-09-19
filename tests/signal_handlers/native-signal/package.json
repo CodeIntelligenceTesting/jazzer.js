@@ -4,16 +4,12 @@
 	"description": "",
 	"main": "dist/index.js",
 	"scripts": {
-		"prebuild": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
-		"install": "prebuild-install --runtime napi || npm run prebuild",
-		"build": "tsc",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"build": "cmake-js build && tsc"
 	},
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"typescript": "^5.2.2",
-		"prebuild": "^12.0.0"
+		"typescript": "^5.2.2"
 	},
 	"binary": {
 		"napi_versions": [
@@ -22,7 +18,6 @@
 	},
 	"dependencies": {
 		"bindings": "^1.5.0",
-		"cmake-js": "^7.2.1",
-		"prebuild-install": "^7.1.1"
+		"cmake-js": "^7.2.1"
 	}
 }
