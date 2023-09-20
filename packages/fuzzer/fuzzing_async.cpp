@@ -106,7 +106,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
       _Exit(libfuzzer::ExitErrorCode);
     }
   }
-  if (gSignalStatus) {
+  if (gSignalStatus > 0) {
     std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
     exit(139);
   }
@@ -276,8 +276,6 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
                            "function and an array of libfuzzer arguments");
   }
 
-  signal(SIGSEGV, ErrorSignalHandler);
-
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
 
   // Store the JS fuzz target and corresponding environment, so that our C++
@@ -308,6 +306,7 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
         try {
+          signal(SIGSEGV, ErrorSignalHandler);
           StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         } catch (const JSException &exception) {
         }
