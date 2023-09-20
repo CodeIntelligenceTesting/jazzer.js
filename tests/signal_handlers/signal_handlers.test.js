@@ -98,6 +98,7 @@ describe("SIGSEGV handlers", () => {
 		it("stop async fuzzing on SIGSEGV", () => {
 			const fuzzTest = fuzzTestBuilder
 				.sync(false)
+				.verbose(true)
 				.fuzzEntryPoint("SIGSEGV_ASYNC")
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();
@@ -115,6 +116,7 @@ describe("SIGSEGV handlers", () => {
 		it("stop fuzzing on native async SIGSEGV", () => {
 			const fuzzTest = fuzzTestBuilder
 				.sync(false)
+				.verbose(true)
 				.fuzzEntryPoint("NATIVE_SIGSEGV_ASYNC")
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();

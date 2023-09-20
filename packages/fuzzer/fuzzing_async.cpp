@@ -74,6 +74,7 @@ volatile std::sig_atomic_t gSignalStatus;
 std::jmp_buf errorBuffer;
 
 void ErrorSignalHandler(int signum) {
+  std::cerr << "segfault detected" << std::endl;
   gSignalStatus = signum;
   std::longjmp(errorBuffer, signum);
 }
@@ -306,6 +307,7 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
         try {
+          std::cerr << "assigning segfault handler" << std::endl;
           signal(SIGSEGV, ErrorSignalHandler);
           StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         } catch (const JSException &exception) {
