@@ -26,6 +26,14 @@ if(MSVC
             /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
 endif()
 
+# CMAKE_JS_INC, containing nodejs API headers, is only set by invocations via
+# cmake-js, manually set it when executed in other environments like IDEs.
+if (NOT CMAKE_JS_INC)
+  execute_process(
+    COMMAND npx cmake-js print-cmakejs-include
+    OUTPUT_VARIABLE CMAKE_JS_INC)
+endif ()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(LIBFUZZER_TARGET "clang_rt.fuzzer_no_main-x86_64")
   set(LIBFUZZER_STATIC_LIB_PATH "lib/linux/lib${LIBFUZZER_TARGET}.a")
@@ -54,17 +62,8 @@ endif()
 # releases.)
 add_definitions(-DNAPI_VERSION=4)
 
-add_library(
-  ${PROJECT_NAME} SHARED
-  "addon.cpp"
-  "shared/callbacks.cpp"
-  "shared/coverage.cpp"
-  "shared/sanitizer_symbols.cpp"
-  "shared/tracing.cpp"
-  "fuzzing_sync.cpp"
-  "fuzzing_async.cpp"
-  "utils.cpp"
-  ${CMAKE_JS_SRC})
+file(GLOB SOURCE_FILES "*.cpp" "*.h" "shared/*.cpp" "shared/*.h")
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
@@ -161,15 +160,4 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_link_libraries(
     ${PROJECT_NAME}
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}>")
-endif()
-
-# Avoid downloading the full nodejs headers, and bundle a much more lightweight
-# copy instead
-if(MSVC
-   AND CMAKE_JS_NODELIB_DEF
-   AND CMAKE_JS_NODELIB_TARGET)
-  # Generate node.lib
-  execute_process(
-    COMMAND ${CMAKE_AR} /def:${CMAKE_JS_NODELIB_DEF}
-            /out:${CMAKE_JS_NODELIB_TARGET} ${CMAKE_STATIC_LINKER_FLAGS})
 endif()
