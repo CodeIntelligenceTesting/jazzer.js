@@ -84,6 +84,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
   auto input = DataType{Data, Size, &promise};
 
+  std::cerr << "reached setjmp" << std::endl;
   if(setjmp(errorBuffer) == 0) {
     auto future = promise.get_future();
     auto status = gTSFN.BlockingCall(&input);
