@@ -354,6 +354,66 @@ describe("Jest integration", () => {
 			});
 		});
 	});
+
+	describe("List all fuzz tests", () => {
+		const listFuzzTestNamesTestBuilder = new FuzzTestBuilder()
+			.dir(projectDir)
+			.listFuzzTestNames()
+			.jestTestFile(jestTestFile + ".js");
+
+		it("lists fuzz tests", () => {
+			const listFuzzTestNames = listFuzzTestNamesTestBuilder.build();
+
+			listFuzzTestNames.execute();
+
+			expect(listFuzzTestNames.stdout).toContain(
+				"Jest Integration execute sync test",
+			);
+			expect(listFuzzTestNames.stdout).toContain(
+				"Run mode skip and standard standard test",
+			);
+		});
+
+		it("filters fuzz tests by name", () => {
+			const listFuzzTestNames = listFuzzTestNamesTestBuilder
+				.listFuzzTestNamesPattern("sync test")
+				.build();
+
+			listFuzzTestNames.execute();
+
+			expect(listFuzzTestNames.stdout).toContain(
+				"Jest Integration execute sync test",
+			);
+			expect(listFuzzTestNames.stdout).not.toContain(
+				"Run mode skip and standard standard test",
+			);
+		});
+
+		it("filters fuzz tests by describe name", () => {
+			const listFuzzTestNames = listFuzzTestNamesTestBuilder
+				.listFuzzTestNamesPattern("Jest")
+				.build();
+
+			listFuzzTestNames.execute();
+
+			expect(listFuzzTestNames.stdout).toContain(
+				"Jest Integration execute sync test",
+			);
+			expect(listFuzzTestNames.stdout).not.toContain(
+				"Run mode skip and standard standard test",
+			);
+		});
+
+		it("prints nothing else on stdout", () => {
+			const listFuzzTestNames = listFuzzTestNamesTestBuilder
+				.listFuzzTestNamesPattern("__NOT_AN_ACTUAL_TESTNAME__")
+				.build();
+
+			listFuzzTestNames.execute();
+
+			expect(listFuzzTestNames.stdout).toBe("");
+		});
+	});
 });
 
 // Deflake the "timeout after N seconds" test to be more tolerant to small variations of N (+-1).
