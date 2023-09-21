@@ -154,8 +154,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH} -Wl,-no-whole-archive)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_link_libraries(
-    ${PROJECT_NAME} -Wl,-all_load ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH}
-    -Wl,-noall_load)
+    ${PROJECT_NAME} -Wl,-all_load ${BINARY_DIR}/${LIBFUZZER_STATIC_LIB_PATH})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   # Force MSVC to do an MT build, suggested by cmake-js
   cmake_policy(SET CMP0091 NEW)

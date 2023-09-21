@@ -84,33 +84,26 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
   auto input = DataType{Data, Size, &promise};
 
-  std::cerr << "reached setjmp" << std::endl;
-  if(setjmp(errorBuffer) == 0) {
-    auto future = promise.get_future();
-    auto status = gTSFN.BlockingCall(&input);
-    if (status != napi_ok) {
-      Napi::Error::Fatal(
-          "FuzzCallbackAsync",
-          "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
-    }
-    // Wait until the JavaScript fuzz target has finished.
-    try {
-      future.get();
-    } catch (JSException &exception) {
-      throw;
-    } catch (std::exception &exception) {
-      std::cerr << "==" << (unsigned long)GetPID()
-                << "== Jazzer.js: unexpected Error: " << exception.what()
-                << std::endl;
-      libfuzzer::PrintCrashingInput();
-      // We call exit to immediately terminates the process without performing any
-      // cleanup including libfuzzer exit handlers.
-      _Exit(libfuzzer::ExitErrorCode);
-    }
+  auto future = promise.get_future();
+  auto status = gTSFN.BlockingCall(&input);
+  if (status != napi_ok) {
+    Napi::Error::Fatal(
+        "FuzzCallbackAsync",
+        "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
   }
-  if (gSignalStatus > 0) {
-    std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
-    exit(139);
+  // Wait until the JavaScript fuzz target has finished.
+  try {
+    future.get();
+  } catch (JSException &exception) {
+    throw;
+  } catch (std::exception &exception) {
+    std::cerr << "==" << (unsigned long)GetPID()
+              << "== Jazzer.js: unexpected Error: " << exception.what()
+              << std::endl;
+    libfuzzer::PrintCrashingInput();
+    // We call exit to immediately terminates the process without performing any
+    // cleanup including libfuzzer exit handlers.
+    _Exit(libfuzzer::ExitErrorCode);
   }
   return EXIT_SUCCESS;
 }
@@ -127,6 +120,10 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   // thread and continue with the next invocation.
 
   try {
+    if (setjmp(errorBuffer) != 0) {
+      std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
+      exit(139);
+    }
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
 
