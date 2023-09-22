@@ -22,6 +22,10 @@ const path = require("path");
  * @param { Buffer } data
  */
 module.exports.fuzz = function (data) {
+	// Check if 'data' is a Buffer
+	if (!Buffer.isBuffer(data)) {
+		throw new Error("Input data must be a Buffer");
+	}
 	// Parse the buffer into a JSZip object. The buffer might have been obtained from an http-request.
 	// See https://stuk.github.io/jszip/documentation/howto/read_zip.html for some examples.
 	return JSZip.loadAsync(data)
@@ -31,10 +35,23 @@ module.exports.fuzz = function (data) {
 				// The loadAsync function should have sanitized the path already.
 				// Here we only construct the absolute path and trigger the path traversal bug.
 				// This issue was fixed in jszip 3.8.0.
-				path.join(__dirname, file);
+				if (zip.files.hasOwnProperty(file)) {
+					// Sanitize the file path before using it
+					const sanitizedFilePath = path.join(__dirname, path.basename(file));
+					// Check if the sanitized path is still safe
+					if (sanitizedFilePath.indexOf("..") !== -1) {
+						throw new Error("Detected path traversal attempt");
+					}
+					console.log(sanitizedFilePath);
+				}
+
+				//	path.join(__dirname, file);
 			}
 		})
-		.catch(() => {
+		.catch((error) => {
 			/* ignore broken zip files */
+			console.error("Error loading ZIP file:", error);
+			// Handle the error gracefully, e.g., return an error code or throw a custom exception.
+			throw new Error("Failed to load ZIP file");
 		});
 };
