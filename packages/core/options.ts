@@ -296,20 +296,25 @@ function prepareLibFuzzerArg0(fuzzerOptions: string[]): string {
 	// When we run in a libFuzzer mode that spawns subprocesses, we create a wrapper script
 	// that can be used as libFuzzer's argv[0]. In the fork mode, the main libFuzzer process
 	// uses argv[0] to spawn further processes that perform the actual fuzzing.
-	const libFuzzerSpawnsProcess = fuzzerOptions.some(
-		(flag) =>
-			(flag.startsWith("-fork=") && !flag.startsWith("-fork=0")) ||
-			(flag.startsWith("-jobs=") && !flag.startsWith("-jobs=0")) ||
-			(flag.startsWith("-merge=") && !flag.startsWith("-merge=0")),
-	);
-
-	if (!libFuzzerSpawnsProcess) {
+	if (!spawnsSubprocess(fuzzerOptions)) {
 		// Return a fake argv[0] to start the fuzzer if libFuzzer does not spawn new processes.
 		return "unused_arg0_report_a_bug_if_you_see_this";
 	} else {
 		// Create a wrapper script and return its path.
 		return createWrapperScript(fuzzerOptions);
 	}
+}
+
+// These flags cause libFuzzer to spawn subprocesses.
+const SUBPROCESS_FLAGS = ["fork", "jobs", "merge", "minimize_crash"];
+
+export function spawnsSubprocess(fuzzerOptions: string[]): boolean {
+	return fuzzerOptions.some((option) =>
+		SUBPROCESS_FLAGS.some((flag) => {
+			const name = `-${flag}=`;
+			return option.startsWith(name) && !option.startsWith("0", name.length);
+		}),
+	);
 }
 
 function createWrapperScript(fuzzerOptions: string[]) {

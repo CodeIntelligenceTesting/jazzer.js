@@ -19,7 +19,7 @@
 					"name": "Jazzer.js",
 					"color": "cyan"
 				},
-				"runner": "@jazzer.js/jest-runner",
+				"testRunner": "@jazzer.js/jest-runner",
 				"preset": "ts-jest",
 				"testEnvironment": "node"
 			}

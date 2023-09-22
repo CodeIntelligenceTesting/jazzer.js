@@ -147,10 +147,10 @@ describe("SIGSEGV handlers", () => {
 });
 
 function assertSignalMessagesLogged(fuzzTest) {
-	expect(fuzzTest.stderr).toContain("kill with signal");
+	expect(fuzzTest.stdout).toContain("kill with signal");
 
 	// Count how many times "Signal has not stopped the fuzzing process" has been printed.
-	const matches = fuzzTest.stderr.match(
+	const matches = fuzzTest.stdout.match(
 		/Signal has not stopped the fuzzing process/g,
 	);
 	const signalNotStoppedMessageCount = matches ? matches.length : 0;

@@ -1,5 +1,5 @@
 {
-	"name": "jazzerjs-signal-handler-tests",
+	"name": "jazzerjs-signal-handler-tests-sigsegv",
 	"version": "1.0.0",
 	"description": "Tests for the SIGINT signal handler",
 	"scripts": {
@@ -13,7 +13,7 @@
 	"jest": {
 		"projects": [
 			{
-				"runner": "@jazzer.js/jest-runner",
+				"testRunner": "@jazzer.js/jest-runner",
 				"displayName": {
 					"name": "Jazzer.js",
 					"color": "cyan"

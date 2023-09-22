@@ -16,24 +16,29 @@
 
 import {
 	cleanupJestError,
-	cleanupJestRunnerStack,
-	removeBottomFrames,
-	removeBottomFramesFromError,
 	removeTopFrames,
 	removeTopFramesFromError,
 } from "./errorUtils";
 
 describe("ErrorUtils", () => {
 	const error = new Error();
-	const stack = `Error:
-    at /jest_integration/integration.fuzz.js:27:3
-    at doneCallbackPromise (jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
-    at Promise.then._a (jazzer.js/packages/jest-runner/dist/fuzz.js:169:20)
-    at new Promise (<anonymous>)
-    at jazzer.js/packages/jest-runner/dist/fuzz.js:162:16
-    at Generator.next (<anonymous>)
-    at fulfilled (jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
-`;
+	const stack = `Error: thrown: "Exceeded timeout of 5000 ms for a test.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+    at /home/Code-Intelligence/jazzer.js/packages/jest-runner/fuzz.ts:163:3
+    at _dispatchDescribe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:55:5)
+    at runInRegressionMode (/home/Code-Intelligence/jazzer.js/packages/jest-runner/fuzz.ts:145:24)
+    at Function.fuzz (/home/Code-Intelligence/jazzer.js/packages/jest-runner/fuzz.ts:110:20)
+    at fuzz (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:44:5)
+    at _dispatchDescribe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:27:1)
+    at Runtime._execModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:444:34)`;
 
 	beforeEach(() => {
 		error.stack = stack;
@@ -41,64 +46,23 @@ describe("ErrorUtils", () => {
 
 	describe("clean up Jest runner frames", () => {
 		it("in errors", () => {
-			expect(cleanupJestError(undefined)).toBeUndefined();
-			expect(cleanupJestError(error)?.stack).toMatch(`Error:
-    at /jest_integration/integration.fuzz.js:27:3
-`);
-		});
-
-		it("in stacks", () => {
-			expect(cleanupJestRunnerStack(undefined)).toBeUndefined();
-			expect(cleanupJestRunnerStack(stack)).toMatch(`Error:
-    at /jest_integration/integration.fuzz.js:27:3
-`);
-		});
-	});
-
-	describe("remove stack frames", () => {
-		describe("in errors", () => {
-			it("on top of remaining", () => {
-				expect(removeTopFramesFromError(undefined, 1)).toBeUndefined();
-				expect(removeTopFramesFromError(error, 3)?.stack).toMatch(`Error:
-    at new Promise (<anonymous>)
-    at jazzer.js/packages/jest-runner/dist/fuzz.js:162:16
-    at Generator.next (<anonymous>)
-    at fulfilled (jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
-`);
-			});
-
-			it("on bottom of remaining", () => {
-				expect(removeBottomFramesFromError(undefined, 1)).toBeUndefined();
-				const cleanedUp = removeBottomFramesFromError(error, 3);
-				expect(cleanedUp?.stack).toMatch(`Error:
-    at /jest_integration/integration.fuzz.js:27:3
-    at doneCallbackPromise (jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
-    at Promise.then._a (jazzer.js/packages/jest-runner/dist/fuzz.js:169:20)
-    at new Promise (<anonymous>)
-`);
-			});
-		});
-
-		describe("in stacks", () => {
-			it("on top of remaining", () => {
-				expect(removeTopFrames(undefined, 1)).toBeUndefined();
-				expect(removeTopFrames(stack, 3)).toMatch(`Error:
-    at new Promise (<anonymous>)
-    at jazzer.js/packages/jest-runner/dist/fuzz.js:162:16
-    at Generator.next (<anonymous>)
-    at fulfilled (jazzer.js/packages/jest-runner/dist/fuzz.js:58:24)
-`);
-			});
-
-			it("on bottom of remaining", () => {
-				expect(removeBottomFrames(undefined, 1)).toBeUndefined();
-				expect(removeBottomFrames(stack, 3)).toMatch(`Error:
-    at /jest_integration/integration.fuzz.js:27:3
-    at doneCallbackPromise (jazzer.js/packages/jest-runner/dist/fuzz.js:213:20)
-    at Promise.then._a (jazzer.js/packages/jest-runner/dist/fuzz.js:169:20)
-    at new Promise (<anonymous>)
-`);
-			});
+			const result = cleanupJestError(error);
+			expect(result instanceof Error).toBeTruthy();
+			if (result instanceof Error) {
+				expect(result.stack)
+					.toMatch(`Error: thrown: "Exceeded timeout of 5000 ms for a test.
+Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+    at fuzz (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:44:5)
+    at _dispatchDescribe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:91:26)
+    at describe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:55:5)
+    at Object.describe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:27:1)
+    at Runtime._execModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:1439:24)
+    at Runtime._loadModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:1022:12)
+    at Runtime.requireModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:882:12)
+    at jestAdapter (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
+    at runTestInternal (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:444:34)`);
+			}
 		});
 	});
 });

@@ -3,7 +3,8 @@
 	"version": "1.0.0",
 	"description": "Unit tests for source code coverage.",
 	"scripts": {
-		"fuzz": "jest"
+		"fuzz": "jest",
+		"test": "jest"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

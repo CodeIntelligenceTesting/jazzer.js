@@ -15,22 +15,50 @@
  */
 
 import process from "process";
+import { EOL } from "os";
+import { sep } from "path";
+import { getJazzerJsGlobal, setJazzerJsGlobal } from "./api";
+
+const firstFinding = "firstFinding";
 
 export class Finding extends Error {}
 
-// The first finding reported by any bug detector will be saved here.
+// The first finding reported by any bug detector will be saved in the global jazzerJs object.
 // This variable has to be cleared every time when the fuzzer is finished
 // processing an input (only relevant for modes where the fuzzing continues
 // after finding an error, e.g. fork mode, Jest regression mode, fuzzing that
 // ignores errors mode, etc.).
-let firstFinding: Finding | undefined;
 
-export function getFirstFinding(): Finding | undefined {
-	return firstFinding;
+function getFirstFinding(): Finding | undefined {
+	return getJazzerJsGlobal(firstFinding);
 }
 
-export function clearFirstFinding(): void {
-	firstFinding = undefined;
+export function clearFirstFinding(): Finding | undefined {
+	const lastFinding = getFirstFinding();
+	setJazzerJsGlobal(firstFinding, undefined);
+	return lastFinding;
+}
+
+/**
+ * Save the first finding reported by any bug detector.
+ *
+ * @param findingMessage - The finding to be saved.
+ * @param containStack - Whether the finding should contain a stack trace or not.
+ */
+export function reportFinding(
+	findingMessage: string,
+	containStack = true,
+): Finding | undefined {
+	// After saving the first finding, ignore all subsequent errors.
+	if (getFirstFinding()) {
+		return;
+	}
+	const reportedFinding = new Finding(findingMessage);
+	if (!containStack) {
+		reportedFinding.stack = findingMessage;
+	}
+	setJazzerJsGlobal(firstFinding, reportedFinding);
+	return reportedFinding;
 }
 
 /**
@@ -38,72 +66,73 @@ export function clearFirstFinding(): void {
  * potentially abort the current execution.
  *
  * @param findingMessage - The finding to be saved and thrown.
+ * @param containStack - Whether the finding should contain a stack trace or not.
  */
-export function reportFinding(findingMessage: string): void | never {
-	// After saving the first finding, ignore all subsequent errors.
-	if (firstFinding) {
-		return;
-	}
-	firstFinding = new Finding(findingMessage);
-	throw firstFinding;
+export function reportAndThrowFinding(
+	findingMessage: string,
+	containStack = true,
+): void | never {
+	throw reportFinding(findingMessage, containStack);
 }
 
 /**
- * Prints a finding, or more generally some kind of error, to stdout.
+ * Prints a finding, or more generally some kind of error, to stderr.
  */
-export function printFinding(error: unknown) {
-	let errorMessage = `==${process.pid}== `;
+export function printFinding(
+	error: unknown,
+	print: (msg: string) => void = process.stderr.write.bind(process.stderr),
+): void {
+	print(`==${process.pid}== `);
 	if (!(error instanceof Finding)) {
-		errorMessage += "Uncaught Exception: Jazzer.js: ";
+		print("Uncaught Exception: Jazzer.js: ");
 	}
-
 	if (error instanceof Error) {
-		errorMessage += error.message;
-		console.error(errorMessage);
 		if (error.stack) {
-			console.error(cleanErrorStack(error));
+			cleanErrorStack(error);
+			print(error.stack);
+		} else {
+			print(error.message);
 		}
 	} else if (typeof error === "string" || error instanceof String) {
-		errorMessage += error;
-		console.error(errorMessage);
+		print(error.toString());
 	} else {
-		errorMessage += "unknown";
-		console.error(errorMessage);
+		print("unknown");
 	}
+	print(EOL);
 }
 
-function cleanErrorStack(error: Error): string {
-	if (error.stack === undefined) return "";
+interface WithStack {
+	stack?: string;
+}
 
-	// This cleans up the stack of a finding. The changes are independent of each other, since a finding can be
-	// thrown from the hooking library, by the custom hooks, or by the fuzz target.
+function hasStack(arg: unknown): arg is WithStack {
+	return (
+		arg !== undefined && arg !== null && (arg as WithStack).stack !== undefined
+	);
+}
+
+export function cleanErrorStack(error: unknown): void {
+	if (!hasStack(error) || !error.stack) return;
 	if (error instanceof Finding) {
-		// Remove the message from the stack trace. Also remove the subsequent line of the remaining stack trace that
-		// always contains `reportFinding()`, which is not relevant for the user.
-		error.stack = error.stack
-			?.replace(`Error: ${error.message}\n`, "")
-			.replace(/.*\n/, "");
-
-		// Remove all lines up to and including the line that mentions the hooking library from the stack trace of a
-		// finding.
-		const stack = error.stack.split("\n");
-		const index = stack.findIndex((line) =>
-			line.includes("jazzer.js/packages/hooking/manager"),
+		// Remove the "Error :" prefix of the finding message from the stack trace.
+		error.stack = error.stack.replace(
+			`Error: ${error.message}\n`,
+			`${error.message}\n`,
 		);
-		if (index !== undefined && index >= 0) {
-			error.stack = stack.slice(index + 1).join("\n");
-		}
-
-		// also delete all lines that mention "jazzer.js/packages/"
-		error.stack = error.stack.replace(/.*jazzer.js\/packages\/.*\n/g, "");
 	}
-
-	const result: string[] = [];
-	for (const line of error.stack.split("\n")) {
-		if (line.includes("jazzer.js/packages/core/core.ts")) {
-			break;
-		}
-		result.push(line);
-	}
-	return result.join("\n");
+	// Ignore all lines related to Jazzer.js internals. This includes stack frames on top,
+	// like bug detector and reporting ones, and stack frames on the bottom, like the function
+	// wrapper.
+	const filterCriteria = [
+		`@jazzer.js${sep}`, // cli usage
+		`jazzer.js${sep}packages${sep}`, // jest usage
+		`jazzer.js${sep}core${sep}`, // jest usage
+		`..${sep}..${sep}packages${sep}core${sep}`, // local/filesystem dependencies
+	];
+	error.stack = error.stack
+		.split("\n")
+		.filter(
+			(line) => !filterCriteria.some((criterion) => line.includes(criterion)),
+		)
+		.join("\n");
 }

@@ -17,14 +17,17 @@
 import { AssignmentExpression, Identifier, Node } from "@babel/types";
 import { NodePath, PluginTarget, types } from "@babel/core";
 import {
+	reportAndThrowFinding,
 	reportFinding,
 	registerAfterEachCallback,
 	addDictionary,
 	registerInstrumentationPlugin,
 	instrumentationGuard,
+	getJazzerJsGlobal,
 } from "@jazzer.js/core";
 
 import { bugDetectorConfigurations } from "../configuration";
+import * as vm from "vm";
 
 // Allow the user to configure this bug detector in the custom-hooks file (if any).
 class PrototypePollutionConfig {
@@ -233,7 +236,7 @@ registerInstrumentationPlugin((): PluginTarget => {
 
 // These objects will be used to detect prototype pollution.
 // Using global arrays for performance reasons.
-const BASIC_OBJECTS = [
+let BASIC_OBJECTS = [
 	{},
 	[],
 	"",
@@ -265,10 +268,29 @@ type ProtoSnapshot = {
 
 // Compute prototype snapshots of each selected basic object before any fuzz tests are run.
 // These snapshots are used to detect prototype pollution after each fuzz test.
-const BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots();
+let BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots(BASIC_OBJECTS);
 
-function computeBasicPrototypeSnapshots(): BasicProtoSnapshots {
-	return BASIC_OBJECTS.map(getProtoSnapshot);
+if (getJazzerJsGlobal("vmContext")) {
+	const vmContext = getJazzerJsGlobal("vmContext") as vm.Context;
+	Object.defineProperty(vmContext, "PrototypePollution", {
+		value: PrototypePollution,
+		writable: false,
+		enumerable: true,
+		configurable: false,
+	});
+	// Get the basic objects from the vm context.
+	// TODO: This should be updated every time Jest sacks the current vm context.
+	BASIC_OBJECTS = vm.runInContext('[{},[],"",42,true,()=>{}]', vmContext);
+	BASIC_PROTO_SNAPSHOTS = computeBasicPrototypeSnapshots(BASIC_OBJECTS);
+}
+
+export function computeBasicPrototypeSnapshots(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	objects: any[],
+): BasicProtoSnapshots {
+	// These objects will be used to detect prototype pollution.
+	// Using global arrays for performance reasons.
+	return objects.map(getProtoSnapshot);
 }
 
 /**
@@ -299,30 +321,37 @@ function getProtoSnapshot(obj: any): ProtoSnapshot {
 	};
 }
 
-registerAfterEachCallback(
-	function detectPrototypePollutionOfBasicObjects(): void {
-		const currentProtoSnapshots = computeBasicPrototypeSnapshots();
-		// Compare the current prototype snapshots of basic objects to the original ones.
-		for (let i = 0; i < BASIC_PROTO_SNAPSHOTS.length; i++) {
-			if (!currentProtoSnapshots[i]) {
-				reportFinding(
-					`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
-				);
-				return;
-			}
-			const equalityResult = protoSnapshotsEqual(
-				BASIC_PROTO_SNAPSHOTS[i],
-				currentProtoSnapshots[i],
+registerAfterEachCallback(function detectPrototypePollution() {
+	detectPrototypePollutionOfBasicObjects(BASIC_PROTO_SNAPSHOTS, BASIC_OBJECTS);
+});
+
+function detectPrototypePollutionOfBasicObjects(
+	initialSnapshots: ProtoSnapshot[],
+	objects: unknown[],
+): void {
+	const currentProtoSnapshots = computeBasicPrototypeSnapshots(objects);
+	// Compare the current prototype snapshots of basic objects to the original ones.
+	for (let i = 0; i < initialSnapshots.length; i++) {
+		if (!currentProtoSnapshots[i]) {
+			reportFinding(
+				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
+				false,
 			);
-			if (equalityResult) {
-				reportFinding(
-					`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
-				);
-				return;
-			}
+			return;
 		}
-	},
-);
+		const equalityResult = protoSnapshotsEqual(
+			initialSnapshots[i],
+			currentProtoSnapshots[i],
+		);
+		if (equalityResult) {
+			reportFinding(
+				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
+				false,
+			);
+			return;
+		}
+	}
+}
 
 // There are two main ways to pollute a prototype of an object:
 // 1. Changing a prototype's property using __proto__
@@ -375,7 +404,7 @@ function detectPrototypePollution(
 					message = `Prototype Pollution: __proto__ value is ${protoValue}`;
 				}
 				if (report) {
-					reportFinding(message);
+					reportAndThrowFinding(message);
 				}
 				// If prototype pollution is detected, always stop analyzing the prototype chain.
 				return;

@@ -15,14 +15,17 @@
 				"displayName": "test"
 			},
 			{
-				"runner": "@jazzer.js/jest-runner",
+				"testRunner": "@jazzer.js/jest-runner",
 				"displayName": {
 					"name": "Jazzer.js",
 					"color": "cyan"
 				},
 				"testMatch": [
 					"<rootDir>/**/*.fuzz.js"
-				]
+				],
+				"moduleNameMapper": {
+					"mappedModuleName": "<rootDir>/target.js"
+				}
 			}
 		]
 	}

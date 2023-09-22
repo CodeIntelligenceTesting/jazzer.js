@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-const fuzzMe = function (data) {
+const fuzzMe = (data) => {
 	if (data.toString() === "Awesome") {
 		throw Error("Welcome to Awesome Fuzzing!");
 	}
 };
+module.exports.fuzzMe = fuzzMe;
 
-const asyncFuzzMe = function (data) {
-	return new Promise((resolve, reject) => {
+module.exports.asyncFuzzMe = (data) =>
+	new Promise((resolve, reject) => {
 		try {
 			fuzzMe(data);
 			resolve();
@@ -29,9 +30,8 @@ const asyncFuzzMe = function (data) {
 			reject(e);
 		}
 	});
-};
 
-const callbackFuzzMe = function (data, done) {
+module.exports.callbackFuzzMe = (data, done) => {
 	setImmediate(() => {
 		try {
 			fuzzMe(data);
@@ -42,6 +42,17 @@ const callbackFuzzMe = function (data, done) {
 	});
 };
 
-module.exports.fuzzMe = fuzzMe;
-module.exports.asyncFuzzMe = asyncFuzzMe;
-module.exports.callbackFuzzMe = callbackFuzzMe;
+module.exports.originalFunction = () => {
+	throw Error("Original function invoked!");
+};
+
+// noinspection JSUnusedLocalSymbols
+module.exports.asyncTimeout = (data) =>
+	new Promise(() => {
+		// Never resolve this promise to provoke a timeout.
+	});
+
+// noinspection JSUnusedLocalSymbols
+module.exports.callbackTimeout = (data, done) => {
+	// Never call done to provoke a timeout.
+};

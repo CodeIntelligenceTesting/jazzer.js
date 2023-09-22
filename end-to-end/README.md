@@ -12,11 +12,14 @@ jazzer.js than the other examples.
 ## Running Locally
 
 ```bash
+rm -rf node_modules package-lock.json *.tgz
 ./package-jazzer-js.sh
-npm install --save-dev *.tgz
+npm install --prefer-online --save-dev *.tgz
 npx jest
 ```
 
 _Note_: running just `npm install` may result in caching issues where the
 contents of the tarballs in this directory are ignored and older versions from
-somewhere are used instead.
+the cache are used instead. `--prefer-online` forces npm to check for updated
+files, which could cause hash mismatches compared to `package-lock.json`. Hence,
+remove `package-lock.json` and other dependencies before running the tests.

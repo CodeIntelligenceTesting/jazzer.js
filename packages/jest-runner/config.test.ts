@@ -15,12 +15,12 @@
  */
 
 import { defaultOptions } from "@jazzer.js/core";
-import { loadConfig } from "./config";
+import { loadConfig, TIMEOUT_PLACEHOLDER } from "./config";
 
 describe("Config", () => {
 	describe("loadConfig", () => {
 		it("return default configuration if nothing found", () => {
-			const defaults = { ...defaultOptions };
+			const defaults = { ...defaultOptions, timeout: TIMEOUT_PLACEHOLDER };
 			defaults.mode = "regression";
 			expect(loadConfig()).toEqual(defaults);
 		});

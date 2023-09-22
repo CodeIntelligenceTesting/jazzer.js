@@ -160,3 +160,24 @@ bugDetectorConfigurations.set("<your bug detector name>", config);
 See the `PrototypePollutionConfig` in
 [Prototype Pollution](internal/prototype-pollution.ts) bug detector for an
 example.
+
+## Accessing the global context in Jest tests
+
+If the bug detectors need to access objects in the global context, they have to
+take special care for Jest tests. Internally Jest runs the tests using
+`vm.runInContext()`. Thus, the global objects (e.g. `Object`, `Array`,
+`Function`, etc.) used in that context are not the same (as in "by reference")
+as the ones used by the bug detectors. To deal with this, the bug detectors can
+access the `vmContext` object, from which global objects can be accessed as
+follows:
+
+```typescript
+import * as vm from "vm";
+const vmContext = getJazzerJsGlobal("vmContext") as vm.Context;
+```
+
+Objects from the VM context can be extracted as follows:
+
+```typescript
+BASIC_OBJECTS = vm.runInContext('[{},[],"",42,true,()=>{}]', vmContext);
+```

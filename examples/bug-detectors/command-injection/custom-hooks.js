@@ -15,7 +15,10 @@
  */
 
 const { registerReplaceHook } = require("@jazzer.js/hooking");
-const { guideTowardsEquality, reportFinding } = require("@jazzer.js/core");
+const {
+	guideTowardsEquality,
+	reportAndThrowFinding,
+} = require("@jazzer.js/core");
 
 /**
  * Custom bug detector for command injection. This hook does not call the original function (execSync) for two reasons:
@@ -32,7 +35,7 @@ registerReplaceHook(
 		}
 		const command = params[0];
 		if (command.includes("jaz_zer")) {
-			reportFinding(
+			reportAndThrowFinding(
 				`Command Injection in spawnSync(): called with '${command}'`,
 			);
 		}

@@ -1,6 +1,6 @@
 {
 	"name": "jazzer.js",
-	"version": "1.7.0",
+	"version": "2.0.0",
 	"description": "Coverage-guided, in-process fuzzing for Node.js",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"keywords": [
@@ -38,7 +38,7 @@
 	"devDependencies": {
 		"@types/bindings": "^1.5.2",
 		"@types/jest": "^29.5.5",
-		"@types/node": "^20.6.2",
+		"@types/node": "^20.6.3",
 		"@types/yargs": "^17.0.24",
 		"@typescript-eslint/eslint-plugin": "^6.7.2",
 		"eslint": "^8.49.0",

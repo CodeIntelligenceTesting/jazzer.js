@@ -25,9 +25,9 @@ import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import {
 	clearFirstFinding,
-	getFirstFinding,
 	printFinding,
 	Finding,
+	cleanErrorStack,
 } from "./finding";
 import {
 	FileSyncIdStrategy,
@@ -35,9 +35,10 @@ import {
 	MemorySyncIdStrategy,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
-import { callbacks } from "./callback";
+import { getCallbacks } from "./callback";
 import { ensureFilepath, importModule } from "./utils";
 import { buildFuzzerOption, Options } from "./options";
+import { jazzerJs } from "./globals";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
@@ -57,21 +58,18 @@ declare global {
 	var options: Options;
 }
 
-export async function initFuzzing(options: Options): Promise<void> {
-	registerGlobals(options);
-
-	registerInstrumentor(
-		new Instrumentor(
-			options.includes,
-			options.excludes,
-			options.customHooks,
-			options.coverage,
-			options.dryRun,
-			options.idSyncFile
-				? new FileSyncIdStrategy(options.idSyncFile)
-				: new MemorySyncIdStrategy(),
-		),
+export async function initFuzzing(options: Options): Promise<Instrumentor> {
+	const instrumentor = new Instrumentor(
+		options.includes,
+		options.excludes,
+		options.customHooks,
+		options.coverage,
+		options.dryRun,
+		options.idSyncFile
+			? new FileSyncIdStrategy(options.idSyncFile)
+			: new MemorySyncIdStrategy(),
 	);
+	registerInstrumentor(instrumentor);
 
 	// Dynamic import works only with javascript files, so we have to manually specify the directory with the
 	// transpiled bug detector files.
@@ -96,12 +94,21 @@ export async function initFuzzing(options: Options): Promise<void> {
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
 	await hooking.hookManager.finalizeHooks();
+
+	return instrumentor;
 }
 
-function registerGlobals(options: Options) {
-	globalThis.Fuzzer = fuzzer.fuzzer;
-	globalThis.HookManager = hooking.hookManager;
-	globalThis.options = options;
+export function registerGlobals(
+	options: Options,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	globals: any[] = [globalThis],
+) {
+	globals.forEach((global) => {
+		global.Fuzzer = fuzzer.fuzzer;
+		global.HookManager = hooking.hookManager;
+		global.options = options;
+		global.JazzerJS = jazzerJs;
+	});
 }
 
 // Filters out disabled bug detectors and prepares all the others for dynamic import.
@@ -146,6 +153,7 @@ function getFilteredBugDetectorPaths(
 }
 
 export async function startFuzzing(options: Options) {
+	registerGlobals(options);
 	await initFuzzing(options);
 	const fuzzFn = await loadFuzzFunction(options);
 
@@ -194,7 +202,7 @@ export async function startFuzzingNoInit(
 
 	if (options.sync) {
 		return Promise.resolve().then(() =>
-			Fuzzer.startFuzzing(
+			fuzzer.fuzzer.startFuzzing(
 				fuzzFn,
 				fuzzerOptions,
 				// In synchronous mode, we cannot use the SIGINT/SIGSEGV handler in Node,
@@ -207,7 +215,7 @@ export async function startFuzzingNoInit(
 	} else {
 		process.on("SIGINT", () => signalHandler(0));
 		process.on("SIGSEGV", () => signalHandler(SIGSEGV));
-		return Fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+		return fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 	}
 }
 
@@ -315,21 +323,18 @@ export function wrapFuzzFunctionForBugDetection(
 	originalFuzzFn: fuzzer.FuzzTarget,
 ): fuzzer.FuzzTarget {
 	function throwIfError(fuzzTargetError?: unknown): undefined | never {
-		const error = getFirstFinding();
-		if (error !== undefined) {
-			// The `firstFinding` is a global variable: we need to clear it after each fuzzing iteration.
-			clearFirstFinding();
+		const error = clearFirstFinding() ?? fuzzTargetError;
+		if (error) {
+			cleanErrorStack(error);
 			throw error;
-		} else if (fuzzTargetError) {
-			throw fuzzTargetError;
 		}
-		return undefined;
 	}
 
 	if (originalFuzzFn.length === 1) {
 		return (data: Buffer): unknown | Promise<unknown> => {
 			let fuzzTargetError: unknown;
 			let result: unknown | Promise<unknown> = undefined;
+			const callbacks = getCallbacks();
 			try {
 				callbacks.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
@@ -343,16 +348,16 @@ export function wrapFuzzFunctionForBugDetection(
 							return throwIfError() ?? result;
 						},
 						(reason) => {
+							callbacks.runAfterEachCallbacks();
 							return throwIfError(reason);
 						},
 					);
+				} else {
+					callbacks.runAfterEachCallbacks();
 				}
 			} catch (e) {
-				fuzzTargetError = e;
-			}
-			// Promises are handled above, so we only need to handle sync results here.
-			if (!(result instanceof Promise)) {
 				callbacks.runAfterEachCallbacks();
+				fuzzTargetError = e;
 			}
 			return throwIfError(fuzzTargetError) ?? result;
 		};
@@ -361,23 +366,24 @@ export function wrapFuzzFunctionForBugDetection(
 			data: Buffer,
 			done: (err?: Error) => void,
 		): unknown | Promise<unknown> => {
-			let result: unknown | Promise<unknown> = undefined;
+			const callbacks = getCallbacks();
 			try {
 				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
-				result = originalFuzzFn(data, (err?: Error) => {
-					const finding = getFirstFinding();
-					if (finding !== undefined) {
-						clearFirstFinding();
-					}
+				const result = originalFuzzFn(data, (err?) => {
+					const error = clearFirstFinding() ?? err;
+					cleanErrorStack(error);
 					callbacks.runAfterEachCallbacks();
-					done(finding ?? err);
+					done(error);
 				});
+				// Check if any finding was reported by the invocation before the
+				// callback was executed. As the callback in used for control flow,
+				// don't run afterEach here.
+				return throwIfError() ?? result;
 			} catch (e) {
 				callbacks.runAfterEachCallbacks();
 				throwIfError(e);
 			}
-			return result;
 		};
 	}
 }

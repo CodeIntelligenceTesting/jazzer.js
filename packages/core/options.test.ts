@@ -22,6 +22,7 @@ import {
 	Options,
 	ParameterResolverIndex,
 	setParameterResolverValue,
+	spawnsSubprocess,
 } from "./options";
 
 const commandLineArguments = ParameterResolverIndex.CommandLineArguments;
@@ -147,6 +148,21 @@ describe("KeyFormatSource", () => {
 			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_kebab-case")).toEqual(
 				"kebab-case",
 			);
+		});
+	});
+});
+
+describe("buildLibFuzzerOptions", () => {
+	describe("spawnsSubprocess", () => {
+		it("checks if subprocess libFuzzer flags are present", () => {
+			expect(spawnsSubprocess(["-fork=1"])).toBeTruthy();
+			expect(spawnsSubprocess(["-fork=0"])).toBeFalsy();
+			expect(
+				spawnsSubprocess(["abc", "-foo=0", "-fork=0", "-jobs=1"]),
+			).toBeTruthy();
+			expect(spawnsSubprocess(["-foo=0"])).toBeFalsy();
+			expect(spawnsSubprocess(["abc"])).toBeFalsy();
+			expect(spawnsSubprocess(["123"])).toBeFalsy();
 		});
 	});
 });

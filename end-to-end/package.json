@@ -1,7 +1,6 @@
 {
-	"name": "jest_typescript_integration",
+	"name": "end-to-end",
 	"version": "1.0.0",
-	"description": "An example showing how Jazzer.js integrates with Jest and TypeScript",
 	"scripts": {
 		"build": "tsc",
 		"dryRun": "jest",

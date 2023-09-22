@@ -14,30 +14,39 @@
  * limitations under the License.
  */
 
-export const cleanupJestError = (
-	error: Error | undefined,
-): Error | undefined => {
+export const cleanupJestError = (error: unknown): unknown => {
 	if (error == undefined) {
-		return error;
+		return undefined;
 	}
-	error.stack = cleanupJestRunnerStack(error.stack);
+	if (error instanceof Error) {
+		error.stack = cleanupJestRunnerStack(error.stack);
+	}
 	return error;
 };
 
-export const cleanupJestRunnerStack = (
-	stack: string | undefined,
-): string | undefined => {
+export const cleanupJestRunnerStack = (stack?: string): string | undefined => {
+	function isStackFrame(frame: string) {
+		return frame.indexOf("  at ") !== -1;
+	}
+	function isRunnerFrame(frame: string) {
+		return (
+			frame.indexOf("jest-runner") !== -1 || frame.indexOf("jest-circus") !== -1
+		);
+	}
 	if (!stack) {
 		return stack;
 	}
-	let foundFirstJestRunnerFrame = false;
+	let foundFirstNoneRunnerFrame = false;
 	const newStack = stack
 		.split("\n")
 		.filter((frame) => {
-			if (frame.indexOf("jest-runner") != -1) {
-				foundFirstJestRunnerFrame = true;
+			if (!isStackFrame(frame)) {
+				return true;
 			}
-			return !foundFirstJestRunnerFrame;
+			if (foundFirstNoneRunnerFrame || !isRunnerFrame(frame)) {
+				foundFirstNoneRunnerFrame = true;
+			}
+			return foundFirstNoneRunnerFrame;
 		})
 		.join("\n");
 	return stack.endsWith("\n") ? newStack + "\n" : newStack;
@@ -64,17 +73,6 @@ export const removeTopFrames = (
 	const frames = stack.split("\n");
 	frames.splice(1, drop);
 	return frames.join("\n");
-};
-
-export const removeBottomFramesFromError = (
-	error: Error | undefined,
-	drop: number,
-): Error | undefined => {
-	if (error == undefined) {
-		return error;
-	}
-	error.stack = removeBottomFrames(error.stack, drop);
-	return error;
 };
 
 export const removeBottomFrames = (

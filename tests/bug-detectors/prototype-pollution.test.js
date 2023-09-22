@@ -325,9 +325,9 @@ describe("Prototype Pollution Jest tests", () => {
 		const fuzzTest = new FuzzTestBuilder()
 			.runs(0)
 			.dir(bugDetectorDirectory)
-			.dryRun(true)
+			.dryRun(false)
 			.jestTestFile("tests.fuzz.js")
-			.jestTestName("Pollution of Object")
+			.jestTestName("Prototype Pollution Jest tests Pollution of Object")
 			.build();
 		expect(() => {
 			fuzzTest.execute();
