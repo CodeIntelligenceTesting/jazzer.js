@@ -18,11 +18,16 @@
 #include <csignal>
 #include <iostream>
 
-void StartLibFuzzer(const std::vector<std::string> &args,
-                    fuzzer::UserCallback fuzzCallback) {
+.
+// ************Important************
+// The impact on performance of using const here is little bit more proven as compare to previously used code and also good intent/clearity of code.
+// It helps convey that the loop is intended to read, but not modify, the elements of the vector. 
+
+void StartLibFuzzer(const std::vector<std::string> &args, fuzzer::UserCallback fuzzCallback) {
   std::vector<char *> fuzzer_arg_pointers;
-  for (auto &arg : args)
-    fuzzer_arg_pointers.push_back((char *)arg.data());
+  for (const std::string &arg : args) {
+    fuzzer_arg_pointers.push_back(const_cast<char *>(arg.c_str()));
+  }
 
   int argc = fuzzer_arg_pointers.size();
   char **argv = fuzzer_arg_pointers.data();
@@ -30,22 +35,27 @@ void StartLibFuzzer(const std::vector<std::string> &args,
   fuzzer::FuzzerDriver(&argc, &argv, fuzzCallback);
 }
 
+
+
 // Constructs a libfuzzer usable string array based on an array
 // object originating from a `Napi::CallbackInfo` object that is
 // pre-filled by the caller.
-std::vector<std::string> LibFuzzerArgs(Napi::Env env,
-                                       const Napi::Array &jsArgs) {
+
+//This optimization minimizes the number of reallocations, especially for large arrays
+std::vector<std::string> LibFuzzerArgs(Napi::Env env, const Napi::Array &jsArgs) {
   std::vector<std::string> fuzzer_args;
-  for (auto [_, fuzzer_arg] : jsArgs) {
-    Napi::Value val = fuzzer_arg;
+  fuzzer_args.reserve(jsArgs.Length());  // Reserve space for efficiency
+
+  for (size_t i = 0; i < jsArgs.Length(); ++i) {
+    Napi::Value val = jsArgs.Get(i);
     if (!val.IsString()) {
       throw Napi::Error::New(env, "libfuzzer arguments have to be strings");
     }
-
     fuzzer_args.push_back(val.As<Napi::String>().Utf8Value());
   }
   return fuzzer_args;
 }
+
 
 // The following two small functions serve as a simple mechanism for keeping
 // track of encountered return values in the fuzzed target function. IFF both
