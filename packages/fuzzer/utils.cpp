@@ -20,8 +20,9 @@
 
 .
 // ************Important************
-// The impact on performance of using const here is little bit more proven as compare to previously used code and also good intent/clearity of code.
+// The impact on performance of using const here is little bit more proven as compare to previously used code and also good intent/clearity of codes.
 // It helps convey that the loop is intended to read, but not modify, the elements of the vector. 
+
 
 void StartLibFuzzer(const std::vector<std::string> &args, fuzzer::UserCallback fuzzCallback) {
   std::vector<char *> fuzzer_arg_pointers;
