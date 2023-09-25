@@ -46,6 +46,8 @@ class FuzzTest {
 		seed,
 		sync,
 		verbose,
+		listFuzzTestNames,
+		listFuzzTestNamesPattern,
 		coverage,
 		expectedErrors,
 		asJson,
@@ -68,6 +70,8 @@ class FuzzTest {
 		this.seed = seed;
 		this.sync = sync;
 		this.verbose = verbose;
+		this.listFuzzTestNames = listFuzzTestNames;
+		this.listFuzzTestNamesPattern = listFuzzTestNamesPattern;
 		this.coverage = coverage;
 		this.expectedErrors = expectedErrors;
 		this.asJson = asJson;
@@ -170,8 +174,17 @@ class FuzzTest {
 			"--no-colors",
 			this.asJson ? "--json" : "",
 			this.coverage ? "--coverage" : "",
+			this.listFuzzTestNames ? "--reporters=" : "",
 		];
-		this.runTest(cmd, options, { ...process.env });
+		let env = { ...process.env };
+		if (this.listFuzzTestNames) {
+			env.JAZZER_LIST_FUZZTEST_NAMES = "1";
+		}
+		if (this.listFuzzTestNamesPattern) {
+			env.JAZZER_LIST_FUZZTEST_NAMES_PATTERN = this.listFuzzTestNamesPattern;
+		}
+
+		this.runTest(cmd, options, env);
 	}
 
 	runTest(cmd, options, env) {
@@ -204,6 +217,8 @@ class FuzzTestBuilder {
 	_dryRun = undefined;
 	_runs = undefined;
 	_verbose = false;
+	_listFuzzTestNames = false;
+	_listFuzzTestNamesPattern = undefined;
 	_fuzzEntryPoint = "";
 	_dir = "";
 	_fuzzFile = "fuzz";
@@ -245,6 +260,27 @@ class FuzzTestBuilder {
 	 */
 	verbose(verbose) {
 		this._verbose = verbose === undefined ? true : verbose;
+		return this;
+	}
+
+	/**
+	 * @param {boolean} listFuzzTestNames - whether to list all fuzz test names on the console. True by
+	 * default.
+	 */
+	listFuzzTestNames(listFuzzTestNames) {
+		this._listFuzzTestNames =
+			listFuzzTestNames === undefined ? true : listFuzzTestNames;
+		if (this._listFuzzTestNames) {
+			this.jestTestName("__NOT_AN_ACTUAL_TESTNAME__");
+		}
+		return this;
+	}
+
+	/**
+	 * @param {boolean} listFuzzTestNamesPattern - pattern to filter the list of all fuzz test names.
+	 */
+	listFuzzTestNamesPattern(listFuzzTestNamesPattern) {
+		this._listFuzzTestNamesPattern = listFuzzTestNamesPattern;
 		return this;
 	}
 
@@ -424,6 +460,8 @@ class FuzzTestBuilder {
 			this._seed,
 			this._sync,
 			this._verbose,
+			this._listFuzzTestNames,
+			this._listFuzzTestNamesPattern,
 			this._coverage,
 			this._expectedErrors,
 			this._asJson,
