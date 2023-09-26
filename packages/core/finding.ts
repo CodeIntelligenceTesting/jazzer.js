@@ -84,9 +84,11 @@ export function printFinding(
 ): void {
 	print(`==${process.pid}== `);
 	if (!(error instanceof Finding)) {
-		print("Uncaught Exception: Jazzer.js: ");
+		print("Uncaught Exception: ");
 	}
-	if (error instanceof Error) {
+	// Error could be emitted from within another environment (e.g. vm, window, frame),
+	// hence, don't rely on instanceof checks.
+	if (isError(error)) {
 		if (error.stack) {
 			cleanErrorStack(error);
 			print(error.stack);
@@ -99,6 +101,12 @@ export function printFinding(
 		print("unknown");
 	}
 	print(EOL);
+}
+
+function isError(arg: unknown): arg is Error {
+	return (
+		arg !== undefined && arg !== null && (arg as Error).message !== undefined
+	);
 }
 
 interface WithStack {
@@ -127,7 +135,7 @@ export function cleanErrorStack(error: unknown): void {
 		`@jazzer.js${sep}`, // cli usage
 		`jazzer.js${sep}packages${sep}`, // jest usage
 		`jazzer.js${sep}core${sep}`, // jest usage
-		`..${sep}..${sep}packages${sep}core${sep}`, // local/filesystem dependencies
+		`..${sep}..${sep}packages${sep}`, // local/filesystem dependencies
 	];
 	error.stack = error.stack
 		.split("\n")
