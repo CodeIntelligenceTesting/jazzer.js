@@ -34,7 +34,9 @@ describe("General tests", () => {
 	function expectErrorToBePrintedOnce(fuzzTest) {
 		const matches = fuzzTest.stderr.match(errorPattern);
 		expect(matches).toBeTruthy();
-		expect(matches.length).toBe(1);
+		// Pattern may be included in fuzzer and Jest output, but only once each.
+		expect(matches.length).toBeGreaterThan(0);
+		expect(matches.length).toBeLessThan(3);
 	}
 
 	// Delete files created by the tests.
@@ -326,9 +328,7 @@ describe("General tests", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrow(
-				process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
-			);
+			}).toThrow(JestRegressionExitCode);
 			expect(await fileExists(friendlyFilePath)).toBeFalsy();
 			expectErrorToBePrintedOnce(fuzzTest);
 		});

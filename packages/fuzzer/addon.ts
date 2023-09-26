@@ -30,7 +30,7 @@ export type StartFuzzingSyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
 	jsStopCallback: (signal: number) => void,
-) => void;
+) => Promise<void>;
 export type StartFuzzingAsyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
@@ -59,11 +59,12 @@ type NativeAddon = {
 
 	tracePcIndir: (hookId: number, state: number) => void;
 
+	printAndDumpCrashingInput: () => void;
+	printReturnInfo: (sync: boolean) => void;
 	printVersion: () => void;
+
 	startFuzzing: StartFuzzingSyncFn;
 	startFuzzingAsync: StartFuzzingAsyncFn;
-	stopFuzzingAsync: (status?: number) => void;
-	stopFuzzing: (status?: number) => void;
 };
 
 export const addon: NativeAddon = bind("jazzerjs");

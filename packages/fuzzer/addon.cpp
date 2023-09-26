@@ -18,6 +18,23 @@
 #include "fuzzing_sync.h"
 
 #include "shared/callbacks.h"
+#include "shared/libfuzzer.h"
+#include "utils.h"
+
+// Print and dump the current input. This function is called during a fuzzing
+// run when a finding is detected, afterwards the fuzzer loop is stopped via
+// the appropriate callback return value.
+void PrintAndDumpCrashingInput(const Napi::CallbackInfo &info) {
+  libfuzzer::PrintCrashingInput();
+}
+
+// Print info messages recommending invocation improvements (sync/async).
+void PrintReturnInfo(const Napi::CallbackInfo &info) {
+  if (info.Length() != 1 || !info[0].IsBoolean()) {
+    throw Napi::Error::New(info.Env(), "Need one boolean argument");
+  }
+  PrintReturnValueInfo(info[0].ToBoolean());
+}
 
 // A basic sanity check: ask the Node API for version information and print it.
 void PrintVersion(const Napi::CallbackInfo &info) {
@@ -37,11 +54,13 @@ void PrintVersion(const Napi::CallbackInfo &info) {
 // `RegisterCallbackExports` links more functions needed, like coverage tracking
 // capabilities.
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports["printAndDumpCrashingInput"] =
+      Napi::Function::New<PrintAndDumpCrashingInput>(env);
+  exports["printReturnInfo"] = Napi::Function::New<PrintReturnInfo>(env);
   exports["printVersion"] = Napi::Function::New<PrintVersion>(env);
+
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);
-  exports["stopFuzzingAsync"] = Napi::Function::New<StopFuzzingAsync>(env);
-  exports["stopFuzzing"] = Napi::Function::New<StopFuzzing>(env);
 
   RegisterCallbackExports(env, exports);
   return exports;

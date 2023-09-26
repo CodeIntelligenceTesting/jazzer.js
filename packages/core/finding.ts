@@ -23,6 +23,20 @@ const firstFinding = "firstFinding";
 
 export class Finding extends Error {}
 
+export class FuzzerSignalFinding extends Finding {
+	public readonly exitCode: number;
+	constructor(signal: number) {
+		super(
+			signal == 11
+				? "Segmentation Fault"
+				: `Fuzzing stopped by signal ${signal}`,
+		);
+		// Signals should exit with code 128+n, see
+		// https://tldp.org/LDP/abs/html/exitcodes.html
+		this.exitCode = signal === 0 ? 0 : 128 + signal;
+	}
+}
+
 // The first finding reported by any bug detector will be saved in the global jazzerJs object.
 // This variable has to be cleared every time when the fuzzer is finished
 // processing an input (only relevant for modes where the fuzzing continues
@@ -42,37 +56,39 @@ export function clearFirstFinding(): Finding | undefined {
 /**
  * Save the first finding reported by any bug detector.
  *
- * @param findingMessage - The finding to be saved.
+ * @param cause - The finding to be reported.
  * @param containStack - Whether the finding should contain a stack trace or not.
  */
 export function reportFinding(
-	findingMessage: string,
+	cause: string | Finding,
 	containStack = true,
 ): Finding | undefined {
 	// After saving the first finding, ignore all subsequent errors.
 	if (getFirstFinding()) {
 		return;
 	}
-	const reportedFinding = new Finding(findingMessage);
-	if (!containStack) {
-		reportedFinding.stack = findingMessage;
+	if (typeof cause === "string") {
+		cause = new Finding(cause);
 	}
-	setJazzerJsGlobal(firstFinding, reportedFinding);
-	return reportedFinding;
+	if (!containStack) {
+		cause.stack = cause.message;
+	}
+	setJazzerJsGlobal(firstFinding, cause);
+	return cause;
 }
 
 /**
  * Save the first finding reported by any bug detector and throw it to
  * potentially abort the current execution.
  *
- * @param findingMessage - The finding to be saved and thrown.
+ * @param cause - The finding to be saved and thrown.
  * @param containStack - Whether the finding should contain a stack trace or not.
  */
 export function reportAndThrowFinding(
-	findingMessage: string,
+	cause: string | Finding,
 	containStack = true,
 ): void | never {
-	throw reportFinding(findingMessage, containStack);
+	throw reportFinding(cause, containStack);
 }
 
 /**
@@ -143,4 +159,18 @@ export function cleanErrorStack(error: unknown): void {
 			(line) => !filterCriteria.some((criterion) => line.includes(criterion)),
 		)
 		.join("\n");
+}
+
+export function errorName(error: unknown): string {
+	if (error instanceof Error) {
+		// error objects
+		return error.name;
+	} else if (typeof error !== "object") {
+		// primitive types
+		return String(error);
+	} else {
+		// Arrays and objects can not be converted to a proper name and so
+		// not be stated as expected error.
+		return "unknown";
+	}
 }

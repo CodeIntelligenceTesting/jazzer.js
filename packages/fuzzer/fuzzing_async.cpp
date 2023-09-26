@@ -42,23 +42,21 @@ struct AsyncFuzzTargetContext {
   Napi::Promise::Deferred deferred;
   bool is_resolved = false;
   bool is_done_called = false;
-  bool is_data_resolved = false;
   AsyncFuzzTargetContext() = delete;
 };
 
 // The data type to use each time we schedule a call to the JavaScript fuzz
-// target. It includes the fuzzer-generated input and a promise to wait for the
-// promise returned by the fuzz target to be resolved or rejected.
+// target. It includes the fuzzer-generated input and a promise to await the
+// execution of the JS fuzz target. The value with which the promise is
+// resolved is forwarded to the fuzzer loop and controls if it should continue
+// or stop.
 struct DataType {
   const uint8_t *data;
   size_t size;
-  std::promise<void *> *promise;
+  std::promise<int> *promise;
 
   DataType() = delete;
 };
-
-// Exception for catching crashes in the JavaScript callback function.
-class JSException : public std::exception {};
 
 void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                         AsyncFuzzTargetContext *context, DataType *data);
@@ -77,33 +75,36 @@ std::jmp_buf errorBuffer;
 // for
 void ErrorSignalHandler(int signum) { std::longjmp(errorBuffer, signum); }
 
-// The libFuzzer callback when fuzzing asynchronously.
+// The callback invoked by libFuzzer. It has no access to the JavaScript
+// environment and thus can only call the JavaScript fuzz target via the
+// typed thread-safe function.
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
-  std::promise<void *> promise;
+  // Pass a promise to the addon part executed in the JavaScript context
+  // via the data object of the typed thread-safe function. Await it's
+  // resolution or rejection to continue fuzzing.
+  std::promise<int> promise;
   auto input = DataType{Data, Size, &promise};
 
   auto future = promise.get_future();
   auto status = gTSFN.BlockingCall(&input);
   if (status != napi_ok) {
-    Napi::Error::Fatal(
-        "FuzzCallbackAsync",
-        "Napi::TypedThreadSafeNapi::Function.BlockingCall() failed");
+    Napi::Error::Fatal("FuzzCallbackAsync",
+                       "Napi::TypedThreadSafeFunction.BlockingCall() failed");
   }
-  // Wait until the JavaScript fuzz target has finished.
   try {
-    future.get();
-  } catch (JSException &exception) {
-    throw;
+    // Await the return of the JavaScript fuzz target with
+    // libfuzzer::RETURN_EXIT or libfuzzer::RETURN_CONTINUE.
+    return future.get();
   } catch (std::exception &exception) {
+    // Something in the interop did not work. Just call exit to immediately
+    // terminate the process without performing any cleanup including libFuzzer
+    // exit handlers.
     std::cerr << "==" << (unsigned long)GetPID()
-              << "== Jazzer.js: unexpected Error: " << exception.what()
+              << "== Jazzer.js: Unexpected Error: " << exception.what()
               << std::endl;
     libfuzzer::PrintCrashingInput();
-    // We call exit to immediately terminates the process without performing any
-    // cleanup including libfuzzer exit handlers.
-    _Exit(libfuzzer::ExitErrorCode);
+    _Exit(libfuzzer::EXIT_ERROR_CODE);
   }
-  return EXIT_SUCCESS;
 }
 
 // This function is the callback that gets executed in the addon's main thread
@@ -112,11 +113,7 @@ int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
 void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                         AsyncFuzzTargetContext *context, DataType *data) {
   // Execute the fuzz target and reject the deferred on any raised exception by
-  // C++ code or returned error by JS interop to stop fuzzing. Any exception
-  // thrown from this function would cause a process termination. If the fuzz
-  // target is executed successfully resolve data->promise to unblock the fuzzer
-  // thread and continue with the next invocation.
-
+  // C++ code or returned error by JS interop to stop fuzzing.
   try {
     // Return point for the segfault error handler
     // This MUST BE called from the thread that executes the fuzz target (and
@@ -137,7 +134,6 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
       // considered to be a done callback to indicate finished execution.
       if (parameterCount > 1) {
         context->is_done_called = false;
-        context->is_data_resolved = false;
         context->is_resolved = false;
         auto done =
             Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
@@ -156,10 +152,10 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
                                           "but it was called multiple times.")
                         .Value());
                 context->is_resolved = true;
-                // We can not pass an exception in data->promise to break out of
-                // the fuzzer loop, as it was already resolved in the last
-                // invocation of the done callback. Probably the best thing to
-                // do is print an error message and await the timeout.
+                // Can not break out of the fuzzer loop, as the promise was
+                // already resolved in the last invocation of the done
+                // callback. Probably the best thing to do is print an error
+                // message and await the timeout.
                 std::cerr << "Expected done to be called once, but it was "
                              "called multiple times."
                           << std::endl;
@@ -172,16 +168,14 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
 
               auto hasError = !(info[0].IsNull() || info[0].IsUndefined());
               if (hasError) {
+                data->promise->set_value(libfuzzer::RETURN_EXIT);
                 context->deferred.Reject(info[0].As<Napi::Error>().Value());
                 context->is_resolved = true;
-                data->promise->set_exception(
-                    std::make_exception_ptr(JSException()));
               } else {
-                data->promise->set_value(nullptr);
+                data->promise->set_value(libfuzzer::RETURN_CONTINUE);
               }
             });
         auto result = jsFuzzCallback.Call({buffer, done});
-        context->is_data_resolved = true;
         if (result.IsPromise()) {
           // If the fuzz target received a done callback, but also returned a
           // promise, the callback could already have been called. In that case
@@ -195,8 +189,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
             return;
           }
           if (!context->is_done_called) {
-            data->promise->set_exception(
-                std::make_exception_ptr(JSException()));
+            data->promise->set_value(libfuzzer::RETURN_EXIT);
           }
           context->deferred.Reject(
               Napi::Error::New(env, "Internal fuzzer error - Either async or "
@@ -222,36 +215,38 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
             jsPromise,
             {Napi::Function::New<>(env,
                                    [=](const Napi::CallbackInfo &info) {
-                                     data->promise->set_value(nullptr);
+                                     data->promise->set_value(
+                                         libfuzzer::RETURN_CONTINUE);
                                    }),
              Napi::Function::New<>(env, [=](const Napi::CallbackInfo &info) {
                // This is the only way to pass an exception from JavaScript
                // through C++ back to calling JavaScript code.
+               data->promise->set_value(libfuzzer::RETURN_EXIT);
                context->deferred.Reject(info[0].As<Napi::Error>().Value());
                context->is_resolved = true;
-               data->promise->set_exception(
-                   std::make_exception_ptr(JSException()));
              })});
       } else {
         SyncReturnsHandler();
-        data->promise->set_value(nullptr);
+        data->promise->set_value(libfuzzer::RETURN_CONTINUE);
       }
     } else {
       data->promise->set_exception(std::make_exception_ptr(
           std::runtime_error("Environment is shut down")));
     }
   } catch (const Napi::Error &error) {
+    // JS exception thrown by invocation of the fuzz target. This is an
+    // unhandled exception in the tested code or a finding of a bug detector.
     if (context->is_resolved)
       return;
+    data->promise->set_value(libfuzzer::RETURN_EXIT);
     context->deferred.Reject(error.Value());
     context->is_resolved = true;
-    data->promise->set_exception(std::make_exception_ptr(JSException()));
   } catch (const std::exception &exception) {
+    data->promise->set_value(libfuzzer::RETURN_EXIT);
     auto message =
         std::string("Internal fuzzer error - ").append(exception.what());
     context->deferred.Reject(Napi::Error::New(env, message).Value());
     context->is_resolved = true;
-    data->promise->set_exception(std::make_exception_ptr(JSException()));
   }
 }
 
@@ -277,59 +272,41 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
                            "function and an array of libfuzzer arguments");
   }
 
+  auto fuzz_target = info[0].As<Napi::Function>();
   auto fuzzer_args = LibFuzzerArgs(info.Env(), info[1].As<Napi::Array>());
 
-  // Store the JS fuzz target and corresponding environment, so that our C++
+  // Store the JS fuzz target and corresponding environment, so that the C++
   // fuzz target can use them to call back into JS.
   auto *context = new AsyncFuzzTargetContext(info.Env());
 
   gTSFN = TSFN::New(
-      info.Env(),
-      info[0]
-          .As<Napi::Function>(), // JavaScript fuzz target called asynchronously
-      "FuzzerAsyncAddon",
-      0,       // Unlimited Queue
-      1,       // Only one thread will use this initially
-      context, // context
+      info.Env(),         // Env
+      fuzz_target,        // Callback
+      "FuzzerAsyncAddon", // Name
+      0,                  // Unlimited Queue
+      1,                  // Only one thread will use this initially
+      context,            // Context object passed into the callback
       [](Napi::Env env, FinalizerDataType *, AsyncFuzzTargetContext *ctx) {
         // This finalizer is executed in the main event loop context and hence
-        // has access to the JavaScript environment. It's only invoked if no
-        // issue was found.
+        // has access to the JavaScript environment. The deferred is only
+        // unresolved if no error was found during fuzzing.
         ctx->native_thread.join();
         if (!ctx->is_resolved) {
-          ctx->deferred.Resolve(Napi::Boolean::New(env, true));
+          ctx->deferred.Resolve(env.Undefined());
         }
         delete ctx;
       });
 
-  // Start the libFuzzer loop in a separate thread in order not to block the
-  // JavaScript event loop.
+  // Start libFuzzer in a separate thread to not block the JavaScript event
+  // loop.
   context->native_thread = std::thread(
-      [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
-        try {
-          signal(SIGSEGV, ErrorSignalHandler);
-          StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
-        } catch (const JSException &exception) {
-        }
+      [](const std::vector<std::string> &fuzzer_args) {
+        signal(SIGSEGV, ErrorSignalHandler);
+        StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         gTSFN.Release();
       },
-      std::move(fuzzer_args), context);
+      std::move(fuzzer_args));
 
+  // Return promise to calling JS code to await fuzzing completion.
   return context->deferred.Promise();
-}
-
-void StopFuzzingAsync(const Napi::CallbackInfo &info) {
-  int exitCode = StopFuzzingHandleExit(info);
-
-  // If we ran in async mode and we only ever encountered synchronous results
-  // we'll give an indicator that running in synchronous mode is likely
-  // benefical
-  ReturnValueInfo(false);
-
-  // We call _Exit to immediately terminate the process without performing any
-  // cleanup including libfuzzer exit handlers. These handlers print information
-  // about the native libfuzzer target which is neither relevant nor actionable
-  // for JavaScript developers. We provide the relevant crash information
-  // such as the error message and stack trace in Jazzer.js CLI.
-  _Exit(exitCode);
 }
