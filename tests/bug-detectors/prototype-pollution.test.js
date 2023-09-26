@@ -386,9 +386,7 @@ describe("Prototype Pollution Jest tests", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(
-			process.platform === "win32" ? JestRegressionExitCode : FuzzingExitCode,
-		);
+		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution: Prototype of Object changed",
 		);

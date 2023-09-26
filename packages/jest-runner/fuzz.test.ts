@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-// Mock Corpus class so that no local directories are created during test.
 import fs from "fs";
 import * as tmp from "tmp";
 import { Circus, Global } from "@jest/types";
+import { Options, startFuzzingNoInit } from "@jazzer.js/core";
 import { Corpus } from "./corpus";
 import {
 	fuzz,
@@ -26,8 +26,8 @@ import {
 	JestTestMode,
 	runInRegressionMode,
 } from "./fuzz";
-import { Options, startFuzzingNoInit } from "@jazzer.js/core"; // Cleanup created files on exit
 
+// Mock Corpus class so that no local directories are created during test.
 const inputsPathsMock = jest.fn();
 jest.mock("./corpus", () => {
 	return {
@@ -40,9 +40,12 @@ jest.mock("./corpus", () => {
 // Mock core package to intercept calls to startFuzzing.
 const skipMock = jest.fn();
 jest.mock("@jazzer.js/core", () => {
+	// noinspection JSUnusedGlobalSymbols
 	return {
-		startFuzzingNoInit: jest.fn(),
-		wrapFuzzFunctionForBugDetection: (fn: object) => fn,
+		startFuzzingNoInit: jest.fn().mockImplementation(async (args: unknown) => {
+			return args;
+		}),
+		asFindingAwareFuzzFn: (fn: object) => fn,
 	};
 });
 
@@ -104,7 +107,7 @@ describe("fuzz", () => {
 			await withMockTest(() => {
 				runInRegressionMode(
 					"fuzz",
-					(data: Buffer, done: (e?: Error) => void) => {
+					(_: Buffer, done: (e?: Error) => void) => {
 						called = true;
 						done();
 					},
@@ -145,7 +148,7 @@ describe("fuzz", () => {
 					runInRegressionMode(
 						"fuzz",
 						// Parameters needed to pass in done callback.
-						(ignored: Buffer, ignored2: (e?: Error) => void) => {
+						(_1: Buffer, _2: (e?: Error) => void) => {
 							return new Promise(() => {
 								// promise is ignored due to done callback
 							});
@@ -168,7 +171,7 @@ describe("fuzz", () => {
 				withMockTest(() => {
 					runInRegressionMode(
 						"fuzz",
-						(ignored: Buffer, done: (e?: Error) => void) => {
+						(_: Buffer, done: (e?: Error) => void) => {
 							done();
 							done();
 							// Use another promise to stop test from finishing too fast.
@@ -215,7 +218,7 @@ const withMockTest = async (block: () => void): Promise<unknown> => {
 	try {
 		// Directly invoke describe as there are currently no async describe tests.
 		// @ts-ignore
-		globalThis.describe = (name: Global.TestNameLike, fn: Global.TestFn) => {
+		globalThis.describe = (_: Global.TestNameLike, fn: Global.TestFn) => {
 			// @ts-ignore
 			fn();
 		};
@@ -223,7 +226,7 @@ const withMockTest = async (block: () => void): Promise<unknown> => {
 		// Mock test with version that stores the registered test. Ignore missing
 		// properties, as those are not needed in the tests.
 		// @ts-ignore
-		globalThis.test = (name: Global.TestNameLike, fn: Global.TestFn) => {
+		globalThis.test = (_: Global.TestNameLike, fn: Global.TestFn) => {
 			testFns.push(fn);
 		};
 		// @ts-ignore

@@ -16,5 +16,4 @@
 
 #include <napi.h>
 
-void StartFuzzing(const Napi::CallbackInfo &info);
-void StopFuzzing(const Napi::CallbackInfo &info);
+Napi::Value StartFuzzing(const Napi::CallbackInfo &info);

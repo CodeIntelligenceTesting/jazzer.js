@@ -19,5 +19,11 @@ namespace libfuzzer {
 // optionally fuzzing stats, but does not include a stack trace.
 extern void (*PrintCrashingInput)();
 
-const int ExitErrorCode = 77;
+const int EXIT_OK_CODE = 0;
+const int EXIT_ERROR_CODE = 77;
+
+// Possible return values for the libFuzzer callback to continue or abort
+// the fuzzer loop.
+const int RETURN_CONTINUE = 0;
+const int RETURN_EXIT = -2;
 } // namespace libfuzzer

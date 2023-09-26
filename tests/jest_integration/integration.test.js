@@ -16,10 +16,9 @@
 
 const {
 	FuzzTestBuilder,
-	FuzzingExitCode,
-	TimeoutExitCode,
-	WindowsExitCode,
 	JestRegressionExitCode,
+	TimeoutExitCode,
+	cleanCrashFilesIn,
 } = require("../helpers.js");
 const path = require("path");
 const fs = require("fs");
@@ -43,8 +42,6 @@ describe("Jest integration", () => {
 	});
 
 	describe("Fuzzing mode", () => {
-		const fuzzingExitCode =
-			process.platform === "win32" ? WindowsExitCode : FuzzingExitCode;
 		let fuzzTestBuilder;
 
 		beforeEach(() => {
@@ -56,49 +53,53 @@ describe("Jest integration", () => {
 		});
 
 		describe("execute", () => {
-			it("execute sync test", () => {
+			it("execute sync test", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute sync test")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_sync_test");
 			});
 
-			it("execute async test", () => {
+			it("execute async test", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async test")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test");
 			});
 
-			it("execute async test returning a promise", () => {
+			it("execute async test returning a promise", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async test returning a promise")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test_returning_a_promise");
 			});
 
-			it("execute async test using a callback", () => {
+			it("execute async test using a callback", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async test using a callback")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test_using_a_callback");
 			});
 
-			it("single fuzz test without name pattern", () => {
+			it("single fuzz test without name pattern", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestFile("integration.fuzz.js")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
 			});
 
 			it("print corpus directories", () => {
@@ -116,17 +117,18 @@ describe("Jest integration", () => {
 		});
 
 		describe("timeout", () => {
-			it("execute async timeout test", () => {
+			it("execute async timeout test", async () => {
 				const fuzzTest = fuzzTestBuilder
-					.jestTestName("execute async timeout test")
+					.jestTestName("execute async timeout test plain")
 					.build();
 				expect(() => {
 					fuzzTest.execute();
 				}).toThrow(TimeoutExitCode);
 				assertTimeoutMessageLogged(fuzzTest, 5);
+				await expectCrashFileIn("execute_async_timeout_test_plain");
 			});
 
-			it("execute async timeout test with method timeout", () => {
+			it("execute async timeout test with method timeout", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async timeout test with method timeout")
 					.build();
@@ -134,9 +136,12 @@ describe("Jest integration", () => {
 					fuzzTest.execute();
 				}).toThrow(TimeoutExitCode);
 				assertTimeoutMessageLogged(fuzzTest, 1);
+				await expectCrashFileIn(
+					"execute_async_timeout_test_with_method_timeout",
+				);
 			});
 
-			it("execute async timeout test using a callback", () => {
+			it("execute async timeout test using a callback", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async timeout test using a callback")
 					.build();
@@ -144,6 +149,7 @@ describe("Jest integration", () => {
 					fuzzTest.execute();
 				}).toThrow(TimeoutExitCode);
 				assertTimeoutMessageLogged(fuzzTest, 1);
+				await expectCrashFileIn("execute_async_timeout_test_using_a_callback");
 			});
 		});
 
@@ -166,7 +172,7 @@ describe("Jest integration", () => {
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
 				expect(fuzzTest.stderr).toContain("the function was mocked");
 			});
 
@@ -176,7 +182,7 @@ describe("Jest integration", () => {
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
 			});
 
 			it("print proper stacktrace", () => {
@@ -186,7 +192,7 @@ describe("Jest integration", () => {
 					.build();
 				expect(() => {
 					fuzzTest.execute();
-				}).toThrow(fuzzingExitCode);
+				}).toThrow(JestRegressionExitCode);
 				const result = JSON.parse(fuzzTest.stdout);
 				expect(result.numFailedTests).toBe(1);
 
@@ -414,6 +420,12 @@ describe("Jest integration", () => {
 			expect(listFuzzTestNames.stdout).toBe("");
 		});
 	});
+
+	async function expectCrashFileIn(crashDir) {
+		const crashFiles = await cleanCrashFilesIn(projectDir);
+		expect(crashFiles).toHaveLength(1);
+		expect(crashFiles[0]).toContain(crashDir);
+	}
 });
 
 // Deflake the "timeout after N seconds" test to be more tolerant to small variations of N (+-1).

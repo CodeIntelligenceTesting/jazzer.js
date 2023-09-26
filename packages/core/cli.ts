@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import yargs, { Argv } from "yargs";
-import { startFuzzing } from "./core";
+import yargs, { Argv, exit } from "yargs";
+import { FuzzingExitCode, startFuzzing } from "./core";
 import { prepareArgs } from "./utils";
 import {
 	buildOptions,
@@ -232,13 +232,19 @@ yargs(process.argv.slice(2))
 				});
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(args: any) => {
+		async (args: any) => {
 			setParameterResolverValue(
 				ParameterResolverIndex.CommandLineArguments,
 				prepareArgs(args),
 			);
-			// noinspection JSIgnoredPromiseFromCall
-			startFuzzing(buildOptions());
+			return startFuzzing(buildOptions()).then(({ returnCode, error }) => {
+				if (returnCode !== FuzzingExitCode.Ok) {
+					exit(
+						returnCode,
+						error instanceof Error ? error : new Error("Unknown error"),
+					);
+				}
+			});
 		},
 	)
 	.help().argv;

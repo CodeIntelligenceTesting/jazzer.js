@@ -23,12 +23,12 @@ import {
 import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";
 import * as fs from "fs";
-import { cleanupJestError, removeTopFramesFromError } from "./errorUtils";
+import { removeTopFramesFromError } from "./errorUtils";
 import {
 	defaultOptions,
 	Options,
 	startFuzzingNoInit,
-	wrapFuzzFunctionForBugDetection,
+	asFindingAwareFuzzFn,
 } from "@jazzer.js/core";
 
 // Indicate that something went wrong executing the fuzzer.
@@ -123,7 +123,7 @@ export function fuzz(
 			}
 		}
 
-		const wrappedFn = wrapFuzzFunctionForBugDetection(fn);
+		const wrappedFn = asFindingAwareFuzzFn(fn);
 
 		if (localConfig.mode === "regression") {
 			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals, mode);
@@ -143,13 +143,16 @@ export const runInFuzzingMode = (
 	globals: Global.Global,
 	mode: JestTestMode,
 ) => {
-	handleMode(mode, globals.test)(name, () => {
+	handleMode(mode, globals.test)(name, async () => {
 		options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
 		options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
 		options.fuzzerOptions.push(
 			"-artifact_prefix=" + corpus.seedInputsDirectory,
 		);
-		return startFuzzingNoInit(fn, options);
+		return startFuzzingNoInit(fn, options).then(({ error }) => {
+			// Throw the found error to mark the test as failed.
+			if (error) throw error;
+		});
 	});
 };
 

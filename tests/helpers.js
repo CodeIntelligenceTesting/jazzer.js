@@ -20,12 +20,9 @@ const path = require("path");
 
 const assert = require("assert");
 
-// This is used to distinguish an error thrown during fuzzing from other errors,
-// such as wrong `fuzzEntryPoint`, which would return a "1".
 const FuzzingExitCode = "77";
 const TimeoutExitCode = "70";
 const JestRegressionExitCode = "1";
-const WindowsExitCode = "1";
 
 class FuzzTest {
 	constructor(
@@ -533,15 +530,20 @@ async function getFiles(dir) {
 }
 
 async function fileExists(path) {
-	return !!(await fs.promises.stat(path).catch((e) => false));
+	return !!(await fs.promises.stat(path).catch((_) => false));
 }
 
+const CRASH_FILE_PATTERN = /(crash|timeout)-[0-9a-f]{40}/;
+
 async function cleanCrashFilesIn(path) {
-	for (const file in await getFiles(path)) {
-		if (file.match(/crash-[0-9a-f]{40}/)) {
+	let cleanedFiles = [];
+	for (const file of await getFiles(path)) {
+		if (file.match(CRASH_FILE_PATTERN)) {
 			await fs.promises.rm(file, { force: true });
+			cleanedFiles.push(file);
 		}
 	}
+	return cleanedFiles;
 }
 
 module.exports = {
@@ -549,11 +551,9 @@ module.exports = {
 	FuzzingExitCode,
 	TimeoutExitCode,
 	JestRegressionExitCode,
-	WindowsExitCode,
 	makeFnCalledOnce,
 	callWithTimeout,
 	describeSkipOnPlatform,
-	getFiles,
 	fileExists,
 	cleanCrashFilesIn,
 };

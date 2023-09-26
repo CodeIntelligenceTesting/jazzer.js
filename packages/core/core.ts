@@ -24,10 +24,12 @@ import * as reports from "istanbul-reports";
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
 import {
-	clearFirstFinding,
-	printFinding,
-	Finding,
 	cleanErrorStack,
+	clearFirstFinding,
+	errorName,
+	FuzzerSignalFinding,
+	printFinding,
+	reportFinding,
 } from "./finding";
 import {
 	FileSyncIdStrategy,
@@ -43,12 +45,23 @@ import { jazzerJs } from "./globals";
 // Remove temporary files on exit
 tmp.setGracefulCleanup();
 
-// libFuzzer uses exit code 77 in case of a crash, so use a similar one for
-// failed error expectations.
-const ERROR_EXPECTED_CODE = 0;
-const ERROR_UNEXPECTED_CODE = 78;
+// Possible fuzzing exit codes. libFuzzer uses exit code 77 in case of a crash,
+// use the same one for uncaught exceptions and bug detector findings.
+export enum FuzzingExitCode {
+	// Fuzzer exited normally without finding.
+	Ok = 0,
+	// libFuzzers crash exit code.
+	Finding = 77,
+	// Unexpected or missing finding.
+	UnexpectedError = 78,
+}
 
-const SIGSEGV = 11;
+export class FuzzingResult {
+	constructor(
+		public readonly returnCode: FuzzingExitCode,
+		public readonly error?: unknown,
+	) {}
+}
 
 /* eslint no-var: 0 */
 declare global {
@@ -152,86 +165,156 @@ function getFilteredBugDetectorPaths(
 	);
 }
 
-export async function startFuzzing(options: Options) {
+export async function startFuzzing(options: Options): Promise<FuzzingResult> {
 	registerGlobals(options);
 	await initFuzzing(options);
 	const fuzzFn = await loadFuzzFunction(options);
-
-	await startFuzzingNoInit(fuzzFn, options).then(
-		() => {
-			stopFuzzing(
-				undefined,
-				options.expectedErrors,
-				options.coverageDirectory,
-				options.coverageReporters,
-				options.sync,
-			);
-		},
-		(err: unknown) => {
-			stopFuzzing(
-				err,
-				options.expectedErrors,
-				options.coverageDirectory,
-				options.coverageReporters,
-				options.sync,
-			);
-		},
-	);
+	const findingAwareFuzzFn = asFindingAwareFuzzFn(fuzzFn);
+	return startFuzzingNoInit(findingAwareFuzzFn, options).finally(() => {
+		// These post fuzzing actions are only required for invocations through the CLI,
+		// other means of invocation, e.g. via Jest, don't need them.
+		fuzzer.fuzzer.printReturnInfo(options.sync);
+		processCoverage(options.coverageDirectory, options.coverageReporters);
+	});
 }
 
 export async function startFuzzingNoInit(
 	fuzzFn: fuzzer.FuzzTarget,
 	options: Options,
-) {
-	// Signal handler that stops fuzzing when the process receives a SIGINT/SIGSEGV,
+): Promise<FuzzingResult> {
+	// Signal handler that stops fuzzing when the process receives a signal.
+	// Signal is raised as a finding and orderly shuts down the fuzzer, as that's
 	// necessary to generate coverage reports and print debug information.
-	// The handler stops the process via `stopFuzzing`, as resolving the "fuzzing
-	// promise" does not work in sync mode due to the blocked event loop.
-	const signalHandler = (exitCode: number) => {
-		stopFuzzing(
-			undefined,
-			options.expectedErrors,
-			options.coverageDirectory,
-			options.coverageReporters,
-			options.sync,
-			exitCode,
-		);
+	const signalHandler = (signal: number): void => {
+		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
 
-	const fuzzerOptions = buildFuzzerOption(options);
-
-	if (options.sync) {
-		return Promise.resolve().then(() =>
-			fuzzer.fuzzer.startFuzzing(
-				fuzzFn,
+	try {
+		const fuzzerOptions = buildFuzzerOption(options);
+		if (options.sync) {
+			await fuzzer.fuzzer.startFuzzing(
+				asCrashDumpFuzzFn(fuzzFn),
 				fuzzerOptions,
 				// In synchronous mode, we cannot use the SIGINT/SIGSEGV handler in Node,
 				// because it won't be called until the fuzzing process is finished.
 				// Hence, we pass a callback function to the native fuzzer.
-				// The appropriate exitCode for the signalHandler will be added by the native fuzzer.
 				signalHandler,
-			),
-		);
-	} else {
-		process.on("SIGINT", () => signalHandler(0));
-		process.on("SIGSEGV", () => signalHandler(SIGSEGV));
-		return fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+			);
+		} else {
+			process.on("SIGINT", () => signalHandler(0));
+			process.on("SIGSEGV", () => signalHandler(11));
+			await fuzzer.fuzzer.startFuzzingAsync(
+				asCrashDumpFuzzFn(fuzzFn),
+				fuzzerOptions,
+			);
+		}
+		// Fuzzing ended without a finding, due to -max_total_time or -runs.
+		return reportFuzzingResult(undefined, options.expectedErrors);
+	} catch (e: unknown) {
+		// Fuzzing produced an error, e.g. unhandled exception or bug detector finding.
+		return reportFuzzingResult(e, options.expectedErrors);
 	}
 }
 
-function stopFuzzing(
-	err: unknown,
+function reportFuzzingResult(
+	error: unknown,
 	expectedErrors: string[],
-	coverageDirectory: string,
-	coverageReporters: string[],
-	sync: boolean,
-	forceShutdownWithCode?: number,
-) {
-	const stopFuzzing = sync ? Fuzzer.stopFuzzing : Fuzzer.stopFuzzingAsync;
+): FuzzingResult {
 	if (process.env.JAZZER_DEBUG) {
 		hooking.hookTracker.categorizeUnknown(HookManager.hooks).print();
 	}
-	// Generate a coverage report in fuzzing mode (non-jest). The coverage report for our jest-runner is generated
+
+	// No error found, check if one is expected.
+	if (!error) {
+		if (expectedErrors.length) {
+			const message = `ERROR: Received no error, but expected one of [${expectedErrors}].`;
+			console.error(message);
+			return new FuzzingResult(
+				FuzzingExitCode.UnexpectedError,
+				new Error(message),
+			);
+		}
+		// No error found and none expected, everything is fine.
+		return new FuzzingResult(FuzzingExitCode.Ok);
+	}
+
+	// Error found and expected, check if it's one of the expected ones.
+	if (expectedErrors.length) {
+		const name = errorName(error);
+		if (expectedErrors.includes(name)) {
+			console.error(`INFO: Received expected error "${name}".`);
+			return new FuzzingResult(FuzzingExitCode.Ok, error);
+		} else {
+			printFinding(error);
+			console.error(
+				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`,
+			);
+			return new FuzzingResult(FuzzingExitCode.UnexpectedError, error);
+		}
+	}
+
+	// Check if signal finding was reported, which might result in a normal termination.
+	if (
+		error instanceof FuzzerSignalFinding &&
+		error.exitCode === FuzzingExitCode.Ok
+	) {
+		return new FuzzingResult(FuzzingExitCode.Ok);
+	}
+
+	// Error found, but no specific one expected.
+	printFinding(error);
+	return new FuzzingResult(FuzzingExitCode.Finding, error);
+}
+
+// Wrap fuzz target to print and dump the crashing input on error.
+function asCrashDumpFuzzFn(fuzzFn: fuzzer.FuzzTarget) {
+	function isPromiseLike<T>(arg: unknown): arg is Promise<T> {
+		return !!arg && (arg as Promise<T>).then !== undefined;
+	}
+	if (fuzzFn.length === 1) {
+		return (data: Buffer): unknown | Promise<unknown> => {
+			try {
+				let result = (fuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
+				if (isPromiseLike(result)) {
+					result = result.then(
+						(v) => v,
+						(e) => {
+							fuzzer.fuzzer.printAndDumpCrashingInput();
+							throw e;
+						},
+					);
+				}
+				return result;
+			} catch (e) {
+				fuzzer.fuzzer.printAndDumpCrashingInput();
+				throw e;
+			}
+		};
+	} else {
+		return (
+			data: Buffer,
+			done: (err?: Error) => void,
+		): unknown | Promise<unknown> => {
+			try {
+				return fuzzFn(data, (err?: Error) => {
+					if (err) {
+						fuzzer.fuzzer.printAndDumpCrashingInput();
+					}
+					done(err);
+				});
+			} catch (e) {
+				fuzzer.fuzzer.printAndDumpCrashingInput();
+				throw e;
+			}
+		};
+	}
+}
+
+function processCoverage(
+	coverageDirectory: string,
+	coverageReporters: string[],
+) {
+	// Generate a coverage report in fuzzing mode (non-jest). The coverage report for the jest-runner is generated
 	// by jest internally (as long as '--coverage' is set).
 	if (global.__coverage__) {
 		const coverageMap = libCoverage.createCoverageMap(global.__coverage__);
@@ -243,59 +326,6 @@ function stopFuzzing(
 		coverageReporters.forEach((reporter) =>
 			reports.create(reporter as keyof reports.ReportOptions).execute(context),
 		);
-	}
-
-	// Prioritize findings over segfaults.
-	if (forceShutdownWithCode === SIGSEGV && !(err instanceof Finding)) {
-		err = new Finding("Segmentation Fault");
-	}
-
-	// No error found, check if one is expected or an exit code should be enforced.
-	if (!err) {
-		if (expectedErrors.length) {
-			console.error(
-				`ERROR: Received no error, but expected one of [${expectedErrors}].`,
-			);
-			stopFuzzing(ERROR_UNEXPECTED_CODE);
-		} else if (forceShutdownWithCode === 0) {
-			stopFuzzing(forceShutdownWithCode);
-		}
-		return;
-	}
-
-	// Error found and expected, check if it's one of the expected ones.
-	if (expectedErrors.length) {
-		const name = errorName(err);
-		if (expectedErrors.includes(name)) {
-			console.error(`INFO: Received expected error "${name}".`);
-			stopFuzzing(ERROR_EXPECTED_CODE);
-		} else {
-			printFinding(err);
-			console.error(
-				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`,
-			);
-			stopFuzzing(ERROR_UNEXPECTED_CODE);
-		}
-		return;
-	}
-
-	// Error found, but no specific one expected. This case is used for normal
-	// fuzzing runs, so no dedicated exit code is given to the stop fuzzing function.
-	printFinding(err);
-	stopFuzzing();
-}
-
-function errorName(error: unknown): string {
-	if (error instanceof Error) {
-		// error objects
-		return error.name;
-	} else if (typeof error !== "object") {
-		// primitive types
-		return String(error);
-	} else {
-		// Arrays and objects can not be converted to a proper name and so
-		// not be stated as expected error.
-		return "unknown";
 	}
 }
 
@@ -312,14 +342,14 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
 			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`,
 		);
 	}
-	return wrapFuzzFunctionForBugDetection(fuzzFn);
+	return fuzzFn;
 }
 
 /**
  * Wraps the given fuzz target function to handle errors from both the fuzz target and bug detectors.
  * Ensures that errors thrown by bug detectors have higher priority than errors in the fuzz target.
  */
-export function wrapFuzzFunctionForBugDetection(
+export function asFindingAwareFuzzFn(
 	originalFuzzFn: fuzzer.FuzzTarget,
 ): fuzzer.FuzzTarget {
 	function throwIfError(fuzzTargetError?: unknown): undefined | never {

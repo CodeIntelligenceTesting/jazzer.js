@@ -69,7 +69,7 @@ void SyncReturnsHandler() {
   }
 }
 
-void ReturnValueInfo(bool is_sync_runner) {
+void PrintReturnValueInfo(bool is_sync_runner) {
   if (!is_sync_runner) {
     if (exclSyncReturns && !mixedReturns) {
       std::cerr
@@ -90,21 +90,4 @@ void ReturnValueInfo(bool is_sync_runner) {
                 << std::endl;
     }
   }
-}
-
-int StopFuzzingHandleExit(const Napi::CallbackInfo &info) {
-  int exitCode = libfuzzer::ExitErrorCode;
-
-  if (info[0].IsNumber()) {
-    exitCode = info[0].As<Napi::Number>().Int32Value();
-
-    if (exitCode == SIGSEGV) {
-      libfuzzer::PrintCrashingInput();
-    }
-  } else {
-    // If a dedicated status code is provided, the run is executed as internal
-    // test and the crashing input does not need to be printed/saved.
-    libfuzzer::PrintCrashingInput();
-  }
-  return exitCode;
 }

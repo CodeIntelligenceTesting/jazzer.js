@@ -17,4 +17,3 @@
 #include <napi.h>
 
 Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info);
-void StopFuzzingAsync(const Napi::CallbackInfo &info);
