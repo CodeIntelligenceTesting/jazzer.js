@@ -1,5 +1,6 @@
 dist
 build
+cmake-build-*
 coverage
 node_modules
 .idea
