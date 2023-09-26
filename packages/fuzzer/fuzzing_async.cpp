@@ -13,9 +13,9 @@
 //  limitations under the License.
 
 #include "napi.h"
-#include <cstdlib>
-#include <csignal>
 #include <csetjmp>
+#include <csignal>
+#include <cstdlib>
 #include <future>
 #include <iostream>
 
@@ -68,13 +68,12 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
-const std::string SEGFAULT_ERROR_MESSAGE = "Segmentation fault found in fuzz target";
+const std::string SEGFAULT_ERROR_MESSAGE =
+    "Segmentation fault found in fuzz target";
 
 std::jmp_buf errorBuffer;
 
-void ErrorSignalHandler(int signum) {
-  std::longjmp(errorBuffer, signum);
-}
+void ErrorSignalHandler(int signum) { std::longjmp(errorBuffer, signum); }
 
 // The libFuzzer callback when fuzzing asynchronously.
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
