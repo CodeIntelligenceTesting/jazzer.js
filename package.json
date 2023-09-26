@@ -60,7 +60,7 @@
 		"packages/*"
 	],
 	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown --allow-empty --loglevel debug"
+		"**/!(compile_commands.json)*": "prettier --write --ignore-unknown --allow-empty --log-level debug"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
