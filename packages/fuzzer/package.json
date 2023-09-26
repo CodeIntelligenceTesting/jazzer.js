@@ -37,7 +37,7 @@
 		"@types/bindings": "^1.5.2",
 		"@types/node": "^20.6.5",
 		"clang-format": "^1.8.0",
-		"prebuild": "^12.0.0"
+		"prebuild": "^12.1.0"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
