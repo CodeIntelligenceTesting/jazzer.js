@@ -31,9 +31,10 @@ export class CoverageTracker {
 
 	enlargeCountersBufferIfNeeded(nextEdgeId : number) {
 		let newNumCounters = this.currentNumCounters;
-	
 		while (nextEdgeId >= newNumCounters) {
 			newNumCounters = 2 * newNumCounters;
+
+			// Check if the number of counters exceeds the maximum
 			
 			if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
 				console.error(`ERROR: Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`);
