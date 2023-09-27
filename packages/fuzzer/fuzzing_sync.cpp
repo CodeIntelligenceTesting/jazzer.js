@@ -54,7 +54,7 @@ void sigintHandler(int signum) { gSignalStatus = signum; }
 // should be in and so things in JS-land get pretty broken. However, catching it
 // here, printing an ok error message, and letting libfuzzer make the crash file
 // is good enough
-void error_signal_handler(int signum) {
+void ErrorSignalHandler(int signum) {
   gSignalStatus = signum;
   std::longjmp(errorBuffer, signum);
 }
@@ -92,11 +92,11 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
 
   if (gSignalStatus != 0) {
     // if we caught a segfault, print the error message and die, letting
-    // libfuzzer print the crash file see the comment on `error_signal_handler`
+    // libfuzzer print the crash file. See the comment on `ErrorSignalHandler`
     // for why
     if (gSignalStatus == SIGSEGV) {
       std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
-      exit(139);
+      exit(EXIT_FAILURE);
     }
 
     // Non-zero exit codes will produce crash files.
@@ -139,7 +139,7 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
                  info[2].As<Napi::Function>()};
 
   signal(SIGINT, sigintHandler);
-  signal(SIGSEGV, error_signal_handler);
+  signal(SIGSEGV, ErrorSignalHandler);
 
   StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
   // Explicitly reset the global function pointer because the JS
