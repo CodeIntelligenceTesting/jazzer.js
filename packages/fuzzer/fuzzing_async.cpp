@@ -73,7 +73,8 @@ const std::string SEGFAULT_ERROR_MESSAGE =
 
 std::jmp_buf errorBuffer;
 
-// See comment on `ErrorSignalHandler` in `fuzzing_sync.cpp` for what this is for
+// See comment on `ErrorSignalHandler` in `fuzzing_sync.cpp` for what this is
+// for
 void ErrorSignalHandler(int signum) { std::longjmp(errorBuffer, signum); }
 
 // The libFuzzer callback when fuzzing asynchronously.
