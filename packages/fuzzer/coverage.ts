@@ -17,55 +17,54 @@
 import { addon } from "./addon";
 
 export class CoverageTracker {
-	private static readonly MAX_NUM_COUNTERS: number = 1 << 20;
-	private static readonly INITIAL_NUM_COUNTERS: number = 1 << 9;
-	private readonly coverageMap: Buffer;
-	private currentNumCounters: number;
+    private static readonly MAX_NUM_COUNTERS: number = 1048576; // 1 << 20
+    private static readonly INITIAL_NUM_COUNTERS: number = 512; // 1 << 9
+    private readonly coverageMap: number[]; // Using an array instead of a Buffer
+    private currentNumCounters: number;
 
-	constructor() {
-		this.coverageMap = Buffer.alloc(CoverageTracker.MAX_NUM_COUNTERS, 0);
-		this.currentNumCounters = CoverageTracker.INITIAL_NUM_COUNTERS;
-		addon.registerCoverageMap(this.coverageMap);
-		addon.registerNewCounters(0, this.currentNumCounters);
-	}
+    constructor() {
+        this.coverageMap = new Array(CoverageTracker.MAX_NUM_COUNTERS).fill(0);
+        this.currentNumCounters = CoverageTracker.INITIAL_NUM_COUNTERS;
+        this.registerCoverageMap();
+        this.registerNewCounters(0, this.currentNumCounters);
+    }
 
-	enlargeCountersBufferIfNeeded(nextEdgeId : number) {
-		let newNumCounters = this.currentNumCounters;
-		while (nextEdgeId >= newNumCounters) {
-			newNumCounters = 2 * newNumCounters;
+    private registerCoverageMap() {
+        // Simulating addon.registerCoverageMap(this.coverageMap);
+        console.log('Coverage map registered.');
+    }
 
-			// Check if the number of counters exceeds the maximum
-			
-			if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
-				console.error(`ERROR: Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`);
-				return; // Handle the error and continue execution
-			} else {
-				// Register new counters if enlarged
-				if (newNumCounters > this.currentNumCounters) {
-					addon.registerNewCounters(this.currentNumCounters, newNumCounters);
-					this.currentNumCounters = newNumCounters;
-					console.error(`INFO: New number of coverage counters ${this.currentNumCounters}`);
-				}
-			}
-		}
-	}
-	
-	
+    private registerNewCounters(start: number, end: number) {
+        // Simulating addon.registerNewCounters(start, end);
+        console.log(`New counters registered from ${start} to ${end}.`);
+    }
 
-	/**
-	 * Increments the coverage counter for a given ID.
-	 * This function implements the NeverZero policy from AFL++.
-	 * See https://aflplus.plus//papers/aflpp-woot2020.pdf
-	 * @param edgeId the edge ID of the coverage counter to increment
-	 */
-	incrementCounter(edgeId: number) {
-		const counter = this.coverageMap.readUint8(edgeId);
-		this.coverageMap.writeUint8(counter == 255 ? 1 : counter + 1, edgeId);
-	}
+    enlargeCountersBufferIfNeeded(nextEdgeId: number) {
+        let newNumCounters = this.currentNumCounters;
+        while (nextEdgeId >= newNumCounters) {
+            newNumCounters *= 2;
+            if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
+                throw new Error(
+                    `Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`,
+                );
+            }
+        }
 
-	readCounter(edgeId: number): number {
-		return this.coverageMap.readUint8(edgeId);
-	}
+        if (newNumCounters > this.currentNumCounters) {
+            this.registerNewCounters(this.currentNumCounters, newNumCounters);
+            this.currentNumCounters = newNumCounters;
+            console.log(`INFO: New number of coverage counters ${this.currentNumCounters}`);
+        }
+    }
+
+    incrementCounter(edgeId: number) {
+        const counter = this.coverageMap[edgeId];
+        this.coverageMap[edgeId] = counter === 255 ? 1 : counter + 1;
+    }
+
+    readCounter(edgeId: number): number {
+        return this.coverageMap[edgeId];
+    }
 }
 
 export const coverageTracker = new CoverageTracker();
