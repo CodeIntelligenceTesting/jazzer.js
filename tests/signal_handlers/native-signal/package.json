@@ -3,11 +3,13 @@
 	"version": "1.0.0",
 	"main": "dist/index.js",
 	"scripts": {
-		"install": "npm run build",
-		"build": "cmake-js build && tsc"
+		"postinstall": "npm run build",
+		"build": "cmake-js build && tsc",
+		"format:fix": "clang-format -i *.cpp"
 	},
 	"devDependencies": {
-		"typescript": "^5.2.2"
+		"typescript": "^5.2.2",
+		"clang-format": "^1.8.0"
 	},
 	"binary": {
 		"napi_versions": [
