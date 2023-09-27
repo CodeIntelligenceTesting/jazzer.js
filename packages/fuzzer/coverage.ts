@@ -29,27 +29,27 @@ export class CoverageTracker {
 		addon.registerNewCounters(0, this.currentNumCounters);
 	}
 
-	enlargeCountersBufferIfNeeded(nextEdgeId: number) {
-		// Enlarge registered counters if needed
+	enlargeCountersBufferIfNeeded(nextEdgeId : number) {
 		let newNumCounters = this.currentNumCounters;
+	
 		while (nextEdgeId >= newNumCounters) {
 			newNumCounters = 2 * newNumCounters;
+			
 			if (newNumCounters > CoverageTracker.MAX_NUM_COUNTERS) {
-				throw new Error(
-					`Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`,
-				);
+				console.error(`ERROR: Maximum number (${CoverageTracker.MAX_NUM_COUNTERS}) of coverage counts exceeded.`);
+				return; // Handle the error and continue execution
+			} else {
+				// Register new counters if enlarged
+				if (newNumCounters > this.currentNumCounters) {
+					addon.registerNewCounters(this.currentNumCounters, newNumCounters);
+					this.currentNumCounters = newNumCounters;
+					console.error(`INFO: New number of coverage counters ${this.currentNumCounters}`);
+				}
 			}
 		}
-
-		// Register new counters if enlarged
-		if (newNumCounters > this.currentNumCounters) {
-			addon.registerNewCounters(this.currentNumCounters, newNumCounters);
-			this.currentNumCounters = newNumCounters;
-			console.error(
-				`INFO: New number of coverage counters ${this.currentNumCounters}`,
-			);
-		}
 	}
+	
+	
 
 	/**
 	 * Increments the coverage counter for a given ID.

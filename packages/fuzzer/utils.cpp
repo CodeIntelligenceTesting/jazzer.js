@@ -18,17 +18,18 @@
 #include <csignal>
 #include <iostream>
 
-void StartLibFuzzer(const std::vector<std::string> &args,
-                    fuzzer::UserCallback fuzzCallback) {
+void StartLibFuzzer(const std::vector<std::string> &args, fuzzer::UserCallback fuzzCallback) {
   std::vector<char *> fuzzer_arg_pointers;
-  for (auto &arg : args)
-    fuzzer_arg_pointers.push_back((char *)arg.data());
+  for (const std::string &arg : args) {
+    fuzzer_arg_pointers.push_back(const_cast<char *>(arg.c_str()));
+  }
 
   int argc = fuzzer_arg_pointers.size();
   char **argv = fuzzer_arg_pointers.data();
 
   fuzzer::FuzzerDriver(&argc, &argv, fuzzCallback);
 }
+
 
 // Constructs a libfuzzer usable string array based on an array
 // object originating from a `Napi::CallbackInfo` object that is
