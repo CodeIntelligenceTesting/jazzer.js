@@ -7,7 +7,8 @@
 		"fuzz": "JAZZER_FUZZ=1 jest"
 	},
 	"devDependencies": {
-		"@jazzer.js/jest-runner": "file:../../packages/jest-runner"
+		"@jazzer.js/jest-runner": "file:../../packages/jest-runner",
+		"native-signal": "file:../native-signal"
 	},
 	"jest": {
 		"projects": [

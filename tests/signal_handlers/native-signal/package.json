@@ -1,0 +1,23 @@
+{
+	"name": "native-signal",
+	"version": "1.0.0",
+	"main": "dist/index.js",
+	"scripts": {
+		"postinstall": "npm run build",
+		"build": "cmake-js build && tsc",
+		"format:fix": "clang-format -i *.cpp"
+	},
+	"devDependencies": {
+		"typescript": "^5.2.2",
+		"clang-format": "^1.8.0"
+	},
+	"binary": {
+		"napi_versions": [
+			4
+		]
+	},
+	"dependencies": {
+		"bindings": "^1.5.0",
+		"cmake-js": "^7.2.1"
+	}
+}

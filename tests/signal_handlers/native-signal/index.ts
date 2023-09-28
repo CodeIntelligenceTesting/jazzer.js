@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-const {
-	SIGSEGV_ASYNC,
-	SIGSEGV_SYNC,
-	NATIVE_SIGSEGV_SYNC,
-	NATIVE_SIGSEGV_ASYNC,
-} = require("./fuzz.js");
+import { default as bind } from "bindings";
 
-describe("Jest", () => {
-	it.fuzz("Sync", SIGSEGV_SYNC);
-	it.fuzz("Async", SIGSEGV_ASYNC);
-	it.fuzz("Native", NATIVE_SIGSEGV_SYNC);
-	it.fuzz("Native Async", NATIVE_SIGSEGV_ASYNC);
-});
+type NativeAddon = {
+	sigsegv: (loc: number) => void;
+};
+
+const addon: NativeAddon = bind("signal_impl");
+
+export function sigsegv(loc: number) {
+	addon.sigsegv(loc);
+}

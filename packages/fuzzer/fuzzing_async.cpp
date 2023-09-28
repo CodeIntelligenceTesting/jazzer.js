@@ -13,6 +13,8 @@
 //  limitations under the License.
 
 #include "napi.h"
+#include <csetjmp>
+#include <csignal>
 #include <cstdlib>
 #include <future>
 #include <iostream>
@@ -66,6 +68,15 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
+const std::string SEGFAULT_ERROR_MESSAGE =
+    "Segmentation fault found in fuzz target";
+
+std::jmp_buf errorBuffer;
+
+// See comment on `ErrorSignalHandler` in `fuzzing_sync.cpp` for what this is
+// for
+void ErrorSignalHandler(int signum) { std::longjmp(errorBuffer, signum); }
+
 // The libFuzzer callback when fuzzing asynchronously.
 int FuzzCallbackAsync(const uint8_t *Data, size_t Size) {
   std::promise<void *> promise;
@@ -107,6 +118,14 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   // thread and continue with the next invocation.
 
   try {
+    // Return point for the segfault error handler
+    // This MUST BE called from the thread that executes the fuzz target (and
+    // thus is the thread with the segfault) otherwise longjmp's behavior is
+    // undefined
+    if (setjmp(errorBuffer) != 0) {
+      std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
+      exit(EXIT_FAILURE);
+    }
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
 
@@ -288,6 +307,7 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   context->native_thread = std::thread(
       [](std::vector<std::string> fuzzer_args, AsyncFuzzTargetContext *ctx) {
         try {
+          signal(SIGSEGV, ErrorSignalHandler);
           StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         } catch (const JSException &exception) {
         }

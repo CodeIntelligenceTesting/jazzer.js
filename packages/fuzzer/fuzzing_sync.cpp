@@ -15,11 +15,16 @@
 #include "fuzzing_sync.h"
 #include "shared/libfuzzer.h"
 #include "utils.h"
+#include <csetjmp>
 #include <csignal>
 #include <cstdlib>
+#include <iostream>
 #include <optional>
 
 namespace {
+const std::string SEGFAULT_ERROR_MESSAGE =
+    "Segmentation fault found in fuzz target";
+
 // Information about a JS fuzz target.
 struct FuzzTargetInfo {
   Napi::Env env;
@@ -36,9 +41,23 @@ std::optional<FuzzTargetInfo> gFuzzTarget;
 // This is only necessary in the sync fuzzing case, as async can be handled
 // much nicer directly in JavaScript.
 volatile std::sig_atomic_t gSignalStatus;
+std::jmp_buf errorBuffer;
 } // namespace
 
 void sigintHandler(int signum) { gSignalStatus = signum; }
+
+// This handles signals that indicate an unrecoverable error (currently only
+// segfaults). Our handling of segfaults is odd because it avoids using our
+// Javascript method to print and instead prints a message within C++ and exits
+// almost immediately. This is because Node seems to really not like being
+// called back into after `longjmp` jumps outside the scope Node thinks it
+// should be in and so things in JS-land get pretty broken. However, catching it
+// here, printing an ok error message, and letting libfuzzer make the crash file
+// is good enough
+void ErrorSignalHandler(int signum) {
+  gSignalStatus = signum;
+  std::longjmp(errorBuffer, signum);
+}
 
 // The libFuzzer callback when fuzzing synchronously
 int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
@@ -62,15 +81,24 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
   // nice for efficiency if we could use a pointer instead of copying.
   //
   auto data = Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size);
-  auto result = gFuzzTarget->target.Call({data});
-
-  if (result.IsPromise()) {
-    AsyncReturnsHandler();
-  } else {
-    SyncReturnsHandler();
+  if (setjmp(errorBuffer) == 0) {
+    auto result = gFuzzTarget->target.Call({data});
+    if (result.IsPromise()) {
+      AsyncReturnsHandler();
+    } else {
+      SyncReturnsHandler();
+    }
   }
 
   if (gSignalStatus != 0) {
+    // if we caught a segfault, print the error message and die, letting
+    // libfuzzer print the crash file. See the comment on `ErrorSignalHandler`
+    // for why
+    if (gSignalStatus == SIGSEGV) {
+      std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
     // Non-zero exit codes will produce crash files.
     auto exitCode = Napi::Number::New(gFuzzTarget->env, 0);
 
@@ -111,7 +139,7 @@ void StartFuzzing(const Napi::CallbackInfo &info) {
                  info[2].As<Napi::Function>()};
 
   signal(SIGINT, sigintHandler);
-  signal(SIGSEGV, sigintHandler);
+  signal(SIGSEGV, ErrorSignalHandler);
 
   StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
   // Explicitly reset the global function pointer because the JS

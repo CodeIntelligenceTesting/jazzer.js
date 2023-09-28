@@ -76,7 +76,7 @@ describe("SIGINT handlers", () => {
 
 describe("SIGSEGV handlers", () => {
 	let fuzzTestBuilder;
-	const errorMessage = "= Segmentation Fault";
+	const errorMessage = "Segmentation fault found in fuzz target";
 
 	beforeEach(() => {
 		fuzzTestBuilder = new FuzzTestBuilder()
@@ -93,6 +93,7 @@ describe("SIGSEGV handlers", () => {
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();
 			assertSignalMessagesLogged(fuzzTest);
+			assertFuzzingStopped(fuzzTest);
 			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
 		it("stop async fuzzing on SIGSEGV", () => {
@@ -102,6 +103,25 @@ describe("SIGSEGV handlers", () => {
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();
 			assertSignalMessagesLogged(fuzzTest);
+			assertFuzzingStopped(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop fuzzing on native SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(true)
+				.fuzzEntryPoint("NATIVE_SIGSEGV_SYNC")
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertFuzzingStopped(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop fuzzing on native async SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(false)
+				.fuzzEntryPoint("NATIVE_SIGSEGV_ASYNC")
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertFuzzingStopped(fuzzTest);
 			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
 	});
@@ -115,6 +135,7 @@ describe("SIGSEGV handlers", () => {
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();
 			assertSignalMessagesLogged(fuzzTest);
+			assertFuzzingStopped(fuzzTest);
 			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
 		it("stop async fuzzing on SIGSEGV", () => {
@@ -125,6 +146,29 @@ describe("SIGSEGV handlers", () => {
 				.build();
 			expect(() => fuzzTest.execute()).toThrowError();
 			assertSignalMessagesLogged(fuzzTest);
+			assertFuzzingStopped(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop sync fuzzing on native SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Native$")
+				.jestRunInFuzzingMode(true)
+				.verbose(true)
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertFuzzingStopped(fuzzTest);
+			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
+		});
+		it("stop async fuzzing on native SIGSEGV", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Native Async$")
+				.jestRunInFuzzingMode(true)
+				.verbose(true)
+				.build();
+			expect(() => fuzzTest.execute()).toThrowError();
+			assertFuzzingStopped(fuzzTest);
 			assertErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
 	});
@@ -132,13 +176,9 @@ describe("SIGSEGV handlers", () => {
 
 function assertSignalMessagesLogged(fuzzTest) {
 	expect(fuzzTest.stdout).toContain("kill with signal");
+}
 
-	// We asked for a coverage report. Here we only look for the universal part of its header.
-	// Jest prints to stdout.
-	expect(fuzzTest.stdout).toContain(
-		"| % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s",
-	);
-
+function assertFuzzingStopped(fuzzTest) {
 	// Count how many times "Signal has not stopped the fuzzing process" has been printed.
 	const matches = fuzzTest.stdout.match(
 		/Signal has not stopped the fuzzing process/g,
