@@ -193,7 +193,7 @@ export function buildOptions(): Options {
 	return options;
 }
 
-function mergeOptions(
+export function mergeOptions(
 	input: unknown,
 	defaults: Options,
 	transformKey: (key: string) => string,

@@ -406,6 +406,7 @@ export { FuzzedDataProvider } from "./FuzzedDataProvider";
 export {
 	buildOptions,
 	defaultOptions,
+	mergeOptions,
 	Options,
 	ParameterResolverIndex,
 	setParameterResolverValue,

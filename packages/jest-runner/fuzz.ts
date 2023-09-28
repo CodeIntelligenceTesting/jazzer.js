@@ -22,6 +22,7 @@ import {
 	asFindingAwareFuzzFn,
 	defaultOptions,
 	FindingAwareFuzzTarget,
+	mergeOptions,
 	Options,
 	startFuzzingNoInit,
 } from "@jazzer.js/core";
@@ -82,10 +83,35 @@ export function fuzz(
 	originalTestNamePattern: () => RegExp | undefined,
 	mode: JestTestMode,
 ): FuzzTest {
-	return (name, fn, timeout) => {
+	return (
+		name,
+		fn,
+		timeoutOrOptions:
+			| number
+			| Partial<Pick<Options, "sync" | "fuzzerOptions" | "timeout">>
+			| undefined,
+	) => {
 		// Deep clone the fuzzing config, so that each test can modify it without
 		// affecting other tests, e.g. set a test specific timeout.
-		const localConfig = JSON.parse(JSON.stringify(fuzzingConfig));
+		let localConfig = JSON.parse(JSON.stringify(fuzzingConfig));
+
+		if (typeof timeoutOrOptions === "number") {
+			localConfig.timeout = timeoutOrOptions;
+		} else if (timeoutOrOptions !== undefined) {
+			localConfig = mergeOptions(timeoutOrOptions, localConfig, (key) => {
+				return key;
+			});
+		}
+
+		// Timeout priority is:
+		// 1. Use timeout directly defined in test function
+		// 2. Use timeout defined in fuzzing config
+		// 3. Use jest timeout
+		if (localConfig.timeout === undefined) {
+			localConfig.timeout = currentTestTimeout();
+		} else if (localConfig.timeout === TIMEOUT_PLACEHOLDER) {
+			localConfig.timeout = defaultOptions.timeout;
+		}
 
 		const state = currentTestState();
 		if (!state) {
@@ -111,22 +137,7 @@ export function fuzz(
 		}
 
 		const corpus = new Corpus(testFile, testStatePath, localConfig.coverage);
-
-		// Timeout priority is:
-		// 1. Use timeout directly defined in test function
-		// 2. Use timeout defined in fuzzing config
-		// 3. Use jest timeout
-		if (timeout != undefined) {
-			localConfig.timeout = timeout;
-		} else {
-			const jestTimeout = currentTestTimeout();
-			if (jestTimeout != undefined && localConfig.timeout == undefined) {
-				localConfig.timeout = jestTimeout;
-			} else if (localConfig.timeout === TIMEOUT_PLACEHOLDER) {
-				localConfig.timeout = defaultOptions.timeout;
-			}
-		}
-
+		
 		const wrappedFn = asFindingAwareFuzzFn(fn, localConfig.mode === "fuzzing");
 
 		if (localConfig.mode === "regression") {
