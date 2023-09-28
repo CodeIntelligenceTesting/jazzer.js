@@ -44,9 +44,21 @@ export function addDictionary(...dictionary: string[]) {
 	getDictionary().addEntries(dictionary);
 }
 
-export function useDictionaryByParams(options: string[]): string[] {
+function convertDictionaryEntry(entry: string): string {
+	return JSON.stringify(entry);
+}
+
+export function useDictionaryByParams(
+	options: string[],
+	additionalDictionaryEntries: string[] = [],
+): string[] {
 	const opts = [...options];
-	const dictionary = getDictionary().entries;
+
+	const additionalDictionary = additionalDictionaryEntries.map(
+		convertDictionaryEntry,
+	);
+
+	const dictionary = getDictionary().entries.concat(additionalDictionary);
 
 	// This diverges from the libFuzzer behavior, which allows only one dictionary (the last one).
 	// We merge all dictionaries into one and pass that to libfuzzer.

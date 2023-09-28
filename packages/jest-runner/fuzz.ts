@@ -88,7 +88,9 @@ export function fuzz(
 		fn,
 		timeoutOrOptions:
 			| number
-			| Partial<Pick<Options, "sync" | "fuzzerOptions" | "timeout">>
+			| Partial<
+					Pick<Options, "sync" | "fuzzerOptions" | "timeout" | "dictionaries">
+			  >
 			| undefined,
 	) => {
 		// Deep clone the fuzzing config, so that each test can modify it without

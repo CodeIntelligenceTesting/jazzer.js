@@ -58,6 +58,8 @@ export interface Options {
 	coverageReporters: string[];
 	// Disable bug detectors by name.
 	disableBugDetectors: string[];
+	// Fuzzing dictionaries
+	dictionaries: string[];
 	// Fuzzing mode.
 	mode: "fuzzing" | "regression";
 	// Verbose logging.
@@ -80,6 +82,7 @@ export const defaultOptions: Options = Object.freeze({
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
 	disableBugDetectors: [],
+	dictionaries: [],
 	mode: "fuzzing",
 	verbose: false,
 });
@@ -248,7 +251,7 @@ export function buildFuzzerOption(options: Options) {
 	let params: string[] = [];
 	params = optionDependentParams(options, params);
 	params = forkedExecutionParams(params);
-	params = useDictionaryByParams(params);
+	params = useDictionaryByParams(params, options.dictionaries);
 
 	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
 	// with the Node.js signal handling.
