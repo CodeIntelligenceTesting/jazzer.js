@@ -49,6 +49,26 @@ export const skip: (globals: Global.Global) => FuzzTest =
 
 export type JestTestMode = "skip" | "only" | "standard";
 
+function printTestNameIfRequested(testStatePath: string[]) {
+	const full_name: string = testStatePath.join(" ");
+	if (process.env.JAZZER_LIST_FUZZTEST_NAMES) {
+		if (
+			process.env.JAZZER_LIST_FUZZTEST_NAMES_PATTERN == undefined ||
+			full_name.match(process.env.JAZZER_LIST_FUZZTEST_NAMES_PATTERN)
+		) {
+			if (process.env.JAZZER_LIST_FUZZTEST_NAMES == "short") {
+				const short_name: string = testStatePath.pop() || "";
+				console.log(short_name);
+			} else if (process.env.JAZZER_LIST_FUZZTEST_NAMES == "split") {
+				const split_name: string = testStatePath.join(" / ");
+				console.log(split_name);
+			} else {
+				console.log(full_name);
+			}
+		}
+	}
+}
+
 export function fuzz(
 	globals: Global.Global,
 	testFile: string,
@@ -72,6 +92,9 @@ export function fuzz(
 		// only the requested tests are executed.
 		const testStatePath = currentTestStatePath(toTestName(name), state);
 		const testNamePattern = originalTestNamePattern();
+
+		printTestNameIfRequested(testStatePath);
+
 		const skip =
 			testStatePath !== undefined &&
 			testNamePattern != undefined &&
