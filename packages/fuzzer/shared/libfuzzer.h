@@ -19,8 +19,11 @@ namespace libfuzzer {
 // optionally fuzzing stats, but does not include a stack trace.
 extern void (*PrintCrashingInput)();
 
-const int EXIT_OK_CODE = 0;
 const int EXIT_ERROR_CODE = 77;
+
+// Signals should exit with code 128+n, see
+// https://tldp.org/LDP/abs/html/exitcodes.html
+const int EXIT_ERROR_SEGV = 128 + 11;
 
 // Possible return values for the libFuzzer callback to continue or abort
 // the fuzzer loop.

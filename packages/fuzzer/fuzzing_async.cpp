@@ -120,8 +120,10 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
     // thus is the thread with the segfault) otherwise longjmp's behavior is
     // undefined
     if (setjmp(errorBuffer) != 0) {
-      std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
-      exit(EXIT_FAILURE);
+      std::cerr << "==" << (unsigned long)GetPID() << "== Segmentation Fault"
+                << std::endl;
+      libfuzzer::PrintCrashingInput();
+      _Exit(libfuzzer::EXIT_ERROR_SEGV);
     }
     if (env != nullptr) {
       auto buffer = Napi::Buffer<uint8_t>::Copy(env, data->data, data->size);
