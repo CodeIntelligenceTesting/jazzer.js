@@ -56,6 +56,11 @@ export enum FuzzingExitCode {
 	UnexpectedError = 78,
 }
 
+// Enforce usage of fuzz targets wrapped with the branded type "FindingAwareFuzzTarget" in core functions.
+export type FindingAwareFuzzTarget = fuzzer.FuzzTarget & {
+	__brand: "FindingAwareFuzzTarget";
+};
+
 export class FuzzingResult {
 	constructor(
 		public readonly returnCode: FuzzingExitCode,
@@ -179,7 +184,7 @@ export async function startFuzzing(options: Options): Promise<FuzzingResult> {
 }
 
 export async function startFuzzingNoInit(
-	fuzzFn: fuzzer.FuzzTarget,
+	fuzzFn: FindingAwareFuzzTarget,
 	options: Options,
 ): Promise<FuzzingResult> {
 	// Signal handler that stops fuzzing when the process receives a signal.
@@ -196,7 +201,7 @@ export async function startFuzzingNoInit(
 		const fuzzerOptions = buildFuzzerOption(options);
 		if (options.sync) {
 			await fuzzer.fuzzer.startFuzzing(
-				asCrashDumpFuzzFn(fuzzFn),
+				fuzzFn,
 				fuzzerOptions,
 				// In synchronous mode, we cannot use the SIGINT handler in Node,
 				// because the event loop is blocked by the fuzzer, and the handler
@@ -206,10 +211,7 @@ export async function startFuzzingNoInit(
 				signalHandler,
 			);
 		} else {
-			await fuzzer.fuzzer.startFuzzingAsync(
-				asCrashDumpFuzzFn(fuzzFn),
-				fuzzerOptions,
-			);
+			await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 		}
 		// Fuzzing ended without a finding, due to -max_total_time or -runs.
 		return reportFuzzingResult(undefined, options.expectedErrors);
@@ -269,59 +271,6 @@ function reportFuzzingResult(
 	return new FuzzingResult(FuzzingExitCode.Finding, error);
 }
 
-// Wrap fuzz target to print and dump the crashing input on error.
-function asCrashDumpFuzzFn(fuzzFn: fuzzer.FuzzTarget) {
-	function isPromiseLike<T>(arg: unknown): arg is Promise<T> {
-		return !!arg && (arg as Promise<T>).then !== undefined;
-	}
-	if (fuzzFn.length === 1) {
-		return (data: Buffer): unknown | Promise<unknown> => {
-			try {
-				let result = (fuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
-				if (isPromiseLike(result)) {
-					result = result.then(
-						(v) => v,
-						(e) => {
-							printAndDumpCrashingInput(e);
-							throw e;
-						},
-					);
-				}
-				return result;
-			} catch (e) {
-				printAndDumpCrashingInput(e);
-				throw e;
-			}
-		};
-	} else {
-		return (
-			data: Buffer,
-			done: (err?: Error) => void,
-		): unknown | Promise<unknown> => {
-			try {
-				return fuzzFn(data, (err?: Error) => {
-					if (err) {
-						printAndDumpCrashingInput(err);
-					}
-					done(err);
-				});
-			} catch (e) {
-				printAndDumpCrashingInput(e);
-				throw e;
-			}
-		};
-	}
-}
-
-function printAndDumpCrashingInput(error: unknown) {
-	if (
-		!(error instanceof FuzzerSignalFinding) ||
-		error.exitCode !== FuzzingExitCode.Ok
-	) {
-		fuzzer.fuzzer.printAndDumpCrashingInput();
-	}
-}
-
 function processCoverage(
 	coverageDirectory: string,
 	coverageReporters: string[],
@@ -363,17 +312,24 @@ async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
  */
 export function asFindingAwareFuzzFn(
 	originalFuzzFn: fuzzer.FuzzTarget,
-): fuzzer.FuzzTarget {
+	dumpCrashingInput = true,
+): FindingAwareFuzzTarget {
 	function throwIfError(fuzzTargetError?: unknown): undefined | never {
 		const error = clearFirstFinding() ?? fuzzTargetError;
 		if (error) {
 			cleanErrorStack(error);
+			if (dumpCrashingInput) {
+				printAndDumpCrashingInput(error);
+			}
 			throw error;
 		}
 	}
 
 	if (originalFuzzFn.length === 1) {
-		return (data: Buffer): unknown | Promise<unknown> => {
+		return ((data: Buffer): unknown | Promise<unknown> => {
+			function isPromiseLike<T>(arg: unknown): arg is Promise<T> {
+				return !!arg && (arg as Promise<T>).then !== undefined;
+			}
 			let fuzzTargetError: unknown;
 			let result: unknown | Promise<unknown> = undefined;
 			const callbacks = getCallbacks();
@@ -383,7 +339,7 @@ export function asFindingAwareFuzzFn(
 				// Explicitly set promise handlers to process findings, but still return
 				// the fuzz target result directly, so that sync execution is still
 				// possible.
-				if (result instanceof Promise) {
+				if (isPromiseLike(result)) {
 					result = result.then(
 						(result) => {
 							callbacks.runAfterEachCallbacks();
@@ -402,9 +358,9 @@ export function asFindingAwareFuzzFn(
 				fuzzTargetError = e;
 			}
 			return throwIfError(fuzzTargetError) ?? result;
-		};
+		}) as FindingAwareFuzzTarget;
 	} else {
-		return (
+		return ((
 			data: Buffer,
 			done: (err?: Error) => void,
 		): unknown | Promise<unknown> => {
@@ -415,6 +371,9 @@ export function asFindingAwareFuzzFn(
 				const result = originalFuzzFn(data, (err?) => {
 					const error = clearFirstFinding() ?? err;
 					cleanErrorStack(error);
+					if (error && dumpCrashingInput) {
+						printAndDumpCrashingInput(error);
+					}
 					callbacks.runAfterEachCallbacks();
 					done(error);
 				});
@@ -426,7 +385,16 @@ export function asFindingAwareFuzzFn(
 				callbacks.runAfterEachCallbacks();
 				throwIfError(e);
 			}
-		};
+		}) as FindingAwareFuzzTarget;
+	}
+}
+
+function printAndDumpCrashingInput(error: unknown) {
+	if (
+		!(error instanceof FuzzerSignalFinding) ||
+		error.exitCode !== FuzzingExitCode.Ok
+	) {
+		fuzzer.fuzzer.printAndDumpCrashingInput();
 	}
 }
 

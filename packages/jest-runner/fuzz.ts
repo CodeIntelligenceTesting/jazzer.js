@@ -29,6 +29,7 @@ import {
 	Options,
 	startFuzzingNoInit,
 	asFindingAwareFuzzFn,
+	FindingAwareFuzzTarget,
 } from "@jazzer.js/core";
 
 // Indicate that something went wrong executing the fuzzer.
@@ -123,7 +124,7 @@ export function fuzz(
 			}
 		}
 
-		const wrappedFn = asFindingAwareFuzzFn(fn);
+		const wrappedFn = asFindingAwareFuzzFn(fn, localConfig.mode === "fuzzing");
 
 		if (localConfig.mode === "regression") {
 			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals, mode);
@@ -137,7 +138,7 @@ export function fuzz(
 
 export const runInFuzzingMode = (
 	name: Global.TestNameLike,
-	fn: FuzzTarget,
+	fn: FindingAwareFuzzTarget,
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,
@@ -158,7 +159,7 @@ export const runInFuzzingMode = (
 
 export const runInRegressionMode = (
 	name: Global.TestNameLike,
-	fn: FuzzTarget,
+	fn: FindingAwareFuzzTarget,
 	corpus: Corpus,
 	options: Options,
 	globals: Global.Global,

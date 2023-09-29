@@ -17,7 +17,11 @@
 import fs from "fs";
 import * as tmp from "tmp";
 import { Circus, Global } from "@jest/types";
-import { Options, startFuzzingNoInit } from "@jazzer.js/core";
+import {
+	FindingAwareFuzzTarget,
+	Options,
+	startFuzzingNoInit,
+} from "@jazzer.js/core";
 import { Corpus } from "./corpus";
 import {
 	fuzz,
@@ -26,6 +30,7 @@ import {
 	JestTestMode,
 	runInRegressionMode,
 } from "./fuzz";
+import { FuzzTarget } from "@jazzer.js/fuzzer";
 
 // Mock Corpus class so that no local directories are created during test.
 const inputsPathsMock = jest.fn();
@@ -90,7 +95,7 @@ describe("fuzz", () => {
 			await withMockTest(() => {
 				runInRegressionMode(
 					"fuzz",
-					testFn,
+					asFindingAwareFuzzFn(testFn),
 					corpus,
 					{} as Options,
 					globalThis as Global.Global,
@@ -107,10 +112,10 @@ describe("fuzz", () => {
 			await withMockTest(() => {
 				runInRegressionMode(
 					"fuzz",
-					(_: Buffer, done: (e?: Error) => void) => {
+					asFindingAwareFuzzFn((_: Buffer, done: (e?: Error) => void) => {
 						called = true;
 						done();
-					},
+					}),
 					mockDefaultCorpus(),
 					{} as Options,
 					globalThis as Global.Global,
@@ -125,14 +130,14 @@ describe("fuzz", () => {
 			await withMockTest(() => {
 				runInRegressionMode(
 					"fuzz",
-					async () => {
+					asFindingAwareFuzzFn(async () => {
 						called = true;
 						return new Promise((resolve) => {
 							setTimeout(() => {
 								resolve("result");
 							}, 100);
 						});
-					},
+					}),
 					mockDefaultCorpus(),
 					{} as Options,
 					globalThis as Global.Global,
@@ -148,11 +153,11 @@ describe("fuzz", () => {
 					runInRegressionMode(
 						"fuzz",
 						// Parameters needed to pass in done callback.
-						(_1: Buffer, _2: (e?: Error) => void) => {
+						asFindingAwareFuzzFn((_1: Buffer, _2: (e?: Error) => void) => {
 							return new Promise(() => {
 								// promise is ignored due to done callback
 							});
-						},
+						}),
 						mockDefaultCorpus(),
 						{} as Options,
 						globalThis as Global.Global,
@@ -171,12 +176,12 @@ describe("fuzz", () => {
 				withMockTest(() => {
 					runInRegressionMode(
 						"fuzz",
-						(_: Buffer, done: (e?: Error) => void) => {
+						asFindingAwareFuzzFn((_: Buffer, done: (e?: Error) => void) => {
 							done();
 							done();
 							// Use another promise to stop test from finishing too fast.
 							resolve("done called multiple times");
-						},
+						}),
 						mockDefaultCorpus(),
 						{} as Options,
 						globalThis as Global.Global,
@@ -194,7 +199,7 @@ describe("fuzz", () => {
 			await withMockTest(() => {
 				runInRegressionMode(
 					"fuzz",
-					testFn,
+					asFindingAwareFuzzFn(testFn),
 					corpus,
 					{} as Options,
 					globalThis as Global.Global,
@@ -295,4 +300,8 @@ function invokeFuzz(
 		paramsWithDefaults.originalTestNamePattern,
 		paramsWithDefaults.mode,
 	);
+}
+
+function asFindingAwareFuzzFn(fn: FuzzTarget): FindingAwareFuzzTarget {
+	return fn as FindingAwareFuzzTarget;
 }
