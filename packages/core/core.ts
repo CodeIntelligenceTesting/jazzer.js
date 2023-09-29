@@ -183,11 +183,14 @@ export async function startFuzzingNoInit(
 	options: Options,
 ): Promise<FuzzingResult> {
 	// Signal handler that stops fuzzing when the process receives a signal.
-	// Signal is raised as a finding and orderly shuts down the fuzzer, as that's
+	// The signal is raised as a finding and orderly shuts down the fuzzer, as that's
 	// necessary to generate coverage reports and print debug information.
+	// Currently only SIGINT is handled this way, as SIGSEGV has to be handled
+	// by the native addon and directly stops the process.
 	const signalHandler = (signal: number): void => {
 		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
+	process.on("SIGINT", () => signalHandler(0));
 
 	try {
 		const fuzzerOptions = buildFuzzerOption(options);
@@ -195,14 +198,14 @@ export async function startFuzzingNoInit(
 			await fuzzer.fuzzer.startFuzzing(
 				asCrashDumpFuzzFn(fuzzFn),
 				fuzzerOptions,
-				// In synchronous mode, we cannot use the SIGINT/SIGSEGV handler in Node,
-				// because it won't be called until the fuzzing process is finished.
-				// Hence, we pass a callback function to the native fuzzer.
+				// In synchronous mode, we cannot use the SIGINT handler in Node,
+				// because the event loop is blocked by the fuzzer, and the handler
+				// won't be called until the fuzzing process is finished.
+				// Hence, we pass a callback function to the native fuzzer and
+				// register a SIGINT handler there.
 				signalHandler,
 			);
 		} else {
-			process.on("SIGINT", () => signalHandler(0));
-			process.on("SIGSEGV", () => signalHandler(11));
 			await fuzzer.fuzzer.startFuzzingAsync(
 				asCrashDumpFuzzFn(fuzzFn),
 				fuzzerOptions,
@@ -279,14 +282,14 @@ function asCrashDumpFuzzFn(fuzzFn: fuzzer.FuzzTarget) {
 					result = result.then(
 						(v) => v,
 						(e) => {
-							fuzzer.fuzzer.printAndDumpCrashingInput();
+							printAndDumpCrashingInput(e);
 							throw e;
 						},
 					);
 				}
 				return result;
 			} catch (e) {
-				fuzzer.fuzzer.printAndDumpCrashingInput();
+				printAndDumpCrashingInput(e);
 				throw e;
 			}
 		};
@@ -298,15 +301,24 @@ function asCrashDumpFuzzFn(fuzzFn: fuzzer.FuzzTarget) {
 			try {
 				return fuzzFn(data, (err?: Error) => {
 					if (err) {
-						fuzzer.fuzzer.printAndDumpCrashingInput();
+						printAndDumpCrashingInput(err);
 					}
 					done(err);
 				});
 			} catch (e) {
-				fuzzer.fuzzer.printAndDumpCrashingInput();
+				printAndDumpCrashingInput(e);
 				throw e;
 			}
 		};
+	}
+}
+
+function printAndDumpCrashingInput(error: unknown) {
+	if (
+		!(error instanceof FuzzerSignalFinding) ||
+		error.exitCode !== FuzzingExitCode.Ok
+	) {
+		fuzzer.fuzzer.printAndDumpCrashingInput();
 	}
 }
 

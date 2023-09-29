@@ -117,12 +117,12 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
   }
 
   if (gSignalStatus != 0) {
-    // if we caught a segfault, print the error message and die, letting
-    // libfuzzer print the crash file. See the comment on `ErrorSignalHandler`
-    // for why
+    // if we caught a segfault, print the error message and die
     if (gSignalStatus == SIGSEGV) {
-      std::cerr << SEGFAULT_ERROR_MESSAGE << std::endl;
-      exit(EXIT_FAILURE);
+      std::cerr << "==" << (unsigned long)GetPID() << "== Segmentation Fault"
+                << std::endl;
+      libfuzzer::PrintCrashingInput();
+      _Exit(libfuzzer::EXIT_ERROR_SEGV);
     }
 
     // Non-zero exit codes will produce crash files.

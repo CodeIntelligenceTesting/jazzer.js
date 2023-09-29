@@ -26,6 +26,7 @@ const JestRegressionExitCode = "1";
 
 class FuzzTest {
 	constructor(
+		logTestOutput,
 		includes,
 		excludes,
 		customHooks,
@@ -50,6 +51,7 @@ class FuzzTest {
 		asJson,
 		timeout,
 	) {
+		this.logTestOutput = logTestOutput;
 		this.includes = includes;
 		this.excludes = excludes;
 		this.customHooks = customHooks;
@@ -89,6 +91,7 @@ class FuzzTest {
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
 		if (this.coverage) options.push("--coverage");
+		if (this.verbose) options.push("--verbose");
 		if (this.dryRun !== undefined) options.push("--dry_run=" + this.dryRun);
 		if (this.timeout !== undefined) options.push("--timeout=" + this.timeout);
 		for (const include of this.includes) {
@@ -157,6 +160,9 @@ class FuzzTest {
 		if (this.timeout !== undefined) {
 			config.timeout = this.timeout;
 		}
+		if (this.verbose) {
+			config.verbose = this.verbose;
+		}
 
 		// Write jest config file even if it exists
 		fs.writeFileSync(
@@ -185,7 +191,7 @@ class FuzzTest {
 	}
 
 	runTest(cmd, options, env) {
-		if (this.verbose) {
+		if (this.logTestOutput) {
 			console.log("COMMAND: " + cmd + " " + options.join(" "));
 		}
 		const proc = spawnSync(cmd, options, {
@@ -198,7 +204,7 @@ class FuzzTest {
 		this.stdout = proc.stdout.toString();
 		this.stderr = proc.stderr.toString();
 		this.status = proc.status;
-		if (this.verbose) {
+		if (this.logTestOutput) {
 			console.log("STDOUT: " + this.stdout.toString());
 			console.log("STDERR: " + this.stderr.toString());
 			console.log("STATUS: " + this.status);
@@ -209,7 +215,9 @@ class FuzzTest {
 	}
 }
 
+// noinspection JSUnusedGlobalSymbols
 class FuzzTestBuilder {
+	_logTestOutput = false;
 	_sync = undefined;
 	_dryRun = undefined;
 	_runs = undefined;
@@ -235,6 +243,15 @@ class FuzzTestBuilder {
 	_timeout = undefined;
 
 	/**
+	 * @param {boolean} logTestOutput - whether to print the output of the fuzz test to the console.
+	 * True if parameter is undefined.
+	 */
+	logTestOutput(logTestOutput) {
+		this._logTestOutput = logTestOutput === undefined ? true : logTestOutput;
+		return this;
+	}
+
+	/**
 	 * @param {boolean} sync - whether to run the fuzz test in synchronous mode.
 	 */
 	sync(sync) {
@@ -252,8 +269,7 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {boolean} verbose - whether to print the output of the fuzz test to the console. True by
-	 * default.
+	 * @param {boolean} verbose - set verbose/debug output in fuzz test.
 	 */
 	verbose(verbose) {
 		this._verbose = verbose === undefined ? true : verbose;
@@ -261,8 +277,8 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {boolean} listFuzzTestNames - whether to list all fuzz test names on the console. True by
-	 * default.
+	 * @param {boolean} listFuzzTestNames - whether to list all fuzz test names on the console.
+	 * True if parameter is undefined.
 	 */
 	listFuzzTestNames(listFuzzTestNames) {
 		this._listFuzzTestNames =
@@ -440,6 +456,7 @@ class FuzzTestBuilder {
 			);
 		}
 		return new FuzzTest(
+			this._logTestOutput,
 			this._includes,
 			this._excludes,
 			this._customHooks,
