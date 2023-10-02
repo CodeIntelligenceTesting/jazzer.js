@@ -115,7 +115,7 @@ export async function initFuzzing(options: Options): Promise<Instrumentor> {
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
 	await hooking.hookManager.finalizeHooks(
-		getJazzerJsGlobal<vm.Context>("vmContext"),
+		getJazzerJsGlobal<vm.Context>("vmContext") ?? globalThis,
 	);
 
 	return instrumentor;

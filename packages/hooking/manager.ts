@@ -121,7 +121,7 @@ export class HookManager {
 	 * initialization steps for the hooks to work. This method must be called
 	 * after all hooks have been registered.
 	 */
-	async finalizeHooks(vmContext?: vm.Context) {
+	async finalizeHooks(vmContext: vm.Context | typeof globalThis) {
 		// Built-in functions cannot be hooked by the instrumentor, so that is
 		// explicitly done here instead.
 		// Loading build-in modules is asynchronous, so we need to wait, which
@@ -274,17 +274,17 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	hookFunction(module, hook, originalFn);
 }
 
-function hookGlobalFunction(hook: Hook, vmContext?: vm.Context): void {
-	const originalFn = vmContext
-		? vm.runInContext(hook.target, vmContext)
+function hookGlobalFunction(
+	hook: Hook,
+	context: vm.Context | typeof globalThis,
+): void {
+	const originalFn = vm.isContext(context)
+		? vm.runInContext(hook.target, context)
 		: vm.runInThisContext(hook.target);
-	const id = callSiteId(hookManager.hookIndex(hook), hook.target);
-	const context = vmContext ?? globalThis;
 
-	if (originalFn === undefined || originalFn === null) {
-		return;
+	if (originalFn) {
+		hookFunction(context, hook, originalFn);
 	}
-	hookFunction(context, hook, originalFn);
 }
 
 function hookFunction(
