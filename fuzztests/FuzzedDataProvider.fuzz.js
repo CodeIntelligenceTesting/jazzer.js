@@ -33,7 +33,7 @@ describe("FuzzedDataProvider", () => {
 				.filter((m) => provider[m].length === 0);
 
 			let usedMethods = "";
-			while (provider.remainingBytes > 0) {
+			while (provider.remainingBytes > 0 && methodNames.length > 0) {
 				const methodName = provider.pickValue(methodNames);
 				provider[methodName].call(provider);
 				usedMethods += methodName;
