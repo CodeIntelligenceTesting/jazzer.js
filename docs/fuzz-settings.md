@@ -213,12 +213,13 @@ option.
 
 ## Bug Detectors
 
-Bug detectors are one of the key features when fuzzing memory-safe languages. In
-Jazzer.js, they can detect some of the most common vulnerabilities in JavaScript
-code. Built-in bug detectors are enabled by default, but can be disabled by
-adding the `--disable_bug_detectors=<pattern>` flag to the project
-configuration. To disable all built-in bug detectors, add
-`--disable_bug_detectors='.*'` to the project configuration.
+Bug detectors (sometimes also called sanitizers) are one of the key features
+when fuzzing memory-safe languages. In Jazzer.js, they can detect some of the
+most common vulnerabilities in JavaScript code. Built-in bug detectors are
+enabled by default, but can be disabled by adding the
+`--disable_bug_detectors=<pattern>` flag to the project configuration. To
+disable all built-in bug detectors, add `--disable_bug_detectors='.*'` to the
+project configuration.
 
 ### Command Injection
 
@@ -229,6 +230,19 @@ _Disable with:_ `--disable_bug_detectors=command-injection`, or when using Jest:
 
 ```json
 { "disableBugDetectors": ["command-injection"] }
+```
+
+### Remote Code Execution
+
+Hooks the `eval` and `Function` functions and reports a finding if the fuzzer
+was able to pass a special string to `eval` and to the function body of
+`Function`.
+
+_Disable with:_ `--disable_bug_detectors=remote-code-execution`, or when using
+Jest:
+
+```json
+{ "disableBugDetectors": ["remote-code-execution"] }
 ```
 
 ### Path Traversal
