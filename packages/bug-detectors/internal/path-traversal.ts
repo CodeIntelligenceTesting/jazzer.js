@@ -15,8 +15,8 @@
  */
 
 import {
-	reportAndThrowFinding,
 	guideTowardsContainment,
+	reportAndThrowFinding,
 } from "@jazzer.js/core";
 import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 

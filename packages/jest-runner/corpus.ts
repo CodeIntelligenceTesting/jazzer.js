@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import path from "path";
 import fs from "fs";
+import path from "path";
 
 export class Corpus {
 	static readonly defaultCorpusDirectory = ".cifuzz-corpus";

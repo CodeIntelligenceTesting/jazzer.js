@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+import fs from "fs";
+
 import proto from "protobufjs";
 import { temporaryWriteSync } from "tempy";
-import fs from "fs";
 
 describe("protobufjs", () => {
 	test.fuzz("loadSync", (data) => {

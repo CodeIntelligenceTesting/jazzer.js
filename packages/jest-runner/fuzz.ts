@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
+import * as fs from "fs";
+
 import { Circus, Global } from "@jest/types";
+
+import {
+	asFindingAwareFuzzFn,
+	defaultOptions,
+	FindingAwareFuzzTarget,
+	Options,
+	startFuzzingNoInit,
+} from "@jazzer.js/core";
 import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
 } from "@jazzer.js/fuzzer";
+
 import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";
-import * as fs from "fs";
 import { removeTopFramesFromError } from "./errorUtils";
-import {
-	defaultOptions,
-	Options,
-	startFuzzingNoInit,
-	asFindingAwareFuzzFn,
-	FindingAwareFuzzTarget,
-} from "@jazzer.js/core";
 
 // Indicate that something went wrong executing the fuzzer.
 export class FuzzerError extends Error {}

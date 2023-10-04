@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-const target = require("./target.js");
 const mappedTarget = require("mappedModuleName");
+
 const { reportFinding } = require("@jazzer.js/core");
+
+const target = require("./target.js");
 
 jest.mock("./target.js", () => ({
 	...jest.requireActual("./target.js"),

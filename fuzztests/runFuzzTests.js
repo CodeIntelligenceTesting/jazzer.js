@@ -18,8 +18,8 @@
 // Helper script that searches for Jest fuzz tests in the current directory and
 // executes them in new processes using the found fuzz test names.
 
-const fs = require("fs/promises");
 const { spawn } = require("child_process");
+const fs = require("fs/promises");
 
 const fuzzTestFileExtension = "fuzz.js";
 const fuzzTestNameRegex = /it.fuzz\s*\(\s*"(.*)"/g;

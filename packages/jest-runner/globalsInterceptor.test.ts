@@ -17,8 +17,8 @@
 // Disable any checks for this file, since it makes mocking much easier.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { interceptGlobals } from "./globalsInterceptor";
 import { fuzz } from "./fuzz";
+import { interceptGlobals } from "./globalsInterceptor";
 
 const internalFuzz = jest.fn();
 jest.mock("./fuzz", () => ({

@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-import * as tmp from "tmp";
 import fs from "fs";
+
+import * as tmp from "tmp";
+
 import { useDictionaryByParams } from "./dictionary";
 
 /**

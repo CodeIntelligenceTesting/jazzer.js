@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import * as lock from "proper-lockfile";
 import * as fs from "fs";
 import * as os from "os";
 import process from "process";
+
+import * as lock from "proper-lockfile";
 
 import { fuzzer } from "@jazzer.js/fuzzer";
 

@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-import { AssignmentExpression, Identifier, Node } from "@babel/types";
+import * as vm from "vm";
+
 import { NodePath, PluginTarget, types } from "@babel/core";
+import { AssignmentExpression, Identifier, Node } from "@babel/types";
+
 import {
+	addDictionary,
+	getJazzerJsGlobal,
+	instrumentationGuard,
+	registerAfterEachCallback,
+	registerInstrumentationPlugin,
 	reportAndThrowFinding,
 	reportFinding,
-	registerAfterEachCallback,
-	addDictionary,
-	registerInstrumentationPlugin,
-	instrumentationGuard,
-	getJazzerJsGlobal,
 } from "@jazzer.js/core";
 
 import { bugDetectorConfigurations } from "../configuration";
-import * as vm from "vm";
 
 // Allow the user to configure this bug detector in the custom-hooks file (if any).
 class PrototypePollutionConfig {

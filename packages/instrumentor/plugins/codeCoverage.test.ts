@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-import { codeCoverage } from "./codeCoverage";
-import { instrumentWith } from "./testhelpers";
+import * as fs from "fs";
+import * as os from "os";
+
+import * as tmp from "tmp";
+
 import { FileSyncIdStrategy, ZeroEdgeIdStrategy } from "../edgeIdStrategy";
 import { Instrumentor } from "../instrument";
 
-import * as tmp from "tmp";
-import * as fs from "fs";
-import * as os from "os";
+import { codeCoverage } from "./codeCoverage";
+import { instrumentWith } from "./testhelpers";
 
 tmp.setGracefulCleanup();
 

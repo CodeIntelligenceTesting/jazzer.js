@@ -16,6 +16,7 @@
 
 import path from "path";
 import process from "process";
+
 import * as fuzzer from "@jazzer.js/fuzzer";
 
 export interface FuzzModule {

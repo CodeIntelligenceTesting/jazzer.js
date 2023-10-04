@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const child_process = require("child_process");
 const assert = require("assert");
+const child_process = require("child_process");
 
 const evilCommand = "jaz_zer";
 const friendlyCommand =

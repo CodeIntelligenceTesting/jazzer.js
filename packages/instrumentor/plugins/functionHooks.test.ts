@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { instrumentAndEvalWith } from "./testhelpers";
-import { functionHooks } from "./functionHooks";
 import * as hooking from "@jazzer.js/hooking";
-import { Hook, TrackedHook, hookTracker } from "@jazzer.js/hooking";
+import { Hook, hookTracker, TrackedHook } from "@jazzer.js/hooking";
+
+import { functionHooks } from "./functionHooks";
+import { instrumentAndEvalWith } from "./testhelpers";
 
 const expectInstrumentationEval = instrumentAndEvalWith(
 	functionHooks("pkg/lib/a"),

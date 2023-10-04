@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import * as ts from "typescript";
+import ts from "typescript";
+
 import { Instrumentor } from "./instrument";
 
 describe("shouldInstrument check", () => {

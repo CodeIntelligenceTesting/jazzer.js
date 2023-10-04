@@ -15,6 +15,7 @@
  */
 
 import { defaultOptions, Options } from "@jazzer.js/core";
+
 import { interceptTestState } from "./testStateInterceptor";
 
 describe("Test state interceptor", () => {

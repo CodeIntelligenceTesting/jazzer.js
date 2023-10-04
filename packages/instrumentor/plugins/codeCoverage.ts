@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { NodePath, PluginTarget, types } from "@babel/core";
 import {
 	BlockStatement,
 	ConditionalExpression,
@@ -21,15 +22,15 @@ import {
 	ExpressionStatement,
 	Function,
 	IfStatement,
+	isBlockStatement,
+	isLogicalExpression,
 	LogicalExpression,
 	Loop,
 	Statement,
 	SwitchStatement,
 	TryStatement,
-	isBlockStatement,
-	isLogicalExpression,
 } from "@babel/types";
-import { NodePath, PluginTarget, types } from "@babel/core";
+
 import { EdgeIdStrategy } from "../edgeIdStrategy";
 
 export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {

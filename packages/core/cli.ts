@@ -16,14 +16,15 @@
  */
 
 import yargs, { Argv, exit } from "yargs";
+
 import { FuzzingExitCode, startFuzzing } from "./core";
-import { prepareArgs } from "./utils";
 import {
 	buildOptions,
 	defaultOptions,
 	ParameterResolverIndex,
 	setParameterResolverValue,
 } from "./options";
+import { prepareArgs } from "./utils";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.
 // Default values are provided by the options module and must not be set by yargs.

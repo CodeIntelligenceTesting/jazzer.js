@@ -15,6 +15,7 @@
  */
 
 const path = require("path");
+
 const { FuzzTestBuilder } = require("../helpers.js");
 
 const testDirectory = __dirname;

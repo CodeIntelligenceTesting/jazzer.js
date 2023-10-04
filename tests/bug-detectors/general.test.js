@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+const fs = require("fs");
+const path = require("path");
+
 const {
 	FuzzTestBuilder,
 	FuzzingExitCode,
@@ -21,8 +24,6 @@ const {
 	cleanCrashFilesIn,
 	fileExists,
 } = require("../helpers.js");
-const path = require("path");
-const fs = require("fs");
 
 describe("General tests", () => {
 	const bugDetectorDirectory = path.join(__dirname, "general");

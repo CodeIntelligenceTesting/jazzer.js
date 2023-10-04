@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-const { FuzzTestBuilder, describeSkipOnPlatform } = require("../helpers.js");
 const path = require("path");
-const { cleanCrashFilesIn } = require("../helpers");
+
+const {
+	cleanCrashFilesIn,
+	FuzzTestBuilder,
+	describeSkipOnPlatform,
+} = require("../helpers");
 
 // Signal handling in Node.js on Windows is only rudimentary supported.
 // Specifically using `process.kill`, like the test does to interrupt itself,

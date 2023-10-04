@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-import { Instrumentor } from "@jazzer.js/instrumentor";
-import { interceptScriptTransformerCalls } from "./transformerInterceptor";
-import Runtime from "jest-runtime";
-import { SourceMap } from "@jazzer.js/instrumentor/dist/SourceMapRegistry";
-import { TransformResult } from "@jest/transform";
 import fs from "fs";
+
+import { TransformResult } from "@jest/transform";
+import Runtime from "jest-runtime";
 import tmp from "tmp";
+
+import { Instrumentor } from "@jazzer.js/instrumentor";
+import { SourceMap } from "@jazzer.js/instrumentor/dist/SourceMapRegistry";
+
+import { interceptScriptTransformerCalls } from "./transformerInterceptor";
 
 tmp.setGracefulCleanup();
 

@@ -15,13 +15,17 @@
  */
 
 import fs from "fs";
-import * as tmp from "tmp";
+
 import { Circus, Global } from "@jest/types";
+import * as tmp from "tmp";
+
 import {
 	FindingAwareFuzzTarget,
 	Options,
 	startFuzzingNoInit,
 } from "@jazzer.js/core";
+import { FuzzTarget } from "@jazzer.js/fuzzer";
+
 import { Corpus } from "./corpus";
 import {
 	fuzz,
@@ -30,7 +34,6 @@ import {
 	JestTestMode,
 	runInRegressionMode,
 } from "./fuzz";
-import { FuzzTarget } from "@jazzer.js/fuzzer";
 
 // Mock Corpus class so that no local directories are created during test.
 const inputsPathsMock = jest.fn();

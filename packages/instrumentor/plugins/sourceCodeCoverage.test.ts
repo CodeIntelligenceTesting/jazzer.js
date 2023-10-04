@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-import { codeCoverage } from "./codeCoverage";
-import { ZeroEdgeIdStrategy } from "../edgeIdStrategy";
-import { removeIndentation } from "./testhelpers";
-import { Instrumentor } from "../instrument";
 import * as libCoverage from "istanbul-lib-coverage";
-import { sourceCodeCoverage } from "./sourceCodeCoverage";
 
-const fuzzer = require("@jazzer.js/fuzzer").fuzzer;
+import { fuzzer } from "@jazzer.js/fuzzer";
+
+import { ZeroEdgeIdStrategy } from "../edgeIdStrategy";
+import { Instrumentor } from "../instrument";
+
+import { codeCoverage } from "./codeCoverage";
+import { sourceCodeCoverage } from "./sourceCodeCoverage";
+import { removeIndentation } from "./testhelpers";
+
 jest.mock("@jazzer.js/fuzzer");
-// @ts-ignore
-global.Fuzzer = fuzzer;
 
 /* eslint no-var: 0 */
 declare global {
 	var __coverage__: libCoverage.CoverageMapData;
+	var Fuzzer: typeof fuzzer;
 }
+global.Fuzzer = fuzzer;
 
 // Each test instruments, evaluates instrumented code, and checks the coverage data accumulated
 // in the global variable __coverage__.

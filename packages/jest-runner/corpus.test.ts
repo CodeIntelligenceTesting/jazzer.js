@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import { Corpus } from "./corpus";
-import * as tmp from "tmp";
-import path from "path";
 import fs from "fs";
+import path from "path";
+
+import * as tmp from "tmp";
+
+import { Corpus } from "./corpus";
 
 // Cleanup created files on exit
 tmp.setGracefulCleanup();
