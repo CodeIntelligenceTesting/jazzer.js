@@ -24,6 +24,7 @@
 				"header/header": [2, ".header.js"],
 				"import/first": "error",
 				"import/newline-after-import": "error",
+				"import/no-unresolved": "warn",
 				"import/order": [
 					"error",
 					{
