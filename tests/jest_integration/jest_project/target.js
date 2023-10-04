@@ -15,7 +15,7 @@
  */
 
 const fuzzMe = (data) => {
-	if (data.toString() === "Awesome") {
+	if (data.toString() === "Awe") {
 		throw Error("Welcome to Awesome Fuzzing!");
 	}
 };
