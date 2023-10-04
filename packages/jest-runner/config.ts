@@ -15,11 +15,12 @@
  */
 
 import { cosmiconfigSync } from "cosmiconfig";
+
 import {
 	buildOptions,
 	Options,
-	setParameterResolverValue,
 	ParameterResolverIndex,
+	setParameterResolverValue,
 } from "@jazzer.js/core";
 
 export const TIMEOUT_PLACEHOLDER = Number.MIN_SAFE_INTEGER;

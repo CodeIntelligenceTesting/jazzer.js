@@ -18,13 +18,15 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 import fs from "fs";
-import tmp from "tmp";
+
 import {
 	CallerTransformOptions,
 	TransformedSource,
 	TransformResult,
 } from "@jest/transform";
 import Runtime from "jest-runtime";
+import tmp from "tmp";
+
 import { Instrumentor, SourceMap } from "@jazzer.js/instrumentor";
 
 tmp.setGracefulCleanup();

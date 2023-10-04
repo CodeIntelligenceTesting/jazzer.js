@@ -21,13 +21,15 @@ import {
 	transformSync,
 } from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
+
 import { hookManager } from "@jazzer.js/hooking";
+
+import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 import { instrumentationPlugins } from "./plugin";
 import { codeCoverage } from "./plugins/codeCoverage";
-import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
-import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
+import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import {
 	extractInlineSourceMap,
 	SourceMap,

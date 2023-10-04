@@ -15,7 +15,9 @@
  */
 
 import Runtime from "jest-runtime";
+
 import { Options } from "@jazzer.js/core";
+
 import { fuzz } from "./fuzz";
 import { InterceptedTestState } from "./testStateInterceptor";
 

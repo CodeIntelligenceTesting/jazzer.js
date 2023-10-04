@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const { fuzzer } = require("@jazzer.js/fuzzer");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
+const { fuzzer } = require("@jazzer.js/fuzzer");
 
 describe("fuzzer", () => {
 	it.fuzz("traceStrCmp", (data) => {

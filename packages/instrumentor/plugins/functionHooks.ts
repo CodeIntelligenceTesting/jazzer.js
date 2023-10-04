@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-import * as babel from "@babel/types";
-import generate from "@babel/generator";
 import { NodePath, PluginTarget, types } from "@babel/core";
+import generate from "@babel/generator";
+import * as babel from "@babel/types";
+
 import {
-	hookManager,
 	Hook,
-	MatchingHooksResult,
+	hookManager,
 	hookTracker,
 	logHooks,
+	MatchingHooksResult,
 } from "@jazzer.js/hooking";
 
 export function functionHooks(filepath: string): () => PluginTarget {

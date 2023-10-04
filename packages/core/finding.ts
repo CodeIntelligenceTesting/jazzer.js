@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import process from "process";
 import { EOL } from "os";
 import { sep } from "path";
+import process from "process";
+
 import { getJazzerJsGlobal, setJazzerJsGlobal } from "./api";
 
 const firstFinding = "firstFinding";

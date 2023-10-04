@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+const assert = require("assert");
 const child_process = require("child_process");
 const fs = require("fs");
-const assert = require("assert");
 const { platform } = require("os");
 
 const { makeFnCalledOnce, callWithTimeout } = require("../../helpers");

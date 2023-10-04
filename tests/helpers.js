@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
+const assert = require("assert");
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-
-const assert = require("assert");
 
 const FuzzingExitCode = "77";
 const TimeoutExitCode = "70";

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import { NumericLiteral } from "@babel/types";
-import { types } from "@babel/core";
 import * as crypto from "crypto";
+
+import { types } from "@babel/core";
+import { NumericLiteral } from "@babel/types";
 
 export function fakePC(): NumericLiteral {
 	return types.numericLiteral(crypto.randomInt(512));

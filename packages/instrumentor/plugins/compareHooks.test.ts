@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-const helpers = mockHelpers();
-import { compareHooks } from "./compareHooks";
-import { instrumentAndEvalWith, instrumentWith } from "./testhelpers";
 import { types } from "@babel/core";
+
+import { compareHooks } from "./compareHooks";
+import * as helpers from "./helpers";
+import { instrumentAndEvalWith, instrumentWith } from "./testhelpers";
+
+jest.mock("./helpers");
 
 const fuzzer = mockFuzzerApi();
 
@@ -28,7 +31,9 @@ describe("compare hooks instrumentation", () => {
 	describe("string compares", () => {
 		it("intercepts equals (`==` and `===`)", () => {
 			fuzzer.tracer.traceStrCmp.mockClear().mockReturnValue(false);
-			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+			(helpers.fakePC as jest.Mock)
+				.mockClear()
+				.mockReturnValue(types.numericLiteral(0));
 			const input = `
 			|let a = "a"
 			|a === "b" == "c"`;
@@ -57,7 +62,7 @@ describe("compare hooks instrumentation", () => {
 
 		it("intercepts not equals (`!=` and `!==`)", () => {
 			fuzzer.tracer.traceStrCmp.mockClear().mockReturnValue(true);
-			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+			(helpers.fakePC as jest.Mock).mockReturnValue(types.numericLiteral(0));
 
 			const input = `
 			|let a = "a"
@@ -89,7 +94,7 @@ describe("compare hooks instrumentation", () => {
 	describe("integer compares", () => {
 		it("intercepts equals (`==` and `===`))", () => {
 			fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(false);
-			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+			(helpers.fakePC as jest.Mock).mockReturnValue(types.numericLiteral(0));
 
 			const input = `
 			|let a = 10
@@ -118,7 +123,7 @@ describe("compare hooks instrumentation", () => {
 
 		it("intercepts not equals (`!=` and `!==`))", () => {
 			fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(true);
-			helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+			(helpers.fakePC as jest.Mock).mockReturnValue(types.numericLiteral(0));
 
 			const input = `
 			|let a = 10
@@ -148,7 +153,7 @@ describe("compare hooks instrumentation", () => {
 		it("intercepts greater and less them", () => {
 			[">", "<", ">=", "<="].forEach((operator) => {
 				fuzzer.tracer.traceNumberCmp.mockClear().mockReturnValue(false);
-				helpers.fakePC.mockClear().mockReturnValue(types.numericLiteral(0));
+				(helpers.fakePC as jest.Mock).mockReturnValue(types.numericLiteral(0));
 				const input = `
 				|let a = 10
 				|a ${operator} 20`;
@@ -255,10 +260,4 @@ function mockFuzzerApi() {
 	// @ts-ignore
 	global.Fuzzer = fuzzer;
 	return fuzzer;
-}
-
-function mockHelpers() {
-	const helpers = require("./helpers");
-	jest.mock("./helpers");
-	return helpers;
 }

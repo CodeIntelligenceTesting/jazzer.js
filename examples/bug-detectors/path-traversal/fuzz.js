@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-const JSZip = require("jszip");
 const path = require("path");
+
+const JSZip = require("jszip");
 
 /**
  * This demonstrates the path traversal bug detector on a vulnerable version of jszip.

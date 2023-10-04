@@ -15,6 +15,7 @@
  */
 
 const path = require("path");
+
 const {
 	FuzzTestBuilder,
 	FuzzingExitCode,

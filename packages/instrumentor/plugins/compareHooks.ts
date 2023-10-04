@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
+import { NodePath, PluginTarget, types } from "@babel/core";
 import {
 	BinaryExpression,
-	SwitchStatement,
-	isPrivateName,
 	isIdentifier,
-	isStringLiteral,
 	isNumericLiteral,
+	isPrivateName,
+	isStringLiteral,
+	SwitchStatement,
 } from "@babel/types";
-import { NodePath, PluginTarget, types } from "@babel/core";
+
 import { fakePC } from "./helpers";
 
 export function compareHooks(): PluginTarget {

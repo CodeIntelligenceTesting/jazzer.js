@@ -15,6 +15,7 @@
  */
 
 import { defaultOptions } from "@jazzer.js/core";
+
 import { loadConfig, TIMEOUT_PLACEHOLDER } from "./config";
 
 describe("Config", () => {

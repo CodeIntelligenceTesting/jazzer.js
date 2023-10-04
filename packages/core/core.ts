@@ -13,16 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import path from "path";
-import * as tmp from "tmp";
+
 import * as fs from "fs";
+import path from "path";
 
 import * as libCoverage from "istanbul-lib-coverage";
 import * as libReport from "istanbul-lib-report";
 import * as reports from "istanbul-reports";
+import * as tmp from "tmp";
 
 import * as fuzzer from "@jazzer.js/fuzzer";
 import * as hooking from "@jazzer.js/hooking";
+import {
+	FileSyncIdStrategy,
+	Instrumentor,
+	MemorySyncIdStrategy,
+	registerInstrumentor,
+} from "@jazzer.js/instrumentor";
+
+import { getCallbacks } from "./callback";
 import {
 	cleanErrorStack,
 	clearFirstFinding,
@@ -31,16 +40,9 @@ import {
 	printFinding,
 	reportFinding,
 } from "./finding";
-import {
-	FileSyncIdStrategy,
-	Instrumentor,
-	MemorySyncIdStrategy,
-	registerInstrumentor,
-} from "@jazzer.js/instrumentor";
-import { getCallbacks } from "./callback";
-import { ensureFilepath, importModule } from "./utils";
-import { buildFuzzerOption, Options } from "./options";
 import { jazzerJs } from "./globals";
+import { buildFuzzerOption, Options } from "./options";
+import { ensureFilepath, importModule } from "./utils";
 
 // Remove temporary files on exit
 tmp.setGracefulCleanup();

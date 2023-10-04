@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { hookManager } from "./manager";
 import { HookType } from "./hook";
+import { hookManager } from "./manager";
 
 describe("Hooks manager", () => {
 	describe("Matching hooks", () => {

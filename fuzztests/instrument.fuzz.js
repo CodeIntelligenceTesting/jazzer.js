@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-const { Instrumentor } = require("@jazzer.js/instrumentor");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
+const { Instrumentor } = require("@jazzer.js/instrumentor");
 
 describe("instrument", () => {
 	it.fuzz("shouldInstrumentFn", (data) => {

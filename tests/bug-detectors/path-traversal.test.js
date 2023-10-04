@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-const { FuzzTestBuilder, FuzzingExitCode } = require("../helpers.js");
-const path = require("path");
 const fs = require("fs");
-const { cleanCrashFilesIn } = require("../helpers");
+const path = require("path");
+
+const {
+	cleanCrashFilesIn,
+	FuzzTestBuilder,
+	FuzzingExitCode,
+} = require("../helpers");
 
 describe("Path Traversal", () => {
 	const SAFE = "../safe_path/";

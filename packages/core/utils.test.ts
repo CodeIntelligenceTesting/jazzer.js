@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { ensureFilepath, prepareArgs } from "./utils";
-
 import path from "path";
+
+import { ensureFilepath, prepareArgs } from "./utils";
 
 describe("core", () => {
 	describe("ensuresFilepath", () => {

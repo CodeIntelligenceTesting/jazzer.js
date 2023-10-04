@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { coverageTracker, CoverageTracker } from "./coverage";
-import { tracer, Tracer } from "./trace";
 import { addon } from "./addon";
+import { CoverageTracker, coverageTracker } from "./coverage";
+import { Tracer, tracer } from "./trace";
 
 export type {
 	FuzzTarget,

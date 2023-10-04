@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { Finding, printFinding } from "./finding";
-
 import { sep } from "path";
+
+import { Finding, printFinding } from "./finding";
 
 describe("Finding", () => {
 	it("print a cleaned up finding", () => {

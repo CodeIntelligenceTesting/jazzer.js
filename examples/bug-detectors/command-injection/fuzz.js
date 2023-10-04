@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-const { FuzzedDataProvider } = require("@jazzer.js/core");
 const root = require("global-modules-path");
+
+const { FuzzedDataProvider } = require("@jazzer.js/core");
 
 module.exports.fuzz = function (data) {
 	const provider = new FuzzedDataProvider(data);

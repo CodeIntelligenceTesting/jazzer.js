@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+const fs = require("fs");
+const path = require("path");
+
 const {
 	FuzzTestBuilder,
 	JestRegressionExitCode,
 	TimeoutExitCode,
 	cleanCrashFilesIn,
 } = require("../helpers.js");
-const path = require("path");
-const fs = require("fs");
 
 describe("Jest integration", () => {
 	const projectDir = path.join(__dirname, "jest_project");

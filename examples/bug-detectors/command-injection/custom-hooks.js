@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-const { registerReplaceHook } = require("@jazzer.js/hooking");
 const {
 	guideTowardsEquality,
 	reportAndThrowFinding,
 } = require("@jazzer.js/core");
+const { registerReplaceHook } = require("@jazzer.js/hooking");
 
 /**
  * Custom bug detector for command injection. This hook does not call the original function (execSync) for two reasons:

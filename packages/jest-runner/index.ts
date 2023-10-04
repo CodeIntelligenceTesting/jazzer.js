@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import * as reports from "istanbul-reports";
-import Runtime from "jest-runtime";
+import type { JestEnvironment } from "@jest/environment";
 import { TestResult } from "@jest/test-result";
 import { Config } from "@jest/types";
-import type { JestEnvironment } from "@jest/environment";
+import * as reports from "istanbul-reports";
+import Runtime from "jest-runtime";
 
 import {
 	initFuzzing,
@@ -27,11 +27,11 @@ import {
 } from "@jazzer.js/core";
 
 import { loadConfig } from "./config";
-import { FuzzTest } from "./fuzz";
-import { interceptScriptTransformerCalls } from "./transformerInterceptor";
-import { interceptTestState } from "./testStateInterceptor";
-import { interceptGlobals } from "./globalsInterceptor";
 import { cleanupJestError, cleanupJestRunnerStack } from "./errorUtils";
+import { FuzzTest } from "./fuzz";
+import { interceptGlobals } from "./globalsInterceptor";
+import { interceptTestState } from "./testStateInterceptor";
+import { interceptScriptTransformerCalls } from "./transformerInterceptor";
 
 export default async function jazzerTestRunner(
 	globalConfig: Config.GlobalConfig,

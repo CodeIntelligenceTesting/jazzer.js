@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const { spawnSync } = require("child_process");
 
 // current working directory
 const testDirectory = path.join(process.cwd(), "sample_fuzz_test");
