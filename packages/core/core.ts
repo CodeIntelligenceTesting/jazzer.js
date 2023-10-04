@@ -252,7 +252,6 @@ function reportFuzzingResult(
 			console.error(`INFO: Received expected error "${name}".`);
 			return new FuzzingResult(FuzzingExitCode.Ok, error);
 		} else {
-			printFinding(error);
 			console.error(
 				`ERROR: Received error "${name}" is not in expected errors [${expectedErrors}].`,
 			);
@@ -269,7 +268,6 @@ function reportFuzzingResult(
 	}
 
 	// Error found, but no specific one expected.
-	printFinding(error);
 	return new FuzzingResult(FuzzingExitCode.Finding, error);
 }
 
@@ -316,13 +314,25 @@ export function asFindingAwareFuzzFn(
 	originalFuzzFn: fuzzer.FuzzTarget,
 	dumpCrashingInput = true,
 ): FindingAwareFuzzTarget {
+	function printAndDump(error: unknown): void {
+		cleanErrorStack(error);
+		if (
+			!(
+				error instanceof FuzzerSignalFinding &&
+				error.exitCode === FuzzingExitCode.Ok
+			)
+		) {
+			printFinding(error);
+			if (dumpCrashingInput) {
+				fuzzer.fuzzer.printAndDumpCrashingInput();
+			}
+		}
+	}
+
 	function throwIfError(fuzzTargetError?: unknown): undefined | never {
 		const error = clearFirstFinding() ?? fuzzTargetError;
 		if (error) {
-			cleanErrorStack(error);
-			if (dumpCrashingInput) {
-				printAndDumpCrashingInput(error);
-			}
+			printAndDump(error);
 			throw error;
 		}
 	}
@@ -372,9 +382,8 @@ export function asFindingAwareFuzzFn(
 				// Return result of fuzz target to enable sanity checks in C++ part.
 				const result = originalFuzzFn(data, (err?) => {
 					const error = clearFirstFinding() ?? err;
-					cleanErrorStack(error);
-					if (error && dumpCrashingInput) {
-						printAndDumpCrashingInput(error);
+					if (error) {
+						printAndDump(error);
 					}
 					callbacks.runAfterEachCallbacks();
 					done(error);
@@ -388,15 +397,6 @@ export function asFindingAwareFuzzFn(
 				throwIfError(e);
 			}
 		}) as FindingAwareFuzzTarget;
-	}
-}
-
-function printAndDumpCrashingInput(error: unknown) {
-	if (
-		!(error instanceof FuzzerSignalFinding) ||
-		error.exitCode !== FuzzingExitCode.Ok
-	) {
-		fuzzer.fuzzer.printAndDumpCrashingInput();
 	}
 }
 
