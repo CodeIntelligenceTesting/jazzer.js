@@ -15,9 +15,15 @@
  */
 
 export function fuzzMe(data: Buffer) {
-	if (data.toString() === "Awesome") {
-		throw Error("Welcome to Awesome Fuzzing!");
+	if (typeof data === "object") {
+		if (data.toString() === "Awesome") {
+			throw Error("Welcome to Awesome Fuzzing!");
+		}
+		return data;
 	}
+	// Implicit else block to test coverage error,
+	// see: https://github.com/vitest-dev/vitest/pull/2275
+	return data;
 }
 
 export function callbackFuzzMe(data: Buffer, done: (e?: Error) => void) {
