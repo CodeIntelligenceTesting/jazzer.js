@@ -17,6 +17,7 @@
 import type { JestEnvironment } from "@jest/environment";
 import { TestResult } from "@jest/test-result";
 import { Config } from "@jest/types";
+import * as libCoverage from "istanbul-lib-coverage";
 import * as reports from "istanbul-reports";
 import Runtime from "jest-runtime";
 
@@ -71,6 +72,7 @@ export default async function jazzerTestRunner(
 		testPath,
 		sendMessageToJest,
 	).then((result: TestResult) => {
+		includeImplicitElseBranches(environment.global.__coverage__);
 		return cleanupTestResultDetails(result);
 	});
 }
@@ -88,6 +90,52 @@ function cleanupTestResultDetails(result: TestResult) {
 		result.failureMessage = cleanupJestRunnerStack(result.failureMessage);
 	}
 	return result;
+}
+
+/**
+ * Coverage fix from https://github.com/vitest-dev/vitest/pull/2275
+ * In our tests this seems to only affect the coverage of TypeScript files,
+ * hence including the fix in jest-runner should be sufficient.
+ *
+ * Original comment:
+ * Work-around for #1887 and #2239 while waiting for https://github.com/istanbuljs/istanbuljs/pull/706
+ * Goes through all files in the coverage map and checks if branchMap's have
+ * if-statements with implicit else. When finds one, copies source location of
+ * the if-statement into the else statement.
+ */
+export function includeImplicitElseBranches(
+	coverageMapData: libCoverage.CoverageMapData,
+) {
+	if (!coverageMapData) {
+		return;
+	}
+	function isEmptyCoverageRange(range: libCoverage.Range) {
+		return (
+			range.start === undefined ||
+			range.start.line === undefined ||
+			range.start.column === undefined ||
+			range.end === undefined ||
+			range.end.line === undefined ||
+			range.end.column === undefined
+		);
+	}
+	const coverageMap = libCoverage.createCoverageMap(coverageMapData);
+	for (const file of coverageMap.files()) {
+		const fileCoverage = coverageMap.fileCoverageFor(file);
+		for (const branchMap of Object.values(fileCoverage.branchMap)) {
+			if (branchMap.type === "if") {
+				const lastIndex = branchMap.locations.length - 1;
+				if (lastIndex > 0) {
+					const elseLocation = branchMap.locations[lastIndex];
+					if (elseLocation && isEmptyCoverageRange(elseLocation)) {
+						const ifLocation = branchMap.locations[0];
+						elseLocation.start = { ...ifLocation.start };
+						elseLocation.end = { ...ifLocation.end };
+					}
+				}
+			}
+		}
+	}
 }
 
 // Global definition of the Jest fuzz test extension function.

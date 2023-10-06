@@ -113,7 +113,10 @@
 						"start": { "line": 24, "column": 1 },
 						"end": { "line": 26, "column": 2 }
 					},
-					{ "start": {}, "end": {} }
+					{
+						"start": { "line": 24, "column": 1 },
+						"end": { "line": 26, "column": 2 }
+					}
 				],
 				"line": 24
 			}
@@ -173,7 +176,10 @@
 						"start": { "line": 19, "column": 1 },
 						"end": { "line": 21, "column": 2 }
 					},
-					{ "start": {}, "end": {} }
+					{
+						"start": { "line": 19, "column": 1 },
+						"end": { "line": 21, "column": 2 }
+					}
 				],
 				"line": 19
 			}

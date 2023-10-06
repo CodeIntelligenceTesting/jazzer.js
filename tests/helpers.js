@@ -426,7 +426,7 @@ class FuzzTestBuilder {
 	}
 
 	coverage(coverage) {
-		this._coverage = coverage;
+		this._coverage = coverage === undefined ? true : coverage;
 		return this;
 	}
 

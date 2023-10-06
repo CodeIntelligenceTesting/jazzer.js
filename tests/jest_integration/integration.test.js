@@ -472,6 +472,27 @@ describe("Jest TS integration", () => {
 			});
 		});
 	});
+
+	describe("Regression mode", () => {
+		const regressionTestBuilder = new FuzzTestBuilder()
+			.dir(projectDir)
+			.jestTestFile(jestTsTestFile + ".ts");
+
+		describe("mixed features", () => {
+			it("cover implicit else branch", async () => {
+				regressionTestBuilder
+					.jestTestName("execute sync test")
+					.coverage()
+					.build()
+					.execute();
+				const coverage = readCoverageOf(projectDir, "target.ts");
+				// Expect that every branch has two entries, one for the if and one for the else branch.
+				Object.keys(coverage.b).forEach((branch) => {
+					expect(coverage.b[branch]).toHaveLength(2);
+				});
+			});
+		});
+	});
 });
 
 // Deflake the "timeout after N seconds" test to be more tolerant to small variations of N (+-1).
@@ -512,4 +533,19 @@ function cleanupProjectFiles(projectDir, jestTestFile) {
 			recursive: true,
 		});
 	};
+}
+
+function readCoverageOf(projectDir, fileName) {
+	const report = JSON.parse(
+		fs.readFileSync(
+			path.join(projectDir, "coverage", "coverage-final.json"),
+			"utf-8",
+		),
+	);
+	for (let path of Object.keys(report)) {
+		if (path.endsWith(fileName)) {
+			return report[path];
+		}
+	}
+	throw new Error("Could not find coverage for " + fileName);
 }
