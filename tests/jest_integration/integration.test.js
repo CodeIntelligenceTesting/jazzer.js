@@ -27,20 +27,9 @@ const {
 describe("Jest integration", () => {
 	const projectDir = path.join(__dirname, "jest_project");
 	const jestTestFile = "integration.fuzz";
+	const expectCrashFileIn = expectCrashFileInProject(projectDir);
 
-	beforeEach(() => {
-		fs.rmSync(path.join(projectDir, ".jazzerjsrc.json"), {
-			force: true,
-		});
-		fs.rmSync(path.join(projectDir, ".cifuzz-corpus"), {
-			force: true,
-			recursive: true,
-		});
-		fs.rmSync(path.join(projectDir, jestTestFile), {
-			force: true,
-			recursive: true,
-		});
-	});
+	beforeEach(cleanupProjectFiles(projectDir, jestTestFile));
 
 	describe("Fuzzing mode", () => {
 		let fuzzTestBuilder;
@@ -421,12 +410,68 @@ describe("Jest integration", () => {
 			expect(listFuzzTestNames.stdout).toBe("");
 		});
 	});
+});
 
-	async function expectCrashFileIn(crashDir) {
-		const crashFiles = await cleanCrashFilesIn(projectDir);
-		expect(crashFiles).toHaveLength(1);
-		expect(crashFiles[0]).toContain(crashDir);
-	}
+describe("Jest TS integration", () => {
+	const projectDir = path.join(__dirname, "jest_project_ts");
+	const jestTsTestFile = "integration.fuzz";
+	const expectCrashFileIn = expectCrashFileInProject(projectDir);
+
+	beforeEach(cleanupProjectFiles(projectDir, jestTsTestFile));
+
+	describe("Fuzzing mode", () => {
+		let fuzzTestBuilder;
+
+		beforeEach(() => {
+			fuzzTestBuilder = new FuzzTestBuilder()
+				.dir(projectDir)
+				.runs(1_000_000)
+				.jestRunInFuzzingMode(true)
+				.jestTestFile(jestTsTestFile + ".ts");
+		});
+
+		describe("execute", () => {
+			it("execute sync test", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync test")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_sync_test");
+			});
+
+			it("execute async test", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute async test")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test");
+			});
+
+			it("execute async test returning a promise", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute async test returning a promise")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test_returning_a_promise");
+			});
+
+			it("execute async test using a callback", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute async test using a callback")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				await expectCrashFileIn("execute_async_test_using_a_callback");
+			});
+		});
+	});
 });
 
 // Deflake the "timeout after N seconds" test to be more tolerant to small variations of N (+-1).
@@ -443,4 +488,28 @@ function firstFailureMessage(result) {
 	return result.testResults[0].assertionResults.filter(
 		(result) => result.status === "failed",
 	)[0].failureMessages[0];
+}
+
+function expectCrashFileInProject(projectDir) {
+	return (crashDir) => async () => {
+		const crashFiles = await cleanCrashFilesIn(projectDir);
+		expect(crashFiles).toHaveLength(1);
+		expect(crashFiles[0]).toContain(crashDir);
+	};
+}
+
+function cleanupProjectFiles(projectDir, jestTestFile) {
+	return () => {
+		fs.rmSync(path.join(projectDir, ".jazzerjsrc.json"), {
+			force: true,
+		});
+		fs.rmSync(path.join(projectDir, ".cifuzz-corpus"), {
+			force: true,
+			recursive: true,
+		});
+		fs.rmSync(path.join(projectDir, jestTestFile), {
+			force: true,
+			recursive: true,
+		});
+	};
 }
