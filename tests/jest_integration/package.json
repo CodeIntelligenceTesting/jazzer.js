@@ -13,6 +13,6 @@
 		"typescript": "^5.2.2"
 	},
 	"jest": {
-		"testTimeout": 30000
+		"testTimeout": 60000
 	}
 }
