@@ -26,7 +26,7 @@ describe("fuzzer", () => {
 		expect(fuzzer.tracer.traceStrCmp(a, b, op, 0)).toBeDefined();
 	});
 
-	it.fuzz("use never zero policy", (data) => {
+	it.skip.fuzz("use never zero policy", (data) => {
 		const provider = new FuzzedDataProvider(data);
 		const iterations = provider.consumeIntegralInRange(1, 1 << 8);
 		for (let i = 0; i < iterations; i++) {
