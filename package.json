@@ -39,7 +39,7 @@
 		"@types/bindings": "^1.5.2",
 		"@types/jest": "^29.5.5",
 		"@types/node": "^20.8.3",
-		"@types/yargs": "^17.0.26",
+		"@types/yargs": "^17.0.28",
 		"@typescript-eslint/eslint-plugin": "^6.7.3",
 		"eslint": "^8.50.0",
 		"eslint-config-prettier": "^9.0.0",
