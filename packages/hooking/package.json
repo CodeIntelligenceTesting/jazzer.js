@@ -15,12 +15,6 @@
 	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
-	"dependencies": {
-		"@babel/core": "^7.23.2"
-	},
-	"devDependencies": {
-		"@types/babel__core": "^7.20.2"
-	},
 	"engines": {
 		"node": ">= 14.0.0",
 		"npm": ">= 7.0.0"
