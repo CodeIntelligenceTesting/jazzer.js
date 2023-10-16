@@ -25,3 +25,7 @@ example
 *.ts
 !*.d.ts
 *test*.d.ts
+
+# Exclude native fuzzer sources
+packages/fuzzer/**/*.cpp
+packages/fuzzer/**/*.h
