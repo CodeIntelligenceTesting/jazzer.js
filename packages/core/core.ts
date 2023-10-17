@@ -16,6 +16,7 @@
 
 import * as fs from "fs";
 import path from "path";
+import * as vm from "vm";
 
 import * as libCoverage from "istanbul-lib-coverage";
 import * as libReport from "istanbul-lib-report";
@@ -40,7 +41,7 @@ import {
 	printFinding,
 	reportFinding,
 } from "./finding";
-import { jazzerJs } from "./globals";
+import { getJazzerJsGlobal, jazzerJs } from "./globals";
 import { buildFuzzerOption, Options } from "./options";
 import { ensureFilepath, importModule } from "./utils";
 
@@ -113,7 +114,9 @@ export async function initFuzzing(options: Options): Promise<Instrumentor> {
 
 	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
 
-	await hooking.hookManager.finalizeHooks();
+	await hooking.hookManager.finalizeHooks(
+		getJazzerJsGlobal<vm.Context>("vmContext"),
+	);
 
 	return instrumentor;
 }

@@ -15,6 +15,7 @@
  */
 
 import { builtinModules } from "module";
+import * as vm from "vm";
 
 import {
 	AfterHookFn,
@@ -120,7 +121,7 @@ export class HookManager {
 	 * initialization steps for the hooks to work. This method must be called
 	 * after all hooks have been registered.
 	 */
-	async finalizeHooks() {
+	async finalizeHooks(vmContext?: vm.Context) {
 		// Built-in functions cannot be hooked by the instrumentor, so that is
 		// explicitly done here instead.
 		// Loading build-in modules is asynchronous, so we need to wait, which
@@ -139,6 +140,20 @@ export class HookManager {
 								e,
 						);
 					}
+				}
+			}
+		}
+
+		// Hook global functions
+		const globalHooks = this._hooks.filter((hook) => hook.pkg === "");
+		for (const hook of globalHooks) {
+			try {
+				hookGlobalFunction(hook, vmContext);
+			} catch (e) {
+				if (process.env.JAZZER_DEBUG) {
+					console.error(
+						"DEBUG: [Hook] Error when trying to hook the global function: " + e,
+					);
 				}
 			}
 		}
@@ -256,18 +271,40 @@ export function registerAfterHook(
 export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	const { default: module } = await import(hook.pkg);
 	const originalFn = module[hook.target];
+	hookFunction(module, hook, originalFn);
+}
+
+function hookGlobalFunction(hook: Hook, vmContext?: vm.Context): void {
+	const originalFn = vmContext
+		? vm.runInContext(hook.target, vmContext)
+		: vm.runInThisContext(hook.target);
+	const id = callSiteId(hookManager.hookIndex(hook), hook.target);
+	const context = vmContext ?? globalThis;
+
+	if (originalFn === undefined || originalFn === null) {
+		return;
+	}
+	hookFunction(context, hook, originalFn);
+}
+
+function hookFunction(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	obj: any,
+	hook: Hook,
+	originalFn: (...args: unknown[]) => unknown,
+) {
 	const id = callSiteId(hookManager.hookIndex(hook), hook.pkg, hook.target);
 	if (hook.type == HookType.Before) {
-		module[hook.target] = (...args: unknown[]) => {
+		obj[hook.target] = function (...args: unknown[]) {
 			(hook.hookFunction as BeforeHookFn)(null, args, id);
 			return originalFn(...args);
 		};
 	} else if (hook.type == HookType.Replace) {
-		module[hook.target] = (...args: unknown[]) => {
+		obj[hook.target] = function (...args: unknown[]) {
 			return (hook.hookFunction as ReplaceHookFn)(null, args, id, originalFn);
 		};
 	} else if (hook.type == HookType.After) {
-		module[hook.target] = (...args: unknown[]) => {
+		obj[hook.target] = function (...args: unknown[]) {
 			const result: unknown = originalFn(...args);
 			return (hook.hookFunction as AfterHookFn)(null, args, id, result);
 		};
