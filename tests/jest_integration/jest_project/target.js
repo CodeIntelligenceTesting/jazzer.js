@@ -52,6 +52,13 @@ module.exports.asyncTimeout = (data) =>
 		// Never resolve this promise to provoke a timeout.
 	});
 
+module.exports.syncTimeout = (data) => {
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		/* empty */
+	}
+};
+
 // noinspection JSUnusedLocalSymbols
 module.exports.callbackTimeout = (data, done) => {
 	// Never call done to provoke a timeout.

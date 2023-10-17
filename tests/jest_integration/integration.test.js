@@ -107,6 +107,17 @@ describe("Jest integration", () => {
 		});
 
 		describe("timeout", () => {
+			it("execute sync timeout test", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync timeout test plain")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(TimeoutExitCode);
+				assertTimeoutMessageLogged(fuzzTest, 5);
+				await expectCrashFileIn("execute_sync_timeout_test_plain");
+			});
+
 			it("execute async timeout test", async () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("execute async timeout test plain")

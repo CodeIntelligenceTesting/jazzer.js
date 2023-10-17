@@ -53,6 +53,10 @@ describe("Jest Integration", () => {
 		await target.asyncTimeout(data);
 	});
 
+	it.fuzz("execute sync timeout test plain", (data) => {
+		target.syncTimeout(data);
+	});
+
 	it.fuzz(
 		"execute async timeout test with method timeout",
 		async (data) => {
