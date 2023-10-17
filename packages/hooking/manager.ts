@@ -15,6 +15,7 @@
  */
 
 import { builtinModules } from "module";
+import * as vm from "vm";
 
 import {
 	AfterHookFn,
@@ -120,7 +121,7 @@ export class HookManager {
 	 * initialization steps for the hooks to work. This method must be called
 	 * after all hooks have been registered.
 	 */
-	async finalizeHooks() {
+	async finalizeHooks(vmContext: vm.Context | typeof globalThis) {
 		// Built-in functions cannot be hooked by the instrumentor, so that is
 		// explicitly done here instead.
 		// Loading build-in modules is asynchronous, so we need to wait, which
@@ -142,6 +143,22 @@ export class HookManager {
 						);
 						console.error(e);
 					}
+				}
+			}
+		}
+
+		// Hook global functions (functions without module names)
+		const globalHooks = this._hooks.filter((hook) => hook.pkg === "");
+		for (const hook of globalHooks) {
+			try {
+				hookGlobalFunction(hook, vmContext);
+			} catch (e) {
+				if (process.env.JAZZER_DEBUG) {
+					console.error(
+						"DEBUG: [hooking] Could not hook the global function: " +
+							hook.target,
+					);
+					console.error(e);
 				}
 			}
 		}
@@ -313,10 +330,31 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 	if (hook.registered) return;
 	hook.registered = true;
 	const { default: module } = await import(hook.pkg);
-
 	const targetPropertyAccessors = hook.target.split(".");
 	const originalFn = getFunction(module, targetPropertyAccessors);
+	hookFunction(module, hook, originalFn, targetPropertyAccessors);
+}
 
+function hookGlobalFunction(
+	hook: Hook,
+	context: vm.Context | typeof globalThis,
+): void {
+	const originalFn = vm.isContext(context)
+		? vm.runInContext(hook.target, context)
+		: vm.runInThisContext(hook.target);
+
+	if (originalFn) {
+		hookFunction(context, hook, originalFn);
+	}
+}
+
+function hookFunction(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	obj: any,
+	hook: Hook,
+	originalFn: unknown | ((...args: unknown[]) => unknown),
+	targetPropertyAccessors: string[] = hook.target.split("."),
+) {
 	if (!(originalFn instanceof Function || typeof originalFn === "function")) {
 		if (process.env.JAZZER_DEBUG) {
 			console.error(
@@ -328,21 +366,22 @@ export async function hookBuiltInFunction(hook: Hook): Promise<void> {
 		}
 		return;
 	}
+
 	const id = callSiteId(hookManager.hookIndex(hook), hook.pkg, hook.target);
 	if (hook.type == HookType.Before) {
-		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
 			// @ts-ignore
 			(hook.hookFunction as BeforeHookFn)(this, args, id);
 			// @ts-ignore
 			return originalFn.apply(this, args);
 		});
 	} else if (hook.type == HookType.Replace) {
-		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
 			// @ts-ignore
 			return (hook.hookFunction as ReplaceHookFn)(this, args, id, originalFn);
 		});
 	} else if (hook.type == HookType.After) {
-		setFunction(module, targetPropertyAccessors, function (...args: unknown[]) {
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
 			// @ts-ignore
 			const result: unknown = originalFn.apply(this, args);
 			// @ts-ignore
