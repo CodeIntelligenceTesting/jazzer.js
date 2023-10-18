@@ -33,6 +33,16 @@ describe("My describe", () => {
 		{ dictionaries: ["Amazing"] },
 	);
 
+	const utf8Encode = new TextEncoder();
+	const binaryAmazing = utf8Encode.encode("Amazing");
+	it.fuzz(
+		"My hashed fuzz test with binary dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaries: [binaryAmazing] },
+	);
+
 	it.fuzz(
 		"My fuzz test with an explicit timeout (async)",
 		async (data) => {

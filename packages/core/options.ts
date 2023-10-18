@@ -59,7 +59,7 @@ export interface Options {
 	// Disable bug detectors by name.
 	disableBugDetectors: string[];
 	// Fuzzing dictionaries
-	dictionaries: string[];
+	dictionaries: (string | Uint8Array | Int8Array)[];
 	// Fuzzing mode.
 	mode: "fuzzing" | "regression";
 	// Verbose logging.

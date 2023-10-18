@@ -103,6 +103,12 @@ export function fuzz(
 			localConfig = mergeOptions(timeoutOrOptions, localConfig, (key) => {
 				return key;
 			});
+
+			// Overwrite localConfig.dictionaries with timeoutOrOptions.dictionaries if set. This hack is in place since
+			// mergeOptions will coerce dictionary entries into objects, but we don't want this to happen.
+			if (timeoutOrOptions.dictionaries != undefined) {
+				localConfig.dictionaries = timeoutOrOptions.dictionaries;
+			}
 		}
 
 		// Timeout priority is:
@@ -139,7 +145,7 @@ export function fuzz(
 		}
 
 		const corpus = new Corpus(testFile, testStatePath, localConfig.coverage);
-		
+
 		const wrappedFn = asFindingAwareFuzzFn(fn, localConfig.mode === "fuzzing");
 
 		if (localConfig.mode === "regression") {
