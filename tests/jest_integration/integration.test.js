@@ -208,6 +208,16 @@ describe("Jest integration", () => {
 				);
 			});
 		});
+		describe("dictionary support", () => {
+			it("with dictionary", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync hashed fuzz test with dictionary")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+			});
+		});
 	});
 
 	describe("Regression mode", () => {

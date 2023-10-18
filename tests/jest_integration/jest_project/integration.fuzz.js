@@ -37,6 +37,14 @@ describe("Jest Integration", () => {
 		target.fuzzMe(data);
 	});
 
+	it.fuzz(
+		"execute sync hashed fuzz test with dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaries: ["Amazing"] },
+	);
+
 	it.fuzz("execute async test", async (data) => {
 		await target.asyncFuzzMe(data);
 	});
