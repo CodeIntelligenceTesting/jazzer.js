@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+var crypto = require("crypto");
+
 /**
  * @param { Buffer } data
  */
@@ -22,8 +24,27 @@ const fuzzMe = function (data) {
 	if (s.length !== 7) {
 		return;
 	}
+
 	if (s.slice(0, 7) === "Awesome") {
 		throw Error("Welcome to Awesome Fuzzing!");
+	}
+};
+
+const fuzzMeHashed = function (data) {
+	const s = data.toString();
+	if (s.length !== 7) {
+		return;
+	}
+
+	const sha = crypto.createHash("sha512").update(s.slice(0, 7));
+	const result = sha.digest("hex");
+
+	// Hash of "Amazing"
+	if (
+		result ===
+		"79328e1e1272ff2890ff0c6e8181a52ce5960ae7703b00f9f094edd7dbd198210129b2bb307e8cd34d689d101e4d685f1259e42af7ce252944ca46aecca60752"
+	) {
+		throw Error("Welcome to Amazing Fuzzing!");
 	}
 };
 
@@ -50,5 +71,6 @@ const asyncFuzzMe = function (data) {
 };
 
 module.exports.fuzzMe = fuzzMe;
+module.exports.fuzzMeHashed = fuzzMeHashed;
 module.exports.callbackFuzzMe = callbackFuzzMe;
 module.exports.asyncFuzzMe = asyncFuzzMe;

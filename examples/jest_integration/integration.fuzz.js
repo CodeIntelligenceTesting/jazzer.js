@@ -21,6 +21,18 @@ describe("My describe", () => {
 		target.fuzzMe(data);
 	});
 
+	it.fuzz("My hashed fuzz test without dictionary", (data) => {
+		target.fuzzMeHashed(data);
+	});
+
+	it.fuzz(
+		"My hashed fuzz test with dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaries: ["Amazing"] },
+	);
+
 	it.fuzz(
 		"My fuzz test with an explicit timeout (async)",
 		async (data) => {
