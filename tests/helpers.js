@@ -76,20 +76,27 @@ class FuzzTest {
 		this.timeout = timeout;
 	}
 
+	// Runs the fuzz test in another process using `spawnSync`.
 	execute() {
 		if (this.jestTestFile) {
-			this.executeWithJest();
+			this.#executeWithJest();
 		} else {
-			this.executeWithCli();
+			this.#executeWithCli();
 		}
 		return this;
 	}
 
-	spawn() {
-		return this.executeWithCli(false);
+	// Runs the fuzz test using `spawn`. This is useful when we want to do something while the fuzz test
+	// is running (e.g. process http requests).
+	executeWithPromise() {
+		if (this.jestTestFile) {
+			return this.#executeWithJest(false);
+		} else {
+			return this.#executeWithCli(false);
+		}
 	}
 
-	executeWithCli(useSpawnSync = true) {
+	#executeWithCli(useSpawnSync = true) {
 		const options = ["jazzer", this.fuzzFile];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
@@ -120,13 +127,13 @@ class FuzzTest {
 			options.push("-dict=" + dictionary);
 		}
 		if (useSpawnSync) {
-			this.runTest("npx", options, { ...process.env });
+			this.#spawnTestSync("npx", options, { ...process.env });
 		} else {
-			return this.runTestAsync("npx", options, { ...process.env });
+			return this.#spawnTest("npx", options, { ...process.env });
 		}
 	}
 
-	executeWithJest() {
+	#executeWithJest(useSpawnSync = true) {
 		const fuzzerOptions = [];
 		if (this.runs) {
 			fuzzerOptions.push("-runs=" + this.runs);
@@ -194,10 +201,14 @@ class FuzzTest {
 			env.JAZZER_LIST_FUZZTEST_NAMES_PATTERN = this.listFuzzTestNamesPattern;
 		}
 
-		this.runTest(cmd, options, env);
+		if (useSpawnSync) {
+			this.#spawnTestSync(cmd, options, env);
+		} else {
+			return this.#spawnTest(cmd, options, env);
+		}
 	}
 
-	runTest(cmd, options, env) {
+	#spawnTestSync(cmd, options, env) {
 		if (this.logTestOutput) {
 			console.log("COMMAND: " + cmd + " " + options.join(" "));
 		}
@@ -221,7 +232,7 @@ class FuzzTest {
 		}
 	}
 
-	runTestAsync(cmd, options, env) {
+	#spawnTest(cmd, options, env) {
 		return new Promise((resolve, reject) => {
 			if (this.logTestOutput) {
 				console.log("COMMAND: " + cmd + " " + options.join(" "));
