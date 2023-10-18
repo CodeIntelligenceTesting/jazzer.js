@@ -41,12 +41,10 @@ const allowedHttpsUrlWithPort =
 const notAllowedUrlWithPort = url + ":" + notOkPort.toString();
 
 module.exports.HttpGetOptionsCallback = async function (data) {
-	const testName = "HttpGetOptionsCallback";
-
 	const options = {
 		host: host,
 		port: notOkPort,
-		path: "/" + testName,
+		path: "/HttpGetOptionsCallback",
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -56,26 +54,24 @@ module.exports.HttpGetOptionsCallback = async function (data) {
 	let done = false;
 	http
 		.get(options, function (res) {
-			console.log("SSRF not working!");
+			console.log(notOkMessage);
 			done = true;
 		})
 		.end();
 };
 
 module.exports.HttpGetUrlCallback = async function (data) {
-	const testName = "HttpGetUrlCallback";
 	http
-		.get(notAllowedUrlWithPort + "/" + testName, function (res) {
-			console.log("SSRF not working!");
+		.get(notAllowedUrlWithPort + "/HttpGetUrlCallback", function (res) {
+			console.log(notOkMessage);
 		})
 		.end();
 };
 
 module.exports.HttpGetUrlNoPort = function (data) {
-	const testName = "HttpGetUrlNoPort";
 	http
-		.get(url + "/" + testName, function (res) {
-			console.log("SSRF not working!");
+		.get(url + "/HttpGetUrlNoPort", function (res) {
+			console.log(notOkMessage);
 		})
 		.end();
 };
@@ -83,17 +79,16 @@ module.exports.HttpGetUrlNoPort = function (data) {
 module.exports.HttpGetUrlNoAnything = function (data) {
 	http
 		.get({}, function (res) {
-			console.log("SSRF not working!");
+			console.log(notOkMessage);
 		})
 		.end();
 };
 
 module.exports.HttpRequestOptionsCallback = function (data) {
-	const testName = "HttpRequestOptionsCallback";
 	const options = {
 		host: host,
 		port: notOkPort,
-		path: "/" + testName,
+		path: "/HttpRequestOptionsCallback",
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -102,32 +97,30 @@ module.exports.HttpRequestOptionsCallback = function (data) {
 
 	http
 		.request(options, function (res) {
-			console.log("SSRF not working!");
+			console.log(notOkMessage);
 		})
 		.end();
 };
 
 module.exports.HttpRequestUrlCallback = function (data) {
-	const testName = "HttpRequestUrlCallback";
 	http
-		.request(notAllowedUrlWithPort + "/" + testName, function (res) {
-			console.log("SSRF not working!");
+		.request(notAllowedUrlWithPort + "/HttpRequestUrlCallback", function (res) {
+			console.log(notOkMessage);
 		})
 		.end();
 };
 
 module.exports.HttpRequestUrlNoPort = function (data) {
-	const testName = "HttpRequestUrlNoPort";
 	http
-		.request(url + "/" + testName, function (res) {
-			console.log("SSRF not working!");
+		.request(url + "/HttpRequestUrlNoPort", function (res) {
+			console.log(notOkMessage);
 		})
 		.end();
 };
 
 module.exports.netConnectPortHost = async function (data) {
 	net.connect(notOkPort, host, function () {
-		console.log("SSRF not working!");
+		console.log(notOkMessage);
 	});
 };
 
@@ -137,16 +130,14 @@ module.exports.netConnectOptions = async function (data) {
 		port: notOkPort,
 	};
 	net.connect(options, function () {
-		console.log("SSRF not working!");
+		console.log(notOkMessage);
 	});
 };
 
 module.exports.socketConnect = async function (data) {
-	const testName = "socketConnect";
 	const socket = new net.Socket();
-	console.log("-------------------");
 	socket.connect(notOkPort, host, function () {
-		console.log("SSRF not working!");
+		console.log(notOkMessage);
 	});
 };
 
@@ -157,22 +148,20 @@ module.exports.socketConnectWithOptions = async function (data) {
 	};
 	const socket = new net.Socket();
 	socket.connect(options, function () {
-		console.log("SSRF not working!");
+		console.log(notOkMessage);
 	});
 };
 
 module.exports.TlsConnect = async function (data) {
-	const testName = "TlsConnect";
 	const options = {
 		ca: [fs.readFileSync("cert.pem")],
 		host: host,
 		port: notOkPortHttps,
 	};
-	let output = "";
 	try {
 		tls
 			.connect(options, function (res) {
-				console.log("SSRF not working!");
+				console.log(notOkMessage);
 			})
 			.end();
 	} catch (e) {
@@ -181,14 +170,13 @@ module.exports.TlsConnect = async function (data) {
 };
 
 module.exports.HttpsGetOptions = async function (data) {
-	const testName = "HttpsGetOptions";
 	let output = "";
 	let done = false;
 	const options = {
 		ca: [fs.readFileSync("cert.pem")],
 		host: host,
 		port: notOkPortHttps,
-		path: "/" + testName,
+		path: "/" + "HttpsGetOptions",
 	};
 	https
 		.get(options, function (res) {
@@ -204,7 +192,6 @@ module.exports.HttpsGetOptions = async function (data) {
 };
 
 module.exports.Http2Connect = async function (data) {
-	const testName = "Http2Connect";
 	const options = {};
 	let output = "";
 	let done = false;
@@ -239,12 +226,11 @@ module.exports.udpConnect = async function (data) {
 };
 
 module.exports.HttpRequestAllowed = async function (data) {
-	const testName = "HttpRequestAllowed";
 	// Options to be used by request
 	const options = {
 		host: "",
 		port: okPort,
-		path: "/" + testName,
+		path: "/HttpRequestAllowed",
 	};
 	let output = "";
 	let done = false;
@@ -262,11 +248,10 @@ module.exports.HttpRequestAllowed = async function (data) {
 };
 
 module.exports.HttpGetAllowed = async function (data) {
-	const testName = "HttpGetAllowed";
 	let output = "";
 	let done = false;
 	http
-		.get(allowedUrlWithPort + "/" + testName, function (res) {
+		.get(allowedUrlWithPort + "/HttpGetAllowed", function (res) {
 			res.on("data", function (d) {
 				output += d;
 			});
@@ -279,14 +264,13 @@ module.exports.HttpGetAllowed = async function (data) {
 };
 
 module.exports.HttpsGetAllowed = async function (data) {
-	const testName = "HttpsGetAllowed";
 	let output = "";
 	let done = false;
 	const options = {
 		ca: [fs.readFileSync("cert.pem")],
 		host: host,
 		port: okPortHttps,
-		path: "/" + testName,
+		path: "/HttpsGetAllowed",
 	};
 	https
 		.get(options, function (res) {
@@ -304,14 +288,14 @@ module.exports.HttpsGetAllowed = async function (data) {
 module.exports.Http2ConnectAllowed = async function (data) {
 	// Not sure why this particular protocol wants http:// instead of https://
 	http2.connect(url + ":" + okPortHttps, {}, function (res) {
-		console.log("Connection allowed");
+		console.log(okMessage);
 	});
 };
 
 module.exports.netConnectAllowed = async function (data) {
 	net
 		.connect(okPort, host, function (res) {
-			console.log("Connection allowed");
+			console.log(okMessage);
 		})
 		.end();
 };

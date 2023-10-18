@@ -13,29 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const host = "localhost";
-const hostIPv6 = "::1";
+const targets = require("./fuzz-http");
 
-const okPort = 8080;
-const okPortHttps = 8181;
-const notOkPort = 9090;
-const notOkPortHttps = 9191;
+it.fuzz("http.request", async (data) => {
+	return targets.HttpRequestAllowed(data);
+});
 
-const okPortIPv6 = 6060;
+it.fuzz("udp.connect IPv6", async (data) => {
+	return targets.udpIPv6ConnectAllowed(data);
+});
 
-const okMessage = "Connection allowed.";
-const notOkMessage = "SSRF sanitizer does not work!";
-const ssrfFindingMessage = "Server Side Request Forgery (SSRF)";
+it.fuzz("net.connect(options, callback)", async (data) => {
+	return targets.netConnectOptions(data);
+});
 
-module.exports = {
-	host,
-	hostIPv6,
-	okPort,
-	okPortHttps,
-	notOkPort,
-	notOkPortHttps,
-	okPortIPv6,
-	okMessage,
-	notOkMessage,
-	ssrfFindingMessage,
-};
+it.fuzz("udp.connect(port, host, callback)", async (data) => {
+	return targets.udpConnect(data);
+});

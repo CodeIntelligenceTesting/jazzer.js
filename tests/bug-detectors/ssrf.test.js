@@ -36,6 +36,7 @@ const {
 	notOkPortHttps,
 	okMessage,
 	notOkMessage,
+	ssrfFindingMessage,
 } = require("./ssrf/connection-settings.js");
 
 describe("SSRF", () => {
@@ -82,112 +83,171 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetOptionsCallback")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.get(url, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlCallback")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.get(url with no port, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlNoPort")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.get(nothing, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlNoAnything")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.request(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestOptionsCallback")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.request(url, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestUrlCallback")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http.request(url with no port, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestUrlNoPort")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("net.connect(port, host, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("netConnectPortHost")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("net.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("netConnectOptions")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("net Socket.connect(port, host, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("socketConnect").build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("net Socket.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("socketConnectWithOptions")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("tls.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("TlsConnect").build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("https.get(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpsGetOptions")
 				.build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("http2.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("Http2Connect").build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
 		});
 
 		it("udp.connect(port, host, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("udpConnect").build();
-			await expect(fuzzTest.spawn()).rejects.toThrowError(FuzzingExitCode);
-			expect(fuzzTest.stderr).toContain("Server Side Request Forgery (SSRF)");
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				FuzzingExitCode,
+			);
+			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
+		});
+
+		describe("Jest tests", () => {
+			beforeEach(() => {
+				fuzzTestBuilder = new FuzzTestBuilder()
+					.dir(bugDetectorDirectory)
+					.jestTestFile("tests.fuzz.js")
+					.sync(false);
+			});
+
+			it("net.connect(options, callback)", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("net.connect\\(options, callback\\)")
+					.build();
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+					JestRegressionExitCode,
+				);
+				expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
+			});
+
+			it("udp.connect(port, host, callback)", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("udp.connect\\(port, host, callback\\)")
+					.build();
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+					JestRegressionExitCode,
+				);
+				expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
+			});
 		});
 	});
 
@@ -207,62 +267,92 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("http.get", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("HttpGetAllowed").build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("https.get", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpsGetAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("http2.connect", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("Http2ConnectAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("net.connect", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("netConnectAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("udp.connect", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("udpConnectAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
 		it("udp.send connectionless", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("udpSendConnectionlessAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
 		});
 
-		it("udp.connect ipV6", async () => {
+		it("udp.connect IPv6", async () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("udpIPv6ConnectAllowed")
 				.build();
-			await fuzzTest.spawn();
-			expect(fuzzTest.stdout).toContain("Connection allowed");
+			await fuzzTest.executeWithPromise();
+			expect(fuzzTest.stdout).toContain(okMessage);
+		});
+
+		describe("Jest tests", () => {
+			beforeEach(() => {
+				fuzzTestBuilder = new FuzzTestBuilder()
+					.dir(bugDetectorDirectory)
+					.jestTestFile("tests.fuzz.js")
+					.customHooks([
+						path.join(bugDetectorDirectory, "allow-ok-ports.config.js"),
+					])
+					.sync(false);
+			});
+
+			it("http.request", async () => {
+				const fuzzTest = fuzzTestBuilder.jestTestName("http.request").build();
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+					JestRegressionExitCode,
+				);
+				expect(fuzzTest.stderr).toContain(okMessage);
+			});
+
+			it("udp.connect IPv6", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("udp.connect IPv6")
+					.build();
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+					JestRegressionExitCode,
+				);
+				expect(fuzzTest.stderr).toContain(okMessage);
+			});
 		});
 	});
 });
