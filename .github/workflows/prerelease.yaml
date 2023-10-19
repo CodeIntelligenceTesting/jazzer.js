@@ -56,5 +56,5 @@ jobs:
         run: npm install --ws=@jazzer.js/fuzzer
       - name: build and upload prebuilds
         run: >
-          npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
+          npm run prepack --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
           --upload ${{secrets.GITHUB_TOKEN}}
