@@ -53,7 +53,7 @@ runner.
 		"coverage": "jest --coverage"
 	},
 	"devDependencies": {
-		"@jazzer.js/jest-runner": "1.1.0",
+		"@jazzer.js/jest-runner": "2.1.0",
 		"jest": "29.3.1"
 	},
 	"jest": {
