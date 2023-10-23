@@ -8,7 +8,7 @@ main() {
     npm run build --workspace='@jazzer.js/fuzzer'
     npm run prepack --workspace='@jazzer.js/fuzzer'
 
-    local tarballs=$(npm pack --workspaces)
+    local tarballs=$(npm pack --workspaces 2> /dev/null)
     echo "$tarballs"
     echo "$tarballs" | sed_version_and_mv 
 }
