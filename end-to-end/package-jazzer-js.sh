@@ -1,9 +1,14 @@
 #!/bin/sh
+set -e
 
-cd ..
-npm install
-npm run build
-npm run build --workspace='@jazzer.js/fuzzer'
+main() {
+    cd ..
+    npm install
+    npm run build
+    npm run build --workspace='@jazzer.js/fuzzer'
+
+    npm pack --workspaces | sed_version_and_mv 
+}
 
 sed_version_and_mv() {
     while read data; do
@@ -13,4 +18,4 @@ sed_version_and_mv() {
     done
 }
 
-npm pack --workspaces | sed_version_and_mv 
+main
