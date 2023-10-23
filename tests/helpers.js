@@ -245,8 +245,8 @@ class FuzzTestBuilder {
 	 * @param {boolean} logTestOutput - whether to print the output of the fuzz test to the console.
 	 * True if parameter is undefined.
 	 */
-	logTestOutput(logTestOutput) {
-		this._logTestOutput = logTestOutput === undefined ? true : logTestOutput;
+	logTestOutput(logTestOutput = true) {
+		this._logTestOutput = logTestOutput;
 		return this;
 	}
 
@@ -270,8 +270,8 @@ class FuzzTestBuilder {
 	/**
 	 * @param {boolean} verbose - set verbose/debug output in fuzz test.
 	 */
-	verbose(verbose) {
-		this._verbose = verbose === undefined ? true : verbose;
+	verbose(verbose = true) {
+		this._verbose = verbose;
 		return this;
 	}
 
@@ -279,9 +279,8 @@ class FuzzTestBuilder {
 	 * @param {boolean} listFuzzTestNames - whether to list all fuzz test names on the console.
 	 * True if parameter is undefined.
 	 */
-	listFuzzTestNames(listFuzzTestNames) {
-		this._listFuzzTestNames =
-			listFuzzTestNames === undefined ? true : listFuzzTestNames;
+	listFuzzTestNames(listFuzzTestNames = true) {
+		this._listFuzzTestNames = listFuzzTestNames;
 		if (this._listFuzzTestNames) {
 			this.jestTestName("__NOT_AN_ACTUAL_TESTNAME__");
 		}
@@ -425,7 +424,7 @@ class FuzzTestBuilder {
 		return this;
 	}
 
-	coverage(coverage) {
+	coverage(coverage = true) {
 		this._coverage = coverage;
 		return this;
 	}
@@ -435,8 +434,8 @@ class FuzzTestBuilder {
 		return this;
 	}
 
-	asJson(asJson) {
-		this._asJson = asJson === undefined ? true : asJson;
+	asJson(asJson = true) {
+		this._asJson = asJson;
 		return this;
 	}
 

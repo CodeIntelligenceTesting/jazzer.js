@@ -1,6 +1,6 @@
 {
 	"name": "@jazzer.js/core",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Jazzer.js CLI",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
@@ -19,10 +19,10 @@
 		"jazzer": "dist/cli.js"
 	},
 	"dependencies": {
-		"@jazzer.js/bug-detectors": "2.0.0",
-		"@jazzer.js/fuzzer": "2.0.0",
-		"@jazzer.js/hooking": "2.0.0",
-		"@jazzer.js/instrumentor": "2.0.0",
+		"@jazzer.js/bug-detectors": "2.1.0",
+		"@jazzer.js/fuzzer": "2.1.0",
+		"@jazzer.js/hooking": "2.1.0",
+		"@jazzer.js/instrumentor": "2.1.0",
 		"tmp": "^0.2.1",
 		"istanbul-lib-coverage": "^3.2.0",
 		"istanbul-lib-report": "^3.0.1",
@@ -30,7 +30,7 @@
 		"yargs": "^17.7.2"
 	},
 	"devDependencies": {
-		"@types/yargs": "^17.0.28"
+		"@types/yargs": "^17.0.29"
 	},
 	"engines": {
 		"node": ">= 14.0.0",

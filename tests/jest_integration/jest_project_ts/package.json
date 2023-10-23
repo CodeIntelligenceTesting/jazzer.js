@@ -1,0 +1,17 @@
+{
+	"name": "jazzerjs-jest-integration-tests-project-ts",
+	"version": "1.0.0",
+	"scripts": {
+		"build": "tsc",
+		"test": "jest",
+		"fuzz": "JAZZER_FUZZ=1 jest"
+	},
+	"devDependencies": {
+		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner",
+		"@types/jest": "^29.4.0",
+		"jest": "^29.4.1",
+		"ts-jest": "^29.0.5",
+		"ts-node": "^10.9.1",
+		"typescript": "^5.2.2"
+	}
+}

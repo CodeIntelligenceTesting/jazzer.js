@@ -1,6 +1,6 @@
 {
 	"name": "@jazzer.js/bug-detectors",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Jazzer.js bug detectors",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
@@ -16,8 +16,8 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
 	"dependencies": {
-		"@jazzer.js/core": "2.0.0",
-		"@jazzer.js/hooking": "2.0.0"
+		"@jazzer.js/core": "2.1.0",
+		"@jazzer.js/hooking": "2.1.0"
 	},
 	"devDependencies": {},
 	"engines": {

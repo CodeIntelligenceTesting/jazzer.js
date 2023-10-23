@@ -14,10 +14,27 @@
  * limitations under the License.
  */
 
-describe("Jest Integration", () => {
-	test.fuzz("one test only", (data) => {
-		if (data.toString() === "Welcome") {
-			throw Error("Welcome to Awesome Fuzzing!");
-		}
+import "@jazzer.js/jest-runner";
+
+import * as target from "./target";
+
+describe("Jest TS Integration", () => {
+	it.fuzz("execute sync test", (data: Buffer) => {
+		target.fuzzMe(data);
 	});
+
+	it.fuzz("execute async test", async (data: Buffer) => {
+		await target.asyncFuzzMe(data);
+	});
+
+	it.fuzz("execute async test returning a promise", (data: Buffer) => {
+		return target.asyncFuzzMe(data);
+	});
+
+	it.fuzz(
+		"execute async test using a callback",
+		(data: Buffer, done: (e?: Error) => void) => {
+			target.callbackFuzzMe(data, done);
+		},
+	);
 });

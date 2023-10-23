@@ -1,6 +1,6 @@
 {
 	"name": "@jazzer.js/hooking",
-	"version": "2.0.0",
+	"version": "2.1.0",
 	"description": "Jazzer.js hooking framework",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
@@ -16,10 +16,10 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.js",
 	"dependencies": {
-		"@babel/core": "^7.23.0"
+		"@babel/core": "^7.23.2"
 	},
 	"devDependencies": {
-		"@types/babel__core": "^7.20.2"
+		"@types/babel__core": "^7.20.3"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
