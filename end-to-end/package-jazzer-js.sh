@@ -6,6 +6,7 @@ main() {
     npm install
     npm run build
     npm run build --workspace='@jazzer.js/fuzzer'
+    npm run prepack --workspace='@jazzer.js/fuzzer'
 
     npm pack --workspaces | sed_version_and_mv 
 }
