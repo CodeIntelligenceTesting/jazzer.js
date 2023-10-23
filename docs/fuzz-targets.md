@@ -156,7 +156,7 @@ Or add a new script to your `package.json`:
 
 ```json
 "scripts": {
-"fuzz": "jazzer <fuzzer parameters>"
+    "fuzz": "jazzer <fuzzer parameters>"
 }
 ```
 
@@ -169,17 +169,20 @@ The general command format is:
 jazzer <fuzzTarget> <fuzzerFlags> [corpus...] [-- <fuzzingEngineFlags>]
 ```
 
-Detailed documentation and some example calls are available using the `--help`
-flag, so that only the most important parameters are discussed here.
+Detailed documentation and some example calls are available on the command line
+using the `--help` flag. In addition, every argument is described in
+[fuzz-settings.md](./fuzz-settings.md) in more detail.
+
+Here we list some of the most important parameters:
 
 | Parameter                               | Description                                                                                                                                                                                                                                                                                                                                                                           |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `<fuzzTarget>`                          | Import path to the fuzz target module.                                                                                                                                                                                                                                                                                                                                                |
 | `[corpus...]`                           | Paths to the corpus directories. If not given, no initial seeds are used nor interesting inputs saved.                                                                                                                                                                                                                                                                                |
-| `-f`, `--fuzz_function`                 | Name of the fuzz test entry point. It must be an exported function with a single [Buffer](https://nodejs.org/api/buffer.html) parameter. Default is `fuzz`.                                                                                                                                                                                                                           |
+| `-f`, `--fuzzFunction`                  | Name of the fuzz test entry point. It must be an exported function with a single [Buffer](https://nodejs.org/api/buffer.html) parameter. Default is `fuzz`.                                                                                                                                                                                                                           |
 | `-i`, `--includes` / `-e`, `--excludes` | Part of filepath names to include/exclude in the instrumentation. A tailing `/` should be used to include directories and prevent confusion with filenames. `*` can be used to include all files. Can be specified multiple times. Default will include everything outside the `node_modules` directory. If either of these flags are set the default value for the other is ignored. |
 | `--sync`                                | Enables synchronous fuzzing. **May only be used for entirely synchronous code**.                                                                                                                                                                                                                                                                                                      |
-| `-h`, `--custom_hooks`                  | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](fuzz-settings.md).                                                                                                                                                                                                                                                   |
+| `-h`, `--customHooks`                   | Filenames with custom hooks. Several hooks per file are possible. See further details in [docs/fuzz-settings.md](fuzz-settings.md#customhooks--arraystring).                                                                                                                                                                                                                          |
 | `--help`                                | Detailed help message containing all flags.                                                                                                                                                                                                                                                                                                                                           |
 | `-- <fuzzingEngineFlags>`               | Parameters after `--` are forwarded to the internal fuzzing engine (`libFuzzer`). Available settings can be found in its [options documentation](https://www.llvm.org/docs/LibFuzzer.html#options).                                                                                                                                                                                   |
 
@@ -187,22 +190,22 @@ flag, so that only the most important parameters are discussed here.
 
 To generate a coverage report, add the `--coverage` flag to the Jazzer.js CLI.
 In the following example, the `--coverage` flag is combined with the mode flag
-`-m=regression` that only uses existing corpus entries without performing any
-fuzzing.
+`--mode=regression` that only uses existing corpus entries without performing
+any fuzzing.
 
 ```shell
-npx jazzer -m=regression <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>
+npx jazzer --mode=regression <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>
 ```
 
 Alternatively, you can add a new script to your `package.json`:
 
 ```json
 "scripts": {
- "coverage": "jazzer -m regression -i target -i another_target <fuzzer parameters> --corpus <corpus directories> --cov -- <libFuzzer parameters>"
+    "coverage": "jazzer --mode=regression --includes=fileToInstrument --includes=anotherFileToInstrument <fuzzer parameters> --corpus <corpus directories> --coverage -- <libFuzzer parameters>"
 }
 ```
 
-Files matched by the flags `--includes` or `--custom_hooks`, and not matched by
+Files matched by the flags `--includes` or `--customHooks`, and not matched by
 the flag `--excludes` will be included in the coverage report. It is recommended
 to disable coverage report generation during fuzzing, because of the substantial
 overhead that it adds.
@@ -211,13 +214,11 @@ overhead that it adds.
 
 By default, the coverage reports can be found in the `./coverage` directory.
 This default directory can be changed by setting the flag
-`--cov_dir=<another coverage directory>`. A longer flag of the form
-`--coverage_directory` also exists.
+`--coverageDirectory=<another coverage directory>`.
 
 ### Coverage reporters
 
-The desired report format can be set by the flags
-`--cov_reporters`/`--coverage_reporters`, which by default is set to
-`--coverage_reporters clover json lcov text`. See
+The desired report format can be set by the flag `--coverageReporters`, which by
+default is set to `--coverageReporters clover json lcov text`. See
 [here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
 for a list of supported coverage reporters.
