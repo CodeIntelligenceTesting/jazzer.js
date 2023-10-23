@@ -8,22 +8,15 @@ main() {
     npm run build --workspace='@jazzer.js/fuzzer'
     npm run prepack --workspace='@jazzer.js/fuzzer'
 
-    local tarballs=$(npm pack --workspaces 2> /dev/null | grep ".tgz")
-    echo "---"
-    echo "'$tarballs'"
-    echo "---"
+    local tarballs=$(npm pack --workspaces | grep ".tgz")
     echo "$tarballs" | sed_version_and_mv 
 }
 
 sed_version_and_mv() {
     while read data; do
-        if [[ -n "$data" ]]; then
-            local no_version=$(echo $data | sed -r -f end-to-end/remove-version.sed)
-            echo "mv $data end-to-end/$no_version"
-            mv $data end-to-end/$no_version
-        else
-            echo "received empty line"
-        fi
+        local no_version=$(echo $data | sed -r -f end-to-end/remove-version.sed)
+        echo "mv $data end-to-end/$no_version"
+        mv $data end-to-end/$no_version
     done
 }
 
