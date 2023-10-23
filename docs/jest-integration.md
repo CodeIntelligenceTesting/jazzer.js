@@ -120,7 +120,7 @@ actually include test files with the `.fuzz.ts` extension.
   },
   preset: "ts-jest",
   testEnvironment: "node",
-  testMatch: ["<rootDir>/*.fuzz.[jt]s"],
+  testMatch: ["<rootDir>/**/*.fuzz.[jt]s"],
   testRunner: "@jazzer.js/jest-runner",
 },
 ```
@@ -378,6 +378,39 @@ The desired report format can be set by the flag `--coverage_reporters`, which
 by default is set to `--coverage_reporters clover json lcov text`. See
 [here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
 for a list of supported coverage reporters.
+
+### Manually adding regression tests
+
+Suppose that we have a project with following structure:
+
+```text
+.
+├── package.json
+├── package-lock.json
+├── src
+│   └── ...
+└── tests
+    └── tests.fuzz.js
+```
+
+and two fuzz tests in `./tests/tests.fuzz.js`:
+
+```javascript
+describe("Target", () => {
+	test.fuzz("fuzz test 1", (data) => {
+		/* ... */
+	});
+	test.fuzz("fuzz test 2", (data) => {
+		/* ... */
+	});
+});
+```
+
+The first time when our example fuzz tests are executed with jest by e.g.
+running `npx jest tests/tests.fuzz.js` from the command line, Jazzer.js will
+create the directories `./tests/tests.fuzz/Target/fuzz_test_1` and
+`./tests/tests.fuzz/Target/fuzz_test_2` that the two fuzz tests will use in
+regression mode.
 
 ## IDE Integration
 
