@@ -63,7 +63,8 @@ export function interceptTestState(
 				if (
 					!firstFuzzTestEncountered &&
 					(!state.testNamePattern ||
-						state.testNamePattern.test(testName(event.test)))
+						(state.testNamePattern.test(testName(event.test)) &&
+							(!state.hasFocusedTests || event.test.mode === "only")))
 				) {
 					firstFuzzTestEncountered = true;
 				} else {
