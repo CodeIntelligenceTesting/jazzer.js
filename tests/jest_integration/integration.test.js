@@ -197,6 +197,20 @@ describe("Jest integration", () => {
 				);
 			});
 		});
+
+		describe("Run modes", () => {
+			it.concurrent("only", () => {
+				const fuzzTest = new FuzzTestBuilder()
+					.dir(projectDir)
+					.jestTestName("Run mode only and standard")
+					.jestTestFile("run-mode-only.fuzz.js")
+					.jestRunInFuzzingMode(true)
+					.runs(1)
+					.build()
+					.execute();
+				expect(fuzzTest.stdout).toContain("only test called");
+			});
+		});
 	});
 
 	describe("Regression mode", () => {
