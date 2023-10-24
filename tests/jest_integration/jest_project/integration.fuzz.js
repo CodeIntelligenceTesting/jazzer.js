@@ -95,12 +95,12 @@ describe("Jest Integration", () => {
 
 describe("Run mode", () => {
 	describe("skip and standard", () => {
-		it.fuzz("standard test", (data) => {
-			console.log("standard test called");
-		});
-
 		it.skip.fuzz("skipped test", (data) => {
 			throw new Error("Skipped test not skipped!");
+		});
+
+		it.fuzz("standard test", (data) => {
+			console.log("standard test called");
 		});
 	});
 });

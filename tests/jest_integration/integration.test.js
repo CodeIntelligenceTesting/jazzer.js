@@ -198,7 +198,7 @@ describe("Jest integration", () => {
 			});
 		});
 
-		describe("Run modes", () => {
+		describe("run modes", () => {
 			it.concurrent("only", () => {
 				const fuzzTest = new FuzzTestBuilder()
 					.dir(projectDir)
@@ -209,6 +209,16 @@ describe("Jest integration", () => {
 					.build()
 					.execute();
 				expect(fuzzTest.stdout).toContain("only test called");
+			});
+
+			it("skipped", () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("Run mode skip and standard")
+					.runs(1)
+					.logTestOutput()
+					.build()
+					.execute();
+				expect(fuzzTest.stdout).toContain("standard test called");
 			});
 		});
 	});

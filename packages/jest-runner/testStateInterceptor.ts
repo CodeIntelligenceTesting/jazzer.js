@@ -59,7 +59,7 @@ export function interceptTestState(
 		} else if (event.name === "test_start") {
 			// In fuzzing mode, only execute the first encountered (not skipped) fuzz test
 			// and mark all others as skipped.
-			if (jazzerConfig.mode === "fuzzing") {
+			if (jazzerConfig.mode === "fuzzing" && event.test.mode !== "skip") {
 				if (
 					!firstFuzzTestEncountered &&
 					(!state.testNamePattern ||
