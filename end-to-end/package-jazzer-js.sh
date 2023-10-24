@@ -6,7 +6,6 @@ main() {
     npm install
     npm run build
     npm run build --workspace='@jazzer.js/fuzzer'
-    npm run prepack --workspace='@jazzer.js/fuzzer'
 
     local tarballs=$(npm pack --workspaces | grep ".tgz")
     echo "$tarballs" | sed_version_and_mv 

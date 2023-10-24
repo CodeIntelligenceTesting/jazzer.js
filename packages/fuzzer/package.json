@@ -16,8 +16,8 @@
 	"main": "dist/fuzzer.js",
 	"types": "dist/fuzzer.d.ts",
 	"scripts": {
-		"prepack": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
-		"install": "prebuild-install --runtime napi || npm run prepack",
+		"build-native": "prebuild --runtime napi --backend cmake-js --all --strip --verbose",
+		"install": "prebuild-install --runtime napi || npm run build-native",
 		"build:dev": "cmake-js configure --out build --debug && cmake-js build",
 		"build": "cmake-js configure --out build && cmake-js build",
 		"format:fix": "clang-format -i *.cpp shared/*.cpp shared/*.h",
