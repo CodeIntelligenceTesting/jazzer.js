@@ -34,12 +34,6 @@ Jazzer.js is a coverage-guided, in-process fuzzer for the
 [libFuzzer](https://llvm.org/docs/LibFuzzer.html) and brings many of its
 instrumentation-powered mutation features to the JavaScript ecosystem.
 
-Jazzer.js currently supports the following platforms:
-
-- Linux x86_64
-- macOS x86_64 and arm64
-- Windows x86_64
-
 ## Quickstart
 
 To use Jazzer.js in your own project follow these few simple steps:
@@ -142,6 +136,15 @@ We recorded a live demo which shows how to get Jazzer.js up and running for your
 own projects. If you are just getting started, this might be helpful.
 
 You can watch the recording [here](https://youtu.be/KyIhxEiNnfc).
+
+## Supported Architectures
+
+Jazzer.js supports Node.js LTS versions on the following platforms, other
+versions are best effort only:
+
+- Linux x86_64
+- macOS x86_64 and arm64
+- Windows x86_64
 
 ## Credit
 

@@ -17,6 +17,7 @@
 import { sep } from "path";
 
 import { Finding, printFinding } from "./finding";
+import { replaceAll } from "./utils";
 
 describe("Finding", () => {
 	it("print a cleaned up finding", () => {
@@ -92,5 +93,5 @@ function mockPrinter() {
 }
 
 function withSystemSeparator(text: string): string {
-	return text.replaceAll(/\//g, sep);
+	return replaceAll(text, /\//g, sep);
 }

@@ -19,6 +19,7 @@ import fs from "fs";
 import * as tmp from "tmp";
 
 import { useDictionaryByParams } from "./dictionary";
+import { replaceAll } from "./utils";
 
 /**
  * Jazzer.js options structure expected by the fuzzer.
@@ -86,12 +87,11 @@ export const defaultOptions: Options = Object.freeze({
 
 export type KeyFormatSource = (key: string) => string;
 export const fromCamelCase: KeyFormatSource = (key: string): string => key;
+
 export const fromSnakeCase: KeyFormatSource = (key: string): string => {
-	return key
-		.toLowerCase()
-		.replaceAll(/(_[a-z0-9])/g, (group) =>
-			group.toUpperCase().replace("_", ""),
-		);
+	return replaceAll(key.toLowerCase(), /(_[a-z0-9])/g, (group) =>
+		group.toUpperCase().replace("_", ""),
+	);
 };
 export const fromSnakeCaseWithPrefix: (prefix: string) => KeyFormatSource = (
 	prefix: string,
@@ -201,12 +201,14 @@ function mergeOptions(
 ): Options {
 	// Deep close the default options to avoid mutation.
 	const options: Options = JSON.parse(JSON.stringify(defaults));
-	if (!input || typeof input !== "object") {
+	if (!options || !input || typeof input !== "object") {
 		return options;
 	}
 	Object.keys(input as object).forEach((key) => {
 		const transformedKey = transformKey(key);
-		if (!Object.hasOwn(options, transformedKey)) {
+		// Use hasOwnProperty to still support node v14.
+		// eslint-disable-next-line no-prototype-builtins
+		if (!(options as object).hasOwnProperty(transformedKey)) {
 			if (errorOnUnknown) {
 				throw new Error(`Unknown Jazzer.js option '${key}'`);
 			}
