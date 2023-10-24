@@ -27,6 +27,22 @@ export async function importModule(name: string): Promise<FuzzModule | void> {
 	return import(name);
 }
 
+export function replaceAll(
+	text: string,
+	pattern: RegExp,
+	replacer: string | ((substring: string) => string),
+): string {
+	// Don't use replaceAll to support node v14.
+	let previous = text;
+	let current = previous;
+	do {
+		previous = current;
+		// Without explicit cast TS can not figure out that both types of replacer are valid.
+		current = previous.replace(pattern, replacer as string);
+	} while (current !== previous);
+	return current;
+}
+
 export function ensureFilepath(filePath: string): string {
 	if (!filePath || filePath.length === 0) {
 		throw Error("Empty filepath provided");
