@@ -29,59 +29,59 @@ import { replaceAll } from "./utils";
  * options.
  */
 export interface Options {
-	// `fuzzTarget` is the name of a module exporting the fuzz function `fuzzEntryPoint`.
-	fuzzTarget: string;
-	// Name of the function that is called by the fuzzer exported by `fuzzTarget`.
-	fuzzEntryPoint: string;
-	// Part of filepath names to include in the instrumentation.
-	includes: string[];
-	// Part of filepath names to exclude in the instrumentation.
-	excludes: string[];
-	// Whether to add fuzzing instrumentation or not.
-	dryRun: boolean;
-	// Whether to run the fuzzer in sync mode or not.
-	sync: boolean;
-	// Options to pass on to the underlying fuzzing engine.
-	fuzzerOptions: string[];
-	// Files to load that contain custom hooks.
-	customHooks: string[];
-	// Expected error name that won't trigger the fuzzer to stop with an error exit code.
-	expectedErrors: string[];
-	// Timeout for one fuzzing iteration in milliseconds.
-	timeout: number;
-	// Internal: File to sync coverage IDs in fork mode.
-	idSyncFile?: string;
 	// Enable source code coverage report generation.
 	coverage: boolean;
 	// Directory to write coverage reports to.
 	coverageDirectory: string;
 	// Coverage reporters to use during report generation.
 	coverageReporters: string[];
+	// Files to load that contain custom hooks.
+	customHooks: string[];
 	// Disable bug detectors by name.
 	disableBugDetectors: string[];
+	// Whether to add fuzzing instrumentation or not.
+	dryRun: boolean;
+	// Part of filepath names to exclude in the instrumentation.
+	excludes: string[];
+	// Expected error name that won't trigger the fuzzer to stop with an error exit code.
+	expectedErrors: string[];
+	// Name of the function that is called by the fuzzer exported by `fuzzTarget`.
+	fuzzEntryPoint: string;
+	// Options to pass on to the underlying fuzzing engine.
+	fuzzerOptions: string[];
+	// `fuzzTarget` is the name of a module exporting the fuzz function `fuzzEntryPoint`.
+	fuzzTarget: string;
+	// Internal: File to sync coverage IDs in fork mode.
+	idSyncFile?: string;
+	// Part of filepath names to include in the instrumentation.
+	includes: string[];
 	// Fuzzing mode.
 	mode: "fuzzing" | "regression";
+	// Whether to run the fuzzer in sync mode or not.
+	sync: boolean;
+	// Timeout for one fuzzing iteration in milliseconds.
+	timeout: number;
 	// Verbose logging.
 	verbose?: boolean;
 }
 
 export const defaultOptions: Options = Object.freeze({
-	fuzzTarget: "",
-	fuzzEntryPoint: "fuzz",
-	includes: ["*"],
-	excludes: ["node_modules"],
-	dryRun: false,
-	sync: false,
-	fuzzerOptions: [],
-	customHooks: [],
-	expectedErrors: [],
-	timeout: 5000, // default Jest timeout
-	idSyncFile: "",
 	coverage: false,
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
+	customHooks: [],
 	disableBugDetectors: [],
+	dryRun: false,
+	excludes: ["node_modules"],
+	expectedErrors: [],
+	fuzzEntryPoint: "fuzz",
+	fuzzerOptions: [],
+	fuzzTarget: "",
+	idSyncFile: "",
+	includes: ["*"],
 	mode: "fuzzing",
+	sync: false,
+	timeout: 5000, // default Jest timeout
 	verbose: false,
 });
 
