@@ -53,7 +53,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
       - name: install dependencies
-        run: npm install --ws=@jazzer.js/fuzzer
+        run: npm ci --ws=@jazzer.js/fuzzer
       - name: build and upload prebuilds
         run: >
           npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
