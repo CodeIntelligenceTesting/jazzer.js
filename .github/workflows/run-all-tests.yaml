@@ -39,14 +39,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [windows-2019, macos-11, ubuntu-20.04]
+        node: [16]
+        include:
+          # Test all LTS versions on Linux
+          - os: ubuntu-20.04
+            node: 18
+          - os: ubuntu-20.04
+            node: 20
     steps:
       - name: checkout
         uses: actions/checkout@v3
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: ${{ matrix.node }}
           cache: "npm"
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
@@ -64,14 +71,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-11]
+        os: [windows-2019, macos-11, ubuntu-20.04]
+        node: [16]
+        include:
+          # Test all LTS versions on Linux
+          - os: ubuntu-20.04
+            node: 18
+          - os: ubuntu-20.04
+            node: 20
     steps:
       - name: checkout
         uses: actions/checkout@v3
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: ${{ matrix.node }}
           cache: "npm"
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
@@ -109,6 +123,7 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
+      # Build with node.js 16
       - name: node
         uses: actions/setup-node@v3
         with:
@@ -118,8 +133,41 @@ jobs:
         run: cd end-to-end && ./package-jazzer-js.sh
       - name: build example
         run: cd end-to-end && npm install --save-dev *.tgz && npm run build
+
+      # Run with different node.js versions
+      # all in one job to avoid rebuilding
+      - name: "node 14"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+          cache: "npm"
       - name: run tests
         run: cd end-to-end && npx jest
+
+      - name: "node 16"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+      - name: run tests
+        run: cd end-to-end && npx jest
+
+      - name: "node 18"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: "npm"
+      - name: run tests
+        run: cd end-to-end && npx jest
+
+      - name: "node 20"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: "npm"
+      - name: run tests
+        run: cd end-to-end && npx jest
+
   auto-merge:
     needs:
       - linting
