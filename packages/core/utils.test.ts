@@ -40,12 +40,12 @@ describe("core", () => {
 			const args = {
 				_: ["-some_arg=value", "-other_arg", 123],
 				corpus: ["directory1", "directory2"],
-				fuzz_target: "filename.js",
+				fuzzTarget: "filename.js",
 			};
 			const options = prepareArgs(args);
 			expect(options).toEqual({
-				fuzz_target: "file://" + path.join(process.cwd(), "filename.js"),
-				fuzzer_options: [
+				fuzzTarget: "file://" + path.join(process.cwd(), "filename.js"),
+				fuzzerOptions: [
 					"directory1",
 					"directory2",
 					"-some_arg=value",

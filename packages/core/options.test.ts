@@ -54,7 +54,7 @@ describe("options", () => {
 		});
 		it("prefer CLI parameters to environment variables", () => {
 			withEnv("JAZZER_FUZZ_TARGET", "bar", () => {
-				withResolverValue(commandLineArguments, { fuzz_target: "foo" }, () => {
+				withResolverValue(commandLineArguments, { fuzzTarget: "foo" }, () => {
 					const options = buildOptions();
 					expect(options).toHaveProperty("fuzzTarget", "foo");
 					expectDefaultsExceptKeys(options, "fuzzTarget");
@@ -75,7 +75,7 @@ describe("options", () => {
 			});
 		});
 		it("error on mismatching type", () => {
-			withResolverValue(commandLineArguments, { fuzz_target: false }, () => {
+			withResolverValue(commandLineArguments, { fuzzTarget: false }, () => {
 				expect(() => buildOptions()).toThrow("expected type 'string'");
 			});
 		});
