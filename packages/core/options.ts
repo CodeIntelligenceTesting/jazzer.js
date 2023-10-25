@@ -143,7 +143,7 @@ const defaultResolvers: ParameterResolvers = {
 	},
 	[ParameterResolverIndex.CommandLineArguments]: {
 		name: "Command line arguments",
-		transformKey: fromSnakeCase,
+		transformKey: fromCamelCase,
 		failOnUnknown: true,
 		parameters: {},
 	},

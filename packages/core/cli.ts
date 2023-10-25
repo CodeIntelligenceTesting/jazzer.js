@@ -37,7 +37,7 @@ yargs(process.argv.slice(2))
 	.parserConfiguration({
 		"camel-case-expansion": false,
 		"strip-aliased": true,
-		"strip-dashed": true,
+		"strip-dashed": false,
 		"greedy-arrays": false,
 	})
 	.example(
@@ -54,7 +54,7 @@ yargs(process.argv.slice(2))
 	)
 	.epilogue("Happy fuzzing!")
 	.command(
-		"$0 <fuzz_target> [corpus..]",
+		"$0 <fuzzTarget> [corpus..]",
 		"Coverage-guided, in-process fuzzer for the Node.js platform. \n\n" +
 			'The "target" module has to export a function "fuzz" which accepts ' +
 			"a byte array as first parameter and uses that to invoke the actual " +
@@ -67,7 +67,8 @@ yargs(process.argv.slice(2))
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
 			yargs
-				.positional("fuzz_target", {
+				.positional("fuzzTarget", {
+					alias: ["fuzz_target"],
 					demandOption: true,
 					describe: "Name of the module that exports the fuzz target function.",
 					type: "string",
@@ -81,8 +82,8 @@ yargs(process.argv.slice(2))
 					type: "string",
 				})
 
-				.option("fuzz_entry_point", {
-					alias: ["f", "fuzz_function"],
+				.option("fuzzEntryPoint", {
+					alias: ["f", "fuzz_entry_point", "fuzz_function"],
 					defaultDescription: defaultOptions.fuzzEntryPoint,
 					describe:
 						"Name of the fuzz test entry point. It must be an exported " +
@@ -115,7 +116,8 @@ yargs(process.argv.slice(2))
 					type: "string",
 				})
 
-				.option("id_sync_file", {
+				.option("idSyncFile", {
+					alias: ["id_sync_file"],
 					defaultDescription: `${JSON.stringify(defaultOptions.idSyncFile)}`,
 					describe:
 						"File used for sync edge ID generation. " +
@@ -124,8 +126,8 @@ yargs(process.argv.slice(2))
 					hidden: true,
 					type: "string",
 				})
-				.option("custom_hooks", {
-					alias: "h",
+				.option("customHooks", {
+					alias: ["custom_hooks", "h"],
 					array: true,
 					defaultDescription: `${JSON.stringify(defaultOptions.customHooks)}`,
 					describe:
@@ -135,8 +137,8 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					type: "string",
 				})
-				.option("expected_errors", {
-					alias: "x",
+				.option("expectedErrors", {
+					alias: ["expected_errors", "x"],
 					array: true,
 					defaultDescription: `${JSON.stringify(
 						defaultOptions.expectedErrors,
@@ -151,7 +153,8 @@ yargs(process.argv.slice(2))
 					hidden: true,
 					type: "string",
 				})
-				.option("disable_bug_detectors", {
+				.option("disableBugDetectors", {
+					alias: "disable_bug_detectors",
 					array: true,
 					defaultDescription: `${JSON.stringify(
 						defaultOptions.disableBugDetectors,
@@ -178,8 +181,8 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					type: "string",
 				})
-				.option("dry_run", {
-					alias: "d",
+				.option("dryRun", {
+					alias: ["dry_run", "d"],
 					defaultDescription: `${JSON.stringify(defaultOptions.dryRun)}`,
 					describe: "Perform a run with the fuzzing instrumentation disabled.",
 					group: "Fuzzer:",
@@ -212,8 +215,8 @@ yargs(process.argv.slice(2))
 					group: "Coverage:",
 					type: "boolean",
 				})
-				.option("coverage_directory", {
-					alias: "cov_dir",
+				.option("coverageDirectory", {
+					alias: ["coverage_directory", "cov_dir"],
 					defaultDescription: `${JSON.stringify(
 						defaultOptions.coverageDirectory,
 					)}`,
@@ -221,8 +224,8 @@ yargs(process.argv.slice(2))
 					group: "Coverage:",
 					type: "string",
 				})
-				.option("coverage_reporters", {
-					alias: "cov_reporters",
+				.option("coverageReporters", {
+					alias: ["coverage_reporters", "cov_reporters"],
 					array: true,
 					defaultDescription: `${JSON.stringify(
 						defaultOptions.coverageReporters,
@@ -248,4 +251,5 @@ yargs(process.argv.slice(2))
 			});
 		},
 	)
-	.help().argv;
+	.help()
+	.showHelpOnFail(false).argv;

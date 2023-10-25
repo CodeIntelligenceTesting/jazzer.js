@@ -69,8 +69,8 @@ export function ensureFilepath(filePath: string): string {
 export function prepareArgs(args: any) {
 	const options = {
 		...args,
-		fuzz_target: ensureFilepath(args.fuzz_target),
-		fuzzer_options: (args.corpus ?? [])
+		fuzzTarget: ensureFilepath(args.fuzzTarget),
+		fuzzerOptions: (args.corpus ?? [])
 			.concat(args._)
 			.map((e: unknown) => e + ""),
 	};
