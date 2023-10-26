@@ -15,6 +15,7 @@
  */
 
 import fs from "fs";
+import * as util from "util";
 
 import * as tmp from "tmp";
 
@@ -242,11 +243,6 @@ function mergeOptions(
 }
 
 export function buildFuzzerOption(options: Options) {
-	if (process.env.JAZZER_DEBUG) {
-		console.error("DEBUG: [core] Jazzer.js initial fuzzer arguments: ");
-		console.error(options);
-	}
-
 	let params: string[] = [];
 	params = optionDependentParams(options, params);
 	params = forkedExecutionParams(params);
@@ -257,8 +253,14 @@ export function buildFuzzerOption(options: Options) {
 	params = params.concat("-handle_int=0", "-handle_term=0", "-handle_segv=0");
 
 	if (process.env.JAZZER_DEBUG) {
-		console.error("DEBUG: [core] Jazzer.js actually used fuzzer arguments: ");
-		console.error(params);
+		console.error(
+			util.formatWithOptions(
+				// Print everything in the options object.
+				{ maxArrayLength: null, depth: null, colors: true },
+				"DEBUG: [core] Jazzer.js config: \n%O",
+				{ ...options, fuzzerOptions: params },
+			),
+		);
 	}
 	logInfoAboutFuzzerOptions(params);
 	return params;

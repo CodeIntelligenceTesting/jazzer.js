@@ -15,6 +15,7 @@
  */
 
 import * as fs from "fs";
+import * as util from "util";
 
 import { Circus, Global } from "@jest/types";
 
@@ -168,6 +169,18 @@ export const runInRegressionMode = (
 	globals: Global.Global,
 	mode: JestTestMode,
 ) => {
+	if (process.env.JAZZER_DEBUG) {
+		console.error(
+			util.formatWithOptions(
+				// Print everything in the options object.
+				{ maxArrayLength: null, depth: null, colors: true },
+				'DEBUG: [jest-runner] Jazzer.js config for test "%s":\n%O',
+				name,
+				options,
+			),
+		);
+	}
+
 	handleMode(mode, globals.describe)(name, () => {
 		function executeTarget(content: Buffer) {
 			return new Promise((resolve, reject) => {
