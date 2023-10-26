@@ -168,6 +168,13 @@ export const runInRegressionMode = (
 	globals: Global.Global,
 	mode: JestTestMode,
 ) => {
+	if (process.env.JAZZER_DEBUG) {
+		console.debug(
+			'DEBUG: [Jazzer jest-runner] fuzzingConfig for test: "' + name + '"',
+		);
+		console.debug(options);
+	}
+
 	handleMode(mode, globals.describe)(name, () => {
 		function executeTarget(content: Buffer) {
 			return new Promise((resolve, reject) => {
