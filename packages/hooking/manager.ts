@@ -126,8 +126,8 @@ export class HookManager {
 		// Loading build-in modules is asynchronous, so we need to wait, which
 		// is not possible in the instrumentor.
 		for (const builtinModule of builtinModules) {
-			const matchedHooks = this._hooks.filter((hook) =>
-				builtinModule.includes(hook.pkg),
+			const matchedHooks = this._hooks.filter(
+				(hook) => builtinModule.includes(hook.pkg) && hook.pkg !== "",
 			);
 			for (const hook of matchedHooks) {
 				try {
@@ -136,7 +136,9 @@ export class HookManager {
 					if (process.env.JAZZER_DEBUG) {
 						console.error(
 							"DEBUG: [Hook] Error when trying to hook the built-in function: " +
-								e,
+								hook.target +
+								" in package: " +
+								hook.pkg,
 						);
 					}
 				}
