@@ -34,7 +34,7 @@
 		"prebuild-install": "^7.1.1"
 	},
 	"devDependencies": {
-		"@types/bindings": "^1.5.3",
+		"@types/bindings": "^1.5.4",
 		"@types/node": "^20.8.10",
 		"clang-format": "^1.8.0",
 		"prebuild": "^12.1.0"
