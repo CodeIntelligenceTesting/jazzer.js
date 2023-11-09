@@ -24,7 +24,7 @@
 		"@jazzer.js/hooking": "2.1.0",
 		"@jazzer.js/instrumentor": "2.1.0",
 		"tmp": "^0.2.1",
-		"istanbul-lib-coverage": "^3.2.0",
+		"istanbul-lib-coverage": "^3.2.2",
 		"istanbul-lib-report": "^3.0.1",
 		"istanbul-reports": "^3.1.6",
 		"yargs": "^17.7.2"
