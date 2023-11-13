@@ -149,10 +149,15 @@ export function cleanErrorStack(error: unknown): void {
 	// like bug detector and reporting ones, and stack frames on the bottom, like the function
 	// wrapper.
 	const filterCriteria = [
-		`@jazzer.js${sep}`, // cli usage
-		`jazzer.js${sep}packages${sep}`, // jest usage
-		`jazzer.js${sep}core${sep}`, // jest usage
-		`..${sep}..${sep}packages${sep}`, // local/filesystem dependencies
+		`${sep}@jazzer.js${sep}`, // cli usage
+		// Filter public name (jest)
+		`${sep}jazzer.js${sep}packages${sep}`,
+		`${sep}jazzer.js${sep}core${sep}`,
+		// Filter private name (jest)
+		`${sep}jazzer.js-commercial${sep}packages${sep}`,
+		`${sep}jazzer.js-commercial${sep}core${sep}`,
+		// Filter local/filesystem dependencies
+		`..${sep}..${sep}packages${sep}`,
 	];
 	error.stack = error.stack
 		.split("\n")

@@ -26,8 +26,8 @@ describe("Finding", () => {
 		error.stack = withSystemSeparator(`Error: Welcome to Awesome Fuzzing!
         at Object.Error [as fuzzMe] (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/target.js:19:9)
         at fuzzMe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:30:11)
-        at /home/Code-Intelligence/jazzer.js/packages/core/core.ts:341:5
-        at /home/Code-Intelligence/jazzer.js/packages/jest-runner/fuzz.ts:152:6`);
+        at /home/Code-Intelligence/jazzer.js-commercial/packages/core/core.ts:341:5
+        at /home/Code-Intelligence/jazzer.js-commercial/packages/jest-runner/fuzz.ts:152:6`);
 
 		printFinding(error, printer);
 
