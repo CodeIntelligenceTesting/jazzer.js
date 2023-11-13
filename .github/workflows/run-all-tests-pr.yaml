@@ -34,7 +34,7 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: check formatting and linting
         run: npm run check
-  unit_tests:
+  tests:
     name: unit tests
     runs-on: ${{ matrix.os }}
     strategy:
@@ -61,37 +61,10 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
-  examples:
-    name: examples
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-2019, macos-11, ubuntu-20.04]
-        node: [20]
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node }}
-          cache: "npm"
-      - name: MSVC (windows)
-        uses: ilammy/msvc-dev-cmd@v1
-        if: contains(matrix.os, 'windows')
-      - name: install dependencies
-        run: npm ci
-      - name: build project
-        run: npm run build
-      - name: build fuzzer
-        run: npm run build --workspace=@jazzer.js/fuzzer
-      - name: run all examples
-        run: npm run example
   auto-merge:
     needs:
       - linting
-      - unit_tests
-      - examples
+      - tests
     permissions:
       pull-requests: write
       contents: write

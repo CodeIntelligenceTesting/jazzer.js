@@ -5,8 +5,8 @@ on:
   merge_group:
   workflow_dispatch:
 jobs:
-  unit_tests:
-    name: unit tests
+  tests:
+    name: tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -36,37 +36,6 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
-  examples:
-    name: examples
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-2019, macos-11, ubuntu-20.04]
-        node: [16]
-        include:
-          # Test LTS versions on main
-          # 18 on Ubuntu is sufficient, and 20 already tested in PR
-          - os: ubuntu-20.04
-            node: 18
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-      - name: node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node }}
-          cache: "npm"
-      - name: MSVC (windows)
-        uses: ilammy/msvc-dev-cmd@v1
-        if: contains(matrix.os, 'windows')
-      - name: install dependencies
-        run: npm ci
-      - name: build project
-        run: npm run build
-      - name: build fuzzer
-        run: npm run build --workspace=@jazzer.js/fuzzer
-      - name: run all examples
-        run: npm run example
   fuzz_tests:
     name: fuzz tests
     runs-on: ubuntu-20.04
