@@ -24,6 +24,15 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        id: cache-fuzzer
+        with:
+          path: |
+            packages/fuzzer/build/Release
+          key:
+            fuzzer-cache-${{ runner.os }}-${{
+            hashFiles('packages/fuzzer/CMakeLists.txt',
+            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.c') }}
       - name: node
         uses: actions/setup-node@v3
         with:
@@ -37,6 +46,7 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
+        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
@@ -46,6 +56,15 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        id: cache-fuzzer
+        with:
+          path: |
+            packages/fuzzer/build/Release
+          key:
+            fuzzer-cache-${{ runner.os }}-${{
+            hashFiles('packages/fuzzer/CMakeLists.txt',
+            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.c') }}
       - name: node
         uses: actions/setup-node@v3
         with:
@@ -56,6 +75,7 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
+        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all fuzz tests
         run: node fuzztests/runFuzzTests.js
