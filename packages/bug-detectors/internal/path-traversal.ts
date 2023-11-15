@@ -209,7 +209,8 @@ function detectFindingAndGuideFuzzing(
 		const argument = input.toString();
 		if (argument.includes(goal)) {
 			reportAndThrowFinding(
-				`Path Traversal in ${functionName}(): called with '${argument}'`,
+				"Path Traversal\n" +
+					`    in ${functionName}(): called with '${argument}'`,
 			);
 		}
 		guideTowardsContainment(argument, goal, hookId);

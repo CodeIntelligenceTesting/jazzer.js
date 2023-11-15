@@ -75,7 +75,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Function changed",
+			"Prototype Pollution\n    Prototype of Function changed",
 		);
 	});
 
@@ -90,7 +90,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of String changed",
+			"Prototype Pollution\n    Prototype of String changed",
 		);
 	});
 
@@ -105,7 +105,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Number changed",
+			"Prototype Pollution\n    Prototype of Number changed",
 		);
 	});
 
@@ -120,7 +120,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Boolean changed",
+			"Prototype Pollution\n    Prototype of Boolean changed",
 		);
 	});
 
@@ -138,7 +138,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is ",
+			"Prototype Pollution\n    a.__proto__ value is ",
 		);
 	});
 
@@ -155,7 +155,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stderr).toContain("Prototype Pollution: a.__proto__");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution\n    a.__proto__");
 	});
 
 	it("Test no instrumentation and polluting __proto__ of a class", () => {
@@ -334,7 +334,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Object changed",
+			"Prototype Pollution\n    Prototype of Object changed",
 		);
 	});
 
@@ -353,7 +353,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is",
+			"Prototype Pollution\n    a.__proto__ value is",
 		);
 	});
 
@@ -372,7 +372,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is",
+			"Prototype Pollution\n    a.__proto__ value is",
 		);
 	});
 
@@ -389,7 +389,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Object changed",
+			"Prototype Pollution\n    Prototype of Object changed",
 		);
 	});
 

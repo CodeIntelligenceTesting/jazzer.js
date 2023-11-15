@@ -30,7 +30,7 @@ describe("General tests", () => {
 	const friendlyFilePath = path.join(bugDetectorDirectory, "FRIENDLY");
 	const evilFilePath = path.join(bugDetectorDirectory, "jaz_zer");
 	const errorPattern =
-		/Command Injection in execSync\(\): called with 'jaz_zer'/g;
+		/Command Injection\n {4}in execSync\(\): called with 'jaz_zer'/g;
 
 	function expectErrorToBePrintedOnce(fuzzTest) {
 		const matches = fuzzTest.stderr.match(errorPattern);

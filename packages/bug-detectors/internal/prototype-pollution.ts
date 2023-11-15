@@ -336,7 +336,7 @@ function detectPrototypePollutionOfBasicObjects(
 	for (let i = 0; i < initialSnapshots.length; i++) {
 		if (!currentProtoSnapshots[i]) {
 			reportFinding(
-				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
+				`Prototype Pollution\n    Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
 				false,
 			);
 			return;
@@ -347,7 +347,7 @@ function detectPrototypePollutionOfBasicObjects(
 		);
 		if (equalityResult) {
 			reportFinding(
-				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
+				`Prototype Pollution\n    Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
 				false,
 			);
 			return;
@@ -401,9 +401,9 @@ function detectPrototypePollution(
 			) {
 				let message;
 				if (identifier) {
-					message = `Prototype Pollution: ${identifier}.__proto__ value is ${protoValue}`;
+					message = `Prototype Pollution\n    ${identifier}.__proto__ value is ${protoValue}`;
 				} else {
-					message = `Prototype Pollution: __proto__ value is ${protoValue}`;
+					message = `Prototype Pollution\n    __proto__ value is ${protoValue}`;
 				}
 				if (report) {
 					reportAndThrowFinding(message);

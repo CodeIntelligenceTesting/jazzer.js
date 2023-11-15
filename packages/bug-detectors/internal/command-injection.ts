@@ -53,7 +53,8 @@ for (const functionName of functionNames) {
 		}
 		if (firstArgument.includes(goal)) {
 			reportAndThrowFinding(
-				`Command Injection in ${functionName}(): called with '${firstArgument}'`,
+				"Command Injection\n" +
+					`    in ${functionName}(): called with '${firstArgument}'`,
 			);
 		}
 		guideTowardsContainment(firstArgument, goal, hookId);
