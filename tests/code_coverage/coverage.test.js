@@ -248,6 +248,8 @@ function executeFuzzTest(
 		options.push("--cov_dir");
 		options.push(coverageOutputDir);
 	}
+
+	options.push("--disableBugDetectors='.*'");
 	options.push("--");
 	options.push("-runs=0");
 	const process = spawnSync("npx", options, {

@@ -66,6 +66,7 @@ describe("Execute a async runner", () => {
 function executeFuzzTest(sync, verbose, dir) {
 	const fuzzTest = new FuzzTestBuilder()
 		.fuzzEntryPoint("fuzz")
+		.disableBugDetectors([".*"])
 		.runs(5000)
 		.dir(dir)
 		.sync(sync)

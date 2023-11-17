@@ -35,6 +35,7 @@ describe("SIGINT handlers", () => {
 		const testProjectDir = path.join(__dirname, "SIGINT");
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
+			.disableBugDetectors([".*"])
 			.dir(testProjectDir)
 			.coverage(true)
 			.verbose(true);
@@ -90,6 +91,7 @@ describe("SIGSEGV handlers", () => {
 		const testProjectDir = path.join(__dirname, "SIGSEGV");
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
+			.disableBugDetectors([".*"])
 			.dir(testProjectDir)
 			.coverage(true);
 		await cleanCrashFilesIn(testProjectDir);
