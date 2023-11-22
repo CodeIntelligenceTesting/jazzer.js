@@ -597,7 +597,16 @@ libFuzzer in Jest mode, add the following to the `.jazzerjsrc.json` file:
 }
 ```
 
-**ENV:** It is not possible to set this flag via an environment variable.
+**ENV:** For example, to pass the options `-use_value_profile=1` and
+`-dict=xml.txt` to libFuzzer in Jest mode using environmental variable can be
+done as follows:
+
+```bash
+JAZZER_FUZZER_OPTIONS='["-use_value_profile=1", "-dict=xml.txt"]' npx jest tests.fuzz.js
+```
+
+_Note:_ It is not possible to set this flag in CLI mode via an environment
+variable.
 
 #### Value profile
 
