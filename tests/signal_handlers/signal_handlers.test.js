@@ -59,6 +59,26 @@ describe("SIGINT handlers", () => {
 			fuzzTest.execute();
 			expectSigintOutput(fuzzTest);
 		});
+		it("stop sync fuzzing on SIGINT in endless loop", async () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(true)
+				.timeout(5000)
+				.fuzzEntryPoint("SIGINT_SYNC_endless_loop")
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
+		it("stop async fuzzing on SIGINT in endless loop", async () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(false)
+				.timeout(5000)
+				.fuzzEntryPoint("SIGINT_ASYNC_endless_loop")
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
 	});
 
 	describe("in Jest fuzzing mode", () => {
@@ -79,6 +99,26 @@ describe("SIGINT handlers", () => {
 				.build();
 			fuzzTest.execute();
 			expectSigintOutput(fuzzTest);
+		});
+		it("stop sync endless loop fuzzing on SIGINT", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Sync endless loop$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
+		it("stop async endless loop fuzzing on SIGINT", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Async endless loop$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
 		});
 	});
 });

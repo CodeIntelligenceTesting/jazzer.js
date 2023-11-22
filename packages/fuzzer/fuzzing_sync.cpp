@@ -30,9 +30,6 @@
 #include "utils.h"
 
 namespace {
-const std::string SEGFAULT_ERROR_MESSAGE =
-    "Segmentation fault found in fuzz target";
-
 // Information about a JS fuzz target.
 struct FuzzTargetInfo {
   Napi::Env env;
@@ -47,14 +44,27 @@ struct FuzzTargetInfo {
 // to its target function.
 std::optional<FuzzTargetInfo> gFuzzTarget;
 
-// Track if SIGINT signal handler was called.
-// This is only necessary in the sync fuzzing case, as async can be handled
-// much nicer directly in JavaScript.
-volatile std::sig_atomic_t gSignalStatus;
-std::jmp_buf errorBuffer;
+// Signal handlers store the signal number in this variable.
+volatile std::sig_atomic_t gSignalStatus = 0;
+// Keeps track of how many times the user pressed CTRL+C.
+volatile int nSigInts = 0;
+// Store the execution context of the fuzz target function. The execution will
+// jump back to this stored context in case of a segfault.
+std::jmp_buf executionContext;
 } // namespace
 
-void sigintHandler(int signum) { gSignalStatus = signum; }
+void sigintHandler(int signum) {
+  std::cerr << std::endl; // Print a newline after the ^C.
+  gSignalStatus = signum;
+  // Pressing CTRL+C more than once will terminate the process immediately.
+  // If the first CTRL+C had no effect, the fuzz target is probably in an
+  // endless loop, or the current input takes long time to process. In this case
+  // it's ok to terminate the process.
+  if (nSigInts > 0) {
+    _Exit(libfuzzer::RETURN_CONTINUE);
+  }
+  nSigInts++;
+}
 
 // This handles signals that indicate an unrecoverable error (currently only
 // segfaults). Our handling of segfaults is odd because it avoids using our
@@ -66,7 +76,7 @@ void sigintHandler(int signum) { gSignalStatus = signum; }
 // is good enough
 void ErrorSignalHandler(int signum) {
   gSignalStatus = signum;
-  std::longjmp(errorBuffer, signum);
+  std::longjmp(executionContext, signum);
 }
 
 // The libFuzzer callback when fuzzing synchronously
@@ -91,7 +101,7 @@ int FuzzCallbackSync(const uint8_t *Data, size_t Size) {
     // the JS buffer is going to be garbage-collected. But it would still be
     // nice for efficiency if we could use a pointer instead of copying.
     auto data = Napi::Buffer<uint8_t>::Copy(gFuzzTarget->env, Data, Size);
-    if (setjmp(errorBuffer) == 0) {
+    if (setjmp(executionContext) == 0) {
       auto result = gFuzzTarget->target.Call({data});
       if (result.IsPromise()) {
         AsyncReturnsHandler();

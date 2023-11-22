@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-const { SIGINT_SYNC, SIGINT_ASYNC } = require("./fuzz.js");
+const fuzz = require("./fuzz.js");
 
 describe("Jest", () => {
-	it.fuzz("Sync", SIGINT_SYNC);
-	it.fuzz("Async", SIGINT_ASYNC);
+	it.fuzz("Sync", fuzz.SIGINT_SYNC);
+	it.fuzz("Sync endless loop", fuzz.SIGINT_SYNC_endless_loop);
+	it.fuzz("Async", fuzz.SIGINT_ASYNC);
+	it.fuzz("Async endless loop", fuzz.SIGINT_ASYNC_endless_loop);
 });

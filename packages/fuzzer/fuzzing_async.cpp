@@ -66,14 +66,27 @@ using FinalizerDataType = void;
 
 TSFN gTSFN;
 
-const std::string SEGFAULT_ERROR_MESSAGE =
-    "Segmentation fault found in fuzz target";
+// Keeps track of how many times the user pressed CTRL+C.
+volatile int nSigInts = 0;
+// Store the execution context of the fuzz target function. The execution will
+// jump back to this stored context in case of a segfault.
+std::jmp_buf executionContext;
 
-std::jmp_buf errorBuffer;
+void sigintHandler(int signum) {
+  std::cerr << std::endl; // Print a newline after the ^C.
+  // Pressing CTRL+C more than once will terminate the process immediately.
+  // If the first CTRL+C had no effect, the fuzz target is probably in an
+  // endless loop, or the current input takes long time to process. In this case
+  // it's ok to terminate the process.
+  if (nSigInts > 0) {
+    _Exit(libfuzzer::RETURN_CONTINUE);
+  }
+  nSigInts++;
+}
 
 // See comment on `ErrorSignalHandler` in `fuzzing_sync.cpp` for what this is
 // for
-void ErrorSignalHandler(int signum) { std::longjmp(errorBuffer, signum); }
+void ErrorSignalHandler(int signum) { std::longjmp(executionContext, signum); }
 
 // The callback invoked by libFuzzer. It has no access to the JavaScript
 // environment and thus can only call the JavaScript fuzz target via the
@@ -115,11 +128,20 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function jsFuzzCallback,
   // Execute the fuzz target and reject the deferred on any raised exception by
   // C++ code or returned error by JS interop to stop fuzzing.
   try {
+
+    // Pressing CTRL+C will gracefully end the fuzzing.
+    if (nSigInts > 0) {
+      data->promise->set_value(libfuzzer::RETURN_EXIT);
+      context->deferred.Resolve(env.Undefined());
+      context->is_resolved = true;
+      return;
+    }
+
     // Return point for the segfault error handler
     // This MUST BE called from the thread that executes the fuzz target (and
     // thus is the thread with the segfault) otherwise longjmp's behavior is
     // undefined
-    if (setjmp(errorBuffer) != 0) {
+    if (setjmp(executionContext) == SIGSEGV) {
       std::cerr << "==" << (unsigned long)GetPID() << "== Segmentation Fault"
                 << std::endl;
       libfuzzer::PrintCrashingInput();
@@ -304,6 +326,7 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   context->native_thread = std::thread(
       [](const std::vector<std::string> &fuzzer_args) {
         signal(SIGSEGV, ErrorSignalHandler);
+        signal(SIGINT, sigintHandler);
         StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         gTSFN.Release();
       },

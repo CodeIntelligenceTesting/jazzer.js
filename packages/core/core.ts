@@ -203,7 +203,6 @@ export async function startFuzzingNoInit(
 	const signalHandler = (signal: number): void => {
 		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
-	process.on("SIGINT", () => signalHandler(0));
 
 	try {
 		const fuzzerOptions = buildFuzzerOption(options);
