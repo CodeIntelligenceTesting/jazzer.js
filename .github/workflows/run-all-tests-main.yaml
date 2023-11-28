@@ -32,7 +32,7 @@ jobs:
           key:
             fuzzer-cache-${{ runner.os }}-${{
             hashFiles('packages/fuzzer/CMakeLists.txt',
-            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.c') }}
+            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
       - name: node
         uses: actions/setup-node@v3
         with:
@@ -64,7 +64,7 @@ jobs:
           key:
             fuzzer-cache-${{ runner.os }}-${{
             hashFiles('packages/fuzzer/CMakeLists.txt',
-            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.c') }}
+            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
       - name: node
         uses: actions/setup-node@v3
         with:
