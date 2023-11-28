@@ -28,7 +28,6 @@ void PrintAndDumpCrashingInput(const Napi::CallbackInfo &info) {
   libfuzzer::PrintCrashingInput();
 }
 
-// Useless change to check the pipeline cache
 // Print info messages recommending invocation improvements (sync/async).
 void PrintReturnInfo(const Napi::CallbackInfo &info) {
   if (info.Length() != 1 || !info[0].IsBoolean()) {
