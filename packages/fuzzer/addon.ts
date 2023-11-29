@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { default as bind } from "bindings";
+import * as fs from "fs";
+import * as path from "path";
 
 export type FuzzTargetAsyncOrValue = (
 	data: Buffer,
@@ -67,4 +68,16 @@ type NativeAddon = {
 	startFuzzingAsync: StartFuzzingAsyncFn;
 };
 
-export const addon: NativeAddon = bind("jazzerjs");
+function addonFilename(): string {
+	let dirName: string;
+	if (fs.existsSync(path.join(__dirname, "prebuilds"))) {
+		dirName = path.join(__dirname, "prebuilds");
+	} else if (fs.existsSync(path.join(__dirname, "..", "prebuilds"))) {
+		dirName = path.join(__dirname, "..", "prebuilds");
+	} else {
+		throw new Error("Could not find prebuilds directory");
+	}
+	return path.join(dirName, `fuzzer-${process.platform}-${process.arch}.node`);
+}
+
+export const addon: NativeAddon = require(addonFilename());

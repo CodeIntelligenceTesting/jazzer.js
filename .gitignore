@@ -35,6 +35,8 @@ coverage
 build
 cmake-build-*
 
+packages/fuzzer/prebuilds
+
 # Dependency directories
 node_modules/
 
