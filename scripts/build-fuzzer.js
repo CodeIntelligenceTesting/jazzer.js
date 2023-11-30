@@ -23,7 +23,7 @@ fs.mkdirSync("prebuilds", { recursive: true });
 // Copy napi release into prebuilds/fuzzer-<platform>-<arch>.node
 const targetName = path.join(
 	"prebuilds",
-	`fuzzer-${process.platform}-${process.arch}.node`,
+	`fuzzer-${process.platform}-${getArchitecture()}.node`,
 );
 fs.copyFileSync("build/Release/jazzerjs.node", targetName);
 
@@ -35,3 +35,7 @@ strip(targetName, function (err) {
 		process.exit(1);
 	}
 });
+
+function getArchitecture() {
+	return process.argv[3] ?? process.arch;
+}

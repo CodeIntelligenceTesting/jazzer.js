@@ -33,7 +33,7 @@ jobs:
       - name: build
         run: |
           npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
-          npm run build --workspace=@jazzer.js/fuzzer
+          npm run build --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
       - name: upload
         uses: actions/upload-artifact@v3
         with:
