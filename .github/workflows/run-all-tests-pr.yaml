@@ -54,7 +54,7 @@ jobs:
         id: cache-fuzzer
         with:
           path: |
-            packages/fuzzer/build/Release
+            packages/fuzzer/prebuilds
           key:
             fuzzer-cache-${{ runner.os }}-${{
             hashFiles('packages/fuzzer/CMakeLists.txt',
