@@ -1,13 +1,22 @@
 name: "🚀 Release"
 
 on:
-  release:
-    types: [released]
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
-  release:
-    name: release
-    runs-on: ubuntu-20.04
+  prebuilds:
+    name: create prebuilds
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-11, windows-2019]
+        opts: [""]
+        include:
+          - os: macos-11
+            opts: "--arch arm64"
+    runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -16,10 +25,59 @@ jobs:
         with:
           node-version: 16
           cache: "npm"
-          registry-url: https://registry.npmjs.org
+      - name: MSVC (windows)
+        uses: ilammy/msvc-dev-cmd@v1
+        if: contains(matrix.os, 'windows')
+      - name: install dependencies
+        run: npm ci --ws=@jazzer.js/fuzzer
+      - name: build
+        run: >
+          npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
+          npm run build --workspace=@jazzer.js/fuzzer
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: native-addon
+          path: packages/fuzzer/prebuilds
+          if-no-files-found: error
+
+  release:
+    name: release
+    needs: [prebuilds]
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: write # for creating releases
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+          registry-url: https://gitlab.code-intelligence.com/api/v4/projects/89/packages/npm/
       - name: install & build
         run: npm ci && npm run build
-      - name: publish to npm
+      - name: download prebuilds
+        uses: actions/download-artifact@v3
+        with:
+          name: native-addon
+          path: packages/fuzzer/prebuilds
+          if-no-files-found: error
+      - name: publish
         run: npm publish --workspaces --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_ACCESS_TOKEN}}
+      # create GitHub release
+      - name: read version
+        id: read-version
+        run: |
+          echo ::set-output name=version::\
+          $(cat ./package.json | jq '.version' | tr -d '"')
+        shell: bash
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.read-version.outputs.version }}
+          body_path: ./.github/release_template.md
+          generate_release_notes: true
