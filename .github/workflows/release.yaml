@@ -29,9 +29,9 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
       - name: install dependencies
-        run: npm ci --ws=@jazzer.js/fuzzer
+        run: npm ci
       - name: build
-        run: >
+        run: |
           npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
           npm run build --workspace=@jazzer.js/fuzzer
       - name: upload
@@ -56,8 +56,10 @@ jobs:
           node-version: 16
           cache: "npm"
           registry-url: https://gitlab.code-intelligence.com/api/v4/projects/89/packages/npm/
-      - name: install & build
-        run: npm ci && npm run build
+      - name: install
+        run: npm ci
+      - name: build
+        run: npm run build
       - name: download prebuilds
         uses: actions/download-artifact@v3
         with:
