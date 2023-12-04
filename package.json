@@ -41,7 +41,7 @@
 	"devDependencies": {
 		"@types/bindings": "^1.5.5",
 		"@types/jest": "^29.5.8",
-		"@types/node": "^20.10.0",
+		"@types/node": "^20.10.3",
 		"@types/yargs": "^17.0.30",
 		"@typescript-eslint/eslint-plugin": "^6.13.1",
 		"eslint": "^8.54.0",
