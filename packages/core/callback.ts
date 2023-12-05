@@ -6,7 +6,7 @@
  * ANY KIND, either express or implied.
  */
 
-import { getOrSetJazzerJsGlobal } from "./api";
+import { getOrSetJazzerJsGlobal } from "./globals";
 
 export type Thunk = () => void;
 

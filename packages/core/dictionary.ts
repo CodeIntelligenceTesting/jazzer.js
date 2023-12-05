@@ -10,7 +10,7 @@ import fs from "fs";
 
 import tmp from "tmp";
 
-import { getOrSetJazzerJsGlobal } from "./api";
+import { getOrSetJazzerJsGlobal } from "./globals";
 
 /**
  * Dictionaries can be used to provide additional mutation suggestions to the

@@ -10,7 +10,7 @@ import { EOL } from "os";
 import { sep } from "path";
 import process from "process";
 
-import { getJazzerJsGlobal, setJazzerJsGlobal } from "./api";
+import { getJazzerJsGlobal, setJazzerJsGlobal } from "./globals";
 
 const firstFinding = "firstFinding";
 
