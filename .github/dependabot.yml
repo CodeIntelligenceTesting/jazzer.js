@@ -5,3 +5,8 @@ updates:
     schedule:
       interval: "weekly"
     versioning-strategy: increase
+    groups:
+      minor-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
