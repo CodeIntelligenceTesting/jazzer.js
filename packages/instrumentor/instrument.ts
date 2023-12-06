@@ -96,12 +96,23 @@ export class Instrumentor {
 			this.idStrategy.startForSourceFile(filename);
 		}
 
-		const result = this.transform(
-			filename,
-			code,
-			transformations,
-			this.asInputSourceOption(inputSourceMap),
-		);
+		let result: BabelFileResult | null = null;
+
+		try {
+			result = this.transform(
+				filename,
+				code,
+				transformations,
+				this.asInputSourceOption(inputSourceMap),
+			);
+		} catch (e) {
+			if (process.env.JAZZER_DEBUG) {
+				const message = e instanceof Error ? e.message : e;
+				console.error(
+					`Instrumentation error in file ${filename}:\n  ${message}`,
+				);
+			}
+		}
 		if (shouldInstrumentFile) {
 			this.idStrategy.commitIdCount(filename);
 		}
