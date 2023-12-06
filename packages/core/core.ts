@@ -407,3 +407,9 @@ export {
 	ParameterResolverIndex,
 	setParameterResolverValue,
 } from "./options";
+
+export type {
+	FuzzTarget,
+	FuzzTargetAsyncOrValue,
+	FuzzTargetCallback,
+} from "@jazzer.js/fuzzer";

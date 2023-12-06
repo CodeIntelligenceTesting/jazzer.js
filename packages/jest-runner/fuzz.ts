@@ -15,14 +15,12 @@ import {
 	asFindingAwareFuzzFn,
 	defaultOptions,
 	FindingAwareFuzzTarget,
-	Options,
-	startFuzzingNoInit,
-} from "@jazzer.js/core";
-import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
-} from "@jazzer.js/fuzzer";
+	Options,
+	startFuzzingNoInit,
+} from "@jazzer.js/core";
 
 import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";

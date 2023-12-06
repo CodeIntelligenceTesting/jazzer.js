@@ -7,9 +7,6 @@
 	"references": [
 		{
 			"path": "../core"
-		},
-		{
-			"path": "../fuzzer"
 		}
 	]
 }
