@@ -95,7 +95,7 @@ export class SourceMapRegistry {
 					? {
 							map: sourceMap,
 							url: source,
-					  }
+						}
 					: null;
 			},
 		});

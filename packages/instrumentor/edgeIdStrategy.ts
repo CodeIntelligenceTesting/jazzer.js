@@ -144,7 +144,7 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 						this.firstEdgeId =
 							idInfo.length !== 0
 								? idInfo[idInfo.length - 1].firstId +
-								  idInfo[idInfo.length - 1].idCount
+									idInfo[idInfo.length - 1].idCount
 								: 0;
 						break;
 					case 1:
