@@ -6,11 +6,7 @@
  * ANY KIND, either express or implied.
  */
 
-import {
-	cleanupJestError,
-	removeTopFrames,
-	removeTopFramesFromError,
-} from "./errorUtils";
+import { cleanupJestError } from "./errorUtils";
 
 describe("ErrorUtils", () => {
 	const error = new Error();
