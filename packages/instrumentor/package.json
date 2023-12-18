@@ -29,7 +29,7 @@
 		"@types/babel__core": "^7.20.5",
 		"@types/istanbul-lib-hook": "^2.0.4",
 		"@types/istanbul-lib-instrument": "^1.7.7",
-		"@types/node": "^20.10.4",
+		"@types/node": "^20.10.5",
 		"@types/proper-lockfile": "^4.1.4",
 		"@types/source-map-support": "^0.5.10",
 		"typescript": "^5.3.3"
