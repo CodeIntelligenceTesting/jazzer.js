@@ -13,20 +13,19 @@ To release a new version of Jazzer.js follow the described process:
 5. For minor and major releases, approve and merge the release PR
 6. Create and push a version tag on the latest commit of the release
    - Tag format `v<new-version-number>`, e.g. `v1.0.0`
+   - **Experimental**: Feel free to use the script `scripts/set-version.js` to
+     automatically set the version. E.g.: `node scripts/set-version.js v3.0.0`
 7. Wait until the `Prerelease` GitHub action workflow has finished successfully
    - The workflow creates a GitHub prerelease based on the created tag
    - It adds prebuild artifacts of all supported platforms
    - An automatic changelog, based on the included merge requests, is added to
      the prerelease description
    - The prerelease is listed on the
-     [release page](https://github.com/CodeIntelligenceTesting/jazzer.js/releases)
+     [release page](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial/releases)
 8. Release the prerelease in GitHub
    - Adjust the prerelease description to include the highlights of the release
    - If you find some problems with the prerelease and want to start over:
      - Delete the tag (should be done first)
      - Remove the prerelease through the GitHub UI
      - Start this process anew
-9. Wait until the `Release` GitHub action workflow has finished successfully
-   - The workflow will build and publish the
-     [NPM packages](https://www.npmjs.com/package/@jazzer.js/core).
-10. Enjoy the rest of your day 🎂
+9. Enjoy the rest of your day 🎂
