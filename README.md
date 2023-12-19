@@ -8,20 +8,7 @@
     />
   </div>
   <hr />
-  <a href="https://img.shields.io/npm/v/@jazzer.js/core">
-    <img src="https://img.shields.io/npm/v/@jazzer.js/core"/>
-  </a>
-  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml">
-    <img src="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml/badge.svg?branch=main"/>
-  </a>
-  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/CodeIntelligenceTesting/jazzer.js"/>
-  </a>
- <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" />
-  </a>
-  <br />
-
+  
 <a href="https://www.code-intelligence.com/" target="_blank">Website</a> |
 <a href="https://www.code-intelligence.com/blog" target="_blank">Blog</a> |
 <a href="https://twitter.com/CI_Fuzz" target="_blank">Twitter</a>

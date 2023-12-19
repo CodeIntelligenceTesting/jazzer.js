@@ -23,7 +23,5 @@ npm install --save-dev @jazzer.js/instrumentor
 ## Documentation
 
 See
-[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js#readme)
-for more information or the
-[issues](https://github.com/CodeIntelligenceTesting/jazzer.js/issues?q=is%3Aissue+is%3Aopen)
-associated with it.
+[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial#readme)
+for more information.
