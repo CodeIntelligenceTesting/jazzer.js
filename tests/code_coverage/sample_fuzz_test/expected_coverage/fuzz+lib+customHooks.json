@@ -1,31 +1,32 @@
 {
 	"custom-hooks.js": {
+		"path": "/home/peter/Documents/Programming/jazzer.js/tests/code_coverage/sample_fuzz_test/custom-hooks.js",
 		"statementMap": {
 			"0": {
-				"start": { "line": 17, "column": 32 },
-				"end": { "line": 17, "column": 61 }
+				"start": { "line": 3, "column": 32 },
+				"end": { "line": 3, "column": 61 }
 			},
 			"1": {
-				"start": { "line": 19, "column": 0 },
-				"end": { "line": 21, "column": 3 }
+				"start": { "line": 5, "column": 0 },
+				"end": { "line": 7, "column": 3 }
 			},
 			"2": {
-				"start": { "line": 20, "column": 1 },
-				"end": { "line": 20, "column": 37 }
+				"start": { "line": 6, "column": 1 },
+				"end": { "line": 6, "column": 37 }
 			}
 		},
 		"fnMap": {
 			"0": {
 				"name": "(anonymous_0)",
 				"decl": {
-					"start": { "line": 19, "column": 41 },
-					"end": { "line": 19, "column": 42 }
+					"start": { "line": 5, "column": 41 },
+					"end": { "line": 5, "column": 42 }
 				},
 				"loc": {
-					"start": { "line": 19, "column": 47 },
-					"end": { "line": 21, "column": 1 }
+					"start": { "line": 5, "column": 47 },
+					"end": { "line": 7, "column": 1 }
 				},
-				"line": 19
+				"line": 5
 			}
 		},
 		"branchMap": {},
@@ -33,130 +34,132 @@
 		"f": { "0": 1 },
 		"b": {},
 		"_coverageSchema": "1a1c01bbd47fc00a2c39e90264f33305004495a9",
-		"hash": "7ee4d96bd07f3609d51855142c39faa2adf6ab0a"
+		"hash": "0050adbd727053788c80c09d103e1ce556304b88"
 	},
 	"fuzz.js": {
+		"path": "/home/peter/Documents/Programming/jazzer.js/tests/code_coverage/sample_fuzz_test/fuzz.js",
 		"statementMap": {
 			"0": {
-				"start": { "line": 17, "column": 12 },
-				"end": { "line": 17, "column": 28 }
+				"start": { "line": 3, "column": 12 },
+				"end": { "line": 3, "column": 28 }
 			},
 			"1": {
-				"start": { "line": 22, "column": 0 },
-				"end": { "line": 28, "column": 2 }
+				"start": { "line": 8, "column": 0 },
+				"end": { "line": 14, "column": 2 }
 			},
 			"2": {
-				"start": { "line": 23, "column": 1 },
-				"end": { "line": 23, "column": 41 }
+				"start": { "line": 9, "column": 1 },
+				"end": { "line": 9, "column": 41 }
 			},
 			"3": {
-				"start": { "line": 24, "column": 1 },
-				"end": { "line": 26, "column": 2 }
+				"start": { "line": 10, "column": 1 },
+				"end": { "line": 12, "column": 2 }
 			},
 			"4": {
-				"start": { "line": 25, "column": 2 },
-				"end": { "line": 25, "column": 9 }
+				"start": { "line": 11, "column": 2 },
+				"end": { "line": 11, "column": 9 }
 			},
 			"5": {
-				"start": { "line": 27, "column": 1 },
-				"end": { "line": 27, "column": 18 }
+				"start": { "line": 13, "column": 1 },
+				"end": { "line": 13, "column": 18 }
 			}
 		},
 		"fnMap": {
 			"0": {
 				"name": "(anonymous_0)",
 				"decl": {
-					"start": { "line": 22, "column": 22 },
-					"end": { "line": 22, "column": 23 }
+					"start": { "line": 8, "column": 22 },
+					"end": { "line": 8, "column": 23 }
 				},
 				"loc": {
-					"start": { "line": 22, "column": 38 },
-					"end": { "line": 28, "column": 1 }
+					"start": { "line": 8, "column": 38 },
+					"end": { "line": 14, "column": 1 }
 				},
-				"line": 22
+				"line": 8
 			}
 		},
 		"branchMap": {
 			"0": {
 				"loc": {
-					"start": { "line": 24, "column": 1 },
-					"end": { "line": 26, "column": 2 }
+					"start": { "line": 10, "column": 1 },
+					"end": { "line": 12, "column": 2 }
 				},
 				"type": "if",
 				"locations": [
 					{
-						"start": { "line": 24, "column": 1 },
-						"end": { "line": 26, "column": 2 }
+						"start": { "line": 10, "column": 1 },
+						"end": { "line": 12, "column": 2 }
 					},
 					{ "start": {}, "end": {} }
 				],
-				"line": 24
+				"line": 10
 			}
 		},
 		"s": { "0": 1, "1": 1, "2": 3, "3": 3, "4": 2, "5": 1 },
 		"f": { "0": 3 },
 		"b": { "0": [2, 1] },
 		"_coverageSchema": "1a1c01bbd47fc00a2c39e90264f33305004495a9",
-		"hash": "d5b411e8de7efcd2798a7cd78efd7bd8347f647a"
+		"hash": "5d5860b26158df2154cfe4eb4255dc6534ccfff1"
 	},
 	"lib.js": {
+		"path": "/home/peter/Documents/Programming/jazzer.js/tests/code_coverage/sample_fuzz_test/lib.js",
 		"statementMap": {
 			"0": {
-				"start": { "line": 18, "column": 1 },
-				"end": { "line": 18, "column": 29 }
+				"start": { "line": 4, "column": 1 },
+				"end": { "line": 4, "column": 29 }
 			},
 			"1": {
-				"start": { "line": 19, "column": 1 },
-				"end": { "line": 21, "column": 2 }
+				"start": { "line": 5, "column": 1 },
+				"end": { "line": 7, "column": 2 }
 			},
 			"2": {
-				"start": { "line": 20, "column": 2 },
-				"end": { "line": 20, "column": 11 }
+				"start": { "line": 6, "column": 2 },
+				"end": { "line": 6, "column": 11 }
 			},
 			"3": {
-				"start": { "line": 22, "column": 1 },
-				"end": { "line": 22, "column": 11 }
+				"start": { "line": 8, "column": 1 },
+				"end": { "line": 8, "column": 11 }
 			},
 			"4": {
-				"start": { "line": 25, "column": 0 },
-				"end": { "line": 27, "column": 2 }
+				"start": { "line": 11, "column": 0 },
+				"end": { "line": 13, "column": 2 }
 			}
 		},
 		"fnMap": {
 			"0": {
 				"name": "foo",
 				"decl": {
-					"start": { "line": 17, "column": 9 },
-					"end": { "line": 17, "column": 12 }
+					"start": { "line": 3, "column": 9 },
+					"end": { "line": 3, "column": 12 }
 				},
 				"loc": {
-					"start": { "line": 17, "column": 16 },
-					"end": { "line": 23, "column": 1 }
+					"start": { "line": 3, "column": 16 },
+					"end": { "line": 9, "column": 1 }
 				},
-				"line": 17
+				"line": 3
 			}
 		},
 		"branchMap": {
 			"0": {
 				"loc": {
-					"start": { "line": 19, "column": 1 },
-					"end": { "line": 21, "column": 2 }
+					"start": { "line": 5, "column": 1 },
+					"end": { "line": 7, "column": 2 }
 				},
 				"type": "if",
 				"locations": [
 					{
-						"start": { "line": 19, "column": 1 },
-						"end": { "line": 21, "column": 2 }
+						"start": { "line": 5, "column": 1 },
+						"end": { "line": 7, "column": 2 }
 					},
 					{ "start": {}, "end": {} }
 				],
-				"line": 19
+				"line": 5
 			}
 		},
 		"s": { "0": 0, "1": 0, "2": 0, "3": 0, "4": 1 },
 		"f": { "0": 0 },
 		"b": { "0": [0, 0] },
 		"_coverageSchema": "1a1c01bbd47fc00a2c39e90264f33305004495a9",
-		"hash": "9606a42b6e4a5e9a5c23554dda63403d86a4a9a2"
+		"hash": "2c8e6fbf7fbf1d3facf8b6f7aeed0de7b31a4877"
 	}
 }
