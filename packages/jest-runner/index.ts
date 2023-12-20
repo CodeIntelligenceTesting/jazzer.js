@@ -37,19 +37,19 @@ export default async function jazzerTestRunner(
 	const vmContext = environment.getVmContext();
 	if (vmContext === null) throw new Error("vmContext is undefined");
 
-	const jazzerConfig = loadConfig({
+	const options = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
 	const globalEnvironments = [environment.getVmContext(), globalThis];
-	registerGlobals(jazzerConfig, globalEnvironments);
+	registerGlobals(options, globalEnvironments);
 	setJazzerJsGlobal("vmContext", vmContext);
-	const instrumentor = await initFuzzing(jazzerConfig);
+	const instrumentor = await initFuzzing(options);
 
 	interceptScriptTransformerCalls(runtime, instrumentor);
 
-	const testState = interceptTestState(environment, jazzerConfig);
-	interceptGlobals(runtime, testPath, jazzerConfig, testState);
+	const testState = interceptTestState(environment, options);
+	interceptGlobals(runtime, testPath, options, testState);
 
 	const circusRunner =
 		await runtime["_scriptTransformer"].requireAndTranspileModule(

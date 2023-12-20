@@ -66,6 +66,9 @@ export function prepareArgs(args: any) {
 			.concat(args._)
 			.map((e: unknown) => e + ""),
 	};
+	if (options.fuzzerOptions.length === 0) {
+		delete options.fuzzerOptions;
+	}
 	delete options._;
 	delete options.corpus;
 	delete options.$0;

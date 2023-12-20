@@ -54,7 +54,7 @@ class PrototypePollutionConfig {
 	 * ```
 	 */
 	instrumentAssignmentsAndVariableDeclarations(): PrototypePollutionConfig {
-		if (global.options.dryRun) {
+		if (global.options.get("dryRun")) {
 			console.error(
 				"ERROR: " +
 					"[Prototype Pollution Configuration] The configuration option " +

@@ -13,6 +13,28 @@ describe("My describe", () => {
 		target.fuzzMe(data);
 	});
 
+	it.fuzz("My hashed fuzz test without dictionary", (data) => {
+		target.fuzzMeHashed(data);
+	});
+
+	it.fuzz(
+		"My hashed fuzz test with dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaryEntries: ["Amazing"] },
+	);
+
+	const utf8Encode = new TextEncoder();
+	const binaryAmazing = utf8Encode.encode("Amazing");
+	it.fuzz(
+		"My hashed fuzz test with binary dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaryEntries: [binaryAmazing] },
+	);
+
 	it.fuzz(
 		"My fuzz test with an explicit timeout (async)",
 		async (data) => {

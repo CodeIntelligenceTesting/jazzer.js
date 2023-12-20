@@ -30,6 +30,8 @@ export interface Options {
 	coverageReporters: string[];
 	// Files to load that contain custom hooks.
 	customHooks: string[];
+	// Fuzzing dictionaries
+	dictionaryEntries: (string | Uint8Array | Int8Array)[];
 	// Disable bug detectors by name.
 	disableBugDetectors: string[];
 	// Whether to add fuzzing instrumentation or not.
@@ -45,7 +47,7 @@ export interface Options {
 	// `fuzzTarget` is the name of a module exporting the fuzz function `fuzzEntryPoint`.
 	fuzzTarget: string;
 	// Internal: File to sync coverage IDs in fork mode.
-	idSyncFile?: string;
+	idSyncFile: string;
 	// Part of filepath names to include in the instrumentation.
 	includes: string[];
 	// Fuzzing mode.
@@ -55,14 +57,39 @@ export interface Options {
 	// Timeout for one fuzzing iteration in milliseconds.
 	timeout: number;
 	// Verbose logging.
-	verbose?: boolean;
+	verbose: boolean;
 }
 
-export const defaultOptions: Options = Object.freeze({
+export type OptionWithSource<K extends keyof Options> = {
+	value: Options[K];
+	source: OptionSource;
+};
+export type OptionsWithSource = { [P in keyof Options]: OptionWithSource<P> };
+
+type OptionWithPrintableSource<K extends keyof Options> = {
+	value: Options[K];
+	source: string;
+};
+
+export type OptionsWithPrintableSource = {
+	[P in keyof Options]: OptionWithPrintableSource<P>;
+};
+
+// These options can be set from the Jest fuzz test.
+const allowedFuzzTestOptions = [
+	"dictionaryEntries",
+	"fuzzerOptions",
+	"sync",
+	"timeout",
+] as const;
+export type AllowedFuzzTestOptions = (typeof allowedFuzzTestOptions)[number];
+
+export const defaultCLIOptions: Options = Object.freeze({
 	coverage: false,
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
 	customHooks: [],
+	dictionaryEntries: [],
 	disableBugDetectors: [],
 	dryRun: false,
 	excludes: ["node_modules"],
@@ -76,6 +103,11 @@ export const defaultOptions: Options = Object.freeze({
 	sync: false,
 	timeout: 5000, // default Jest timeout
 	verbose: false,
+});
+
+export const defaultJestOptions: Options = Object.freeze({
+	...defaultCLIOptions,
+	mode: "regression",
 });
 
 export type KeyFormatSource = (key: string) => string;
@@ -97,165 +129,333 @@ export const fromSnakeCaseWithPrefix: (prefix: string) => KeyFormatSource = (
 	};
 };
 
-// Parameters can be passed in via environment variables, command line or
-// configuration file, and subsequently overwrite the default ones and each other.
-// The passed in values have to be set for externally provided parameters, e.g.
-// CLI parameters, before resolving the final options object.
+// Source of an option is considered when merging options.
 // Higher index means higher priority.
-export enum ParameterResolverIndex {
-	DefaultOptions = 1,
+export enum OptionSource {
+	DefaultCLIOptions,
+	DefaultJestOptions,
+	InternalJestTimeout,
 	ConfigurationFile,
 	EnvironmentVariables,
 	CommandLineArguments,
+	JestFuzzTestOptions,
 }
-type ParameterResolver = {
+
+type DefaultSourceInfo = {
 	name: string;
 	transformKey: KeyFormatSource;
 	failOnUnknown: boolean;
-	parameters: object;
+	parameters?: Options | object;
 };
-type ParameterResolvers = Record<ParameterResolverIndex, ParameterResolver>;
-const defaultResolvers: ParameterResolvers = {
-	[ParameterResolverIndex.DefaultOptions]: {
-		name: "Default options",
+const defaultOptions: Record<OptionSource, DefaultSourceInfo> = {
+	[OptionSource.DefaultCLIOptions]: {
+		name: "Default CLI options",
 		transformKey: fromCamelCase,
 		failOnUnknown: true,
-		parameters: defaultOptions,
+		parameters: defaultCLIOptions,
 	},
-	[ParameterResolverIndex.ConfigurationFile]: {
+	[OptionSource.DefaultJestOptions]: {
+		name: "Default Jest options",
+		transformKey: fromCamelCase,
+		failOnUnknown: true,
+		parameters: defaultJestOptions,
+	},
+	[OptionSource.InternalJestTimeout]: {
+		name: "Internal Jest timeout",
+		transformKey: fromCamelCase,
+		failOnUnknown: true,
+	},
+	[OptionSource.ConfigurationFile]: {
 		name: "Configuration file",
 		transformKey: fromCamelCase,
 		failOnUnknown: true,
-		parameters: {},
 	},
-	[ParameterResolverIndex.EnvironmentVariables]: {
+	[OptionSource.EnvironmentVariables]: {
 		name: "Environment variables",
 		transformKey: fromSnakeCaseWithPrefix("JAZZER"),
 		failOnUnknown: false,
 		parameters: process.env as object,
 	},
-	[ParameterResolverIndex.CommandLineArguments]: {
+	[OptionSource.CommandLineArguments]: {
 		name: "Command line arguments",
 		transformKey: fromCamelCase,
 		failOnUnknown: true,
-		parameters: {},
 	},
-};
+	[OptionSource.JestFuzzTestOptions]: {
+		name: "Jest fuzz test options",
+		transformKey: fromCamelCase,
+		failOnUnknown: true,
+	},
+} as const;
 
-/**
- * Set the value object of a parameter resolver. Every resolver expects value
- * object parameter names in a specific format, e.g. camel case or snake case,
- * see the resolver definitions for details.
- */
-export function setParameterResolverValue(
-	index: ParameterResolverIndex,
-	inputs: Partial<Options>,
-) {
-	// Includes and excludes must be set together.
-	if (inputs && inputs.includes && !inputs.excludes) {
-		inputs.excludes = [];
-	} else if (inputs && inputs.excludes && !inputs.includes) {
-		inputs.includes = [];
-	}
-	defaultResolvers[index].parameters = inputs;
-}
+export class OptionsManager {
+	private readonly _options: OptionsWithSource;
 
-/**
- * Build a complete `Option` object based on the parameter resolver chain.
- * Add externally passed in values via the `setParameterResolverValue` function,
- * before calling `buildOptions`.
- */
-export function buildOptions(): Options {
-	const options = Object.keys(defaultResolvers)
-		.sort() // Don't presume an ordered object, this could be implementation specific.
-		.reduce<Options>((accumulator, currentValue) => {
-			const resolver =
-				defaultResolvers[parseInt(currentValue) as ParameterResolverIndex];
-			return mergeOptions(
-				resolver.parameters,
-				accumulator,
-				resolver.transformKey,
-				resolver.failOnUnknown,
+	constructor(obj: OptionSource);
+	constructor(obj: OptionsWithSource);
+	/**
+	 * Manages merging of options from different sources.
+	 * WARNING: each fuzz test needs a copy (use the `clone()` function) of the OptionsManager, otherwise the fuzz tests will overwrite each other's options.
+	 * @param sourceOrOptions - build options given the `OptionSource`; or use provided options as is.
+	 */
+	constructor(sourceOrOptions: OptionSource | OptionsWithSource) {
+		if (typeof sourceOrOptions === "number") {
+			const source = sourceOrOptions;
+			const initialOptions = defaultOptions[source].parameters as Options;
+			if (!initialOptions) {
+				throw new Error(
+					`Default options for ${source} do not exist. Consider adding them or use a different source.`,
+				);
+			}
+			this._options = OptionsManager.copyOptions(
+				OptionsManager.attachSource(initialOptions, source),
 			);
-		}, defaultResolvers[ParameterResolverIndex.DefaultOptions].parameters as Options);
-
-	// Set verbose mode environment variable via option or node DEBUG environment variable.
-	if (options.verbose || process.env.DEBUG) {
-		process.env.JAZZER_DEBUG = "1";
-	}
-	return options;
-}
-
-function mergeOptions(
-	input: unknown,
-	defaults: Options,
-	transformKey: (key: string) => string,
-	errorOnUnknown = true,
-): Options {
-	// Deep close the default options to avoid mutation.
-	const options: Options = JSON.parse(JSON.stringify(defaults));
-	if (!options || !input || typeof input !== "object") {
-		return options;
-	}
-	Object.keys(input as object).forEach((key) => {
-		const transformedKey = transformKey(key);
-		// Use hasOwnProperty to still support node v14.
-		// eslint-disable-next-line no-prototype-builtins
-		if (!(options as object).hasOwnProperty(transformedKey)) {
-			if (errorOnUnknown) {
-				throw new Error(`Unknown Jazzer.js option '${key}'`);
-			}
-			return;
+			this.merge(process.env, OptionSource.EnvironmentVariables);
+		} else if (typeof sourceOrOptions === "object") {
+			// only used by clone()
+			this._options = OptionsManager.copyOptions(sourceOrOptions);
+		} else {
+			throw new Error("Invalid argument");
 		}
-		// No way to dynamically resolve the types here, use (implicit) any for now.
-		// @ts-ignore
-		let resultValue = input[key];
-		// Try to parse strings as JSON values to support setting arrays and
-		// objects via environment variables.
-		if (typeof resultValue === "string" || resultValue instanceof String) {
-			try {
-				resultValue = JSON.parse(resultValue.toString());
-			} catch (ignore) {
-				// Ignore parsing errors and continue with the string value.
+	}
+
+	/**
+	 * Get the value of an option.
+	 * @param key
+	 */
+	get<K extends keyof Options>(key: K): Options[K] {
+		return this._options[key].value;
+	}
+
+	/**
+	 * Get raw options without the source information.
+	 * @returns a copy of the options without source information
+	 */
+	getOptions(): Options {
+		return OptionsManager.detachSource(this._options);
+	}
+
+	getOptionsWithSource(): OptionsWithSource {
+		return this._options;
+	}
+
+	/**
+	 * Merge new options from `input` given the `source` (aka priority). Same `source` options will result in an error---accumulate the options before writing.
+	 * `input` gets deep cloned to avoid reference keeping and unintended mutations.
+	 * @param input - new options to merge
+	 * @param source - priority of all the options in `input`
+	 */
+	merge(input: unknown, source: OptionSource) {
+		const transformKey = defaultOptions[source].transformKey;
+		const errorOnUnknown = defaultOptions[source].failOnUnknown;
+
+		let includes: typeof this._options.includes.value | undefined = undefined;
+		let excludes: typeof this._options.excludes.value | undefined = undefined;
+
+		Object.keys(input as object).forEach((k) => {
+			const transformedKey = transformKey(k);
+
+			// Use hasOwnProperty to still support node v14.
+			// eslint-disable-next-line no-prototype-builtins
+			if (!defaultCLIOptions.hasOwnProperty(transformedKey)) {
+				if (errorOnUnknown) {
+					throw new Error(`Unknown Jazzer.js option '${k}'`);
+				}
+				return;
 			}
-		}
-		//@ts-ignore
-		const keyType = typeof options[transformedKey];
-		if (typeof resultValue !== keyType) {
+			const key = transformedKey as keyof Options;
+			if (!validateOptionPermissions(key, source, this._options)) {
+				return;
+			}
+
+			const keyType = typeof defaultCLIOptions[key];
+
+			// No way to dynamically resolve the types here, use (implicit) any for now.
 			// @ts-ignore
-			throw new Error(
-				`Invalid type for Jazzer.js option '${key}', expected type '${keyType}'`,
-			);
+			let resultValue = input[k];
+			// Try to parse strings as JSON values to support setting arrays and
+			// objects via environment variables and command line arguments.
+			if (
+				[
+					OptionSource.CommandLineArguments,
+					OptionSource.EnvironmentVariables,
+				].includes(source) &&
+				keyType !== "string" &&
+				(typeof resultValue === "string" || resultValue instanceof String)
+			) {
+				try {
+					resultValue = JSON.parse(resultValue.toString());
+				} catch (ignore) {
+					// Ignore parsing errors and continue with the string value.
+				}
+			}
+
+			if (typeof resultValue !== keyType) {
+				throw new Error(
+					`Invalid type for Jazzer.js option '${key}', expected type '${keyType}', got '${typeof resultValue}'`,
+				);
+			}
+			// Deep copy the new value to avoid reference keeping and unintended mutations.
+			resultValue = OptionsManager.copyOptionValue(resultValue);
+			setProperty(this._options, key, { value: resultValue, source: source });
+
+			if (key === "includes") {
+				includes = resultValue;
+			} else if (key === "excludes") {
+				excludes = resultValue;
+			}
+		});
+
+		// Includes and excludes must be set together.
+		if (input && includes && !excludes) {
+			this._options.excludes.value = [];
+		} else if (input && excludes && !includes) {
+			this._options.includes.value = [];
 		}
-		// Deep clone value to avoid reference keeping and unintended mutations.
-		// @ts-ignore
-		options[transformedKey] = JSON.parse(JSON.stringify(resultValue));
-	});
-	return options;
+
+		// Set verbose mode environment variable via option or node DEBUG environment variable.
+		// Subsequent changes to the `verbose` option will be ignored.
+		if (this.get("verbose") || process.env.DEBUG) {
+			process.env.JAZZER_DEBUG = "1";
+		}
+		return this;
+	}
+
+	clone(): OptionsManager {
+		return new OptionsManager(this._options);
+	}
+
+	static copyOptions(newOptions: OptionsWithSource): OptionsWithSource {
+		const result: OptionsWithSource = Object.create(null);
+		Object.entries(newOptions).forEach(([k]) => {
+			const key = k as keyof Options;
+			const option = newOptions[key];
+			const value = OptionsManager.copyOptionValue(option.value);
+			const source = option.source;
+			setProperty<OptionsWithSource, keyof Options>(result, key, {
+				value,
+				source,
+			});
+		});
+		return result;
+	}
+
+	static copyOptionValue<T extends Options, K extends keyof T>(
+		input: T[K],
+	): T[K] {
+		// simple types
+		if (!input || typeof input !== "object") {
+			return input;
+		}
+
+		if (Array.isArray(input)) {
+			// (Uint8Array | Int8Array)[] - each sub-array gets copied
+			if (
+				input.some(
+					(element) =>
+						element instanceof Uint8Array || element instanceof Int8Array,
+				)
+			) {
+				return input.map((element) => {
+					if (element instanceof Uint8Array || element instanceof Int8Array) {
+						return element.slice();
+					}
+					return element;
+				}) as T[K];
+			}
+
+			// string[] - the array can be copied directly
+			return input.slice() as T[K];
+		}
+
+		throw new Error("copyOptionValue: unsupported type: " + typeof input);
+	}
+
+	/**
+	 * Build options with source information attached.
+	 *
+	 * @param options
+	 * @returns a copy of the options with source information
+	 */
+	static attachSource(
+		options: Options,
+		source: OptionSource,
+	): OptionsWithSource {
+		const result: OptionsWithSource = Object.create(null);
+		Object.entries(options).forEach(([k]) => {
+			const key = k as keyof Options;
+			setProperty(result, key, {
+				value: options[key],
+				source: source,
+			});
+		});
+		return result;
+	}
+
+	/**
+	 * Remove source information from options.
+	 *
+	 * @param options
+	 * @returns a copy of the options without source information
+	 */
+	static detachSource(options: OptionsWithSource): Options {
+		const result: Options = Object.create(null);
+		Object.entries(options).forEach(([k]) => {
+			const key = k as keyof Options;
+			const value = options[key]?.value;
+			setProperty(result, key, value);
+		});
+		return result;
+	}
 }
 
-export function buildFuzzerOption(options: Options) {
+function setProperty<T, K extends keyof T>(obj: T, key: K, value: T[K]) {
+	obj[key] = value;
+}
+
+export function buildFuzzerOption(options: OptionsManager) {
 	let params: string[] = [];
 	params = optionDependentParams(options, params);
 	params = forkedExecutionParams(params);
-	params = useDictionaryByParams(params);
+	params = useDictionaryByParams(params, options.get("dictionaryEntries"));
 
 	// libFuzzer has to ignore SIGINT and SIGTERM, as it interferes
 	// with the Node.js signal handling.
 	params = params.concat("-handle_int=0", "-handle_term=0", "-handle_segv=0");
 
+	printOptions(options);
+	logInfoAboutFuzzerOptions(params);
+	return params;
+}
+
+export function printOptions(options: OptionsManager, infix = "") {
 	if (process.env.JAZZER_DEBUG) {
 		console.error(
 			util.formatWithOptions(
 				// Print everything in the options object.
-				{ maxArrayLength: null, depth: null, colors: true },
-				"DEBUG: [core] Jazzer.js config: \n%O",
-				{ ...options, fuzzerOptions: params },
+				{ maxArrayLength: null, depth: null, colors: false },
+				`DEBUG: [core] Jazzer.js options ${infix}: \n%O`,
+				toOptionsWithPrintableSources(options),
 			),
 		);
 	}
-	logInfoAboutFuzzerOptions(params);
-	return params;
+}
+
+function toOptionsWithPrintableSources(
+	options: OptionsManager,
+): OptionsWithPrintableSource {
+	const result: OptionsWithPrintableSource = Object.create(null);
+	const opts = options.getOptionsWithSource();
+	Object.entries(opts).forEach(([k]) => {
+		const key = k as keyof Options;
+		const value = opts[key]?.value;
+		const sourceIndex = opts[key]?.source;
+		if (sourceIndex !== undefined) {
+			const source = defaultOptions[sourceIndex].name;
+			setProperty(result, key, { value, source });
+		}
+	});
+	return result;
 }
 
 function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
@@ -266,21 +466,24 @@ function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
 	});
 }
 
-function optionDependentParams(options: Options, params: string[]): string[] {
-	if (!options || !options.fuzzerOptions) {
+function optionDependentParams(
+	options: OptionsManager,
+	params: string[],
+): string[] {
+	if (!options || !options.get("fuzzerOptions")) {
 		return params;
 	}
 
-	let opts = options.fuzzerOptions;
-	if (options.mode === "regression") {
+	let opts = options.get("fuzzerOptions");
+	if (options.get("mode") === "regression") {
 		// The last provided option takes precedence
 		opts = opts.concat("-runs=0");
 	}
 
-	if (options.timeout <= 0) {
+	if (options.get("timeout") <= 0) {
 		throw new Error("timeout must be > 0");
 	}
-	const inSeconds = Math.ceil(options.timeout / 1000);
+	const inSeconds = Math.ceil(options.get("timeout") / 1000);
 	opts = opts.concat(`-timeout=${inSeconds}`);
 
 	return opts;
@@ -346,4 +549,47 @@ ${jazzerArgs.map((s) => '"' + s + '"').join(" ")} -- ${isWindows ? "%*" : "$@"}
 	fs.closeSync(scriptTempFile.fd);
 
 	return scriptTempFile.name;
+}
+
+// Check two things:
+// 1) `dictionaryEntries` can only be set from "Jest fuzz test" source;
+// 2) only few approved options can be set from "Jest fuzz test" source.
+export function validateKeySource(key: keyof Options, source: OptionSource) {
+	const sourceName = defaultOptions[source].name;
+
+	// Only "Jest fuzz test" is allowed to set `dictionaryEntries` option.
+	if (
+		key === "dictionaryEntries" &&
+		source !== OptionSource.JestFuzzTestOptions
+	) {
+		const allowedSource = defaultOptions[OptionSource.JestFuzzTestOptions].name;
+		throw new Error(
+			`Tried setting option '${key}' from ${sourceName}, but this option is only available in ${allowedSource}`,
+		);
+	}
+
+	// Only selected options can be set from the Jest fuzz test
+	if (
+		source === OptionSource.JestFuzzTestOptions &&
+		!allowedFuzzTestOptions.includes(key as AllowedFuzzTestOptions)
+	) {
+		throw new Error(`Option '${key}' is not available from "${sourceName}."`);
+	}
+}
+
+// Check if the key can be set from the new source.
+//
+function validateOptionPermissions(
+	key: keyof Options,
+	source: OptionSource,
+	options: OptionsWithSource,
+): boolean {
+	validateKeySource(key, source);
+	// Overwriting options from the same source is not allowed---accumulate the options before writing.
+	if (source === options[key].source) {
+		throw new Error(
+			`Option '${key}' already set from ${defaultOptions[source].name}`,
+		);
+	}
+	return source > options[key].source;
 }

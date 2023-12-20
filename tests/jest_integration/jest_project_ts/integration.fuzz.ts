@@ -29,4 +29,32 @@ describe("Jest TS Integration", () => {
 			target.callbackFuzzMe(data, done);
 		},
 	);
+
+	it.fuzz(
+		"execute sync hashed fuzz test with dictionary",
+		(data: Buffer) => {
+			target.fuzzMeHashed(data);
+		},
+		{
+			dictionaryEntries: ["Amazing"],
+		},
+	);
+
+	describe("Further options", () => {
+		let i = 0;
+		it.fuzz(
+			"sync, number of runs, dictionary is Amazing",
+			(data: Buffer) => {
+				if (i === 100) {
+					console.log("i = " + i);
+				}
+				i++;
+			},
+			{
+				sync: true,
+				fuzzerOptions: ["-runs=101"],
+				dictionaryEntries: ["Amazing"],
+			},
+		);
+	});
 });

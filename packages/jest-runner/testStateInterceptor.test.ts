@@ -6,7 +6,7 @@
  * ANY KIND, either express or implied.
  */
 
-import { defaultOptions, Options } from "@jazzer.js/core";
+import { Options, OptionsManager, OptionSource } from "@jazzer.js/core";
 
 import { interceptTestState } from "./testStateInterceptor";
 
@@ -99,9 +99,10 @@ function mockEnvironment(options: Partial<Options> = {}) {
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} as any;
-	const config = {
-		...defaultOptions,
-		...options,
-	};
+	const config = new OptionsManager(OptionSource.DefaultJestOptions).merge(
+		options,
+		OptionSource.ConfigurationFile,
+	);
+
 	return { env, config, originalHandleTestEvent };
 }

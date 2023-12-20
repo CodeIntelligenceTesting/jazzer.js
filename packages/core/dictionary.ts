@@ -36,9 +36,48 @@ export function addDictionary(...dictionary: string[]) {
 	getDictionary().addEntries(dictionary);
 }
 
-export function useDictionaryByParams(options: string[]): string[] {
-	const opts = [...options];
-	const dictionary = getDictionary().entries;
+/**
+ * Escapes a byte array to a string that can be used in a libFuzzer dictionary.
+ * The format is a double-quoted string with escaped hex bytes.
+ * @param byteArray
+ * @returns The escaped string.
+ *
+ * Example:
+ *    new Uint8Array([0,1,2,3]) will be converted to '"\\x00\\x01\\x02\\x03"'
+ * Example:
+ *    "Amazing" will be converted to '"\\x41\\x6d\\x61\\x7a\\x69\\x6e\\x67"'
+ */
+export function toEscapedString(byteArray: Uint8Array | Int8Array): string {
+	return (
+		'"' +
+		Array.from(byteArray, (byte) => {
+			return "\\x" + byte.toString(16).padStart(2, "0");
+		}).join("") +
+		'"'
+	);
+}
+
+export function convertDictionaryEntry(
+	entry: string | Uint8Array | Int8Array,
+): string {
+	// Strings are converted to UTF-8 Uint8Arrays before escaping all according to libFuzzer dictionary format.
+	// Background: Strings are encoded to UTF-8 here, which matches the way strings are produced from bytes by
+	// the FuzzedDataProvider (by default), as well as the encoding used with sanitizer trace hooks for string
+	// comparisons (see packages/fuzzer/trace.ts).
+	return toEscapedString(
+		typeof entry === "string" ? new TextEncoder().encode(entry) : entry,
+	);
+}
+
+export function useDictionaryByParams(
+	options: string[],
+	additionalDictionaryEntries: (string | Uint8Array | Int8Array)[] = [],
+): string[] {
+	const additionalDictionary = additionalDictionaryEntries.map(
+		convertDictionaryEntry,
+	);
+
+	const dictionary = getDictionary().entries.concat(additionalDictionary);
 
 	// This diverges from the libFuzzer behavior, which allows only one dictionary (the last one).
 	// We merge all dictionaries into one and pass that to libfuzzer.
@@ -64,8 +103,7 @@ export function useDictionaryByParams(options: string[]): string[] {
 		});
 		fs.writeFileSync(dictFile.name, content);
 		fs.closeSync(dictFile.fd);
-
-		opts.push("-dict=" + dictFile.name);
+		return options.concat("-dict=" + dictFile.name);
 	}
-	return opts;
+	return options;
 }

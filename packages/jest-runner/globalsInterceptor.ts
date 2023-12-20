@@ -8,7 +8,7 @@
 
 import Runtime from "jest-runtime";
 
-import { Options } from "@jazzer.js/core";
+import { OptionsManager } from "@jazzer.js/core";
 
 import { fuzz } from "./fuzz";
 import { InterceptedTestState } from "./testStateInterceptor";
@@ -16,7 +16,7 @@ import { InterceptedTestState } from "./testStateInterceptor";
 export function interceptGlobals(
 	runtime: Runtime,
 	testPath: string,
-	jazzerConfig: Options,
+	jazzerConfig: OptionsManager,
 	{
 		currentTestState,
 		currentTestTimeout,

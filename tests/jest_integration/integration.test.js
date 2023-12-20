@@ -224,6 +224,29 @@ describe("Jest integration", () => {
 				expect(fuzzTest.stdout).toContain("standard test called");
 			});
 		});
+
+		describe("Per-fuzztest dictionary entries", () => {
+			it("with dictionary", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync hashed fuzz test with dictionary")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				expect(fuzzTest.stderr).toContain("Welcome to Amazing Fuzzing!");
+			});
+
+			it("with uint8 dictionary", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.logTestOutput()
+					.jestTestName("execute sync hashed fuzz test with uint8 dictionary")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				expect(fuzzTest.stderr).toContain("Welcome to Amazing Fuzzing!");
+			});
+		});
 	});
 
 	describe("Regression mode", () => {
@@ -503,6 +526,36 @@ describe("Jest TS integration", () => {
 					fuzzTest.execute();
 				}).toThrow(JestRegressionExitCode);
 				await expectCrashFileIn("execute_async_test_using_a_callback");
+			});
+		});
+
+		describe("Fuzz test options support", () => {
+			it("with dictionary", async () => {
+				const fuzzTest = fuzzTestBuilder
+					.jestTestName("execute sync hashed fuzz test with dictionary")
+					.build();
+				expect(() => {
+					fuzzTest.execute();
+				}).toThrow(JestRegressionExitCode);
+				expect(fuzzTest.stderr).toContain("Welcome to Amazing Fuzzing!");
+			});
+
+			it("with sync and runs", () => {
+				const fuzzTest = fuzzTestBuilder
+					.verbose()
+					.runs(1) // will get changed to 101 by the fuzz test
+					.sync(false) // will get changed to true by the fuzz test
+					.jestTestName(
+						"Further options sync, number of runs, dictionary is Amazing",
+					)
+					.build();
+				fuzzTest.execute();
+				// The options are printed with colors. Here "sync: true," is matched.
+				expect(fuzzTest.stderr).toContain("sync: { value: true,");
+				expect(fuzzTest.stderr).toContain(
+					"dictionaryEntries: { value: [ 'Amazing' ]",
+				);
+				expect(fuzzTest.stdout).toContain("i = 100");
 			});
 		});
 	});

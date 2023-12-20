@@ -13,6 +13,11 @@ There are three ways to configure Jazzer.js:
    using `.jazzerjsrc.json`,
 3. **ENV** - when Jazzer.js runs in either CLI or Jest mode, most options can be
    specified by an environment variable.
+4. **Jest fuzz test** - some options can be set directly in Jest fuzz test.
+   These options are: ([`timeout`](#timeout--number),
+   [`dictionaryEntries`](#dictionaryentries--arraystring--uint8array--int8array),
+   [`fuzzerOptions`](#fuzzeroptions--arraystring), and
+   [`sync`](#sync--boolean)).
 
 The following preferences apply with increasing priority:
 
@@ -22,6 +27,7 @@ The following preferences apply with increasing priority:
 - Environment variables (names in upper snake case format with `JAZZER_` prefix,
   e.g. `JAZZER_INCLUDES=foo`)
 - CLI arguments
+- Per Jest fuzz test arguments
 
 All options configurable in Jazzer.js are described below. To see the current
 values of every option in use, it might be helpful to run Jazzer.js in
@@ -344,6 +350,29 @@ environment variable to the command:
 JAZZER_CUSTOM_HOOKS='["./myCustomHooks-1.js","./myCustomHooks-2.js"]' npm run fuzz
 ```
 
+### `dictionaryEntries` : [array\<string | Uint8Array | Int8Array\>]
+
+Default: undefined
+
+Set dictionary entries for a Jest fuzz test.
+
+The advantage of using this option is that dictionaries are treated as part of
+the fuzz test and can be saved and versioned together with the test.
+
+_Note:_ this option can only be set directly in the Jest fuzz test.
+
+**Jest fuzz test:** To set dictionary entries for any individual Jest fuzz test,
+provide them as an array of strings, `Uint8Arrays`, or `Int8Arrays` to the
+`dictionaryEntries` option of the `it.fuzz` function:
+
+```javascript
+const xmlDictionary = ["IDREF","<![IGNORE[","<![INCLUDE[",<!"];
+
+it.fuzz("XML parser",
+	(data) => {...},
+	{dictionaryEntries: xmlDictionary}
+```
+
 ### `disableBugDetectors` : [array\<RegExp\>]
 
 Default: []
@@ -595,6 +624,18 @@ libFuzzer in Jest mode, add the following to the `.jazzerjsrc.json` file:
 {
 	"fuzzerOptions": ["-use_value_profile=1", "-dict=xml.txt"]
 }
+```
+
+**Jest fuzz test:** The `fuzzerOptions` can be set directly in the fuzz test in
+_fuzzing_ mode by providing it as part of an object with options as the third
+argument to the fuzz test. _Note:_ this overrides any prior settings (e.g.
+settings loaded from `.jazzerjsrc.json`). Here is an example how make the fuzzer
+use the dictionary "xml.txt" for fuzz test "My test 1":
+
+```javascript
+it.fuzz("My test 1",
+	(data) => {...},
+	{fuzzerOptions: ["-dict=xml.txt"]});
 ```
 
 **ENV:** For example, to pass the options `-use_value_profile=1` and
@@ -861,6 +902,18 @@ npx jazzer my-fuzz-file --sync
 }
 ```
 
+**Jest fuzz test:** The `sync` can be set directly in the fuzz test in _fuzzing_
+and _regression_ mode by providing it as part of an object with options as the
+third argument to the fuzz test. _Note:_ this overrides any prior settings (e.g.
+settings loaded from `.jazzerjsrc.json`). Here is an example how make the run
+"My test 1" in syncronous mode:
+
+```javascript
+it.fuzz("My test 1",
+	(data) => {...},
+	{sync: true});
+```
+
 **ENV:** To run in synchronous mode in CLI or Jest mode, set the environment
 variable `JAZZER_SYNC` to `true`. Here is an example for Jest:
 
@@ -890,6 +943,28 @@ following to the `.jazzerjsrc.json` file:
 {
 	"timeout": 10000
 }
+```
+
+**Jest fuzz test:** The timeout can be set directly in the fuzz test in
+_regression_ and in _fuzzing_ modes in two ways:
+
+_One:_ by providing it as the third argument to the fuzz test. Here is an
+example how a timeout of 1 second can be set for the test "My test 1":
+
+```javascript
+it.fuzz("My test 1",
+	(data) => {...},
+	1000
+```
+
+_Two:_ by providing it as part of an object with options as the third argument
+to the fuzz test. Here is an example how a timeout of 1 second can be set for
+the test "My test 2":
+
+```javascript
+it.fuzz("My test 2",
+	(data) => {...},
+	{timeout: 1000});
 ```
 
 **ENV:** To set the timeout to 10000 milliseconds in CLI or Jest mode, set the

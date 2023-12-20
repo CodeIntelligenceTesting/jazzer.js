@@ -9,7 +9,7 @@
 import { JestEnvironment } from "@jest/environment";
 import { Circus } from "@jest/types";
 
-import { Options } from "@jazzer.js/core";
+import { OptionsManager } from "@jazzer.js/core";
 
 // Arbitrary high value to disable Jest timeout.
 const JEST_TIMEOUT_DISABLED = 1000 * 60 * 24 * 365;
@@ -22,7 +22,7 @@ export type InterceptedTestState = {
 
 export function interceptTestState(
 	environment: JestEnvironment,
-	jazzerConfig: Options,
+	jazzerConfig: OptionsManager,
 ): InterceptedTestState {
 	const originalHandleTestEvent =
 		environment.handleTestEvent?.bind(environment);
@@ -39,7 +39,7 @@ export function interceptTestState(
 			// test inside. This breaks test name pattern matching, so remove "$" from the end of the pattern,
 			// and skip tests not matching the original pattern in the fuzz function.
 			if (
-				jazzerConfig.mode == "regression" &&
+				jazzerConfig.get("mode") == "regression" &&
 				state.testNamePattern?.source?.endsWith("$")
 			) {
 				originalTestNamePattern = state.testNamePattern;
@@ -51,7 +51,10 @@ export function interceptTestState(
 		} else if (event.name === "test_start") {
 			// In fuzzing mode, only execute the first encountered (not skipped) fuzz test
 			// and mark all others as skipped.
-			if (jazzerConfig.mode === "fuzzing" && event.test.mode !== "skip") {
+			if (
+				jazzerConfig.get("mode") === "fuzzing" &&
+				event.test.mode !== "skip"
+			) {
 				if (
 					!firstFuzzTestEncountered &&
 					(!state.testNamePattern ||
@@ -67,7 +70,7 @@ export function interceptTestState(
 		} else if (event.name === "test_fn_start") {
 			// Disable Jest timeout in fuzzing mode by setting it to a high value,
 			// otherwise Jest will kill the fuzz test after it's timeout (default 5 seconds).
-			if (jazzerConfig.mode === "fuzzing") {
+			if (jazzerConfig.get("mode") === "fuzzing") {
 				state.testTimeout = JEST_TIMEOUT_DISABLED;
 			}
 			// Use configured timeout as fuzzing timeout as well. Every invocation

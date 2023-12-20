@@ -29,6 +29,29 @@ describe("Jest Integration", () => {
 		target.fuzzMe(data);
 	});
 
+	it.fuzz(
+		"execute sync hashed fuzz test with dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{ dictionaryEntries: ["Amazing"] },
+	);
+
+	it.fuzz(
+		"execute sync hashed fuzz test with uint8 dictionary",
+		(data) => {
+			target.fuzzMeHashed(data);
+		},
+		{
+			dictionaryEntries: [
+				new Uint8Array([0x41, 0x6d, 0x61, 0x7a, 0x69, 0x6e, 0x67]),
+				// Adding an entry with all bytes to the dictionary should not affect the fuzzing.
+				// This tests if escaping all 256 characters works in a way that libFuzzer is happy with it.
+				new Uint8Array([...Array(256).keys()]),
+			],
+		},
+	);
+
 	it.fuzz("execute async test", async (data) => {
 		await target.asyncFuzzMe(data);
 	});

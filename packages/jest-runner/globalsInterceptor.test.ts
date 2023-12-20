@@ -13,6 +13,7 @@ import { fuzz } from "./fuzz";
 import { interceptGlobals } from "./globalsInterceptor";
 
 const internalFuzz = jest.fn();
+
 jest.mock("./fuzz", () => ({
 	fuzz: jest.fn().mockImplementation(() => {
 		return internalFuzz;
