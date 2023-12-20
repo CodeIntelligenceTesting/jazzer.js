@@ -186,6 +186,7 @@ function executeJestRunner(
 	if (useCustomHooks) {
 		config.customHooks = useCustomHooks;
 	}
+	config.disableBugDetectors = [".*"];
 	// write the config file, overwriting any existing one
 	fs.writeFileSync(
 		path.join(testDirectory, ".jazzerjsrc.json"),
