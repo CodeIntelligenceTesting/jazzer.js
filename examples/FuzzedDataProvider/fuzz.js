@@ -13,7 +13,7 @@ const { FuzzedDataProvider } = require("@jazzer.js/core");
  */
 module.exports.fuzz = function (fuzzerInputData) {
 	const data = new FuzzedDataProvider(fuzzerInputData);
-	const s1 = data.consumeString(data.consumeIntegralInRange(10, 15), "utf-8");
+	const s1 = data.consumeString(data.consumeIntegralInRange(10, 15));
 	const i1 = data.consumeIntegral(1);
 	if (s1 === "Hello World!") {
 		if (i1 === 3) {

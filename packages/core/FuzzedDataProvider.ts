@@ -402,20 +402,16 @@ export class FuzzedDataProvider {
 	 * The array might be shorter than requested `maxLength` if the fuzzer input
 	 * is not sufficiently long.
 	 * @param maxLength the maximum length of the string
-	 * @param encoding the encoding of the string
 	 * @returns a `string` of length between 0 and `maxLength` (inclusive)
 	 */
-	consumeString(
-		maxLength: number,
-		encoding: BufferEncoding | undefined = "ascii",
-	): string {
+	consumeString(maxLength: number): string {
 		if (maxLength < 0) throw new Error("maxLength must be non-negative");
 		if (!Number.isInteger(maxLength)) {
 			throw new FloatLengthError();
 		}
 		const arrayLength = Math.min(maxLength, this._remainingBytes);
 		const result = this.data.toString(
-			encoding,
+			"utf-8",
 			this.dataPtr,
 			this.dataPtr + arrayLength,
 		);
@@ -426,13 +422,10 @@ export class FuzzedDataProvider {
 
 	/**
 	 * Consumes the remaining bytes of the fuzzer input as a string.
-	 * @param encoding - the encoding of the string
-	 * @returns a string constructed from the remaining bytes of the fuzzer input using the given encoding
+	 * @returns a string constructed from the remaining bytes of the fuzzer input
 	 */
-	consumeRemainingAsString(
-		encoding: BufferEncoding | undefined = "ascii",
-	): string {
-		return this.consumeString(this._remainingBytes, encoding);
+	consumeRemainingAsString(): string {
+		return this.consumeString(this._remainingBytes);
 	}
 
 	/**
@@ -441,14 +434,9 @@ export class FuzzedDataProvider {
 	 * if the fuzzer input is not sufficiently long.
 	 * @param maxArrayLength the maximum length of the array
 	 * @param maxStringLength the maximum length of the strings
-	 * @param encoding the encoding of the strings
-	 * @returns an array containing strings constructed from the remaining bytes of the fuzzer input using the given encoding
+	 * @returns an array containing strings constructed from the remaining bytes of the fuzzer input
 	 */
-	consumeStringArray(
-		maxArrayLength: number,
-		maxStringLength: number,
-		encoding: BufferEncoding | undefined = "ascii",
-	) {
+	consumeStringArray(maxArrayLength: number, maxStringLength: number) {
 		if (
 			!Number.isInteger(maxArrayLength) ||
 			!Number.isInteger(maxStringLength)
@@ -457,7 +445,7 @@ export class FuzzedDataProvider {
 		}
 		const strs = [];
 		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
-			const str = this.consumeString(maxStringLength, encoding);
+			const str = this.consumeString(maxStringLength);
 			if (str || str === "") {
 				strs.push(str);
 			}
