@@ -29,7 +29,7 @@
 	},
 	"dependencies": {
 		"bindings": "^1.5.0",
-		"cmake-js": "^7.2.1",
+		"cmake-js": "^7.3.0",
 		"node-addon-api": "^7.0.0",
 		"prebuild-install": "^7.1.1"
 	},
