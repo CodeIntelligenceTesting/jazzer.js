@@ -872,21 +872,20 @@ describe("function hooks instrumentation", () => {
 			|
 			|foo(1, 2);`;
 
-			const dbgMock = withDebug(
-				() =>
-					expectInstrumentationEval<Promise<number>>(input, output)?.then(
-						(result: number) => {
-							expect(result).toEqual(3);
-							expect(beforeHookCallMap.size).toEqual(1);
-							expectHook(0, beforeHookCallMap);
-							expect(afterHookCallMap.size).toEqual(1);
-							expectHook(0, afterHookCallMap);
-							expectTrackedHooks(hookTracker.applied, ["foo"]);
-							expectTrackedHooks(hookTracker.available, ["bar"]);
-							expectTrackedHooksUnknown(beforeHookCallMap, 0);
-							expectTrackedHooksUnknown(afterHookCallMap, 0);
-						},
-					),
+			const dbgMock = withDebug(() =>
+				expectInstrumentationEval<Promise<number>>(input, output)?.then(
+					(result: number) => {
+						expect(result).toEqual(3);
+						expect(beforeHookCallMap.size).toEqual(1);
+						expectHook(0, beforeHookCallMap);
+						expect(afterHookCallMap.size).toEqual(1);
+						expectHook(0, afterHookCallMap);
+						expectTrackedHooks(hookTracker.applied, ["foo"]);
+						expectTrackedHooks(hookTracker.available, ["bar"]);
+						expectTrackedHooksUnknown(beforeHookCallMap, 0);
+						expectTrackedHooksUnknown(afterHookCallMap, 0);
+					},
+				),
 			);
 
 			expectLogHooks(dbgMock, 2, "Before", "foo");
