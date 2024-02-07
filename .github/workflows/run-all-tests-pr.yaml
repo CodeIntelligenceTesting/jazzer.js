@@ -44,7 +44,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, macos-11, ubuntu-20.04]
+        os: [windows-2019, selfhosted-macos, ubuntu-20.04]
         # Test only latest LTS version in PRs
         node: [20]
     steps:
@@ -72,7 +72,8 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
-        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
+        # TODO: fix me, because cache does not seem to work
+        #if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test

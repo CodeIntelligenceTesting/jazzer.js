@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, macos-11, ubuntu-20.04]
+        os: [windows-2019, selfhosted-macos, ubuntu-20.04]
         node: [16]
         include:
           # Test LTS versions on main
@@ -46,7 +46,8 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
-        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
+        # TODO: fix me, because cache does not seem to work
+        #if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
@@ -75,7 +76,8 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
-        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
+        # TODO: fix me, because cache does not seem to work
+        #if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all fuzz tests
         run: node fuzztests/runFuzzTests.js

@@ -11,11 +11,11 @@ jobs:
     name: create prebuilds
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-11, windows-2019]
+        os: [ubuntu-20.04, selfhosted-macos, windows-2019]
         opts: [""]
         include:
-          - os: macos-11
-            opts: "--arch arm64"
+          - os: selfhosted-macos
+            opts: "--arch amd64" # or maybe x86_64?
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
