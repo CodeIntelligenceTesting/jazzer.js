@@ -2,7 +2,7 @@
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"rootDir": ".",
-		"outDir": "dist",
+		"outDir": "dist"
 	},
-	"references": [{ "path": "../fuzzer" }, { "path": "../hooking" }],
+	"references": [{ "path": "../fuzzer" }, { "path": "../hooking" }]
 }

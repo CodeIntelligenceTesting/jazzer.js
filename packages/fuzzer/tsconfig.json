@@ -2,7 +2,7 @@
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"rootDir": ".",
-		"outDir": "dist",
+		"outDir": "dist"
 	},
-	"exclude": ["build", "dist", "cmake-build-*"],
+	"exclude": ["build", "dist", "cmake-build-*"]
 }

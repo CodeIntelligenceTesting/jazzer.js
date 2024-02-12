@@ -2,14 +2,14 @@
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
 		"rootDir": ".",
-		"outDir": "dist",
+		"outDir": "dist"
 	},
 	"references": [
 		{
-			"path": "../instrumentor",
+			"path": "../instrumentor"
 		},
 		{
-			"path": "../hooking",
-		},
-	],
+			"path": "../hooking"
+		}
+	]
 }
