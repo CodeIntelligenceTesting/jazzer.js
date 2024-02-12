@@ -44,7 +44,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, selfhosted-macos, ubuntu-20.04]
+        os: [windows-2019, ubuntu-20.04, selfhosted-macos]
         # Test only latest LTS version in PRs
         node: [20]
     steps:
@@ -56,7 +56,7 @@ jobs:
           path: |
             packages/fuzzer/prebuilds
           key:
-            fuzzer-cache-${{ runner.os }}-${{
+            fuzzer-cache-${{ matrix.os }}-${{
             hashFiles('packages/fuzzer/CMakeLists.txt',
             'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
       - name: node
@@ -72,8 +72,7 @@ jobs:
       - name: build project
         run: npm run build
       - name: build fuzzer
-        # TODO: fix me, because cache does not seem to work
-        #if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
+        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
