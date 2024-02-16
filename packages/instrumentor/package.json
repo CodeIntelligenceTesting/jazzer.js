@@ -1,6 +1,6 @@
 {
 	"name": "@jazzer.js/instrumentor",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"description": "Jazzer.js source code instrumentor",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
@@ -18,8 +18,8 @@
 	"dependencies": {
 		"@babel/core": "^7.23.9",
 		"@babel/generator": "^7.23.5",
-		"@jazzer.js/fuzzer": "3.0.0",
-		"@jazzer.js/hooking": "3.0.0",
+		"@jazzer.js/fuzzer": "3.1.0",
+		"@jazzer.js/hooking": "3.1.0",
 		"istanbul-lib-hook": "^3.0.0",
 		"proper-lockfile": "^4.1.2",
 		"istanbul-lib-instrument": "^6.0.1",
