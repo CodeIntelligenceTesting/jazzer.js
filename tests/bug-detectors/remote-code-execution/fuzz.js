@@ -58,3 +58,7 @@ module.exports.functionWithArgNoError = function (data) {
 module.exports.functionWithArgError = function (data) {
 	new Function("foo", "const jaz_zer = 10;")("_");
 };
+
+module.exports.functionPrototypeExists = function (data) {
+	console.log(Function.prototype.call.bind);
+};

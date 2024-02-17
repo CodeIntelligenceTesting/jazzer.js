@@ -53,4 +53,8 @@ describe("Function", () => {
 	it.fuzz("With error - target string in last arg", (data) => {
 		tests.functionWithArgError(data);
 	});
+
+	it.fuzz("Function.prototype still exists", (data) => {
+		tests.functionPrototypeExists(data);
+	});
 });

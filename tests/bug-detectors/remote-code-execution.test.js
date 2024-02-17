@@ -142,6 +142,15 @@ describe("CLI", () => {
 			}).toThrowError(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
+
+		it("Function.prototype should still exist", () => {
+			const fuzzTest = fuzzTestBuilder
+				.dryRun(false)
+				.fuzzEntryPoint("functionPrototypeExists")
+				.sync(true)
+				.build();
+			fuzzTest.execute();
+		});
 	});
 });
 
@@ -272,6 +281,15 @@ describe("Jest", () => {
 				fuzzTest.execute();
 			}).toThrowError(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
+		});
+
+		it("Function.prototype should still exist", () => {
+			const fuzzTest = fuzzTestBuilder
+				.dryRun(false)
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("Function.prototype still exists$")
+				.build();
+			fuzzTest.execute();
 		});
 	});
 });

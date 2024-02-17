@@ -337,6 +337,11 @@ function hookGlobalFunction(
 
 	if (originalFn) {
 		hookFunction(context, hook, originalFn);
+		const newFunction = getFunction(context, hook.target.split("."));
+		// assign prototype of the original function to the prototype of the new function
+		if (newFunction instanceof Function || typeof newFunction === "function") {
+			newFunction.prototype = originalFn.prototype;
+		}
 	}
 }
 
