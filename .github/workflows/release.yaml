@@ -15,7 +15,7 @@ jobs:
         opts: [""]
         include:
           - os: selfhosted-macos
-            opts: "--arch amd64" # or maybe x86_64?
+            opts: "--arch x86_64"
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout

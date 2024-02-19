@@ -29,5 +29,7 @@ strip(targetName, function (err) {
 });
 
 function getArchitecture() {
+	if (process.argv[3] && process.argv[3] === "x86_64") return "x64";
+
 	return process.argv[3] ?? process.arch;
 }
