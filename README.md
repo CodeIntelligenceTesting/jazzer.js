@@ -28,6 +28,23 @@
 
 </div>
 
+> [!IMPORTANT]
+>
+> Hello Jazzer/Jazzer.js users!
+>
+> We stopped maintaining Jazzer/Jazzer.js as open source. But we'd be happy to
+> try and understand what you're trying to achieve with it, and help you if we
+> can!
+>
+> We already added significant new value to our CI Fuzz solution, which includes
+> Jazzer and Jazzer.js. You can see more here at
+> [code-intelligence.com](https://code-intelligence.com), or get in contact with
+> us via [sales@code-intelligence.com](mailto:sales@code-intelligence.com)
+>
+> Thanks,
+>
+> The Code Intelligence team
+
 Jazzer.js is a coverage-guided, in-process fuzzer for the
 [Node.js](https://nodejs.org) platform developed by
 [Code Intelligence](https://www.code-intelligence.com). It is based on
