@@ -17,7 +17,7 @@
 	"types": "dist/instrument.d.js",
 	"dependencies": {
 		"@babel/core": "^7.24.9",
-		"@babel/generator": "^7.24.10",
+		"@babel/generator": "^7.25.0",
 		"@jazzer.js/fuzzer": "3.1.0",
 		"@jazzer.js/hooking": "3.1.0",
 		"istanbul-lib-hook": "^3.0.0",
@@ -32,7 +32,7 @@
 		"@types/node": "^20.14.11",
 		"@types/proper-lockfile": "^4.1.4",
 		"@types/source-map-support": "^0.5.10",
-		"typescript": "^5.5.3"
+		"typescript": "^5.5.4"
 	},
 	"engines": {
 		"node": ">= 14.0.0",
