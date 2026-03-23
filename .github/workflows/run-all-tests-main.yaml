@@ -15,12 +15,14 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        node: [16]
+        node: [20]
         include:
-          # Test LTS versions on main
-          # 18 on Ubuntu is sufficient, and 20 already tested in PR
+          # Floor: legacy compatibility check
           - os: ubuntu-latest
-            node: 18
+            node: 14
+          # Ceiling: current LTS
+          - os: ubuntu-latest
+            node: 24
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -68,7 +70,7 @@ jobs:
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 22
           cache: "npm"
       - name: install dependencies
         run: npm ci
@@ -85,11 +87,11 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      # Build with node.js 16
+      # Build with node.js 22
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 22
           cache: "npm"
       - name: pack jazzer.js
         run: cd end-to-end && ./package-jazzer-js.sh
@@ -106,26 +108,18 @@ jobs:
       - name: run tests
         run: cd end-to-end && npx jest
 
-      - name: "node 16"
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: "npm"
-      - name: run tests
-        run: cd end-to-end && npx jest
-
-      - name: "node 18"
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: "npm"
-      - name: run tests
-        run: cd end-to-end && npx jest
-
       - name: "node 20"
         uses: actions/setup-node@v3
         with:
           node-version: 20
+          cache: "npm"
+      - name: run tests
+        run: cd end-to-end && npx jest
+
+      - name: "node 24"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
           cache: "npm"
       - name: run tests
         run: cd end-to-end && npx jest

@@ -23,7 +23,7 @@ jobs:
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 22
           cache: "npm"
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
@@ -53,7 +53,7 @@ jobs:
       - name: node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 22
           cache: "npm"
           registry-url: https://registry.npmjs.org
       - name: install
