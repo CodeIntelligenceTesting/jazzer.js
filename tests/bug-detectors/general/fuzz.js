@@ -92,22 +92,22 @@ module.exports.CallOriginalFriendlyAsyncCallingSync = async function (data) {
 };
 
 module.exports.ForkModeCallOriginalEvil = makeFuzzFunctionWithInput(
-	100,
+	1,
 	evilCommand,
 );
 
 module.exports.ForkModeCallOriginalFriendly = makeFuzzFunctionWithInput(
-	100,
+	1,
 	friendlyCommand,
 );
 
 module.exports.ForkModeCallOriginalEvilAsync = makeAsyncFuzzFunctionWithInput(
-	100,
+	1,
 	evilCommand,
 );
 
 module.exports.ForkModeCallOriginalFriendlyAsync =
-	makeAsyncFuzzFunctionWithInput(100, friendlyCommand);
+	makeAsyncFuzzFunctionWithInput(1, friendlyCommand);
 
 module.exports.DisableAllBugDetectors = makeFnCalledOnce(async (data) => {
 	// Command Injection : try to make an empty file named "jaz_zer" (our evil string)
