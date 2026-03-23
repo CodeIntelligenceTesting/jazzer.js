@@ -41,9 +41,8 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         node: [20]
         include:
-          # Floor: legacy compatibility check
-          - os: ubuntu-latest
-            node: 14
+          # Node 14 runtime compatibility is covered by end-to-end tests.
+          # Unit tests require npm 7+ (workspaces) which Node 14 doesn't ship.
           # Ceiling: current LTS
           - os: ubuntu-latest
             node: 24
