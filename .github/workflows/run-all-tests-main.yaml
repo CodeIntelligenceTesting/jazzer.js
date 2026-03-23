@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-20.04, selfhosted-macos]
+        os: [windows-2019, ubuntu-20.04, macos-latest]
         node: [16]
         include:
           # Test LTS versions on main

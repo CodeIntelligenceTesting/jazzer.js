@@ -44,7 +44,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-20.04, selfhosted-macos]
+        os: [windows-2019, ubuntu-20.04, macos-latest]
         # Test only latest LTS version in PRs
         node: [20]
     steps:
