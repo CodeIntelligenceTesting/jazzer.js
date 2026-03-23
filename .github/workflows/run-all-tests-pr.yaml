@@ -11,7 +11,7 @@ concurrency:
 jobs:
   linting:
     name: lint
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -22,14 +22,8 @@ jobs:
           cache: "npm"
       - name: install dependencies
         run: npm ci
-      - name: install dependencies with apt
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-get install software-properties-common
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-16 main'
-          sudo apt-get install clang-tidy-16
-          sudo rm -f /usr/bin/clang-tidy
-          sudo ln -s /usr/bin/clang-tidy-16 /usr/bin/clang-tidy
+      - name: install clang-tidy
+        run: sudo apt-get install -y clang-tidy
       - name: build project
         # Build project so that imports can be checked during linting
         run: npm run build
@@ -44,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-20.04, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         # Test only latest LTS version in PRs
         node: [20]
     steps:
@@ -83,7 +77,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Dependabot metadata
