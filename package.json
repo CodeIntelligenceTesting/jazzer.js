@@ -17,7 +17,7 @@
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git"
 	},
 	"scripts": {
-		"prepare": "husky install",
+		"prepare": "husky || true",
 		"build": "tsc -b tsconfig.build.json",
 		"clean": "rimraf -g **/node_modules **/tests/**/package-lock.json **/examples/**/package-lock.json **/dist **/coverage packages/fuzzer/build packages/fuzzer/prebuilds",
 		"compile:watch": "tsc -b tsconfig.build.json --incremental --pretty --watch",
