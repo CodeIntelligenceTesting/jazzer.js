@@ -1,22 +1,16 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
-const { SIGINT_SYNC, SIGINT_ASYNC } = require("./fuzz.js");
+const fuzz = require("./fuzz.js");
 
 describe("Jest", () => {
-	it.fuzz("Sync", SIGINT_SYNC);
-	it.fuzz("Async", SIGINT_ASYNC);
+	it.fuzz("Sync", fuzz.SIGINT_SYNC);
+	it.fuzz("Sync endless loop", fuzz.SIGINT_SYNC_endless_loop);
+	it.fuzz("Async", fuzz.SIGINT_ASYNC);
+	it.fuzz("Async endless loop", fuzz.SIGINT_ASYNC_endless_loop);
 });

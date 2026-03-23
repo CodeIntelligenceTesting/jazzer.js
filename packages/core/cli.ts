@@ -2,28 +2,15 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import yargs, { Argv, exit } from "yargs";
 
 import { FuzzingExitCode, startFuzzing } from "./core";
-import {
-	buildOptions,
-	defaultOptions,
-	ParameterResolverIndex,
-	setParameterResolverValue,
-} from "./options";
+import { defaultCLIOptions, OptionsManager, OptionSource } from "./options";
 import { prepareArgs } from "./utils";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.
@@ -37,7 +24,6 @@ yargs(process.argv.slice(2))
 	.parserConfiguration({
 		"camel-case-expansion": false,
 		"strip-aliased": true,
-		"strip-dashed": true,
 		"greedy-arrays": false,
 	})
 	.example(
@@ -54,7 +40,7 @@ yargs(process.argv.slice(2))
 	)
 	.epilogue("Happy fuzzing!")
 	.command(
-		"$0 <fuzz_target> [corpus..]",
+		"$0 <fuzzTarget> [corpus..]",
 		"Coverage-guided, in-process fuzzer for the Node.js platform. \n\n" +
 			'The "target" module has to export a function "fuzz" which accepts ' +
 			"a byte array as first parameter and uses that to invoke the actual " +
@@ -67,7 +53,8 @@ yargs(process.argv.slice(2))
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
 			yargs
-				.positional("fuzz_target", {
+				.positional("fuzzTarget", {
+					alias: ["fuzz_target"],
 					demandOption: true,
 					describe: "Name of the module that exports the fuzz target function.",
 					type: "string",
@@ -81,9 +68,9 @@ yargs(process.argv.slice(2))
 					type: "string",
 				})
 
-				.option("fuzz_entry_point", {
-					alias: ["f", "fuzz_function"],
-					defaultDescription: defaultOptions.fuzzEntryPoint,
+				.option("fuzzEntryPoint", {
+					alias: ["f", "fuzz_entry_point", "fuzz_function"],
+					defaultDescription: defaultCLIOptions.fuzzEntryPoint,
 					describe:
 						"Name of the fuzz test entry point. It must be an exported " +
 						"function with a single Buffer parameter",
@@ -93,7 +80,7 @@ yargs(process.argv.slice(2))
 				.option("includes", {
 					alias: ["i", "instrumentation_includes"],
 					array: true,
-					defaultDescription: `${JSON.stringify(defaultOptions.includes)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.includes)}`,
 					describe:
 						"Part of filepath names to include in the instrumentation. " +
 						'A tailing "/" should be used to include directories and prevent ' +
@@ -105,7 +92,7 @@ yargs(process.argv.slice(2))
 				.option("excludes", {
 					alias: ["e", "instrumentation_excludes"],
 					array: true,
-					defaultDescription: `${JSON.stringify(defaultOptions.excludes)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.excludes)}`,
 					describe:
 						"Part of filepath names to exclude in the instrumentation. " +
 						'A tailing "/" should be used to exclude directories and prevent ' +
@@ -115,8 +102,9 @@ yargs(process.argv.slice(2))
 					type: "string",
 				})
 
-				.option("id_sync_file", {
-					defaultDescription: `${JSON.stringify(defaultOptions.idSyncFile)}`,
+				.option("idSyncFile", {
+					alias: ["id_sync_file"],
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.idSyncFile)}`,
 					describe:
 						"File used for sync edge ID generation. " +
 						"Needed when fuzzing in multi-process modes",
@@ -124,10 +112,12 @@ yargs(process.argv.slice(2))
 					hidden: true,
 					type: "string",
 				})
-				.option("custom_hooks", {
-					alias: "h",
+				.option("customHooks", {
+					alias: ["custom_hooks", "h"],
 					array: true,
-					defaultDescription: `${JSON.stringify(defaultOptions.customHooks)}`,
+					defaultDescription: `${JSON.stringify(
+						defaultCLIOptions.customHooks,
+					)}`,
 					describe:
 						"Allow users to hook functions. This can be used for writing " +
 						"bug detectors, for stubbing, and for writing feedback functions " +
@@ -135,11 +125,11 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					type: "string",
 				})
-				.option("expected_errors", {
-					alias: "x",
+				.option("expectedErrors", {
+					alias: ["expected_errors", "x"],
 					array: true,
 					defaultDescription: `${JSON.stringify(
-						defaultOptions.expectedErrors,
+						defaultCLIOptions.expectedErrors,
 					)}`,
 					describe:
 						"Expected errors can be specified as the class name of the " +
@@ -151,10 +141,11 @@ yargs(process.argv.slice(2))
 					hidden: true,
 					type: "string",
 				})
-				.option("disable_bug_detectors", {
+				.option("disableBugDetectors", {
+					alias: "disable_bug_detectors",
 					array: true,
 					defaultDescription: `${JSON.stringify(
-						defaultOptions.disableBugDetectors,
+						defaultCLIOptions.disableBugDetectors,
 					)}`,
 					describe:
 						"A list of patterns to disable internal bug detectors. By default all internal " +
@@ -169,7 +160,7 @@ yargs(process.argv.slice(2))
 
 				.option("mode", {
 					alias: "m",
-					defaultDescription: `${JSON.stringify(defaultOptions.mode)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.mode)}`,
 					describe:
 						"Configure if fuzzing should be performed, 'fuzzing' mode, " +
 						"or if the fuzz target should only be invoked using existing corpus " +
@@ -178,28 +169,28 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					type: "string",
 				})
-				.option("dry_run", {
-					alias: "d",
-					defaultDescription: `${JSON.stringify(defaultOptions.dryRun)}`,
+				.option("dryRun", {
+					alias: ["dry_run", "d"],
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.dryRun)}`,
 					describe: "Perform a run with the fuzzing instrumentation disabled.",
 					group: "Fuzzer:",
 					type: "boolean",
 				})
 				.option("timeout", {
-					defaultDescription: `${JSON.stringify(defaultOptions.timeout)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.timeout)}`,
 					describe: "Timeout in milliseconds for each fuzz test execution.",
 					group: "Fuzzer:",
 					type: "number",
 				})
 				.option("sync", {
-					defaultDescription: `${JSON.stringify(defaultOptions.sync)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.sync)}`,
 					describe: "Run the fuzz target synchronously.",
 					group: "Fuzzer:",
 					type: "boolean",
 				})
 				.option("verbose", {
 					alias: "v",
-					defaultDescription: `${JSON.stringify(defaultOptions.verbose)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.verbose)}`,
 					describe: "Enable verbose debugging logs.",
 					group: "Fuzzer:",
 					type: "boolean",
@@ -207,25 +198,25 @@ yargs(process.argv.slice(2))
 
 				.option("coverage", {
 					alias: "cov",
-					defaultDescription: `${JSON.stringify(defaultOptions.coverage)}`,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.coverage)}`,
 					describe: "Enable code coverage.",
 					group: "Coverage:",
 					type: "boolean",
 				})
-				.option("coverage_directory", {
-					alias: "cov_dir",
+				.option("coverageDirectory", {
+					alias: ["coverage_directory", "cov_dir"],
 					defaultDescription: `${JSON.stringify(
-						defaultOptions.coverageDirectory,
+						defaultCLIOptions.coverageDirectory,
 					)}`,
 					describe: "Directory for storing coverage reports.",
 					group: "Coverage:",
 					type: "string",
 				})
-				.option("coverage_reporters", {
-					alias: "cov_reporters",
+				.option("coverageReporters", {
+					alias: ["coverage_reporters", "cov_reporters"],
 					array: true,
 					defaultDescription: `${JSON.stringify(
-						defaultOptions.coverageReporters,
+						defaultCLIOptions.coverageReporters,
 					)}`,
 					describe: "A list of reporter names for writing coverage reports.",
 					group: "Coverage:",
@@ -234,11 +225,12 @@ yargs(process.argv.slice(2))
 		},
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		async (args: any) => {
-			setParameterResolverValue(
-				ParameterResolverIndex.CommandLineArguments,
+			const options = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
 				prepareArgs(args),
+				OptionSource.CommandLineArguments,
 			);
-			return startFuzzing(buildOptions()).then(({ returnCode, error }) => {
+
+			return startFuzzing(options).then(({ returnCode, error }) => {
 				if (returnCode !== FuzzingExitCode.Ok) {
 					exit(
 						returnCode,
@@ -248,4 +240,5 @@ yargs(process.argv.slice(2))
 			});
 		},
 	)
-	.help().argv;
+	.help()
+	.showHelpOnFail(false).argv;

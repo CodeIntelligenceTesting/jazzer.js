@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 const path = require("path");
@@ -75,7 +67,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Function changed",
+			"Prototype Pollution\n    Prototype of Function changed",
 		);
 	});
 
@@ -90,7 +82,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of String changed",
+			"Prototype Pollution\n    Prototype of String changed",
 		);
 	});
 
@@ -105,7 +97,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Number changed",
+			"Prototype Pollution\n    Prototype of Number changed",
 		);
 	});
 
@@ -120,7 +112,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Boolean changed",
+			"Prototype Pollution\n    Prototype of Boolean changed",
 		);
 	});
 
@@ -138,7 +130,7 @@ describe("Prototype Pollution", () => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is ",
+			"Prototype Pollution\n    a.__proto__ value is ",
 		);
 	});
 
@@ -155,7 +147,7 @@ describe("Prototype Pollution", () => {
 		expect(() => {
 			fuzzTest.execute();
 		}).toThrowError(FuzzingExitCode);
-		expect(fuzzTest.stderr).toContain("Prototype Pollution: a.__proto__");
+		expect(fuzzTest.stderr).toContain("Prototype Pollution\n    a.__proto__");
 	});
 
 	it("Test no instrumentation and polluting __proto__ of a class", () => {
@@ -334,7 +326,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Object changed",
+			"Prototype Pollution\n    Prototype of Object changed",
 		);
 	});
 
@@ -353,7 +345,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is",
+			"Prototype Pollution\n    a.__proto__ value is",
 		);
 	});
 
@@ -372,7 +364,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: a.__proto__ value is",
+			"Prototype Pollution\n    a.__proto__ value is",
 		);
 	});
 
@@ -389,7 +381,7 @@ describe("Prototype Pollution Jest tests", () => {
 			fuzzTest.execute();
 		}).toThrowError(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
-			"Prototype Pollution: Prototype of Object changed",
+			"Prototype Pollution\n    Prototype of Object changed",
 		);
 	});
 

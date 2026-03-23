@@ -1,21 +1,13 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 const assert = require("assert");
-const { spawnSync } = require("child_process");
+const { spawnSync, spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -76,16 +68,27 @@ class FuzzTest {
 		this.timeout = timeout;
 	}
 
+	// Runs the fuzz test in another process using `spawnSync`.
 	execute() {
 		if (this.jestTestFile) {
-			this.executeWithJest();
+			this.#executeWithJest();
 		} else {
-			this.executeWithCli();
+			this.#executeWithCli();
 		}
 		return this;
 	}
 
-	executeWithCli() {
+	// Runs the fuzz test using `spawn`. This is useful when we want to do something while the fuzz test
+	// is running (e.g. process http requests).
+	executeWithPromise() {
+		if (this.jestTestFile) {
+			return this.#executeWithJest(false);
+		} else {
+			return this.#executeWithCli(false);
+		}
+	}
+
+	#executeWithCli(useSpawnSync = true) {
 		const options = ["jazzer", this.fuzzFile];
 		options.push("-f " + this.fuzzEntryPoint);
 		if (this.sync) options.push("--sync");
@@ -115,10 +118,14 @@ class FuzzTest {
 		for (const dictionary of this.dictionaries) {
 			options.push("-dict=" + dictionary);
 		}
-		this.runTest("npx", options, { ...process.env });
+		if (useSpawnSync) {
+			this.#spawnTestSync("npx", options, { ...process.env });
+		} else {
+			return this.#spawnTest("npx", options, { ...process.env });
+		}
 	}
 
-	executeWithJest() {
+	#executeWithJest(useSpawnSync = true) {
 		const fuzzerOptions = [];
 		if (this.runs) {
 			fuzzerOptions.push("-runs=" + this.runs);
@@ -186,10 +193,14 @@ class FuzzTest {
 			env.JAZZER_LIST_FUZZTEST_NAMES_PATTERN = this.listFuzzTestNamesPattern;
 		}
 
-		this.runTest(cmd, options, env);
+		if (useSpawnSync) {
+			this.#spawnTestSync(cmd, options, env);
+		} else {
+			return this.#spawnTest(cmd, options, env);
+		}
 	}
 
-	runTest(cmd, options, env) {
+	#spawnTestSync(cmd, options, env) {
 		if (this.logTestOutput) {
 			console.log("COMMAND: " + cmd + " " + options.join(" "));
 		}
@@ -211,6 +222,45 @@ class FuzzTest {
 		if (this.status !== 0 && this.status !== null) {
 			throw new Error(this.status.toString());
 		}
+	}
+
+	#spawnTest(cmd, options, env) {
+		return new Promise((resolve, reject) => {
+			if (this.logTestOutput) {
+				console.log("COMMAND: " + cmd + " " + options.join(" "));
+			}
+			const proc = spawn(cmd, options, {
+				stdio: "pipe",
+				cwd: this.dir,
+				shell: true,
+				windowsHide: true,
+				env: env,
+			});
+			this.stdout = "";
+			this.stderr = "";
+			proc.stdout.on("data", (data) => {
+				this.stdout += data;
+			});
+
+			proc.stderr.on("data", (data) => {
+				this.stderr += data;
+			});
+
+			// wait for process to finish
+			proc.on("exit", () => {
+				this.status = proc.exitCode.toString();
+				if (this.logTestOutput) {
+					console.log("STDOUT: " + this.stdout);
+					console.log("STDERR: " + this.stderr);
+					console.log("STATUS: " + this.status);
+				}
+				if (this.status !== "0") {
+					reject(new Error(this.status.toString()));
+				} else {
+					resolve(this.status.toString());
+				}
+			});
+		});
 	}
 }
 

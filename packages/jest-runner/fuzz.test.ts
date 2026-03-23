@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import fs from "fs";
@@ -21,7 +13,8 @@ import * as tmp from "tmp";
 
 import {
 	FindingAwareFuzzTarget,
-	Options,
+	OptionsManager,
+	OptionSource,
 	startFuzzingNoInit,
 } from "@jazzer.js/core";
 import { FuzzTarget } from "@jazzer.js/fuzzer";
@@ -48,12 +41,14 @@ jest.mock("./corpus", () => {
 // Mock core package to intercept calls to startFuzzing.
 const skipMock = jest.fn();
 jest.mock("@jazzer.js/core", () => {
+	globalThis.JazzerJS = new Map<string, unknown>();
+	const core = jest.requireActual("@jazzer.js/core");
 	// noinspection JSUnusedGlobalSymbols
 	return {
-		startFuzzingNoInit: jest.fn().mockImplementation(async (args: unknown) => {
+		...core,
+		startFuzzingNoInit: jest.fn().mockImplementation(async (args) => {
 			return args;
 		}),
-		asFindingAwareFuzzFn: (fn: object) => fn,
 	};
 });
 
@@ -70,13 +65,20 @@ describe("fuzz", () => {
 
 	describe("runInFuzzingMode", () => {
 		it("execute test matching original test name pattern", async () => {
+			const inputPaths = mockInputPaths();
+			const fuzzingConfig = new OptionsManager(
+				OptionSource.DefaultJestOptions,
+			).merge({ mode: "fuzzing" }, OptionSource.ConfigurationFile);
 			await withMockTest(() => {
 				const originalTestNamePattern = jest
 					.fn()
 					.mockReturnValue(/^myFuzzTest$/);
-				invokeFuzz({ originalTestNamePattern })("myFuzzTest", jest.fn());
+				invokeFuzz({ originalTestNamePattern, fuzzingConfig })(
+					"myFuzzTest",
+					jest.fn(),
+				);
 			});
-			expect(startFuzzingNoInit).toBeCalledTimes(1);
+			expect(startFuzzingNoInit).toHaveBeenCalledTimes(1);
 		});
 
 		it("skip test not matching original test name pattern", async () => {
@@ -86,7 +88,7 @@ describe("fuzz", () => {
 					.mockReturnValue(/^not_existing$/);
 				invokeFuzz({ originalTestNamePattern })("myFuzzTest", jest.fn());
 			});
-			expect(startFuzzingNoInit).toBeCalledTimes(0);
+			expect(startFuzzingNoInit).toHaveBeenCalledTimes(0);
 		});
 	});
 
@@ -100,7 +102,7 @@ describe("fuzz", () => {
 					"fuzz",
 					asFindingAwareFuzzFn(testFn),
 					corpus,
-					{} as Options,
+					new OptionsManager(OptionSource.DefaultJestOptions),
 					globalThis as Global.Global,
 					"standard",
 				);
@@ -120,7 +122,7 @@ describe("fuzz", () => {
 						done();
 					}),
 					mockDefaultCorpus(),
-					{} as Options,
+					new OptionsManager(OptionSource.DefaultJestOptions),
 					globalThis as Global.Global,
 					"standard",
 				);
@@ -142,7 +144,7 @@ describe("fuzz", () => {
 						});
 					}),
 					mockDefaultCorpus(),
-					{} as Options,
+					new OptionsManager(OptionSource.DefaultJestOptions),
 					globalThis as Global.Global,
 					"standard",
 				);
@@ -162,7 +164,7 @@ describe("fuzz", () => {
 							});
 						}),
 						mockDefaultCorpus(),
-						{} as Options,
+						new OptionsManager(OptionSource.DefaultJestOptions),
 						globalThis as Global.Global,
 						"standard",
 					);
@@ -186,7 +188,7 @@ describe("fuzz", () => {
 							resolve("done called multiple times");
 						}),
 						mockDefaultCorpus(),
-						{} as Options,
+						new OptionsManager(OptionSource.DefaultJestOptions),
 						globalThis as Global.Global,
 						"standard",
 					);
@@ -204,7 +206,7 @@ describe("fuzz", () => {
 					"fuzz",
 					asFindingAwareFuzzFn(testFn),
 					corpus,
-					{} as Options,
+					new OptionsManager(OptionSource.DefaultJestOptions),
 					globalThis as Global.Global,
 					"standard",
 				);
@@ -274,7 +276,7 @@ function invokeFuzz(
 	params: Partial<{
 		globals: Global.Global;
 		testFile: string;
-		fuzzingConfig: Options;
+		fuzzingConfig: OptionsManager;
 		currentTestState: () => Circus.DescribeBlock | undefined;
 		currentTestTimeout: () => number | undefined;
 		originalTestNamePattern: () => RegExp | undefined;
@@ -284,10 +286,7 @@ function invokeFuzz(
 	const paramsWithDefaults = {
 		globals: globalThis as Global.Global,
 		testFile: "testfile",
-		fuzzingConfig: {
-			fuzzerOptions: [""],
-			mode: "fuzzing",
-		} as Options,
+		fuzzingConfig: new OptionsManager(OptionSource.DefaultJestOptions),
 		currentTestState: jest.fn().mockReturnValue({}),
 		currentTestTimeout: jest.fn().mockReturnValue(undefined),
 		originalTestNamePattern: jest.fn().mockReturnValue(undefined),

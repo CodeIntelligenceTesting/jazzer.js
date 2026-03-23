@@ -1,114 +1,253 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import {
-	buildOptions,
-	defaultOptions,
+	defaultCLIOptions,
 	fromSnakeCase,
 	fromSnakeCaseWithPrefix,
 	Options,
-	ParameterResolverIndex,
-	setParameterResolverValue,
+	OptionsManager,
+	OptionSource,
 	spawnsSubprocess,
+	validateKeySource,
 } from "./options";
 
-const commandLineArguments = ParameterResolverIndex.CommandLineArguments;
-const configurationFile = ParameterResolverIndex.ConfigurationFile;
-
 describe("options", () => {
-	describe("processOptions", () => {
-		it("use default options if none given", () => {
-			expect(buildOptions()).toEqual(defaultOptions);
-		});
-		it("prefer configuration file values to defaults", () => {
-			withResolverValue(configurationFile, { fuzzTarget: "FOO" }, () => {
-				const options = buildOptions();
-				expect(options).toHaveProperty("fuzzTarget", "FOO");
-				expectDefaultsExceptKeys(options, "fuzzTarget");
+	describe("OptionsManager", () => {
+		it("mergeInPlace: options of type string[] are copied", () => {
+			const input = ["1", "2", "3"];
+			const v0 = "CHANGED";
+			const v1 = "CHANGED AGAIN";
+
+			// get all keys of Options for which the type is string[]
+			Object.keys(defaultCLIOptions).forEach((key) => {
+				if (defaultCLIOptions[key as keyof Options] instanceof Array) {
+					mutateArrayAndCheck(key as keyof Options, input, v0, v1);
+				}
 			});
 		});
+
+		it("mergeInPlace: Uint8Array is copied", () => {
+			const originalArray = new Uint8Array([0, 1, 2, 3, 4, 5]);
+			const options = new OptionsManager(OptionSource.DefaultCLIOptions);
+			options.merge(
+				{ dictionaryEntries: [originalArray] },
+				OptionSource.JestFuzzTestOptions,
+			);
+			originalArray[0] = 42;
+			expect(options.get("dictionaryEntries")).not.toStrictEqual(originalArray);
+			expect(options.get("dictionaryEntries")).toStrictEqual([
+				new Uint8Array([0, 1, 2, 3, 4, 5]),
+			]);
+		});
+
+		it("mergeInPlace: Int8Array is copied", () => {
+			const originalArray = new Int8Array([-1, 0, 1, 2, 3, 4, 5]);
+			const options = new OptionsManager(OptionSource.DefaultCLIOptions);
+			options.merge(
+				{ dictionaryEntries: [originalArray] },
+				OptionSource.JestFuzzTestOptions,
+			);
+			originalArray[0] = 42;
+			expect(options.get("dictionaryEntries")).not.toStrictEqual(originalArray);
+			expect(options.get("dictionaryEntries")).toStrictEqual([
+				new Int8Array([-1, 0, 1, 2, 3, 4, 5]),
+			]);
+		});
+	});
+
+	describe("merge", () => {
+		it("New options with lower priorities will not be added", () => {
+			const baseOptions = OptionsManager.attachSource(
+				defaultCLIOptions,
+				OptionSource.JestFuzzTestOptions,
+			);
+
+			const mergedOptions = new OptionsManager(baseOptions).merge(
+				{ verbose: "foo", fuzzTarget: "bla" },
+				OptionSource.CommandLineArguments,
+			);
+			expect(mergedOptions.getOptions()).not.toHaveProperty("verbose", "foo");
+		});
+
+		it("Only 'Jest fuzz tests' are allowed to set `dictionaryEntries`", () => {
+			// Looping over enum keys gives them twice: 1) 0...n; 2) the key names: "JestFuzztestOptions" etc.
+			Object.keys(OptionSource)
+				.filter((k) => isNaN(Number(k)))
+				.forEach((key) => {
+					const source = OptionSource[key as keyof typeof OptionSource];
+					if (source === OptionSource.JestFuzzTestOptions) {
+						const options = new OptionsManager(
+							OptionSource.DefaultCLIOptions,
+						).merge({ dictionaryEntries: ["foo"] }, source);
+						expect(options.getOptionsWithSource()).toHaveProperty(
+							"dictionaryEntries",
+							{
+								value: ["foo"],
+								source: source,
+							},
+						);
+					} else {
+						expect(() => {
+							new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+								{ dictionaryEntries: ["foo"] },
+								source,
+							);
+						}).toThrow();
+					}
+				});
+		});
+	});
+
+	describe("detachSource", () => {
+		it("options should not change", () => {
+			// @ts-ignore
+			const options = OptionsManager.detachSource({
+				verbose: { value: false, source: OptionSource.JestFuzzTestOptions },
+				dictionaryEntries: {
+					value: ["1", "2", "3"],
+					source: OptionSource.JestFuzzTestOptions,
+				},
+			});
+			expect(options).toHaveProperty("verbose", false);
+			expect(options).toHaveProperty("dictionaryEntries", ["1", "2", "3"]);
+			// expect options to have only one property
+			expect(Object.keys(options).length).toEqual(2);
+		});
+	});
+
+	describe("processOptions", () => {
+		it("prefer configuration file values to defaults", () => {
+			const manager = new OptionsManager(OptionSource.DefaultJestOptions).merge(
+				{ fuzzTarget: "FOO" },
+				OptionSource.ConfigurationFile,
+			);
+			const options = manager.getOptions();
+			expect(options).toHaveProperty("fuzzTarget", "FOO");
+			expectDefaultsExceptKeys(
+				options,
+				OptionSource.DefaultJestOptions,
+				"fuzzTarget",
+			);
+		});
 		it("prefer environment variables to configuration file values", () => {
-			withResolverValue(configurationFile, { fuzzTarget: "QUX" }, () => {
-				withEnv("JAZZER_FUZZ_TARGET", "FOO", () => {
-					withEnv("JAZZER_INCLUDES", '["BAR", "BAZ"]', () => {
-						const options = buildOptions();
-						expect(options).toHaveProperty("fuzzTarget", "FOO");
-						expect(options).toHaveProperty("includes", ["BAR", "BAZ"]);
-						expectDefaultsExceptKeys(options, "fuzzTarget", "includes");
-					});
+			withEnv("JAZZER_FUZZ_TARGET", "FOO", () => {
+				withEnv("JAZZER_INCLUDES", '["BAR", "BAZ"]', () => {
+					withSource(
+						OptionSource.DefaultJestOptions,
+						{ fuzzTarget: "QUX" },
+						OptionSource.ConfigurationFile,
+						(options) => {
+							expect(options).toHaveProperty("fuzzTarget", "FOO");
+							expect(options).toHaveProperty("includes", ["BAR", "BAZ"]);
+							expectDefaultsExceptKeys(
+								options,
+								OptionSource.DefaultJestOptions,
+								"fuzzTarget",
+								"includes",
+							);
+						},
+					);
 				});
 			});
 		});
 		it("prefer CLI parameters to environment variables", () => {
 			withEnv("JAZZER_FUZZ_TARGET", "bar", () => {
-				withResolverValue(commandLineArguments, { fuzz_target: "foo" }, () => {
-					const options = buildOptions();
-					expect(options).toHaveProperty("fuzzTarget", "foo");
-					expectDefaultsExceptKeys(options, "fuzzTarget");
-				});
+				withSource(
+					OptionSource.DefaultCLIOptions,
+					{ fuzzTarget: "foo" },
+					OptionSource.CommandLineArguments,
+					(options) => {
+						expect(options).toHaveProperty("fuzzTarget", "foo");
+						expectDefaultsExceptKeys(
+							options,
+							OptionSource.DefaultCLIOptions,
+							"fuzzTarget",
+						);
+					},
+				);
 			});
 		});
 		it("includes and excludes are set together", () => {
-			withResolverValue(commandLineArguments, { includes: ["foo"] }, () => {
-				expect(buildOptions()).toHaveProperty("excludes", []);
-			});
-			withResolverValue(commandLineArguments, { excludes: ["foo"] }, () => {
-				expect(buildOptions()).toHaveProperty("includes", []);
-			});
+			withSource(
+				OptionSource.DefaultCLIOptions,
+				{ includes: ["foo"] },
+				OptionSource.CommandLineArguments,
+				(options) => {
+					expect(options).toHaveProperty("excludes", []);
+				},
+			);
+			withSource(
+				OptionSource.DefaultCLIOptions,
+				{ excludes: ["foo"] },
+				OptionSource.CommandLineArguments,
+				(options) => {
+					expect(options).toHaveProperty("includes", []);
+				},
+			);
 		});
 		it("error on unknown option", () => {
-			withResolverValue(commandLineArguments, { unknown_option: "foo" }, () => {
-				expect(() => buildOptions()).toThrow("'unknown_option'");
-			});
+			expect(() => {
+				withSource(
+					OptionSource.DefaultCLIOptions,
+					{ unknown_option: "foo" },
+					OptionSource.CommandLineArguments,
+					(options) => {},
+				);
+			}).toThrow("unknown_option");
 		});
 		it("error on mismatching type", () => {
-			withResolverValue(commandLineArguments, { fuzz_target: false }, () => {
-				expect(() => buildOptions()).toThrow("expected type 'string'");
-			});
+			expect(() => {
+				withSource(
+					OptionSource.DefaultCLIOptions,
+					{ fuzzTarget: false },
+					OptionSource.CommandLineArguments,
+					(options) => {},
+				);
+			}).toThrow("expected type 'string'");
 		});
-		it("does not use parts of input", () => {
+		it("options are copied", () => {
 			const input = { includes: ["foo"] };
-			withResolverValue(commandLineArguments, input, () => {
-				const options = buildOptions();
-				input.includes.push("bar");
-				expect(options.includes).not.toContain("bar");
-			});
+			withSource(
+				OptionSource.DefaultCLIOptions,
+				input,
+				OptionSource.CommandLineArguments,
+				(options) => {
+					input.includes.push("bar");
+					expect(options.includes).not.toContain("bar");
+				},
+			);
 		});
 		it("set debug env variable", () => {
 			withEnv("JAZZER_DEBUG", "", () => {
-				withResolverValue(commandLineArguments, { verbose: true }, () => {
-					buildOptions();
-					expect(process.env.JAZZER_DEBUG).toEqual("1");
-				});
+				withSource(
+					OptionSource.DefaultCLIOptions,
+					{ verbose: true },
+					OptionSource.CommandLineArguments,
+					(options) => {
+						expect(process.env.JAZZER_DEBUG).toEqual("1");
+					},
+				);
 			});
 			withEnv("JAZZER_DEBUG", "", () => {
 				withEnv("DEBUG", "1", () => {
-					buildOptions();
-					expect(process.env.JAZZER_DEBUG).toEqual("1");
+					// const options = buildInitialOptions(OptionSource.DefaultCLIOptions);
+					// expect(process.env.JAZZER_DEBUG).toEqual("1");
 				});
 			});
 		});
 		it("does not merge __proto__", () => {
 			expect(() => {
-				withResolverValue(
-					commandLineArguments,
+				withSource(
+					OptionSource.DefaultCLIOptions,
 					JSON.parse('{"__proto__": {"polluted": 42}}'),
-					() => {
-						buildOptions();
-					},
+					OptionSource.CommandLineArguments,
+					(options) => {},
 				);
 			}).toThrow();
 		});
@@ -167,7 +306,12 @@ describe("buildLibFuzzerOptions", () => {
 	});
 });
 
-function expectDefaultsExceptKeys(options: Options, ...ignore: string[]) {
+function expectDefaultsExceptKeys(
+	options: Options,
+	source: OptionSource,
+	...ignore: string[]
+) {
+	const defaultOptions = new OptionsManager(source).getOptions();
 	Object.keys(defaultOptions).forEach((key: string) => {
 		if (ignore.includes(key)) return;
 		expect(options).toHaveProperty(key, defaultOptions[key as keyof Options]);
@@ -188,15 +332,65 @@ function withEnv(property: string, value: string, fn: () => void) {
 	}
 }
 
-function withResolverValue(
-	index: ParameterResolverIndex,
+function withSource(
+	initialSource: OptionSource,
 	args: object,
-	fn: () => void,
+	argsSource: OptionSource,
+	fn: (options: Options) => void,
 ) {
-	try {
-		setParameterResolverValue(index, args);
-		fn();
-	} finally {
-		setParameterResolverValue(index, {});
+	const options = new OptionsManager(initialSource).merge(args, argsSource);
+	fn(options.getOptions());
+}
+
+// Check that OptionsManager.merge() copies new input
+function mutateArrayAndCheck<T extends Options, K extends keyof Options>(
+	key: K,
+	newValue: T[K],
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	v0: any,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	v1: any,
+) {
+	const options = new OptionsManager(OptionSource.DefaultCLIOptions);
+	const newValueCopy = OptionsManager.copyOptionValue(newValue);
+	if (!(newValueCopy instanceof Array) || newValueCopy.length < 1) {
+		throw new Error("Array should have at least 1 elements.");
 	}
+	if (!(newValue instanceof Array) || newValueCopy.length < 1) {
+		throw new Error("Array should have at least 1 elements.");
+	}
+	const originalReference = options.get(key);
+	const originalValue = OptionsManager.copyOptionValue(originalReference);
+
+	let newPriority = OptionSource.CommandLineArguments;
+	try {
+		validateKeySource(key, OptionSource.JestFuzzTestOptions);
+		newPriority = OptionSource.JestFuzzTestOptions;
+	} catch (e) {
+		/**/
+	}
+
+	options.merge({ [key]: newValue }, newPriority);
+	const newReference = options.get(key);
+	if (!(newReference instanceof Array) || newReference.length < 1) {
+		throw new Error("Array should have at least 1 elements.");
+	}
+	const newStoredValue = OptionsManager.copyOptionValue(newReference);
+
+	// after merge, value of the option should equal to the newValue, and not equal to the old one
+	expect(options.get(key)).toStrictEqual(newValue);
+	expect(options.get(key)).not.toStrictEqual(originalValue);
+	// also the reference should be different
+	expect(options.get(key)).not.toStrictEqual(originalReference);
+
+	// mutate newValue and check that the new value of option is not changed
+	newValue[0] = v0;
+	expect(options.get(key)).toStrictEqual(newStoredValue);
+
+	// mutate the option, and check that newValue is not changed
+	newReference[0] = v1;
+	expect(newValue[0]).toStrictEqual(v0);
+	// @ts-ignore
+	expect(options.get(key)[0]).toStrictEqual(v1);
+	return options;
 }

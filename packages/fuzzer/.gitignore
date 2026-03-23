@@ -1,4 +1,3 @@
 .cache
 build
-prebuilds
 cmake-build-debug

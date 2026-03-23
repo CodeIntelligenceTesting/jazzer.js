@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import * as fs from "fs";
@@ -19,19 +11,19 @@ import * as fs from "fs";
 import { Circus, Global } from "@jest/types";
 
 import {
+	AllowedFuzzTestOptions,
 	asFindingAwareFuzzFn,
-	defaultOptions,
 	FindingAwareFuzzTarget,
-	Options,
-	startFuzzingNoInit,
-} from "@jazzer.js/core";
-import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
-} from "@jazzer.js/fuzzer";
+	Options,
+	OptionsManager,
+	OptionSource,
+	printOptions,
+	startFuzzingNoInit,
+} from "@jazzer.js/core";
 
-import { TIMEOUT_PLACEHOLDER } from "./config";
 import { Corpus } from "./corpus";
 import { removeTopFramesFromError } from "./errorUtils";
 
@@ -41,7 +33,7 @@ export class FuzzerError extends Error {}
 export type FuzzTest = (
 	name: Global.TestNameLike,
 	fn: FuzzTarget,
-	timeout?: number,
+	timeoutOrOptions?: number | Partial<Pick<Options, AllowedFuzzTestOptions>>,
 ) => void;
 
 export const skip: (globals: Global.Global) => FuzzTest =
@@ -76,16 +68,37 @@ function printTestNameIfRequested(testStatePath: string[]) {
 export function fuzz(
 	globals: Global.Global,
 	testFile: string,
-	fuzzingConfig: Options,
+	fuzzingConfig: OptionsManager,
 	currentTestState: () => Circus.DescribeBlock | undefined,
 	currentTestTimeout: () => number | undefined,
 	originalTestNamePattern: () => RegExp | undefined,
 	mode: JestTestMode,
 ): FuzzTest {
-	return (name, fn, timeout) => {
+	return (name, fn, timeoutOrOptions) => {
 		// Deep clone the fuzzing config, so that each test can modify it without
 		// affecting other tests, e.g. set a test specific timeout.
-		const localConfig = JSON.parse(JSON.stringify(fuzzingConfig));
+		const localConfig = fuzzingConfig.clone();
+
+		if (currentTestTimeout()) {
+			localConfig.merge(
+				{ timeout: currentTestTimeout() },
+				OptionSource.InternalJestTimeout,
+			);
+		}
+
+		let paramsToMerge: Partial<Options> = {};
+
+		if (typeof timeoutOrOptions === "number") {
+			paramsToMerge = { timeout: timeoutOrOptions };
+		} else if (typeof timeoutOrOptions === "object") {
+			paramsToMerge = timeoutOrOptions;
+		} else if (timeoutOrOptions !== undefined) {
+			throw new FuzzerError(
+				`Invalid timeout or options argument "${timeoutOrOptions}"`,
+			);
+		}
+
+		localConfig.merge(paramsToMerge, OptionSource.JestFuzzTestOptions);
 
 		const state = currentTestState();
 		if (!state) {
@@ -101,7 +114,7 @@ export function fuzz(
 
 		const skip =
 			testStatePath !== undefined &&
-			testNamePattern != undefined &&
+			testNamePattern !== undefined &&
 			!testNamePattern.test(testStatePath.join(" "));
 		if (skip) {
 			globals.test.skip(name, () => {
@@ -110,31 +123,23 @@ export function fuzz(
 			return;
 		}
 
-		const corpus = new Corpus(testFile, testStatePath, localConfig.coverage);
+		const corpus = new Corpus(
+			testFile,
+			testStatePath,
+			localConfig.get("coverage"),
+		);
 
-		// Timeout priority is:
-		// 1. Use timeout directly defined in test function
-		// 2. Use timeout defined in fuzzing config
-		// 3. Use jest timeout
-		if (timeout != undefined) {
-			localConfig.timeout = timeout;
-		} else {
-			const jestTimeout = currentTestTimeout();
-			if (jestTimeout != undefined && localConfig.timeout == undefined) {
-				localConfig.timeout = jestTimeout;
-			} else if (localConfig.timeout === TIMEOUT_PLACEHOLDER) {
-				localConfig.timeout = defaultOptions.timeout;
-			}
-		}
+		const wrappedFn = asFindingAwareFuzzFn(
+			fn,
+			localConfig.get("mode") === "fuzzing",
+		);
 
-		const wrappedFn = asFindingAwareFuzzFn(fn, localConfig.mode === "fuzzing");
-
-		if (localConfig.mode === "regression") {
+		if (localConfig.get("mode") === "regression") {
 			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals, mode);
-		} else if (localConfig.mode === "fuzzing") {
+		} else if (localConfig.get("mode") === "fuzzing") {
 			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals, mode);
 		} else {
-			throw new Error(`Unknown mode ${localConfig.mode}`);
+			throw new Error(`Unknown mode ${localConfig.get("mode")}`);
 		}
 	};
 }
@@ -143,17 +148,17 @@ export const runInFuzzingMode = (
 	name: Global.TestNameLike,
 	fn: FindingAwareFuzzTarget,
 	corpus: Corpus,
-	options: Options,
+	options: OptionsManager,
 	globals: Global.Global,
 	mode: JestTestMode,
 ) => {
 	handleMode(mode, globals.test)(name, async () => {
-		options.fuzzerOptions.unshift(corpus.seedInputsDirectory);
-		options.fuzzerOptions.unshift(corpus.generatedInputsDirectory);
-		options.fuzzerOptions.push(
-			"-artifact_prefix=" + corpus.seedInputsDirectory,
-		);
-		return startFuzzingNoInit(fn, options).then(({ error }) => {
+		const newOptions = options.clone();
+		const fuzzerOptions = newOptions.get("fuzzerOptions");
+		fuzzerOptions.unshift(corpus.seedInputsDirectory);
+		fuzzerOptions.unshift(corpus.generatedInputsDirectory);
+		fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
+		return startFuzzingNoInit(fn, newOptions).then(({ error }) => {
 			// Throw the found error to mark the test as failed.
 			if (error) throw error;
 		});
@@ -164,10 +169,12 @@ export const runInRegressionMode = (
 	name: Global.TestNameLike,
 	fn: FindingAwareFuzzTarget,
 	corpus: Corpus,
-	options: Options,
+	options: OptionsManager,
 	globals: Global.Global,
 	mode: JestTestMode,
 ) => {
+	printOptions(options, `for test "${name}"`);
+
 	handleMode(mode, globals.describe)(name, () => {
 		function executeTarget(content: Buffer) {
 			return new Promise((resolve, reject) => {
@@ -187,7 +194,7 @@ export const runInRegressionMode = (
 		globals.test(
 			"<empty>",
 			async () => executeTarget(Buffer.from("")),
-			options.timeout,
+			options.get("timeout"),
 		);
 
 		// Execute the fuzz test with each input file as no libFuzzer is required.
@@ -195,7 +202,7 @@ export const runInRegressionMode = (
 			globals.test(
 				seed,
 				async () => executeTarget(await fs.promises.readFile(path)),
-				options.timeout,
+				options.get("timeout"),
 			);
 		});
 	});

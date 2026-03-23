@@ -3,5 +3,10 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     versioning-strategy: increase
+    groups:
+      minor-dependencies:
+        update-types:
+          - "minor"
+          - "patch"

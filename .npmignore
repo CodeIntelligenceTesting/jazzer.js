@@ -1,4 +1,5 @@
 # Ignore build files similar to .gitignore
+.vscode
 .idea
 .github
 .husky
@@ -10,6 +11,8 @@ build
 cmake-build-*
 coverage
 node_modules
+tests
+shared
 
 # Exclude docs, those can be accessed online
 docs
@@ -25,3 +28,9 @@ example
 *.ts
 !*.d.ts
 *test*.d.ts
+
+
+# Exclude native fuzzer sources
+**/CMakeLists.txt
+**/*.cpp
+**/*.h

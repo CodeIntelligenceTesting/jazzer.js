@@ -1,24 +1,16 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import { EOL } from "os";
 import { sep } from "path";
 import process from "process";
 
-import { getJazzerJsGlobal, setJazzerJsGlobal } from "./api";
+import { getJazzerJsGlobal, setJazzerJsGlobal } from "./globals";
 
 const firstFinding = "firstFinding";
 
@@ -149,10 +141,15 @@ export function cleanErrorStack(error: unknown): void {
 	// like bug detector and reporting ones, and stack frames on the bottom, like the function
 	// wrapper.
 	const filterCriteria = [
-		`@jazzer.js${sep}`, // cli usage
-		`jazzer.js${sep}packages${sep}`, // jest usage
-		`jazzer.js${sep}core${sep}`, // jest usage
-		`..${sep}..${sep}packages${sep}`, // local/filesystem dependencies
+		`${sep}@jazzer.js${sep}`, // cli usage
+		// Filter public name (jest)
+		`${sep}jazzer.js${sep}packages${sep}`,
+		`${sep}jazzer.js${sep}core${sep}`,
+		// Filter private name (jest)
+		`${sep}jazzer.js-commercial${sep}packages${sep}`,
+		`${sep}jazzer.js-commercial${sep}core${sep}`,
+		// Filter local/filesystem dependencies
+		`..${sep}..${sep}packages${sep}`,
 	];
 	error.stack = error.stack
 		.split("\n")

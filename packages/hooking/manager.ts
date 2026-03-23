@@ -1,20 +1,13 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import { builtinModules } from "module";
+import * as vm from "vm";
 
 import {
 	AfterHookFn,
@@ -120,14 +113,14 @@ export class HookManager {
 	 * initialization steps for the hooks to work. This method must be called
 	 * after all hooks have been registered.
 	 */
-	async finalizeHooks() {
+	async finalizeHooks(vmContext: vm.Context | typeof globalThis) {
 		// Built-in functions cannot be hooked by the instrumentor, so that is
 		// explicitly done here instead.
 		// Loading build-in modules is asynchronous, so we need to wait, which
 		// is not possible in the instrumentor.
 		for (const builtinModule of builtinModules) {
-			const matchedHooks = this._hooks.filter((hook) =>
-				builtinModule.includes(hook.pkg),
+			const matchedHooks = this._hooks.filter(
+				(hook) => builtinModule.includes(hook.pkg) && hook.pkg !== "",
 			);
 			for (const hook of matchedHooks) {
 				try {
@@ -135,10 +128,29 @@ export class HookManager {
 				} catch (e) {
 					if (process.env.JAZZER_DEBUG) {
 						console.error(
-							"DEBUG: [Hook] Error when trying to hook the built-in function: " +
-								e,
+							"DEBUG: [hooking] Could not hook built-in function: " +
+								hook.pkg +
+								" : " +
+								hook.target,
 						);
+						console.error(e);
 					}
+				}
+			}
+		}
+
+		// Hook global functions (functions without module names)
+		const globalHooks = this._hooks.filter((hook) => hook.pkg === "");
+		for (const hook of globalHooks) {
+			try {
+				hookGlobalFunction(hook, vmContext);
+			} catch (e) {
+				if (process.env.JAZZER_DEBUG) {
+					console.error(
+						"DEBUG: [hooking] Could not hook the global function: " +
+							hook.target,
+					);
+					console.error(e);
 				}
 			}
 		}
@@ -249,28 +261,129 @@ export function registerAfterHook(
 	hookManager.registerHook(HookType.After, target, pkg, async, hookFn);
 }
 
+export function getFunction(
+	module: object,
+	propertyAccessors: string[],
+): unknown {
+	let current = module;
+
+	for (const propertyAccessor of propertyAccessors) {
+		try {
+			// @ts-ignore
+			current = current[propertyAccessor];
+		} catch (e) {
+			return undefined;
+		}
+	}
+	return current;
+}
+
+export function setFunction(
+	module: object,
+	propertyAccessors: string[],
+	newFunction: unknown,
+): void {
+	if (!(newFunction instanceof Function || typeof newFunction === "function")) {
+		if (process.env.JAZZER_DEBUG) {
+			console.error(
+				"DEBUG: [hooking] Could not hook built-in function: " +
+					propertyAccessors.join(".") +
+					"\n" +
+					"   provided newFunction is not a function",
+			);
+		}
+		return;
+	}
+
+	let current = module;
+	for (const propertyAccessor of propertyAccessors.slice(0, -1)) {
+		try {
+			// @ts-ignore
+			current = current[propertyAccessor];
+		} catch (e) {
+			if (process.env.JAZZER_DEBUG) {
+				console.error(
+					"DEBUG: [hooking] Could not hook built-in function: " +
+						propertyAccessors.join("."),
+				);
+			}
+			return;
+		}
+	}
+	// @ts-ignore
+	current[propertyAccessors[propertyAccessors.length - 1]] = newFunction;
+}
+
 /**
  * Replaces a built-in function with a custom implementation while preserving
  * the original function for potential use within the replacement function.
  */
 export async function hookBuiltInFunction(hook: Hook): Promise<void> {
+	if (hook.registered) return;
+	hook.registered = true;
 	const { default: module } = await import(hook.pkg);
-	const originalFn = module[hook.target];
+	const targetPropertyAccessors = hook.target.split(".");
+	const originalFn = getFunction(module, targetPropertyAccessors);
+	hookFunction(module, hook, originalFn, targetPropertyAccessors);
+}
+
+function hookGlobalFunction(
+	hook: Hook,
+	context: vm.Context | typeof globalThis,
+): void {
+	const originalFn = vm.isContext(context)
+		? vm.runInContext(hook.target, context)
+		: vm.runInThisContext(hook.target);
+
+	if (originalFn) {
+		hookFunction(context, hook, originalFn);
+		const newFunction = getFunction(context, hook.target.split("."));
+		// assign prototype of the original function to the prototype of the new function
+		if (newFunction instanceof Function || typeof newFunction === "function") {
+			newFunction.prototype = originalFn.prototype;
+		}
+	}
+}
+
+function hookFunction(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	obj: any,
+	hook: Hook,
+	originalFn: unknown | ((...args: unknown[]) => unknown),
+	targetPropertyAccessors: string[] = hook.target.split("."),
+) {
+	if (!(originalFn instanceof Function || typeof originalFn === "function")) {
+		if (process.env.JAZZER_DEBUG) {
+			console.error(
+				"DEBUG: [hooking] Could not hook built-in function: " +
+					hook.pkg +
+					" : " +
+					hook.target,
+			);
+		}
+		return;
+	}
+
 	const id = callSiteId(hookManager.hookIndex(hook), hook.pkg, hook.target);
 	if (hook.type == HookType.Before) {
-		module[hook.target] = (...args: unknown[]) => {
-			(hook.hookFunction as BeforeHookFn)(null, args, id);
-			return originalFn(...args);
-		};
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			(hook.hookFunction as BeforeHookFn)(this, args, id);
+			// @ts-ignore
+			return originalFn.apply(this, args);
+		});
 	} else if (hook.type == HookType.Replace) {
-		module[hook.target] = (...args: unknown[]) => {
-			return (hook.hookFunction as ReplaceHookFn)(null, args, id, originalFn);
-		};
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			return (hook.hookFunction as ReplaceHookFn)(this, args, id, originalFn);
+		});
 	} else if (hook.type == HookType.After) {
-		module[hook.target] = (...args: unknown[]) => {
-			const result: unknown = originalFn(...args);
-			return (hook.hookFunction as AfterHookFn)(null, args, id, result);
-		};
+		setFunction(obj, targetPropertyAccessors, function (...args: unknown[]) {
+			// @ts-ignore
+			const result: unknown = originalFn.apply(this, args);
+			// @ts-ignore
+			return (hook.hookFunction as AfterHookFn)(this, args, id, result);
+		});
 	} else {
 		throw new Error(`Unknown hook type ${hook.type}`);
 	}

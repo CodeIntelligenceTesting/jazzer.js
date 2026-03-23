@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 /**
@@ -38,11 +30,6 @@ export class FuzzedDataProvider {
 	private dataPtr = -1;
 	/** The number of remaining bytes that can be consumed from the fuzzer input data. */
 	_remainingBytes = 0;
-	/**
-	 * A lookup table that maps input values to output characters in a cyclical manner.
-	 * The output characters are evenly distributed across the range of printable ASCII characters (32-126)
-	 */
-	private lookupTable = new Uint8Array(256);
 
 	static readonly min_float = -3.4028235e38;
 	static readonly max_float = 3.4028235e38;
@@ -57,18 +44,6 @@ export class FuzzedDataProvider {
 		if (data.length > 0) {
 			this.dataPtr = 0;
 			this._remainingBytes = data.length;
-		}
-
-		/**
-		 * Populate the lookup table with a mapping of input values to output characters
-		 */
-		let nextChar = 32;
-		for (let i = 0; i < 256; i++) {
-			this.lookupTable[i] = nextChar;
-			nextChar++;
-			if (nextChar > 126) {
-				nextChar = 32;
-			}
 		}
 	}
 
@@ -427,80 +402,30 @@ export class FuzzedDataProvider {
 	 * The array might be shorter than requested `maxLength` if the fuzzer input
 	 * is not sufficiently long.
 	 * @param maxLength the maximum length of the string
-	 * @param encoding the encoding of the string
-	 * @param printable - a boolean, which defaults to false that indicates whether consumed strings
-	 * should be forced to contain only valid printable characters
 	 * @returns a `string` of length between 0 and `maxLength` (inclusive)
 	 */
-	consumeString(
-		maxLength: number,
-		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false,
-	): string {
+	consumeString(maxLength: number): string {
 		if (maxLength < 0) throw new Error("maxLength must be non-negative");
 		if (!Number.isInteger(maxLength)) {
 			throw new FloatLengthError();
 		}
-		let result;
 		const arrayLength = Math.min(maxLength, this._remainingBytes);
-
-		if (printable) {
-			result = this.bufToPrintableString(
-				this.data,
-				this.dataPtr,
-				this.dataPtr + arrayLength,
-				encoding,
-			);
-		} else {
-			result = this.data.toString(
-				encoding,
-				this.dataPtr,
-				this.dataPtr + arrayLength,
-			);
-		}
+		const result = this.data.toString(
+			"utf-8",
+			this.dataPtr,
+			this.dataPtr + arrayLength,
+		);
 		this.dataPtr += arrayLength;
 		this._remainingBytes -= arrayLength;
 		return result;
 	}
 
 	/**
-	 * Helper function that converts the given string type into one that only
-	 * contains printable characters. Elements in `buf` that are already in
-	 * ASCII printable range are not undergoing any conversion.
-	 * Known limitations:
-	 *   numbers [32; 97] will have the probability of about 0.01172 of occuring,
-	 *   numbers [98; 126] will have probability of 0.00781 of occurring.
-	 * @param buf - Buffer that contains arbitrary values
-	 * @param min - lower bound at which processing of the provided `Buffer` shall begin
-	 * @param max - upper bound, analogous to the lower bound
-	 * @param encoding - a valid `BufferEncoding`.
-	 * @returns a string that was sanitized and only contains printable characters
-	 */
-	private bufToPrintableString(
-		buf: Buffer,
-		min: number,
-		max: number,
-		encoding: BufferEncoding,
-	): string {
-		const newBuf = new Uint8Array(max - min);
-		for (let i = min; i < max; i++) {
-			newBuf[i - min] = this.lookupTable[buf[i]];
-		}
-		return new TextDecoder(encoding).decode(newBuf);
-	}
-
-	/**
 	 * Consumes the remaining bytes of the fuzzer input as a string.
-	 * @param encoding - the encoding of the string
-	 * @param printable - a boolean, which defaults to false that indicates whether consumed strings
-	 * should be forced to contain only valid printable characters
-	 * @returns a string constructed from the remaining bytes of the fuzzer input using the given encoding
+	 * @returns a string constructed from the remaining bytes of the fuzzer input
 	 */
-	consumeRemainingAsString(
-		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false,
-	): string {
-		return this.consumeString(this._remainingBytes, encoding, printable);
+	consumeRemainingAsString(): string {
+		return this.consumeString(this._remainingBytes);
 	}
 
 	/**
@@ -509,17 +434,9 @@ export class FuzzedDataProvider {
 	 * if the fuzzer input is not sufficiently long.
 	 * @param maxArrayLength the maximum length of the array
 	 * @param maxStringLength the maximum length of the strings
-	 * @param encoding the encoding of the strings
-	 * @param printable - a boolean, which defaults to false that indicates whether consumed strings
-	 * should be forced to contain only valid printable characters
-	 * @returns an array containing strings constructed from the remaining bytes of the fuzzer input using the given encoding
+	 * @returns an array containing strings constructed from the remaining bytes of the fuzzer input
 	 */
-	consumeStringArray(
-		maxArrayLength: number,
-		maxStringLength: number,
-		encoding: BufferEncoding | undefined = "ascii",
-		printable: boolean | undefined = false,
-	) {
+	consumeStringArray(maxArrayLength: number, maxStringLength: number) {
 		if (
 			!Number.isInteger(maxArrayLength) ||
 			!Number.isInteger(maxStringLength)
@@ -528,7 +445,7 @@ export class FuzzedDataProvider {
 		}
 		const strs = [];
 		while (strs.length < maxArrayLength && this.remainingBytes > 0) {
-			const str = this.consumeString(maxStringLength, encoding, printable);
+			const str = this.consumeString(maxStringLength);
 			if (str || str === "") {
 				strs.push(str);
 			}

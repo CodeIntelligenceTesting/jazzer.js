@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import * as vm from "vm";
@@ -62,7 +54,7 @@ class PrototypePollutionConfig {
 	 * ```
 	 */
 	instrumentAssignmentsAndVariableDeclarations(): PrototypePollutionConfig {
-		if (global.options.dryRun) {
+		if (global.options.get("dryRun")) {
 			console.error(
 				"ERROR: " +
 					"[Prototype Pollution Configuration] The configuration option " +
@@ -336,7 +328,7 @@ function detectPrototypePollutionOfBasicObjects(
 	for (let i = 0; i < initialSnapshots.length; i++) {
 		if (!currentProtoSnapshots[i]) {
 			reportFinding(
-				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
+				`Prototype Pollution\n    Prototype of ${BASIC_OBJECT_NAMES[i]} changed.`,
 				false,
 			);
 			return;
@@ -347,7 +339,7 @@ function detectPrototypePollutionOfBasicObjects(
 		);
 		if (equalityResult) {
 			reportFinding(
-				`Prototype Pollution: Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
+				`Prototype Pollution\n    Prototype of ${BASIC_OBJECT_NAMES[i]} changed. ${equalityResult}`,
 				false,
 			);
 			return;
@@ -401,9 +393,9 @@ function detectPrototypePollution(
 			) {
 				let message;
 				if (identifier) {
-					message = `Prototype Pollution: ${identifier}.__proto__ value is ${protoValue}`;
+					message = `Prototype Pollution\n    ${identifier}.__proto__ value is ${protoValue}`;
 				} else {
-					message = `Prototype Pollution: __proto__ value is ${protoValue}`;
+					message = `Prototype Pollution\n    __proto__ value is ${protoValue}`;
 				}
 				if (report) {
 					reportAndThrowFinding(message);

@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 const path = require("path");
@@ -35,6 +27,7 @@ describe("SIGINT handlers", () => {
 		const testProjectDir = path.join(__dirname, "SIGINT");
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
+			.disableBugDetectors([".*"])
 			.dir(testProjectDir)
 			.coverage(true)
 			.verbose(true);
@@ -58,6 +51,26 @@ describe("SIGINT handlers", () => {
 			fuzzTest.execute();
 			expectSigintOutput(fuzzTest);
 		});
+		it("stop sync fuzzing on SIGINT in endless loop", async () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(true)
+				.timeout(5000)
+				.fuzzEntryPoint("SIGINT_SYNC_endless_loop")
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
+		it("stop async fuzzing on SIGINT in endless loop", async () => {
+			const fuzzTest = fuzzTestBuilder
+				.sync(false)
+				.timeout(5000)
+				.fuzzEntryPoint("SIGINT_ASYNC_endless_loop")
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
 	});
 
 	describe("in Jest fuzzing mode", () => {
@@ -79,6 +92,26 @@ describe("SIGINT handlers", () => {
 			fuzzTest.execute();
 			expectSigintOutput(fuzzTest);
 		});
+		it("stop sync endless loop fuzzing on SIGINT", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Sync endless loop$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
+		it("stop async endless loop fuzzing on SIGINT", () => {
+			const fuzzTest = fuzzTestBuilder
+				.jestTestFile("tests.fuzz.js")
+				.jestTestName("^Jest Async endless loop$")
+				.jestRunInFuzzingMode(true)
+				.build();
+			fuzzTest.execute();
+			expectNoCrashFileLogged(fuzzTest);
+			expectFuzzingStopped(fuzzTest);
+		});
 	});
 });
 
@@ -90,6 +123,7 @@ describe("SIGSEGV handlers", () => {
 		const testProjectDir = path.join(__dirname, "SIGSEGV");
 		fuzzTestBuilder = new FuzzTestBuilder()
 			.runs(20000)
+			.disableBugDetectors([".*"])
 			.dir(testProjectDir)
 			.coverage(true);
 		await cleanCrashFilesIn(testProjectDir);

@@ -2,7 +2,7 @@
 
 Custom Jest runner to executes fuzz tests via Jazzer.js, detailed documentation
 can be found at the
-[Jazzer.js GitHub page](https://github.com/CodeIntelligenceTesting/jazzer.js).
+[Jazzer.js GitHub page](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial).
 
 A fuzz test in Jest, in this case written in TypeScript, would look similar to
 the following example:

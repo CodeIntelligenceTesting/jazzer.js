@@ -8,42 +8,12 @@
     />
   </div>
   <hr />
-  <a href="https://img.shields.io/npm/v/@jazzer.js/core">
-    <img src="https://img.shields.io/npm/v/@jazzer.js/core"/>
-  </a>
-  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml">
-    <img src="https://github.com/CodeIntelligenceTesting/jazzer.js/actions/workflows/run-all-tests.yaml/badge.svg?branch=main"/>
-  </a>
-  <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/CodeIntelligenceTesting/jazzer.js"/>
-  </a>
- <a href="https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome" />
-  </a>
-  <br />
-
+  
 <a href="https://www.code-intelligence.com/" target="_blank">Website</a> |
 <a href="https://www.code-intelligence.com/blog" target="_blank">Blog</a> |
 <a href="https://twitter.com/CI_Fuzz" target="_blank">Twitter</a>
 
 </div>
-
-> [!IMPORTANT]
->
-> Hello Jazzer/Jazzer.js users!
->
-> We stopped maintaining Jazzer/Jazzer.js as open source. But we'd be happy to
-> try and understand what you're trying to achieve with it, and help you if we
-> can!
->
-> We already added significant new value to our CI Fuzz solution, which includes
-> Jazzer and Jazzer.js. You can see more here at
-> [code-intelligence.com](https://code-intelligence.com), or get in contact with
-> us via [sales@code-intelligence.com](mailto:sales@code-intelligence.com)
->
-> Thanks,
->
-> The Code Intelligence team
 
 Jazzer.js is a coverage-guided, in-process fuzzer for the
 [Node.js](https://nodejs.org) platform developed by

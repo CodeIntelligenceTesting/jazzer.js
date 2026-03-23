@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 let i = 0;
@@ -27,7 +19,20 @@ module.exports.SIGINT_SYNC = (data) => {
 	i++;
 };
 
-module.exports.SIGINT_ASYNC = (data) => {
+module.exports.SIGINT_SYNC_endless_loop = (data) => {
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		if (i === 1000 || i === 1001) {
+			process.kill(process.pid, "SIGINT");
+		}
+		if (i > 1001) {
+			console.error("Signal has not stopped the fuzzing process");
+		}
+		i++;
+	}
+};
+
+module.exports.SIGINT_ASYNC = async (data) => {
 	// Raising SIGINT in async mode does not stop the fuzzer directly,
 	// as the event is handled asynchronously in the event loop.
 	if (i === 1000) {
@@ -35,4 +40,17 @@ module.exports.SIGINT_ASYNC = (data) => {
 		process.kill(process.pid, "SIGINT");
 	}
 	i++;
+};
+
+module.exports.SIGINT_ASYNC_endless_loop = async (data) => {
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		if (i === 1000 || i === 1001) {
+			process.kill(process.pid, "SIGINT");
+		}
+		if (i > 1001) {
+			console.error("Signal has not stopped the fuzzing process");
+		}
+		i++;
+	}
 };

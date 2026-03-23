@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import type { JestEnvironment } from "@jest/environment";
@@ -45,19 +37,19 @@ export default async function jazzerTestRunner(
 	const vmContext = environment.getVmContext();
 	if (vmContext === null) throw new Error("vmContext is undefined");
 
-	const jazzerConfig = loadConfig({
+	const options = loadConfig({
 		coverage: globalConfig.collectCoverage,
 		coverageReporters: globalConfig.coverageReporters as reports.ReportType[],
 	});
 	const globalEnvironments = [environment.getVmContext(), globalThis];
-	registerGlobals(jazzerConfig, globalEnvironments);
+	registerGlobals(options, globalEnvironments);
 	setJazzerJsGlobal("vmContext", vmContext);
-	const instrumentor = await initFuzzing(jazzerConfig);
+	const instrumentor = await initFuzzing(options);
 
 	interceptScriptTransformerCalls(runtime, instrumentor);
 
-	const testState = interceptTestState(environment, jazzerConfig);
-	interceptGlobals(runtime, testPath, jazzerConfig, testState);
+	const testState = interceptTestState(environment, options);
+	interceptGlobals(runtime, testPath, options, testState);
 
 	const circusRunner =
 		await runtime["_scriptTransformer"].requireAndTranspileModule(

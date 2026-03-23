@@ -1,17 +1,9 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import { sep } from "path";
@@ -26,8 +18,8 @@ describe("Finding", () => {
 		error.stack = withSystemSeparator(`Error: Welcome to Awesome Fuzzing!
         at Object.Error [as fuzzMe] (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/target.js:19:9)
         at fuzzMe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:30:11)
-        at /home/Code-Intelligence/jazzer.js/packages/core/core.ts:341:5
-        at /home/Code-Intelligence/jazzer.js/packages/jest-runner/fuzz.ts:152:6`);
+        at /home/Code-Intelligence/jazzer.js-commercial/packages/core/core.ts:341:5
+        at /home/Code-Intelligence/jazzer.js-commercial/packages/jest-runner/fuzz.ts:152:6`);
 
 		printFinding(error, printer);
 

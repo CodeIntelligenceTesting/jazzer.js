@@ -1,21 +1,14 @@
 /*
  * Copyright 2023 Code Intelligence GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, this software
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+ * ANY KIND, either express or implied.
  */
 
 import * as fs from "fs";
 import path from "path";
+import * as vm from "vm";
 
 import * as libCoverage from "istanbul-lib-coverage";
 import * as libReport from "istanbul-lib-report";
@@ -40,8 +33,8 @@ import {
 	printFinding,
 	reportFinding,
 } from "./finding";
-import { jazzerJs } from "./globals";
-import { buildFuzzerOption, Options } from "./options";
+import { getJazzerJsGlobal, jazzerJs } from "./globals";
+import { buildFuzzerOption, OptionsManager } from "./options";
 import { ensureFilepath, importModule } from "./utils";
 
 // Remove temporary files on exit
@@ -75,18 +68,23 @@ declare global {
 	var Fuzzer: fuzzer.Fuzzer;
 	var HookManager: hooking.HookManager;
 	var __coverage__: libCoverage.CoverageMapData;
-	var options: Options;
+	// WARNING: since every fuzz test has a cloned OptionsManager, into which some fuzz-test specific options are merged,
+	// (e.g. the test name), the options object stored in this global variable is not necessarily the same as the one used
+	// by the fuzz test. Therefore, this variable should only be used for options that are not fuzz-test specific.
+	var options: OptionsManager;
 }
 
-export async function initFuzzing(options: Options): Promise<Instrumentor> {
+export async function initFuzzing(
+	options: OptionsManager,
+): Promise<Instrumentor> {
 	const instrumentor = new Instrumentor(
-		options.includes,
-		options.excludes,
-		options.customHooks,
-		options.coverage,
-		options.dryRun,
-		options.idSyncFile
-			? new FileSyncIdStrategy(options.idSyncFile)
+		options.get("includes"),
+		options.get("excludes"),
+		options.get("customHooks"),
+		options.get("coverage"),
+		options.get("dryRun"),
+		options.get("idSyncFile")
+			? new FileSyncIdStrategy(options.get("idSyncFile"))
 			: new MemorySyncIdStrategy(),
 	);
 	registerInstrumentor(instrumentor);
@@ -95,7 +93,7 @@ export async function initFuzzing(options: Options): Promise<Instrumentor> {
 	// transpiled bug detector files.
 	const possibleBugDetectorFiles = getFilteredBugDetectorPaths(
 		path.join(__dirname, "../../bug-detectors/dist/internal"),
-		options.disableBugDetectors,
+		options.get("disableBugDetectors"),
 	);
 
 	if (process.env.JAZZER_DEBUG) {
@@ -111,15 +109,19 @@ export async function initFuzzing(options: Options): Promise<Instrumentor> {
 		possibleBugDetectorFiles.map(ensureFilepath).map(importModule),
 	);
 
-	await Promise.all(options.customHooks.map(ensureFilepath).map(importModule));
+	await Promise.all(
+		options.get("customHooks").map(ensureFilepath).map(importModule),
+	);
 
-	await hooking.hookManager.finalizeHooks();
+	await hooking.hookManager.finalizeHooks(
+		getJazzerJsGlobal<vm.Context>("vmContext") ?? globalThis,
+	);
 
 	return instrumentor;
 }
 
 export function registerGlobals(
-	options: Options,
+	options: OptionsManager,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	globals: any[] = [globalThis],
 ) {
@@ -144,11 +146,14 @@ function getFilteredBugDetectorPaths(
 	return (
 		fs
 			.readdirSync(bugDetectorsDirectory)
-			// The compiled "internal" directory contains several files such as .js.map and .d.ts.
-			// We only need the .js files.
-			// Here we also filter out bug detectors that should be disabled.
+			// The compiled "internal" directory contains several files such as .js.map and .d.ts. We only need the .js files.
+			// Here we also filter out bug detectors that should be disabled; and tests for the bug detectors that
+			// usually end with ".test.js".
 			.filter((bugDetectorPath) => {
-				if (!bugDetectorPath.endsWith(".js")) {
+				if (
+					!bugDetectorPath.endsWith(".js") ||
+					bugDetectorPath.endsWith(".test.js")
+				) {
 					return false;
 				}
 
@@ -172,7 +177,9 @@ function getFilteredBugDetectorPaths(
 	);
 }
 
-export async function startFuzzing(options: Options): Promise<FuzzingResult> {
+export async function startFuzzing(
+	options: OptionsManager,
+): Promise<FuzzingResult> {
 	registerGlobals(options);
 	await initFuzzing(options);
 	const fuzzFn = await loadFuzzFunction(options);
@@ -180,14 +187,17 @@ export async function startFuzzing(options: Options): Promise<FuzzingResult> {
 	return startFuzzingNoInit(findingAwareFuzzFn, options).finally(() => {
 		// These post fuzzing actions are only required for invocations through the CLI,
 		// other means of invocation, e.g. via Jest, don't need them.
-		fuzzer.fuzzer.printReturnInfo(options.sync);
-		processCoverage(options.coverageDirectory, options.coverageReporters);
+		fuzzer.fuzzer.printReturnInfo(options.get("sync"));
+		processCoverage(
+			options.get("coverageDirectory"),
+			options.get("coverageReporters"),
+		);
 	});
 }
 
 export async function startFuzzingNoInit(
 	fuzzFn: FindingAwareFuzzTarget,
-	options: Options,
+	options: OptionsManager,
 ): Promise<FuzzingResult> {
 	// Signal handler that stops fuzzing when the process receives a signal.
 	// The signal is raised as a finding and orderly shuts down the fuzzer, as that's
@@ -197,11 +207,10 @@ export async function startFuzzingNoInit(
 	const signalHandler = (signal: number): void => {
 		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
-	process.on("SIGINT", () => signalHandler(0));
 
 	try {
 		const fuzzerOptions = buildFuzzerOption(options);
-		if (options.sync) {
+		if (options.get("sync")) {
 			await fuzzer.fuzzer.startFuzzing(
 				fuzzFn,
 				fuzzerOptions,
@@ -216,10 +225,10 @@ export async function startFuzzingNoInit(
 			await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
 		}
 		// Fuzzing ended without a finding, due to -max_total_time or -runs.
-		return reportFuzzingResult(undefined, options.expectedErrors);
+		return reportFuzzingResult(undefined, options.get("expectedErrors"));
 	} catch (e: unknown) {
 		// Fuzzing produced an error, e.g. unhandled exception or bug detector finding.
-		return reportFuzzingResult(e, options.expectedErrors);
+		return reportFuzzingResult(e, options.get("expectedErrors"));
 	}
 }
 
@@ -290,17 +299,21 @@ function processCoverage(
 	}
 }
 
-async function loadFuzzFunction(options: Options): Promise<fuzzer.FuzzTarget> {
-	const fuzzTarget = await importModule(options.fuzzTarget);
+async function loadFuzzFunction(
+	options: OptionsManager,
+): Promise<fuzzer.FuzzTarget> {
+	const fuzzTarget = await importModule(options.get("fuzzTarget"));
 	if (!fuzzTarget) {
 		throw new Error(
-			`${options.fuzzTarget} could not be imported successfully"`,
+			`${options.get("fuzzTarget")} could not be imported successfully"`,
 		);
 	}
-	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.fuzzEntryPoint];
+	const fuzzFn: fuzzer.FuzzTarget = fuzzTarget[options.get("fuzzEntryPoint")];
 	if (typeof fuzzFn !== "function") {
 		throw new Error(
-			`${options.fuzzTarget} does not export function "${options.fuzzEntryPoint}"`,
+			`${options.get("fuzzTarget")} does not export function "${options.get(
+				"fuzzEntryPoint",
+			)}"`,
 		);
 	}
 	return fuzzFn;
@@ -404,9 +417,16 @@ export function asFindingAwareFuzzFn(
 export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";
 export {
-	buildOptions,
-	defaultOptions,
+	AllowedFuzzTestOptions,
 	Options,
-	ParameterResolverIndex,
-	setParameterResolverValue,
+	OptionsManager,
+	OptionSource,
+	OptionsWithSource,
+	printOptions,
 } from "./options";
+
+export type {
+	FuzzTarget,
+	FuzzTargetAsyncOrValue,
+	FuzzTargetCallback,
+} from "@jazzer.js/fuzzer";
