@@ -42,7 +42,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, ubuntu-24.04-arm, macos-latest]
         node: [20]
         include:
           # Node 14 runtime compatibility is covered by end-to-end tests.
@@ -85,7 +85,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -107,13 +107,14 @@ jobs:
 
       # Run with different node.js versions
       # all in one job to avoid rebuilding
+      # Node 14 only has binaries for x64 runners
       - name: "node 14"
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         uses: actions/setup-node@v6
         with:
           node-version: 14
       - name: run tests (node 14)
-        if: matrix.os != 'macos-latest'
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         run: cd end-to-end && npx jest
         shell: bash
 
