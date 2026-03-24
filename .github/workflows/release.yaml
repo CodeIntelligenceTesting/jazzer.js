@@ -9,6 +9,8 @@ on:
 jobs:
   prebuilds:
     name: create prebuilds
+    permissions:
+      contents: read
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -19,9 +21,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: "npm"
@@ -35,7 +37,7 @@ jobs:
           npm run prebuild --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
           npm run build --workspace=@jazzer.js/fuzzer -- ${{ matrix.opts }}
       - name: upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: native-addon
           path: packages/fuzzer/prebuilds
@@ -49,9 +51,9 @@ jobs:
       contents: write # for creating releases
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: "npm"
@@ -61,7 +63,7 @@ jobs:
       - name: build
         run: npm run build
       - name: download prebuilds
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v8
         with:
           name: native-addon
           path: packages/fuzzer/prebuilds
