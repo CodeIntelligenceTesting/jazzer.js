@@ -118,11 +118,35 @@ jobs:
         run: cd end-to-end && npx jest
         shell: bash
 
+      - name: "node 16"
+        uses: actions/setup-node@v6
+        with:
+          node-version: 16
+      - name: run tests (node 16)
+        run: cd end-to-end && npx jest
+        shell: bash
+
+      - name: "node 18"
+        uses: actions/setup-node@v6
+        with:
+          node-version: 18
+      - name: run tests (node 18)
+        run: cd end-to-end && npx jest
+        shell: bash
+
       - name: "node 20"
         uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: run tests (node 20)
+        run: cd end-to-end && npx jest
+        shell: bash
+
+      - name: "node 22"
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: run tests (node 22)
         run: cd end-to-end && npx jest
         shell: bash
 
