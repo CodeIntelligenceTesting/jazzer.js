@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import yargs, { Argv, exit } from "yargs";
+import yargs, { Argv } from "yargs";
 
 import { FuzzingExitCode, startFuzzing } from "./core";
 import { defaultCLIOptions, OptionsManager, OptionSource } from "./options";
@@ -240,10 +240,7 @@ yargs(process.argv.slice(2))
 
 			return startFuzzing(options).then(({ returnCode, error }) => {
 				if (returnCode !== FuzzingExitCode.Ok) {
-					exit(
-						returnCode,
-						error instanceof Error ? error : new Error("Unknown error"),
-					);
+					process.exit(returnCode);
 				}
 			});
 		},
