@@ -226,7 +226,7 @@ export class HookManager {
 					thisPtr,
 					params,
 					callSiteId(),
-					// eslint-disable-next-line @typescript-eslint/ban-types
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 					resultOrOriginalFunction as Function,
 				);
 			case HookType.After:

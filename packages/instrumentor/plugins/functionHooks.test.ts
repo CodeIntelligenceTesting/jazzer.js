@@ -946,12 +946,12 @@ function registerHook(
 			target,
 			"pkg",
 			isAsync,
-			// eslint-disable-next-line @typescript-eslint/ban-types
+
 			(
 				thisPtr: unknown,
 				params: number[],
 				_hookId: number,
-				// eslint-disable-next-line @typescript-eslint/ban-types
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 				originalFunction: Function,
 			) => {
 				const [calls, hook] = hookCallMap.get(i) as [number, Hook];

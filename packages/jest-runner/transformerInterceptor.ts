@@ -15,7 +15,7 @@
  */
 
 // Disable ban-types to use Function as type in interceptions.
-/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import fs from "fs";
 
@@ -178,7 +178,7 @@ function processTransformResult(
 	};
 }
 
-function writeSourceMap(sourceMap: Object) {
+function writeSourceMap(sourceMap: object) {
 	const sourceMapPath = tmp.fileSync({ prefix: "jazzerjs-map" }).name;
 	fs.writeFileSync(sourceMapPath, JSON.stringify(sourceMap));
 	return sourceMapPath;

@@ -1,4 +1,4 @@
-/* eslint-disable header/header */
+/* eslint-disable headers/header-format */
 
 function foo(a) {
 	console.log("original foo");

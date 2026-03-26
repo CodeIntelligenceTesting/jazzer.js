@@ -75,7 +75,6 @@ module.exports.asyncTimeout = (data) =>
 	});
 
 module.exports.syncTimeout = (data) => {
-	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		/* empty */
 	}

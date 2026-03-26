@@ -59,7 +59,6 @@ export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
 	return () => {
 		return {
 			visitor: {
-				// eslint-disable-next-line @typescript-eslint/ban-types
 				Function(path: NodePath<Function>) {
 					if (isBlockStatement(path.node.body)) {
 						const bodyStmt = path.node.body as BlockStatement;

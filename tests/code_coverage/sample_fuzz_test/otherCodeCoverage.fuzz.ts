@@ -1,4 +1,4 @@
-/* eslint-disable header/header */
+/* eslint-disable headers/header-format */
 
 import "@jazzer.js/jest-runner";
 import { fuzz } from "./fuzz.js";

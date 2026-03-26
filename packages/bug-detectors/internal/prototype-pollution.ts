@@ -99,7 +99,6 @@ interface PrototypePollution {
 }
 
 declare global {
-	// eslint-disable-next-line no-var
 	var PrototypePollution: PrototypePollution;
 }
 

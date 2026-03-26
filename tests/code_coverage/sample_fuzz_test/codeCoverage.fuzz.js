@@ -1,4 +1,4 @@
-/* eslint-disable header/header */
+/* eslint-disable headers/header-format */
 
 const target = require("./fuzz.js");
 

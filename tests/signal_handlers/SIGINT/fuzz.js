@@ -28,7 +28,6 @@ module.exports.SIGINT_SYNC = (data) => {
 };
 
 module.exports.SIGINT_SYNC_endless_loop = (data) => {
-	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		if (i === 1000 || i === 1001) {
 			process.kill(process.pid, "SIGINT");
@@ -51,7 +50,6 @@ module.exports.SIGINT_ASYNC = async (data) => {
 };
 
 module.exports.SIGINT_ASYNC_endless_loop = async (data) => {
-	// eslint-disable-next-line no-constant-condition
 	while (true) {
 		if (i === 1000 || i === 1001) {
 			process.kill(process.pid, "SIGINT");
