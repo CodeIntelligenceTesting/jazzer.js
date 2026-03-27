@@ -42,7 +42,7 @@
 		"@types/bindings": "^1.5.5",
 		"@types/jest": "^29.5.13",
 		"@types/node": "^25.6.0",
-		"@types/yargs": "^17.0.33",
+		"@types/yargs": "^17.0.35",
 		"@eslint/js": "^9.39.0",
 		"eslint": "^9.39.0",
 		"eslint-config-prettier": "^10.1.8",
@@ -73,7 +73,7 @@
 		"**/!(compile_commands.json)*": "prettier --write --ignore-unknown --allow-empty --log-level debug"
 	},
 	"engines": {
-		"node": ">= 20.0.0",
+		"node": ">= 20.11.0",
 		"npm": ">= 7.0.0"
 	}
 }
