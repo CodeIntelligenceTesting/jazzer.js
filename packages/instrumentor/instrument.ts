@@ -72,6 +72,19 @@ export class Instrumentor {
 		if (this.includes.includes("jazzer.js")) {
 			this.unloadInternalModules();
 		}
+
+		// Expose a registration function so ESM modules can feed their
+		// source maps back to the main-thread registry.  The ESM loader
+		// thread cannot access this registry directly, but the preamble
+		// code it emits runs on the main thread during module evaluation
+		// — before the module body, and therefore before any error could
+		// need the map for stack-trace rewriting.
+		const registry = this.sourceMapRegistry;
+		(globalThis as Record<string, unknown>).__jazzer_registerSourceMap = (
+			filename: string,
+			map: SourceMap,
+		) => registry.registerSourceMap(filename, map);
+
 		return this.sourceMapRegistry.installSourceMapSupport();
 	}
 
