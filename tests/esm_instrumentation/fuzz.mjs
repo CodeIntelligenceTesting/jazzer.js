@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-import { PluginTarget, types } from "@babel/core";
+import { checkSecret } from "./target.mjs";
 
-import { EdgeIdStrategy } from "../edgeIdStrategy";
-
-import { makeCoverageVisitor } from "./coverageVisitor";
-
-export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+/**
+ * @param { Buffer } data
+ */
+export function fuzz(data) {
+	checkSecret(data.toString());
 }

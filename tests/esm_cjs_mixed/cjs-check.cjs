@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-import { PluginTarget, types } from "@babel/core";
-
-import { EdgeIdStrategy } from "../edgeIdStrategy";
-
-import { makeCoverageVisitor } from "./coverageVisitor";
-
-export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+/**
+ * CJS module — instrumented via hookRequire (require.extensions).
+ *
+ * The 10-byte random string cannot be brute-forced; the fuzzer
+ * needs the CJS compare hooks to discover it.
+ */
+function checkCjs(s) {
+	return s === "r4Tp!mZ@8s";
 }
+
+module.exports = { checkCjs: checkCjs };

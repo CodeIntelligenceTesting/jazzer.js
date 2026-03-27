@@ -26,8 +26,11 @@ example
 
 # Exclude all TypeScript source files
 *.ts
+*.mts
 !*.d.ts
+!*.d.mts
 *test*.d.ts
+*test*.d.mts
 
 
 # Exclude native fuzzer sources
