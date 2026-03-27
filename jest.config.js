@@ -18,12 +18,22 @@
 module.exports = {
 	preset: "ts-jest",
 	testEnvironment: "node",
-	modulePathIgnorePatterns: [
-		"dist",
-		"packages/fuzzer/build",
-		"tests/code_coverage",
-	],
+	modulePathIgnorePatterns: ["packages/fuzzer/build", "tests/code_coverage"],
+	testPathIgnorePatterns: ["/dist/", "/node_modules/"],
 	testMatch: ["<rootDir>/packages/**/*.test.[jt]s"],
 	collectCoverageFrom: ["packages/**/*.ts"],
 	coveragePathIgnorePatterns: ["/node_modules/", "/dist/"],
+	transform: {
+		"^.+\\.tsx?$": [
+			"ts-jest",
+			{
+				// ts-jest does not support composite project references.
+				// It compiles workspace .ts sources in one flat program,
+				// which breaks cross-package type resolution.  Disabling
+				// diagnostics lets tsc -b (which does understand project
+				// refs) be the single source of truth for type checking.
+				diagnostics: false,
+			},
+		],
+	},
 };
