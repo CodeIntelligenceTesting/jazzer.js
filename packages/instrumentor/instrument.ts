@@ -16,6 +16,7 @@
 
 import * as path from "path";
 import { pathToFileURL } from "url";
+import { MessageChannel, type MessagePort } from "worker_threads";
 
 import {
 	BabelFileResult,
@@ -25,7 +26,7 @@ import {
 } from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
 
-import { hookManager } from "@jazzer.js/hooking";
+import { hookManager, HookType } from "@jazzer.js/hooking";
 
 import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 import { instrumentationPlugins } from "./plugin";
@@ -49,7 +50,22 @@ export {
 } from "./edgeIdStrategy";
 export { SourceMap } from "./SourceMapRegistry";
 
+/**
+ * Serializable hook descriptor sent from the main thread to the ESM
+ * loader thread.  The hook function itself stays on the main thread;
+ * only the metadata needed for the Babel transform crosses the boundary.
+ */
+export interface SerializedHook {
+	id: number;
+	type: HookType;
+	target: string;
+	pkg: string;
+	async: boolean;
+}
+
 export class Instrumentor {
+	private loaderPort: MessagePort | null = null;
+
 	constructor(
 		private readonly includes: string[] = [],
 		private readonly excludes: string[] = [],
@@ -215,6 +231,31 @@ export class Instrumentor {
 		return this.shouldCollectSourceCodeCoverage;
 	}
 
+	/** Connect the main-thread side of the loader MessagePort. */
+	setLoaderPort(port: MessagePort): void {
+		this.loaderPort = port;
+	}
+
+	/**
+	 * Send the current hook definitions to the ESM loader thread so it
+	 * can apply function-hook transformations.  Must be called after all
+	 * hooks are registered and finalized, but before user modules are
+	 * loaded.
+	 */
+	sendHooksToLoader(): void {
+		if (!this.loaderPort) return;
+
+		const hooks: SerializedHook[] = hookManager.hooks.map((hook, index) => ({
+			id: index,
+			type: hook.type,
+			target: hook.target,
+			pkg: hook.pkg,
+			async: hook.async,
+		}));
+
+		this.loaderPort.postMessage({ hooks });
+	}
+
 	private shouldCollectCodeCoverage(filepath: string): boolean {
 		return (
 			this.shouldCollectSourceCodeCoverage &&
@@ -262,6 +303,11 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 /**
  * On Node.js >= 20.6 register an ESM loader hook so that
  * import() and static imports are instrumented too.
+ *
+ * On Node >= 20.11 (where module.register supports transferList) we
+ * also establish a MessagePort to the loader thread.  This lets us
+ * send function-hook definitions after bug detectors are loaded —
+ * well before user modules are imported.
  */
 function registerEsmHooks(instrumentor: Instrumentor): void {
 	if (instrumentor.dryRun) {
@@ -273,28 +319,49 @@ function registerEsmHooks(instrumentor: Instrumentor): void {
 		return;
 	}
 
+	// transferList (needed for MessagePort) requires Node >= 20.11.
+	// On older 20.x builds, ESM gets coverage and compare-hooks but
+	// not function hooks — a MessagePort in `data` without transferList
+	// would throw DataCloneError, so we simply omit it.
+	const supportsTransferList = major > 20 || (major === 20 && minor >= 11);
+
 	try {
-		// Dynamic require — the node:module API may not expose
-		// `register` on older versions even if the check above
-		// passed (e.g. unusual builds).
 		const { register } = require("node:module") as {
 			register: (
 				specifier: string,
-				options: { parentURL: string; data: unknown },
+				options: {
+					parentURL: string;
+					data: unknown;
+					transferList?: unknown[];
+				},
 			) => void;
 		};
 
 		const loaderUrl = pathToFileURL(
 			path.join(__dirname, "esm-loader.mjs"),
 		).href;
-		register(loaderUrl, {
-			parentURL: pathToFileURL(__filename).href,
-			data: {
-				includes: instrumentor.includePatterns,
-				excludes: instrumentor.excludePatterns,
-				coverage: instrumentor.coverageEnabled,
-			},
-		});
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const data: Record<string, any> = {
+			includes: instrumentor.includePatterns,
+			excludes: instrumentor.excludePatterns,
+			coverage: instrumentor.coverageEnabled,
+		};
+
+		const options: {
+			parentURL: string;
+			data: unknown;
+			transferList?: unknown[];
+		} = { parentURL: pathToFileURL(__filename).href, data };
+
+		if (supportsTransferList) {
+			const { port1, port2 } = new MessageChannel();
+			data.port = port2;
+			options.transferList = [port2];
+			instrumentor.setLoaderPort(port1);
+		}
+
+		register(loaderUrl, options);
 	} catch {
 		// Silently fall back to CJS-only instrumentation.
 	}
