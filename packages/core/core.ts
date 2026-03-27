@@ -126,6 +126,12 @@ export async function initFuzzing(
 		getJazzerJsGlobal<vm.Context>("vmContext") ?? globalThis,
 	);
 
+	// Send the finalized hook definitions to the ESM loader thread
+	// so it can apply function-hook transforms to user modules.
+	// This must happen after finalizeHooks (hooks are complete) and
+	// before loadFuzzFunction (user modules are imported).
+	instrumentor.sendHooksToLoader();
+
 	return instrumentor;
 }
 
