@@ -98,7 +98,7 @@ function extractExternalSourceMap(
 
 function extractSourceMapUrl(code: string): string | undefined {
 	let lineEnd = code.length;
-	while (lineEnd >= 0) {
+	while (lineEnd > 0) {
 		let lineStart = code.lastIndexOf("\n", lineEnd - 1);
 		lineStart = lineStart === -1 ? 0 : lineStart + 1;
 
