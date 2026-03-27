@@ -297,7 +297,7 @@ configured for Jest.
 add the following environment variable to the command:
 
 ```bash
-JAZZER_COVERAGE='["json","lcov"]' npx jazzer my-fuzz-file --coverage
+JAZZER_COVERAGE_REPORTERS='["json","lcov"]' npx jazzer my-fuzz-file --coverage
 ```
 
 _Note:_ Setting this environmental variable in Jest mode has no effect.
@@ -366,11 +366,11 @@ provide them as an array of strings, `Uint8Arrays`, or `Int8Arrays` to the
 `dictionaryEntries` option of the `it.fuzz` function:
 
 ```javascript
-const xmlDictionary = ["IDREF","<![IGNORE[","<![INCLUDE[",<!"];
+const xmlDictionary = ["IDREF", "<![IGNORE[", "<![INCLUDE[", "<!"];
 
 it.fuzz("XML parser",
 	(data) => {...},
-	{dictionaryEntries: xmlDictionary}
+	{dictionaryEntries: xmlDictionary});
 ```
 
 ### `disableBugDetectors` : [array\<RegExp\>]
@@ -814,8 +814,7 @@ In _regression_ mode on command line, Jazzer.js runs each input from the seed
 and regression corpus directories on the fuzz target once, and then stops. Under
 the hood, this option adds `-runs=0` to the option
 [`fuzzerOptions`](#fuzzeroptions--arraystring). Setting the fuzzer option to
-`-runs=0` (run each input only once) or `-runs=-1` (run each input indefinitely)
-can be used to achieve the same behavior.
+`-runs=0` (run each input only once) can be used to achieve the same behavior.
 
 **Jest:** Default: `"regression"`.
 
@@ -954,7 +953,7 @@ example how a timeout of 1 second can be set for the test "My test 1":
 ```javascript
 it.fuzz("My test 1",
 	(data) => {...},
-	1000
+	1000);
 ```
 
 _Two:_ by providing it as part of an object with options as the third argument

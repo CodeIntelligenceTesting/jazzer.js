@@ -53,8 +53,8 @@ runner.
 		"coverage": "jest --coverage"
 	},
 	"devDependencies": {
-		"@jazzer.js/jest-runner": "2.1.0",
-		"jest": "29.3.1"
+		"@jazzer.js/jest-runner": "^3.0.0",
+		"jest": "^29.0.0"
 	},
 	"jest": {
 		"projects": [
@@ -188,13 +188,15 @@ const target = require("./target");
 const { FuzzedDataProvider } = require("@jazzer.js/core");
 
 describe("My describe", () => {
-  it.fuzz("My fuzz test", (data) => {
-    const provider = new FuzzedDataProvider(data);
-    target.fuzzMeMore(
-      provider.consumeNumber(),
-      provider.consumeBoolean(),
-      provider.consumeRemainingAsString());
-  });
+	it.fuzz("My fuzz test", (data) => {
+		const provider = new FuzzedDataProvider(data);
+		target.fuzzMeMore(
+			provider.consumeNumber(),
+			provider.consumeBoolean(),
+			provider.consumeRemainingAsString(),
+		);
+	});
+});
 ```
 
 For more information on how to use the `FuzzedDataProvider` class, please refer
@@ -211,14 +213,14 @@ possible to use `async/await`, `Promise` and `done callback` based tests.
 
 ```javascript
 describe("My describe", () => {
-  it.fuzz("My callback fuzz test", (data, done) => {
-    target.callbackFuzzMe(data, done);
-  });
+	it.fuzz("My callback fuzz test", (data, done) => {
+		target.callbackFuzzMe(data, done);
+	});
 
-  it.fuzz("My async fuzz test", async (data) => {
-    await target.asyncFuzzMe(data);
-  });
-)};
+	it.fuzz("My async fuzz test", async (data) => {
+		await target.asyncFuzzMe(data);
+	});
+});
 ```
 
 ### TypeScript Jest fuzz tests
@@ -372,7 +374,7 @@ Additional options for coverage report generation are described in the
 [fuzz targets documentation](./fuzz-targets.md#coverage-report-generation).
 
 The desired report format can be set by the flag `--coverageReporters`, which by
-default is set to `--coverageReporters clover json lcov text`. See
+default is set to `--coverageReporters json text lcov clover`. See
 [here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
 for a list of supported coverage reporters.
 

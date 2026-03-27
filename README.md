@@ -119,7 +119,7 @@ ES modules are supported on Node.js >= 20.6 — use `export function fuzz` in a
 
 ## Documentation
 
-Further documentation is available at [docs/readme.md](docs/README.md).
+Further documentation is available at [docs/README.md](docs/README.md).
 
 ### Demo Video - Introduction to Jazzer.js
 

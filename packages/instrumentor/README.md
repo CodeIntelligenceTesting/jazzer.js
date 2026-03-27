@@ -8,9 +8,10 @@ coverage statistics, so that the fuzzer can detect when new code paths are
 reached, and comparison feedback, to enable the fuzzer to mutate it's input in a
 meaningful way.
 
-Code loading is intercepted using
-[istanbul-lib-hook](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-lib-hook)
-, which also enables fine-grained control of when to apply the instrumentatino.
+CJS modules are intercepted using
+[istanbul-lib-hook](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-lib-hook).
+ES modules are intercepted via a Node.js loader hook (`module.register`,
+requires Node >= 20.6).
 
 ## Install
 
@@ -23,5 +24,5 @@ npm install --save-dev @jazzer.js/instrumentor
 ## Documentation
 
 See
-[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial#readme)
+[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js#readme)
 for more information.
