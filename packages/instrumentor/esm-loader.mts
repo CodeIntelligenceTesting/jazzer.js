@@ -126,7 +126,7 @@ function instrumentModule(code: string, filename: string): string | null {
 		transformed = transformSync(code, {
 			filename,
 			sourceFileName: filename,
-			sourceMaps: "inline",
+			sourceMaps: true,
 			plugins,
 			sourceType: "module",
 		});
@@ -141,13 +141,31 @@ function instrumentModule(code: string, filename: string): string | null {
 		return null;
 	}
 
-	// Prepend a one-liner that allocates this module's counter buffer
-	// and registers it with libFuzzer via the main-thread Fuzzer global.
-	const preamble =
-		`const ${COUNTER_ARRAY} = ` +
-		`Fuzzer.coverageTracker.createModuleCounters(${edges});\n`;
+	// Build a preamble that runs on the main thread before the module
+	// body.  It allocates the per-module coverage counter buffer and,
+	// when a source map is available, registers it with the main-thread
+	// SourceMapRegistry so that source-map-support can remap stack
+	// traces back to the original source.
+	const preambleLines = [
+		`const ${COUNTER_ARRAY} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
+	];
 
-	return preamble + transformed.code;
+	if (transformed.map) {
+		// Shift the source map to account for the preamble lines we are
+		// about to prepend.  In VLQ-encoded mappings each semicolon
+		// represents one generated line; prepending them pushes all real
+		// mappings down by the right amount.
+		const preambleOffset = preambleLines.length + 1; // +1 for the registration line itself
+		const shifted = {
+			...transformed.map,
+			mappings: ";".repeat(preambleOffset) + transformed.map.mappings,
+		};
+		preambleLines.push(
+			`__jazzer_registerSourceMap(${JSON.stringify(filename)}, ${JSON.stringify(shifted)});`,
+		);
+	}
+
+	return preambleLines.join("\n") + "\n" + transformed.code;
 }
 
 // ── Include / exclude filtering ──────────────────────────────────
