@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
+
 import { RawSourceMap } from "source-map";
 import sms from "source-map-support";
 
@@ -39,6 +43,8 @@ const regex = RegExp(
 	"mg",
 );
 
+const URL_PREFIX = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+
 /**
  * Extracts the inline source map from a code string.
  *
@@ -54,14 +60,128 @@ export function extractInlineSourceMap(code: string): SourceMap | undefined {
 	}
 }
 
+/**
+ * Extracts a source map from code, preferring inline data URLs and
+ * falling back to file-based sourceMappingURL comments.
+ */
+export function extractSourceMap(
+	code: string,
+	filename: string,
+): SourceMap | undefined {
+	return (
+		extractInlineSourceMap(code) ?? extractExternalSourceMap(code, filename)
+	);
+}
+
+function extractExternalSourceMap(
+	code: string,
+	filename: string,
+): SourceMap | undefined {
+	const sourceMapUrl = extractSourceMapUrl(code);
+	if (!sourceMapUrl || sourceMapUrl.startsWith("data:")) {
+		return;
+	}
+
+	const sanitizedUrl = sourceMapUrl.split("#", 1)[0].split("?", 1)[0];
+	const mapPath = resolveSourceMapPath(filename, sanitizedUrl);
+	if (!mapPath) {
+		return;
+	}
+
+	try {
+		const mapContent = fs.readFileSync(mapPath, "utf8");
+		return JSON.parse(mapContent);
+	} catch {
+		return;
+	}
+}
+
+function extractSourceMapUrl(code: string): string | undefined {
+	let lineEnd = code.length;
+	while (lineEnd >= 0) {
+		let lineStart = code.lastIndexOf("\n", lineEnd - 1);
+		lineStart = lineStart === -1 ? 0 : lineStart + 1;
+
+		const sourceMapUrl = parseSourceMapDirective(
+			code.slice(lineStart, lineEnd).trim(),
+		);
+		if (sourceMapUrl) {
+			return sourceMapUrl;
+		}
+
+		if (lineStart === 0) {
+			break;
+		}
+
+		lineEnd = lineStart - 1;
+		if (lineEnd > 0 && code[lineEnd - 1] === "\r") {
+			lineEnd--;
+		}
+	}
+}
+
+function parseSourceMapDirective(line: string): string | undefined {
+	if (!line) {
+		return;
+	}
+
+	let body: string;
+	if ((line.startsWith("//#") || line.startsWith("//@")) && line.length >= 3) {
+		body = line.slice(3);
+	} else if (
+		(line.startsWith("/*#") || line.startsWith("/*@")) &&
+		line.length >= 3
+	) {
+		body = line.endsWith("*/") ? line.slice(3, -2) : line.slice(3);
+	} else {
+		return;
+	}
+
+	body = body.trimStart();
+	const directive = "sourceMappingURL=";
+	if (!body.startsWith(directive)) {
+		return;
+	}
+
+	const sourceMapUrl = body.slice(directive.length).trim();
+	return sourceMapUrl || undefined;
+}
+
+function resolveSourceMapPath(
+	filename: string,
+	sourceMapUrl: string,
+): string | undefined {
+	if (!sourceMapUrl) {
+		return;
+	}
+
+	if (sourceMapUrl.startsWith("file://")) {
+		return fileURLToPath(sourceMapUrl);
+	}
+	if (URL_PREFIX.test(sourceMapUrl)) {
+		return;
+	}
+
+	let decodedUrl = sourceMapUrl;
+	try {
+		decodedUrl = decodeURIComponent(sourceMapUrl);
+	} catch {
+		// Keep undecoded value if it contains invalid escapes.
+	}
+
+	return path.resolve(path.dirname(filename), decodedUrl);
+}
+
 export function toRawSourceMap(
 	sourceMap?: SourceMap,
 ): RawSourceMap | undefined {
 	if (sourceMap) {
 		return {
 			version: sourceMap.version.toString(),
+			file: sourceMap.file,
 			sources: sourceMap.sources ?? [],
 			names: sourceMap.names,
+			sourceRoot: sourceMap.sourceRoot,
 			sourcesContent: sourceMap.sourcesContent,
 			mappings: sourceMap.mappings,
 		};

@@ -41,7 +41,13 @@ export function cjsCoverage(idStrategy: EdgeIdStrategy): CjsCoverageResult {
 
 	const onEdge = (loc: EdgeLocation): void => {
 		const id = idStrategy.peekNextEdgeId();
-		entries.push([id, loc.line, loc.col, funcNames.intern(loc.func)]);
+		entries.push([
+			id,
+			loc.line,
+			loc.col,
+			funcNames.intern(loc.func),
+			loc.isFuncEntry ? 1 : 0,
+		]);
 	};
 
 	return {

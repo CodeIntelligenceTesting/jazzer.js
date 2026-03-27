@@ -45,6 +45,7 @@ export interface EdgeLocation {
 	line: number;
 	col: number;
 	func: string;
+	isFuncEntry: boolean;
 }
 
 /** Map-backed string interner for compact edge-location serialization. */
@@ -74,24 +75,82 @@ export class StringInterner {
 
 type Loc = { line: number; column: number } | null | undefined;
 
+function propertyKeyName(key: Node, computed: boolean): string | null {
+	if (types.isIdentifier(key)) return key.name;
+	if (types.isStringLiteral(key)) return key.value;
+	if (types.isNumericLiteral(key)) return String(key.value);
+	if (types.isBigIntLiteral(key)) return key.value;
+	if (types.isPrivateName(key) && types.isIdentifier(key.id)) {
+		return `#${key.id.name}`;
+	}
+	return computed ? "<computed>" : null;
+}
+
+function assignmentTargetName(target: Node): string | null {
+	if (types.isIdentifier(target)) return target.name;
+	if (!types.isMemberExpression(target)) return null;
+	return propertyKeyName(target.property, target.computed);
+}
+
+function enclosingClassName(fn: NodePath<Function>): string | null {
+	if (!(fn.isClassMethod() || fn.isClassPrivateMethod())) {
+		return null;
+	}
+
+	const classPath = fn.findParent(
+		(parent) => parent.isClassDeclaration() || parent.isClassExpression(),
+	);
+	if (!classPath) return null;
+
+	if (classPath.isClassDeclaration() || classPath.isClassExpression()) {
+		if (classPath.node.id) {
+			return classPath.node.id.name;
+		}
+	}
+
+	const parent = classPath.parentPath;
+	if (parent?.isVariableDeclarator() && types.isIdentifier(parent.node.id)) {
+		return parent.node.id.name;
+	}
+	if (parent?.isAssignmentExpression()) {
+		return assignmentTargetName(parent.node.left);
+	}
+	if (parent?.isObjectProperty() || parent?.isClassProperty()) {
+		return propertyKeyName(parent.node.key, !!parent.node.computed);
+	}
+
+	return null;
+}
+
 function enclosingFuncName(path: NodePath): string {
 	const fn = path.isFunction() ? path : path.getFunctionParent();
 	if (!fn) return "<top-level>";
 	const node = fn.node;
 	if (types.isFunctionDeclaration(node) && node.id) return node.id.name;
 	if (types.isFunctionExpression(node) && node.id) return node.id.name;
+	if (fn.isClassMethod() || fn.isClassPrivateMethod()) {
+		const name = propertyKeyName(fn.node.key, !!fn.node.computed);
+		if (name) {
+			const className = enclosingClassName(fn);
+			return className ? `${className}.${name}` : name;
+		}
+	}
+	if (fn.isObjectMethod()) {
+		const name = propertyKeyName(fn.node.key, !!fn.node.computed);
+		if (name) return name;
+	}
 
 	const parent = fn.parentPath;
 	if (parent?.isVariableDeclarator() && types.isIdentifier(parent.node.id))
 		return parent.node.id.name;
-	if (parent?.isAssignmentExpression() && types.isIdentifier(parent.node.left))
-		return parent.node.left.name;
-	if (parent?.isObjectProperty() && types.isIdentifier(parent.node.key))
-		return parent.node.key.name;
-	if (parent?.isClassMethod() && types.isIdentifier(parent.node.key))
-		return parent.node.key.name;
-	if (parent?.isObjectMethod() && types.isIdentifier(parent.node.key))
-		return parent.node.key.name;
+	if (parent?.isAssignmentExpression()) {
+		const name = assignmentTargetName(parent.node.left);
+		if (name) return name;
+	}
+	if (parent?.isObjectProperty() || parent?.isClassProperty()) {
+		const name = propertyKeyName(parent.node.key, !!parent.node.computed);
+		if (name) return name;
+	}
 	return "<anonymous>";
 }
 
@@ -108,20 +167,29 @@ export function makeCoverageVisitor(
 	onEdge?: (loc: EdgeLocation) => void,
 ): Visitor {
 	/** @param locNode  AST node whose `.loc` supplies the source position. */
-	function emitCounter(path: NodePath, locNode: Node): Expression {
+	function emitCounter(
+		path: NodePath,
+		locNode: Node,
+		isFuncEntry = false,
+	): Expression {
 		if (onEdge) {
 			const loc: Loc = locNode.loc?.start;
 			onEdge({
 				line: loc?.line ?? 0,
 				col: loc?.column ?? 0,
 				func: enclosingFuncName(path),
+				isFuncEntry,
 			});
 		}
 		return makeCounterExpr();
 	}
 
-	function makeStmt(path: NodePath, locNode: Node): ExpressionStatement {
-		return types.expressionStatement(emitCounter(path, locNode));
+	function makeStmt(
+		path: NodePath,
+		locNode: Node,
+		isFuncEntry = false,
+	): ExpressionStatement {
+		return types.expressionStatement(emitCounter(path, locNode, isFuncEntry));
 	}
 
 	function wrapWithCounter(path: NodePath, stmt: Statement): BlockStatement {
@@ -136,7 +204,7 @@ export function makeCoverageVisitor(
 	return {
 		Function(path: NodePath<Function>) {
 			if (isBlockStatement(path.node.body)) {
-				path.node.body.body.unshift(makeStmt(path, path.node));
+				path.node.body.body.unshift(makeStmt(path, path.node, true));
 			}
 		},
 		IfStatement(path: NodePath<IfStatement>) {

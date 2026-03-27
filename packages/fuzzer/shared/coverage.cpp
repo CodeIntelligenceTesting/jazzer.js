@@ -27,14 +27,22 @@ namespace {
 // We register an array of 8-bit coverage counters with libFuzzer. The array is
 // populated from JavaScript using Buffer.
 uint8_t *gCoverageCounters = nullptr;
+size_t gCoverageCountersSize = 0;
 
 // PC-Table is used by libfuzzer to keep track of program addresses
 // corresponding to coverage counters. The flags determine whether the
-// corresponding counter is the beginning of a function; we don't currently use
-// it.
+// corresponding counter is the beginning of a function.
 struct PCTableEntry {
   uintptr_t PC, PCFlags;
 };
+
+struct ModulePCTable {
+  uintptr_t basePC;
+  size_t numEntries;
+  PCTableEntry *entries;
+};
+
+std::vector<ModulePCTable> gModulePCTables;
 
 // The array of supplementary information for coverage counters. Each entry
 // corresponds to an entry in gCoverageCounters; since we don't know the actual
@@ -54,6 +62,7 @@ void RegisterCoverageMap(const Napi::CallbackInfo &info) {
   auto buf = info[0].As<Napi::Buffer<uint8_t>>();
 
   gCoverageCounters = reinterpret_cast<uint8_t *>(buf.Data());
+  gCoverageCountersSize = buf.Length();
   // Fill the PC table with fake entries. The only requirement is that the fake
   // addresses must not collide with the locations of real counters (e.g., from
   // instrumented C++ code). Therefore, we just use the address of the counter
@@ -122,6 +131,7 @@ Napi::Value RegisterModuleCounters(const Napi::CallbackInfo &info) {
   __sanitizer_cov_8bit_counters_init(buf.Data(), buf.Data() + size);
   __sanitizer_cov_pcs_init(reinterpret_cast<uintptr_t *>(pcEntries),
                            reinterpret_cast<uintptr_t *>(pcEntries + size));
+  gModulePCTables.push_back({basePC, size, pcEntries});
 
   return Napi::Number::New(info.Env(), static_cast<double>(basePC));
 }
@@ -155,6 +165,13 @@ uint32_t internString(const std::string &s) {
   return static_cast<uint32_t>(gStringTable.size() - 1);
 }
 
+ModulePCTable *findModulePCTable(uintptr_t basePC) {
+  for (auto &table : gModulePCTables) {
+    if (table.basePC == basePC) return &table;
+  }
+  return nullptr;
+}
+
 // Undo libFuzzer's GetNextInstructionPc before lookup.
 uintptr_t toPCTablePC(uintptr_t symbolizerPC) {
 #if defined(__aarch64__) || defined(__arm__)
@@ -167,7 +184,8 @@ uintptr_t toPCTablePC(uintptr_t symbolizerPC) {
 } // namespace
 
 // Called from JS: registerPCLocations(filename, funcNames[], entries[], pcBase)
-// entries is a flat Int32Array: [edgeId, line, col, funcIdx, ...]
+// entries is a flat Int32Array:
+// [edgeId, line, col, funcIdx, isFuncEntry, ...]
 // pcBase: for ESM pass the value returned by registerModuleCounters;
 //         for CJS pass 0 (edge IDs are already global PCs).
 void RegisterPCLocations(const Napi::CallbackInfo &info) {
@@ -199,12 +217,14 @@ void RegisterPCLocations(const Napi::CallbackInfo &info) {
   bool isEsm = pcBase >= ESM_BASE;
   auto baseOffset = isEsm ? pcBase - ESM_BASE : pcBase;
   auto &locations = isEsm ? gEsmLocations : gCjsLocations;
+  auto *modulePCTable = isEsm ? findModulePCTable(pcBase) : nullptr;
 
-  for (size_t i = 0; i + 3 < length; i += 4) {
+  for (size_t i = 0; i + 4 < length; i += 5) {
     auto edgeId = static_cast<uint32_t>(data[i]);
     auto line = static_cast<uint32_t>(data[i + 1]);
     auto col = static_cast<uint32_t>(data[i + 2]);
     auto localFuncIdx = static_cast<uint32_t>(data[i + 3]);
+    bool isFuncEntry = data[i + 4] != 0;
 
     auto idx = baseOffset + edgeId;
     if (idx >= locations.size()) {
@@ -214,6 +234,16 @@ void RegisterPCLocations(const Napi::CallbackInfo &info) {
     uint32_t globalFuncIdx =
         localFuncIdx < funcIndices.size() ? funcIndices[localFuncIdx] : 0;
     locations[idx] = {fileIdx, globalFuncIdx, line, col};
+
+    if (!isFuncEntry) continue;
+
+    if (isEsm) {
+      if (modulePCTable != nullptr && edgeId < modulePCTable->numEntries) {
+        modulePCTable->entries[edgeId].PCFlags |= 1;
+      }
+    } else if (gPCEntries != nullptr && edgeId < gCoverageCountersSize) {
+      gPCEntries[edgeId].PCFlags |= 1;
+    }
   }
 }
 

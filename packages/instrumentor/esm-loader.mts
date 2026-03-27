@@ -43,6 +43,10 @@ const { sourceCodeCoverage } =
 	require("./plugins/sourceCodeCoverage.js") as typeof import("./plugins/sourceCodeCoverage.js");
 const { functionHooks } =
 	require("./plugins/functionHooks.js") as typeof import("./plugins/functionHooks.js");
+const { buildPCLocationBatches } =
+	require("./pcLocationBatches.js") as typeof import("./pcLocationBatches.js");
+const { extractSourceMap, toRawSourceMap } =
+	require("./SourceMapRegistry.js") as typeof import("./SourceMapRegistry.js");
 
 // The loader thread has its own CJS module cache, so this is a
 // separate HookManager instance from the main thread's.  We populate
@@ -90,6 +94,16 @@ interface LoadResult {
 	shortCircuit?: boolean;
 }
 
+type BabelInputSourceMap = {
+	version: number;
+	sources: string[];
+	names: string[];
+	sourceRoot?: string;
+	sourcesContent?: string[];
+	mappings: string;
+	file: string;
+};
+
 type LoadFn = (
 	url: string,
 	context: { format?: string | null },
@@ -136,6 +150,7 @@ export const load: LoadFn = async function load(url, context, nextLoad) {
 
 function instrumentModule(code: string, filename: string): string | null {
 	drainHookUpdates();
+	const inputSourceMap = extractSourceMap(code, filename);
 
 	const fuzzerCoverage = esmCodeCoverage();
 
@@ -159,10 +174,24 @@ function instrumentModule(code: string, filename: string): string | null {
 
 	let transformed: ReturnType<typeof transformSync>;
 	try {
+		const rawInputSourceMap = toRawSourceMap(inputSourceMap);
+		const babelInputSourceMap: BabelInputSourceMap | undefined =
+			rawInputSourceMap
+				? {
+						version: Number(rawInputSourceMap.version),
+						sources: rawInputSourceMap.sources,
+						names: rawInputSourceMap.names,
+						sourceRoot: rawInputSourceMap.sourceRoot,
+						sourcesContent: rawInputSourceMap.sourcesContent,
+						mappings: rawInputSourceMap.mappings,
+						file: rawInputSourceMap.file ?? filename,
+					}
+				: undefined;
 		transformed = transformSync(code, {
 			filename,
 			sourceFileName: filename,
 			sourceMaps: true,
+			inputSourceMap: babelInputSourceMap,
 			plugins,
 			sourceType: "module",
 		});
@@ -176,8 +205,6 @@ function instrumentModule(code: string, filename: string): string | null {
 	if (edges === 0 || !transformed?.code) {
 		return null;
 	}
-	const displayFilename = stripProjectRootPrefix(filename);
-
 	// Build a preamble that runs on the main thread before the module
 	// body.  It allocates the per-module coverage counter buffer and,
 	// when a source map is available, registers it with the main-thread
@@ -188,18 +215,26 @@ function instrumentModule(code: string, filename: string): string | null {
 	];
 
 	// Register edge-to-source mappings for PC symbolization.
-	// Serialized as a flat array: [id, line, col, funcIdx, ...]
+	// Serialized as a flat array:
+	// [id, line, col, funcIdx, isFuncEntry, ...]
 	const edgeEntries = fuzzerCoverage.edgeEntries();
 	if (edgeEntries.length > 0) {
-		const flat = edgeEntries.flat();
 		const funcNames = fuzzerCoverage.funcNames();
-		preambleLines.push(
-			`Fuzzer.coverageTracker.registerPCLocations(` +
-				`${JSON.stringify(displayFilename)},` +
-				`${JSON.stringify(funcNames)},` +
-				`new Int32Array(${JSON.stringify(flat)}),` +
-				`__jazzer_pcBase);`,
+		const batches = buildPCLocationBatches(
+			edgeEntries,
+			filename,
+			inputSourceMap,
+			stripProjectRootPrefix,
 		);
+		for (const batch of batches) {
+			preambleLines.push(
+				`Fuzzer.coverageTracker.registerPCLocations(` +
+					`${JSON.stringify(batch.filename)},` +
+					`${JSON.stringify(funcNames)},` +
+					`new Int32Array(${JSON.stringify(Array.from(batch.entries))}),` +
+					`__jazzer_pcBase);`,
+			);
+		}
 	}
 
 	if (transformed.map) {

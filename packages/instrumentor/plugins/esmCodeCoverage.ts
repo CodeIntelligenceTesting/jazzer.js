@@ -70,8 +70,11 @@ function neverZeroIncrement(id: number): Expression {
 	);
 }
 
-/** Compact per-edge location: [localEdgeId, line, col, funcIndex]. */
-export type EdgeEntry = [number, number, number, number];
+/**
+ * Compact per-edge location:
+ * [localEdgeId, line, col, funcIndex, isFuncEntry].
+ */
+export type EdgeEntry = [number, number, number, number, number];
 
 export interface EsmCoverageResult {
 	plugin: () => PluginTarget;
@@ -95,7 +98,13 @@ export function esmCodeCoverage(): EsmCoverageResult {
 	const entries: EdgeEntry[] = [];
 
 	const onEdge = (loc: EdgeLocation): void => {
-		entries.push([count, loc.line, loc.col, funcNames.intern(loc.func)]);
+		entries.push([
+			count,
+			loc.line,
+			loc.col,
+			funcNames.intern(loc.func),
+			loc.isFuncEntry ? 1 : 0,
+		]);
 	};
 
 	return {

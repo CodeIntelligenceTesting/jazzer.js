@@ -30,13 +30,14 @@ import { fuzzer } from "@jazzer.js/fuzzer";
 import { hookManager, HookType } from "@jazzer.js/hooking";
 
 import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
+import { buildPCLocationBatches } from "./pcLocationBatches";
 import { instrumentationPlugins } from "./plugin";
 import { cjsCoverage, CjsCoverageResult } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import {
-	extractInlineSourceMap,
+	extractSourceMap,
 	SourceMap,
 	SourceMapRegistry,
 	toRawSourceMap,
@@ -119,9 +120,9 @@ export class Instrumentor {
 	}
 
 	instrument(code: string, filename: string, sourceMap?: SourceMap) {
-		// Extract inline source map from code string and use it as input source map
-		// in further transformations.
-		const inputSourceMap = sourceMap ?? extractInlineSourceMap(code);
+		// Extract source maps from the transformed code (inline or external)
+		// and use them as input source maps in further transformations.
+		const inputSourceMap = sourceMap ?? extractSourceMap(code, filename);
 		const transformations: PluginItem[] = [];
 
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
@@ -169,30 +170,34 @@ export class Instrumentor {
 			}
 		}
 		if (shouldInstrumentFile) {
-			this.registerCjsPCLocations(filename);
+			this.registerCjsPCLocations(filename, inputSourceMap);
 			this.idStrategy.commitIdCount(filename);
 		}
 		return result;
 	}
 
-	private registerCjsPCLocations(filename: string): void {
+	private registerCjsPCLocations(
+		filename: string,
+		sourceMap?: SourceMap,
+	): void {
 		const entries = this.cjsCoverage.edgeEntries();
 		if (entries.length === 0) return;
 
-		const flat = new Int32Array(entries.length * 4);
-		for (let i = 0; i < entries.length; i++) {
-			const e = entries[i];
-			flat[i * 4] = e[0];
-			flat[i * 4 + 1] = e[1];
-			flat[i * 4 + 2] = e[2];
-			flat[i * 4 + 3] = e[3];
-		}
-		fuzzer.coverageTracker.registerPCLocations(
-			stripProjectRootPrefix(filename),
-			this.cjsCoverage.funcNames(),
-			flat,
-			0,
+		const funcNames = this.cjsCoverage.funcNames();
+		const batches = buildPCLocationBatches(
+			entries,
+			filename,
+			sourceMap,
+			stripProjectRootPrefix,
 		);
+		for (const batch of batches) {
+			fuzzer.coverageTracker.registerPCLocations(
+				batch.filename,
+				funcNames,
+				batch.entries,
+				0,
+			);
+		}
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

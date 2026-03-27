@@ -19,10 +19,14 @@ import * as os from "os";
 
 import * as tmp from "tmp";
 
-import { FileSyncIdStrategy, ZeroEdgeIdStrategy } from "../edgeIdStrategy";
+import {
+	FileSyncIdStrategy,
+	MemorySyncIdStrategy,
+	ZeroEdgeIdStrategy,
+} from "../edgeIdStrategy";
 import { Instrumentor } from "../instrument";
 
-import { codeCoverage } from "./codeCoverage";
+import { cjsCoverage, codeCoverage } from "./codeCoverage";
 import { instrumentWith } from "./testhelpers";
 
 tmp.setGracefulCleanup();
@@ -150,6 +154,37 @@ describe("code coverage instrumentation", () => {
                |  };
                |};`;
 			expectInstrumentation(input, output);
+		});
+
+		it("should mark function-entry edges for print_funcs", () => {
+			const coverage = cjsCoverage(new MemorySyncIdStrategy());
+			const instrumentor = new Instrumentor();
+			instrumentor.transform(
+				"test.js",
+				"function f(x) { if (x) return 1; return 2; }",
+				[coverage.plugin],
+			);
+
+			const entries = coverage.edgeEntries();
+			expect(entries.length).toBeGreaterThan(0);
+			expect(entries[0][4]).toBe(1);
+			expect(entries.slice(1).every((entry) => entry[4] === 0)).toBe(true);
+		});
+
+		it("should infer class method names", () => {
+			const coverage = cjsCoverage(new MemorySyncIdStrategy());
+			const instrumentor = new Instrumentor();
+			instrumentor.transform(
+				"test.js",
+				"class Parser { makeFilter(stream, name, maybeLength, params) { if (maybeLength === 0) return null; return stream; } }",
+				[coverage.plugin],
+			);
+
+			const names = coverage.funcNames();
+			const hasMethodName = coverage
+				.edgeEntries()
+				.some((entry) => names[entry[3]] === "Parser.makeFilter");
+			expect(hasMethodName).toBe(true);
 		});
 	});
 

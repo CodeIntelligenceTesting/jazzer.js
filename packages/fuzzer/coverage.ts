@@ -95,7 +95,8 @@ export class CoverageTracker {
 	 *
 	 * @param filename  Source file path
 	 * @param funcNames Deduplicated function name table
-	 * @param entries   Flat Int32Array: [edgeId, line, col, funcIdx, ...]
+	 * @param entries   Flat Int32Array:
+	 *                  [edgeId, line, col, funcIdx, isFuncEntry, ...]
 	 * @param pcBase    For ESM: the pcBase from createModuleCounters.
 	 *                  For CJS: pass 0 (edge IDs are already global PCs).
 	 */
