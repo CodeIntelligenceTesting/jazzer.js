@@ -108,9 +108,17 @@ export function printFinding(
 	if (isError(error)) {
 		if (error.stack) {
 			cleanErrorStack(error);
-			print(error.stack);
+			if (error instanceof Finding) {
+				print(error.stack);
+			} else {
+				print(repairStackHeader(error));
+			}
 		} else {
-			print(error.message);
+			if (error instanceof Finding) {
+				print(error.message);
+			} else {
+				print(`${error.name || "Error"}: ${error.message}`);
+			}
 		}
 	} else if (typeof error === "string" || error instanceof String) {
 		print(error.toString());
@@ -165,6 +173,25 @@ export function cleanErrorStack(error: unknown): void {
 			(line) => !filterCriteria.some((criterion) => line.includes(criterion)),
 		)
 		.join("\n");
+}
+
+/**
+ * Fix the first line of error.stack when it doesn't reflect the actual
+ * .name/.message. This happens with legacy constructor patterns (e.g. pdf.js
+ * BaseException) where .stack is inherited from a prototype Error and shows
+ * a stale header from construction time.
+ */
+function repairStackHeader(error: Error): string {
+	const stack = error.stack!;
+	const name = error.name || "Error";
+	const expectedPrefix = error.message ? `${name}: ${error.message}` : name;
+	const firstNewline = stack.indexOf("\n");
+	const firstLine = firstNewline === -1 ? stack : stack.slice(0, firstNewline);
+	if (firstLine === expectedPrefix) {
+		return stack;
+	}
+	const rest = firstNewline === -1 ? "" : stack.slice(firstNewline);
+	return expectedPrefix + rest;
 }
 
 export function errorName(error: unknown): string {
