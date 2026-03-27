@@ -15,6 +15,7 @@
 
 #include <cstdio>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 extern "C" {
@@ -43,6 +44,7 @@ struct ModulePCTable {
 };
 
 std::vector<ModulePCTable> gModulePCTables;
+std::unordered_map<uintptr_t, size_t> gModulePCTableIndex;
 
 // The array of supplementary information for coverage counters. Each entry
 // corresponds to an entry in gCoverageCounters; since we don't know the actual
@@ -131,12 +133,54 @@ Napi::Value RegisterModuleCounters(const Napi::CallbackInfo &info) {
   __sanitizer_cov_8bit_counters_init(buf.Data(), buf.Data() + size);
   __sanitizer_cov_pcs_init(reinterpret_cast<uintptr_t *>(pcEntries),
                            reinterpret_cast<uintptr_t *>(pcEntries + size));
+  gModulePCTableIndex[basePC] = gModulePCTables.size();
   gModulePCTables.push_back({basePC, size, pcEntries});
 
   return Napi::Number::New(info.Env(), static_cast<double>(basePC));
 }
 
 // ── PC-to-source symbolization ───────────────────────────────────
+//
+// Thread safety
+// ~~~~~~~~~~~~~
+// These data structures are written by RegisterPCLocations (called from
+// the JS event-loop thread via N-API) and read by SymbolizePC (called by
+// libFuzzer via __sanitizer_symbolize_pc).
+//
+// In sync mode both paths share the same thread, so there is no race.
+//
+// In async mode libFuzzer runs on a dedicated native thread.  There is
+// no explicit lock protecting gStringTable / gCjsLocations /
+// gEsmLocations, yet the access is still safe:
+//
+//   JS thread                         libFuzzer thread
+//   ─────────                         ────────────────
+//   CallJsFuzzCallback()              FuzzCallbackAsync()
+//     fuzz target runs                  TSFN.BlockingCall(…)
+//     (may load modules →               future.get()  ← BLOCKS
+//      RegisterPCLocations writes)
+//     promise->set_value(…)           ← unblocks
+//                                     returns to Fuzzer::RunOne
+//                                     TPC.UpdateObservedPCs()
+//                                       → PrintPC → SymbolizePC (reads)
+//
+// std::promise::set_value happens-before std::future::get returns
+// (C++ [futures.state] §33.10.5), so every write made by the JS
+// thread during a fuzzer iteration is visible to the native thread
+// when it resumes and calls the symbolizer.
+//
+// This guarantee is implicit.  It would break if module registration
+// ever happened outside the synchronous scope of a TSFN callback
+// (e.g. from a Node.js worker thread or a detached timer).
+//
+// Async-signal safety: libFuzzer installs signal handlers for SIGBUS,
+// SIGABRT, etc., whose crash path calls PrintFinalStats →
+// PrintCoverage → DescribePC → __sanitizer_symbolize_pc.  DescribePC
+// uses a try_to_lock mutex that returns "<can not symbolize>" on
+// contention, but std::mutex::try_lock is itself not async-signal-safe.
+// This is a pre-existing libFuzzer limitation, not specific to
+// jazzer.js.  jazzer.js overrides SIGINT and SIGSEGV with its own
+// handlers that do not call the symbolizer.
 
 namespace {
 
@@ -147,8 +191,11 @@ struct PCLocation {
   uint32_t col;
 };
 
-// Deduplicated string table shared across all modules.
+// Deduplicated string table shared across all modules.  The vector
+// provides O(1) indexed access in SymbolizePC; the map provides O(1)
+// amortized deduplication in internString.
 std::vector<std::string> gStringTable;
+std::unordered_map<std::string, uint32_t> gStringIndex;
 // CJS location entries indexed directly by edge ID (PC = edge ID).
 std::vector<PCLocation> gCjsLocations;
 // ESM location entries indexed by (pc - ESM_BASE).
@@ -156,20 +203,18 @@ std::vector<PCLocation> gEsmLocations;
 constexpr uintptr_t ESM_BASE = 0x10000000;
 
 uint32_t internString(const std::string &s) {
-  // Linear scan is fine — the table holds O(modules) filenames and
-  // O(functions-per-module) names, so it stays small.
-  for (uint32_t i = 0; i < gStringTable.size(); ++i) {
-    if (gStringTable[i] == s) return i;
-  }
+  auto it = gStringIndex.find(s);
+  if (it != gStringIndex.end()) return it->second;
+  auto idx = static_cast<uint32_t>(gStringTable.size());
   gStringTable.push_back(s);
-  return static_cast<uint32_t>(gStringTable.size() - 1);
+  gStringIndex.emplace(s, idx);
+  return idx;
 }
 
 ModulePCTable *findModulePCTable(uintptr_t basePC) {
-  for (auto &table : gModulePCTables) {
-    if (table.basePC == basePC) return &table;
-  }
-  return nullptr;
+  auto it = gModulePCTableIndex.find(basePC);
+  if (it == gModulePCTableIndex.end()) return nullptr;
+  return &gModulePCTables[it->second];
 }
 
 // Undo libFuzzer's GetNextInstructionPc before lookup.
