@@ -6,10 +6,11 @@ shared object from GitHub but falls back to compilation on the user's machine if
 there is no suitable binary.
 
 Loading the addon initializes libFuzzer and the sanitizer runtime. Users can
-then start the fuzzer with the exported `startFuzzing` function; see
-[the test](fuzzer.test.ts) for an example. For the time being, the fuzzer runs
-on the main thread and therefore blocks Node's event loop; this is most likely
-what users want, so that their JS fuzz target can run in its normal environment.
+then start the fuzzer with the exported `startFuzzing` or `startFuzzingAsync`
+functions; see [the test](fuzzer.test.ts) for an example. In sync mode
+(`--sync`), the fuzzer runs on the main thread and blocks the event loop. In the
+default async mode, libFuzzer runs on a separate native thread and communicates
+with the JS event loop via a thread-safe function.
 
 ## Development
 

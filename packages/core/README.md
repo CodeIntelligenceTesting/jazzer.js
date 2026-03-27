@@ -3,7 +3,7 @@
 This is the main entry point and all most users have to install as a
 dev-dependency, so that they can fuzz their projects.
 
-The `@jazzer.js/core` module provide a CLI interface via the `jazzer` command.
+The `@jazzer.js/core` module provides a CLI interface via the `jazzer` command.
 It can be used by `npx` or node script command. To display a command
 documentation use the `--help` flag.
 
@@ -25,5 +25,5 @@ npm install --save-dev @jazzer.js/core
 ## Documentation
 
 See
-[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial#readme)
+[Jazzer.js README](https://github.com/CodeIntelligenceTesting/jazzer.js#readme)
 for more information.

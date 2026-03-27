@@ -1,4 +1,4 @@
-# Jest Typscript Integration Example
+# Jest TypeScript Integration Example
 
 Detailed documentation on the Jest integration is available in the main
 [Jazzer.js](https://github.com/CodeIntelligenceTesting/jazzer.js/blob/main/docs/jest-integration.md)
@@ -14,26 +14,28 @@ The example below shows how to configure the Jazzer.js Jest integration in
 combination with the normal Jest runner.
 
 ```json
-  "jest": {
-    "projects": [
-      {
-        "displayName": "Jest",
-        "preset": "ts-jest",
-      },
-      {
-        "displayName": {
-          "name": "Jazzer.js",
-          "color": "cyan",
-        },
-        "preset": "ts-jest",
-        "runner": "@jazzer.js/jest-runner",
-        "testEnvironment": "node",
-        "testMatch": ["<rootDir>/*.fuzz.[jt]s"],
-      },
-    ],
-    "coveragePathIgnorePatterns": ["/node_modules/", "/dist/"],
-    "modulePathIgnorePatterns": ["/node_modules", "/dist/"],
-  }
+{
+	"jest": {
+		"projects": [
+			{
+				"displayName": "Jest",
+				"preset": "ts-jest"
+			},
+			{
+				"displayName": {
+					"name": "Jazzer.js",
+					"color": "cyan"
+				},
+				"preset": "ts-jest",
+				"testRunner": "@jazzer.js/jest-runner",
+				"testEnvironment": "node",
+				"testMatch": ["<rootDir>/*.fuzz.[jt]s"]
+			}
+		],
+		"coveragePathIgnorePatterns": ["/node_modules/", "/dist/"],
+		"modulePathIgnorePatterns": ["/node_modules", "/dist/"]
+	}
+}
 ```
 
 Further configuration can be specified in `.jazzerjsrc`, like in any other
@@ -51,7 +53,7 @@ Write a Jest fuzz test like:
 
 ```typescript
 // file: jazzerjs.fuzz.ts
-import "@jazzer.js/jest-runner/jest-extension";
+import "@jazzer.js/jest-runner";
 describe("My describe", () => {
 	it.fuzz("My fuzz test", (data: Buffer) => {
 		target.fuzzMe(data);
