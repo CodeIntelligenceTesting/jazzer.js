@@ -17,3 +17,4 @@
 
 void RegisterCoverageMap(const Napi::CallbackInfo &info);
 void RegisterNewCounters(const Napi::CallbackInfo &info);
+void RegisterModuleCounters(const Napi::CallbackInfo &info);
