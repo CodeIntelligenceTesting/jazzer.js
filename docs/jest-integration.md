@@ -145,6 +145,12 @@ enable source map generation in the TypeScript compiler options:
 
 These settings should be enough to start writing Jest fuzz tests in TypeScript.
 
+With source maps enabled, libFuzzer outputs such as `-print_pcs` and
+`-print_funcs` are also mapped back to original TypeScript files and line
+numbers whenever mappings are available. If a location cannot be mapped (for
+example, downlevel helper code), Jazzer.js falls back to the generated
+JavaScript location.
+
 **Note**: Using custom hooks written in TypeScript is currently not supported,
 as those are not pre-processed by Jest.
 
