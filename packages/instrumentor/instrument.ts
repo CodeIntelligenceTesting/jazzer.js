@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import * as path from "path";
+import { pathToFileURL } from "url";
+
 import {
 	BabelFileResult,
 	PluginItem,
@@ -183,6 +186,22 @@ export class Instrumentor {
 		);
 	}
 
+	get dryRun(): boolean {
+		return this.isDryRun;
+	}
+
+	get includePatterns(): string[] {
+		return this.includes;
+	}
+
+	get excludePatterns(): string[] {
+		return this.excludes;
+	}
+
+	get coverageEnabled(): boolean {
+		return this.shouldCollectSourceCodeCoverage;
+	}
+
 	private shouldCollectCodeCoverage(filepath: string): boolean {
 		return (
 			this.shouldCollectSourceCodeCoverage &&
@@ -223,4 +242,47 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 		// instrumentor but the filename will still have a .ts extension
 		{ extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] },
 	);
+
+	registerEsmHooks(instrumentor);
+}
+
+/**
+ * On Node.js >= 20.6 register an ESM loader hook so that
+ * import() and static imports are instrumented too.
+ */
+function registerEsmHooks(instrumentor: Instrumentor): void {
+	if (instrumentor.dryRun) {
+		return;
+	}
+
+	const [major, minor] = process.versions.node.split(".").map(Number);
+	if (major < 20 || (major === 20 && minor < 6)) {
+		return;
+	}
+
+	try {
+		// Dynamic require — the node:module API may not expose
+		// `register` on older versions even if the check above
+		// passed (e.g. unusual builds).
+		const { register } = require("node:module") as {
+			register: (
+				specifier: string,
+				options: { parentURL: string; data: unknown },
+			) => void;
+		};
+
+		const loaderUrl = pathToFileURL(
+			path.join(__dirname, "esm-loader.mjs"),
+		).href;
+		register(loaderUrl, {
+			parentURL: pathToFileURL(__filename).href,
+			data: {
+				includes: instrumentor.includePatterns,
+				excludes: instrumentor.excludePatterns,
+				coverage: instrumentor.coverageEnabled,
+			},
+		});
+	} catch {
+		// Silently fall back to CJS-only instrumentation.
+	}
 }

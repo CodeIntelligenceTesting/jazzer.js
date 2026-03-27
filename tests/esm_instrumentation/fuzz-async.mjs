@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-import { PluginTarget, types } from "@babel/core";
+import { checkSecret } from "./target.mjs";
 
-import { EdgeIdStrategy } from "../edgeIdStrategy";
-
-import { makeCoverageVisitor } from "./coverageVisitor";
-
-export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+/**
+ * Async fuzz target that exercises the TSFN promise-resolution path:
+ * CallJsFuzzCallback sees a pending Promise, attaches .then() handlers,
+ * and the libFuzzer thread blocks on future.get() until the microtask
+ * settles the C++ promise.
+ *
+ * The await MUST come before checkSecret so the comparison (and its
+ * compare hook) fires inside a microtask, not synchronously.
+ *
+ * @param { Buffer } data
+ */
+export async function fuzz(data) {
+	await Promise.resolve();
+	checkSecret(data.toString());
 }

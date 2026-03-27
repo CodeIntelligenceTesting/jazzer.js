@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-import { PluginTarget, types } from "@babel/core";
-
-import { EdgeIdStrategy } from "../edgeIdStrategy";
-
-import { makeCoverageVisitor } from "./coverageVisitor";
-
-export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+/**
+ * A pure ES module with a string-literal comparison.  The compare
+ * hooks replace the === with a traceStrCmp call that leaks the
+ * literal to libFuzzer's mutation engine.  Without that feedback
+ * a 16-byte random string cannot be found by brute force.
+ */
+export function checkSecret(s) {
+	if (s === "a]3;d*F!pk29&bAc") {
+		throw new Error("Found the ESM secret!");
+	}
 }

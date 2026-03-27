@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-import { PluginTarget, types } from "@babel/core";
-
-import { EdgeIdStrategy } from "../edgeIdStrategy";
-
-import { makeCoverageVisitor } from "./coverageVisitor";
-
-export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+/**
+ * ESM module — instrumented via the ESM loader hook (module.register).
+ *
+ * The 10-byte random string cannot be brute-forced; the fuzzer
+ * needs the ESM compare hooks to discover it.
+ */
+export function checkEsm(s) {
+	return s === "Vj9!xR2#nP";
 }
