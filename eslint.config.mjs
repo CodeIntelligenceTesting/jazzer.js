@@ -128,6 +128,7 @@ export default tseslint.config(
 	// Markdown files
 	{
 		files: ["**/*.md"],
+		ignores: ["AGENTS.md"],
 		plugins: {
 			markdownlint,
 		},
