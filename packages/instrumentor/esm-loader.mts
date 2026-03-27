@@ -27,6 +27,7 @@
 import type { PluginItem } from "@babel/core";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { receiveMessageOnPort, type MessagePort } from "node:worker_threads";
 
 // Load CJS-compiled Babel plugins via createRequire so we don't
 // depend on Node.js CJS-named-export detection (varies by version).
@@ -39,6 +40,14 @@ const { compareHooks } =
 	require("./plugins/compareHooks.js") as typeof import("./plugins/compareHooks.js");
 const { sourceCodeCoverage } =
 	require("./plugins/sourceCodeCoverage.js") as typeof import("./plugins/sourceCodeCoverage.js");
+const { functionHooks } =
+	require("./plugins/functionHooks.js") as typeof import("./plugins/functionHooks.js");
+
+// The loader thread has its own CJS module cache, so this is a
+// separate HookManager instance from the main thread's.  We populate
+// it with stub hooks from the serialized data we receive via the port.
+const { hookManager: loaderHookManager } =
+	require("@jazzer.js/hooking") as typeof import("@jazzer.js/hooking");
 
 // Already-instrumented code contains this marker.
 const INSTRUMENTATION_MARKER = "Fuzzer.coverageTracker.incrementCounter";
@@ -50,12 +59,17 @@ interface LoaderConfig {
 	includes: string[];
 	excludes: string[];
 	coverage: boolean;
+	port?: MessagePort;
 }
 
 let config: LoaderConfig;
+let loaderPort: MessagePort | null = null;
 
 export function initialize(data: LoaderConfig): void {
 	config = data;
+	if (data.port) {
+		loaderPort = data.port;
+	}
 }
 
 interface LoadResult {
@@ -119,6 +133,8 @@ export const load: LoadFn = async function load(url, context, nextLoad) {
 // ── Instrumentation ──────────────────────────────────────────────
 
 function instrumentModule(code: string, filename: string): string | null {
+	drainHookUpdates();
+
 	const fuzzerCoverage = esmCodeCoverage();
 
 	const plugins: PluginItem[] = [fuzzerCoverage.plugin, compareHooks];
@@ -129,6 +145,14 @@ function instrumentModule(code: string, filename: string): string | null {
 	// main thread), just like the CJS path does.
 	if (config.coverage) {
 		plugins.push(sourceCodeCoverage(filename));
+	}
+
+	// Apply function hooks if the main thread has sent hook definitions
+	// and any of them target functions in this file.  The instrumented
+	// code calls HookManager.callHook(id, ...) at runtime, which
+	// resolves to the real hook function on the main thread.
+	if (loaderHookManager.hasFunctionsToHook(filename)) {
+		plugins.push(functionHooks(filename));
 	}
 
 	let transformed: ReturnType<typeof transformSync>;
@@ -176,6 +200,55 @@ function instrumentModule(code: string, filename: string): string | null {
 	}
 
 	return preambleLines.join("\n") + "\n" + transformed.code;
+}
+
+// ── Function hooks from the main thread ──────────────────────────
+
+interface SerializedHook {
+	id: number;
+	type: number;
+	target: string;
+	pkg: string;
+	async: boolean;
+}
+
+const noop = () => {};
+
+/**
+ * Synchronously drain any hook-definition messages from the main
+ * thread.  Uses receiveMessageOnPort — a non-blocking, synchronous
+ * read — so we never have to await or restructure the load() flow.
+ *
+ * The main thread sends hook data after finalizeHooks() and before
+ * user modules are loaded, so the message is always available by the
+ * time we process user code.
+ */
+function drainHookUpdates(): void {
+	if (!loaderPort) return;
+
+	let msg;
+	while ((msg = receiveMessageOnPort(loaderPort))) {
+		const hooks = msg.message.hooks as SerializedHook[];
+		for (const h of hooks) {
+			const stub = loaderHookManager.registerHook(
+				h.type,
+				h.target,
+				h.pkg,
+				h.async,
+				noop,
+			);
+			// Sanity check: the stub's index in the loader must match the
+			// main thread's index so that runtime HookManager.callHook(id)
+			// invokes the correct hook function.
+			const actualId = loaderHookManager.hookIndex(stub);
+			if (actualId !== h.id) {
+				throw new Error(
+					`ESM hook ID mismatch: expected ${h.id}, got ${actualId} ` +
+						`for ${h.target} in ${h.pkg}`,
+				);
+			}
+		}
+	}
 }
 
 // ── Include / exclude filtering ──────────────────────────────────
