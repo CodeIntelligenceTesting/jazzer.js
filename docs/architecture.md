@@ -25,14 +25,16 @@ The _fuzzing library_ is the main entry point and is used to start fuzzing. It
 is invoked with the name of a _fuzz target_ module and possible fuzzer options.
 As a first step it loads a
 [native plugin](https://nodejs.org/api/addons.html#wrapping-c-objects) Node.js
-addon, _fuzzer plugin_, to interact with libFuzzer and registers a `require`
-hook, _interceptor_, to instrument subsequently loaded code.
+addon, _fuzzer plugin_, to interact with libFuzzer and registers instrumentation
+hooks to transform subsequently loaded code.
 
-The _interceptor_ transforms code using [Babel](https://babeljs.io/) to provide
-feedback to the fuzzer in multiple ways. It extends the loaded code to gather
-coverage statistics so that the fuzzer can detect when new code paths are
-reached. And it also intercepts comparison functions, like `==` or `!=`, to
-detect the parts of the provided input that should be mutated and in what way.
+For CJS modules, a `require` hook (via `istanbul-lib-hook`) intercepts loading.
+For ES modules (Node >= 20.6), a loader hook registered via `module.register()`
+intercepts `import` statements in a dedicated loader thread.
+
+Both paths use [Babel](https://babeljs.io/) to transform source code, inserting
+coverage counters so the fuzzer can detect new code paths, and comparison hooks
+(for `==`, `!=`, etc.) so the fuzzer can mutate input toward specific values.
 Available feedback methods are defined in libFuzzer's
 [hook interface definitions](https://github.com/llvm/llvm-project/blob/main/compiler-rt/include/sanitizer/common_interface_defs.h).
 
@@ -70,14 +72,14 @@ information to detect progress and comparison hints to improve mutations. These
 feedback mechanisms have to be added to the application code without user
 intervention.
 
-**Decision**: Use the `istanbul-lib-hook` library to hook into dynamic code
-loading and `babel` plugins to extend the loaded code with the required feedback
-functionality. Instrumenting the code at such a high level leads to an
-independence of the underlying JavaScript engine. Furthermore, it is easily
-possible to decide if a loaded module should be instrumented or not.
+**Decision**: Use `istanbul-lib-hook` to hook into CJS loading and
+`module.register()` to hook into ESM loading, with Babel plugins to insert
+feedback instrumentation. Instrumenting at the source level decouples from the
+underlying JavaScript engine and allows fine-grained control over which modules
+are instrumented.
 
 **Consequences**: Independence of JavaScript engine, fine-grained
-instrumentation control
+instrumentation control, ESM support on Node >= 20.6.
 
 ## Visualization
 

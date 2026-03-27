@@ -91,7 +91,7 @@ prototype, it will be able also find a way to modify other properties of the
 prototype that are not functions. If you find a use case where this assumption
 does not hold, feel free to open an issue.
 
-_Disable with:_ `--disableBugDetectors=prototype-pollution`in CLI mode; or when
+_Disable with:_ `--disableBugDetectors=prototype-pollution` in CLI mode; or when
 using Jest in `.jazzerjsrc.json`:
 
 ```json
@@ -104,7 +104,7 @@ Hooks the `eval` and `Function` functions and reports a finding if the fuzzer
 was able to pass a special string to `eval` and to the function body of
 `Function`.
 
-_Disable with:_ `--disable_bug_detectors=remote-code-execution`in CLI mode; or
+_Disable with:_ `--disableBugDetectors=remote-code-execution` in CLI mode; or
 when using Jest in `.jazzerjsrc.json`:
 
 ```json
@@ -127,8 +127,8 @@ getBugDetectorConfiguration("ssrf")
 	.addPermittedUDPConnection("localhost", 9090);
 ```
 
-_Disable with:_ `--disable_bug_detectors=ssrf` in CLI mode; or when using Jest
-in `.jazzerjsrc.json`:
+_Disable with:_ `--disableBugDetectors=ssrf` in CLI mode; or when using Jest in
+`.jazzerjsrc.json`:
 
 ```json
 { "disableBugDetectors": ["ssrf"] }

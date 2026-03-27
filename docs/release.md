@@ -21,7 +21,7 @@ To release a new version of Jazzer.js follow the described process:
    - An automatic changelog, based on the included merge requests, is added to
      the prerelease description
    - The prerelease is listed on the
-     [release page](https://github.com/CodeIntelligenceTesting/jazzer.js-commercial/releases)
+     [release page](https://github.com/CodeIntelligenceTesting/jazzer.js/releases)
 8. Release the prerelease in GitHub
    - Adjust the prerelease description to include the highlights of the release
    - If you find some problems with the prerelease and want to start over:
