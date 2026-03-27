@@ -22,6 +22,11 @@ export class CoverageTracker {
 	private readonly coverageMap: Buffer;
 	private currentNumCounters: number;
 
+	// Per-module counter buffers registered independently with libFuzzer.
+	// We must prevent GC from reclaiming these while libFuzzer still
+	// monitors the underlying memory.
+	private readonly moduleCounters: Buffer[] = [];
+
 	constructor() {
 		this.coverageMap = Buffer.alloc(CoverageTracker.MAX_NUM_COUNTERS, 0);
 		this.currentNumCounters = CoverageTracker.INITIAL_NUM_COUNTERS;
@@ -64,6 +69,18 @@ export class CoverageTracker {
 
 	readCounter(edgeId: number): number {
 		return this.coverageMap.readUint8(edgeId);
+	}
+
+	/**
+	 * Allocate an independent counter buffer for a single module and
+	 * register it with libFuzzer as a new coverage region.  This lets
+	 * each ESM module own its own counters without sharing global IDs.
+	 */
+	createModuleCounters(size: number): Buffer {
+		const buf = Buffer.alloc(size, 0);
+		this.moduleCounters.push(buf);
+		addon.registerModuleCounters(buf);
+		return buf;
 	}
 }
 

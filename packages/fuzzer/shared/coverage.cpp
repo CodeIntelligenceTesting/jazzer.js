@@ -89,3 +89,33 @@ void RegisterNewCounters(const Napi::CallbackInfo &info) {
   __sanitizer_cov_pcs_init((uintptr_t *)(gPCEntries + old_num_counters),
                            (uintptr_t *)(gPCEntries + new_num_counters));
 }
+
+// Monotonically increasing fake PC so that each module's counters get
+// unique program-counter entries that don't collide with the shared
+// coverage map or with each other.
+static uintptr_t gNextModulePC = 0x10000000;
+
+// Register an independent coverage counter region for a single ES module.
+// libFuzzer supports multiple disjoint counter regions; each call here
+// hands it a fresh one.
+void RegisterModuleCounters(const Napi::CallbackInfo &info) {
+  if (info.Length() != 1 || !info[0].IsBuffer()) {
+    throw Napi::Error::New(info.Env(),
+                           "Need one argument: a Buffer of 8-bit counters");
+  }
+
+  auto buf = info[0].As<Napi::Buffer<uint8_t>>();
+  auto size = buf.Length();
+  if (size == 0) {
+    return;
+  }
+
+  auto *pcEntries = new PCTableEntry[size];
+  for (std::size_t i = 0; i < size; ++i) {
+    pcEntries[i] = {gNextModulePC++, 0};
+  }
+
+  __sanitizer_cov_8bit_counters_init(buf.Data(), buf.Data() + size);
+  __sanitizer_cov_pcs_init(reinterpret_cast<uintptr_t *>(pcEntries),
+                           reinterpret_cast<uintptr_t *>(pcEntries + size));
+}
