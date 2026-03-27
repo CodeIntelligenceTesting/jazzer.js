@@ -107,41 +107,96 @@ supported! However, it is possible to use the
 [Jest integration](jest-integration.md) to execute Jest fuzz tests written in
 TypeScript.
 
-### ⚠️ Using Jazzer.js on pure ESM projects ⚠️
+### ESM support
 
-ESM brings a couple of challenges to the table, which are currently not fully
-solved. Jazzer.js does have general ESM support as in your project should be
-loaded properly. If your project internally still relies on calls to
-`require()`, all of these dependencies will be hooked. However, _pure_
-ECMAScript projects will currently not be instrumented!
+Jazzer.js instruments ES modules via a
+[Node.js loader hook](https://nodejs.org/api/module.html#customization-hooks)
+(`module.register`). Coverage counters, compare hooks, and function hooks all
+work on ESM code — the fuzzer sees the same feedback it gets from CJS modules.
 
-The Jest integration can improve on this and use Jest's ESM features to properly
-transform external code and dependencies. However,
-[ESM support](https://jestjs.io/docs/ecmascript-modules) in Jest is also only
-experimental.
+**Requirements:** Node.js >= 20.6. Function hooks (bug detectors) additionally
+require Node.js >= 20.11 (for `transferList` support in `module.register`). On
+older Node versions, ESM loading still works but modules are not instrumented.
 
-One such example that Jazzer.js can handle just fine can be found at
-[examples/protobufjs/fuzz.js](../examples/protobufjs/protobufjs.fuzz.js):
+#### Minimal ESM fuzz target
 
 ```js
-import proto from "protobufjs";
-import { temporaryWriteSync } from "tempy";
+// fuzz.js  (or fuzz.mjs)
+import { parseInput } from "my-library";
 
-describe("protobufjs", () => {
-	test.fuzz("loadSync", (data) => {
-		const file = temporaryWriteSync(data);
-		proto.loadSync(file);
-	});
-});
+export function fuzz(data) {
+	parseInput(data.toString());
+}
 ```
-
-You also have to adapt your `package.json` accordingly, by adding:
 
 ```json
 {
-	"type": "module"
+	"type": "module",
+	"main": "fuzz.js",
+	"scripts": {
+		"fuzz": "jazzer fuzz -i my-library corpus"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "^3.0.0"
+	}
 }
 ```
+
+```shell
+npm run fuzz
+```
+
+The `-i` flag tells Jazzer.js which packages to instrument. Without it,
+everything outside `node_modules` is instrumented by default.
+
+#### Direct ESM vs. Jest ESM — when to use which
+
+There are two ways to fuzz ESM code with Jazzer.js:
+
+|                               | Direct (`npx jazzer`)                                  | Jest (`@jazzer.js/jest-runner`)                                          |
+| ----------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| **How ESM is instrumented**   | Loader hook (`module.register`) — native ESM stays ESM | Babel transform via `jest.config` — ESM is converted to CJS at test time |
+| **Node.js requirement**       | >= 20.6 (function hooks: >= 20.11)                     | Any supported Node.js                                                    |
+| **Fuzz target format**        | `export function fuzz(data)` in a `.js`/`.mjs` file    | `it.fuzz(name, fn)` inside a `.fuzz.cjs` test file                       |
+| **Async targets**             | Works out of the box (default mode)                    | Works out of the box                                                     |
+| **Regression testing**        | `--mode=regression` replays the corpus                 | Default Jest mode replays corpus seeds automatically                     |
+| **IDE integration**           | None (CLI only)                                        | VS Code / IntelliJ run individual inputs                                 |
+| **Multiple targets per file** | No — one exported `fuzz` function per file             | Yes — multiple `it.fuzz()` blocks in one file                            |
+| **Corpus management**         | Manual directory, passed as positional arg             | Automatic per-test directories                                           |
+
+**Rule of thumb:** use the Jest integration when you want multiple fuzz tests in
+one file, IDE debugging, or need to support Node < 20.6. Use direct ESM when you
+want a minimal setup with no Babel/Jest indirection — just your `.mjs` target
+and `npx jazzer`.
+
+#### Jest ESM setup (Babel transform approach)
+
+When fuzzing an ESM library through Jest, the fuzz tests themselves must be CJS
+(`.fuzz.cjs`), and Jest's Babel transform converts the library's ESM imports to
+`require()` calls so that Jazzer.js's CJS instrumentation hooks can intercept
+them:
+
+```js
+// jest.config.cjs
+module.exports = {
+	projects: [
+		{
+			testRunner: "@jazzer.js/jest-runner",
+			testMatch: ["<rootDir>/fuzz/**/*.fuzz.cjs"],
+			transform: {
+				"\\.js$": [
+					"babel-jest",
+					{ plugins: ["@babel/plugin-transform-modules-commonjs"] },
+				],
+			},
+			transformIgnorePatterns: ["/node_modules/"],
+		},
+	],
+};
+```
+
+This requires `@babel/core`, `babel-jest`, and
+`@babel/plugin-transform-modules-commonjs` as dev dependencies.
 
 ## Running the fuzz target
 

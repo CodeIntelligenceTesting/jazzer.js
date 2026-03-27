@@ -113,6 +113,10 @@ module.exports.fuzz = function (data /*: Buffer */) {
 };
 ```
 
+ES modules are supported on Node.js >= 20.6 — use `export function fuzz` in a
+`.js`/`.mjs` file with `"type": "module"` in your `package.json`. See
+[docs/fuzz-targets.md](docs/fuzz-targets.md#esm-support) for details.
+
 ## Documentation
 
 Further documentation is available at [docs/readme.md](docs/README.md).
