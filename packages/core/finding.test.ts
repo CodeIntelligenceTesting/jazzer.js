@@ -81,6 +81,53 @@ describe("Finding", () => {
 		);
 		expect(lines[3]).toEqual("");
 	});
+
+	it("print error with inherited/stale stack (e.g. pdf.js BaseException)", () => {
+		const printer = mockPrinter();
+		// Simulate pdf.js's BaseException pattern: .name and .message are own
+		// properties, but .stack is inherited from a prototype Error instance.
+		const proto = new Error();
+		const error = Object.create(proto) as Error;
+		Object.defineProperty(error, "message", {
+			value: "Command token too long: 128",
+		});
+		Object.defineProperty(error, "name", {
+			value: "UnknownErrorException",
+		});
+		// error.stack is inherited from proto — stale "Error" header
+
+		printFinding(error, printer);
+
+		const output = printer.printed();
+		expect(output).toContain("Uncaught Exception:");
+		expect(output).toContain(
+			"UnknownErrorException: Command token too long: 128",
+		);
+		expect(output).not.toMatch(/\nError[:\s]*\n/);
+	});
+
+	it("print error without stack shows name: message", () => {
+		const printer = mockPrinter();
+		const error = { name: "CustomError", message: "something broke" };
+
+		printFinding(error as Error, printer);
+
+		const output = printer.printed();
+		expect(output).toContain("Uncaught Exception:");
+		expect(output).toContain("CustomError: something broke");
+	});
+
+	it("print duck-typed error without .name falls back to Error", () => {
+		const printer = mockPrinter();
+		const error = { message: "oops" };
+
+		printFinding(error as Error, printer);
+
+		const output = printer.printed();
+		expect(output).toContain("Uncaught Exception:");
+		expect(output).toContain("Error: oops");
+		expect(output).not.toContain("undefined");
+	});
 });
 
 function mockPrinter() {
