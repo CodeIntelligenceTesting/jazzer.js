@@ -13,7 +13,9 @@
 // limitations under the License.
 #include "coverage.h"
 
-#include <iostream>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 extern "C" {
 void __sanitizer_cov_8bit_counters_init(uint8_t *start, uint8_t *end);
@@ -97,8 +99,9 @@ static uintptr_t gNextModulePC = 0x10000000;
 
 // Register an independent coverage counter region for a single ES module.
 // libFuzzer supports multiple disjoint counter regions; each call here
-// hands it a fresh one.
-void RegisterModuleCounters(const Napi::CallbackInfo &info) {
+// hands it a fresh one.  Returns the base PC assigned to this module
+// so the caller can pass it to RegisterPCLocations.
+Napi::Value RegisterModuleCounters(const Napi::CallbackInfo &info) {
   if (info.Length() != 1 || !info[0].IsBuffer()) {
     throw Napi::Error::New(info.Env(),
                            "Need one argument: a Buffer of 8-bit counters");
@@ -107,9 +110,10 @@ void RegisterModuleCounters(const Napi::CallbackInfo &info) {
   auto buf = info[0].As<Napi::Buffer<uint8_t>>();
   auto size = buf.Length();
   if (size == 0) {
-    return;
+    return Napi::Number::New(info.Env(), 0);
   }
 
+  auto basePC = gNextModulePC;
   auto *pcEntries = new PCTableEntry[size];
   for (std::size_t i = 0; i < size; ++i) {
     pcEntries[i] = {gNextModulePC++, 0};
@@ -118,4 +122,166 @@ void RegisterModuleCounters(const Napi::CallbackInfo &info) {
   __sanitizer_cov_8bit_counters_init(buf.Data(), buf.Data() + size);
   __sanitizer_cov_pcs_init(reinterpret_cast<uintptr_t *>(pcEntries),
                            reinterpret_cast<uintptr_t *>(pcEntries + size));
+
+  return Napi::Number::New(info.Env(), static_cast<double>(basePC));
+}
+
+// ── PC-to-source symbolization ───────────────────────────────────
+
+namespace {
+
+struct PCLocation {
+  uint32_t fileIdx;
+  uint32_t funcIdx;
+  uint32_t line;
+  uint32_t col;
+};
+
+// Deduplicated string table shared across all modules.
+std::vector<std::string> gStringTable;
+// CJS location entries indexed directly by edge ID (PC = edge ID).
+std::vector<PCLocation> gCjsLocations;
+// ESM location entries indexed by (pc - ESM_BASE).
+std::vector<PCLocation> gEsmLocations;
+constexpr uintptr_t ESM_BASE = 0x10000000;
+
+uint32_t internString(const std::string &s) {
+  // Linear scan is fine — the table holds O(modules) filenames and
+  // O(functions-per-module) names, so it stays small.
+  for (uint32_t i = 0; i < gStringTable.size(); ++i) {
+    if (gStringTable[i] == s) return i;
+  }
+  gStringTable.push_back(s);
+  return static_cast<uint32_t>(gStringTable.size() - 1);
+}
+
+// Undo libFuzzer's GetNextInstructionPc before lookup.
+uintptr_t toPCTablePC(uintptr_t symbolizerPC) {
+#if defined(__aarch64__) || defined(__arm__)
+  return symbolizerPC - 4;
+#else
+  return symbolizerPC - 1;
+#endif
+}
+
+} // namespace
+
+// Called from JS: registerPCLocations(filename, funcNames[], entries[], pcBase)
+// entries is a flat Int32Array: [edgeId, line, col, funcIdx, ...]
+// pcBase: for ESM pass the value returned by registerModuleCounters;
+//         for CJS pass 0 (edge IDs are already global PCs).
+void RegisterPCLocations(const Napi::CallbackInfo &info) {
+  auto env = info.Env();
+  if (info.Length() != 4) {
+    throw Napi::Error::New(env, "Expected 4 arguments: filename, "
+                                "funcNames[], entries (Int32Array), pcBase");
+  }
+
+  auto filename = info[0].As<Napi::String>().Utf8Value();
+  auto funcArray = info[1].As<Napi::Array>();
+  auto entries = info[2].As<Napi::TypedArray>();
+  auto pcBase =
+      static_cast<uintptr_t>(info[3].As<Napi::Number>().Int64Value());
+
+  uint32_t fileIdx = internString(filename);
+
+  // Intern function names.
+  std::vector<uint32_t> funcIndices(funcArray.Length());
+  for (uint32_t i = 0; i < funcArray.Length(); ++i) {
+    auto name = funcArray.Get(i).As<Napi::String>().Utf8Value();
+    funcIndices[i] = internString(name);
+  }
+
+  auto *data = static_cast<int32_t *>(
+      entries.As<Napi::Int32Array>().Data());
+  auto length = entries.ElementLength();
+
+  bool isEsm = pcBase >= ESM_BASE;
+  auto baseOffset = isEsm ? pcBase - ESM_BASE : pcBase;
+  auto &locations = isEsm ? gEsmLocations : gCjsLocations;
+
+  for (size_t i = 0; i + 3 < length; i += 4) {
+    auto edgeId = static_cast<uint32_t>(data[i]);
+    auto line = static_cast<uint32_t>(data[i + 1]);
+    auto col = static_cast<uint32_t>(data[i + 2]);
+    auto localFuncIdx = static_cast<uint32_t>(data[i + 3]);
+
+    auto idx = baseOffset + edgeId;
+    if (idx >= locations.size()) {
+      locations.resize(idx + 1);
+    }
+
+    uint32_t globalFuncIdx =
+        localFuncIdx < funcIndices.size() ? funcIndices[localFuncIdx] : 0;
+    locations[idx] = {fileIdx, globalFuncIdx, line, col};
+  }
+}
+
+void SymbolizePC(uintptr_t pc, const char *fmt, char *out_buf,
+                 size_t out_buf_size) {
+  if (out_buf_size == 0) return;
+
+  auto origPC = toPCTablePC(pc);
+
+  const char *file = "<unknown>";
+  const char *func = "<unknown>";
+  uint32_t line = 0, col = 0;
+
+  const PCLocation *loc = nullptr;
+  if (origPC >= ESM_BASE && origPC - ESM_BASE < gEsmLocations.size()) {
+    loc = &gEsmLocations[origPC - ESM_BASE];
+  } else if (origPC < ESM_BASE && origPC < gCjsLocations.size()) {
+    loc = &gCjsLocations[origPC];
+  }
+  if (loc && loc->line != 0) {
+    file = gStringTable[loc->fileIdx].c_str();
+    func = gStringTable[loc->funcIdx].c_str();
+    line = loc->line;
+    col = loc->col;
+  }
+
+  size_t pos = 0;
+  // remaining() reserves one byte for the null terminator, so snprintf
+  // calls pass remaining()+1 as the buffer size (snprintf counts the
+  // null in its size parameter but we exclude it from remaining()).
+  auto remaining = [&]() { return out_buf_size - pos - 1; };
+  auto advance = [&](int n) { if (n > 0) pos += std::min(static_cast<size_t>(n), remaining()); };
+
+  for (const char *f = fmt; *f && remaining() > 0; ++f) {
+    if (*f == '%' && *(f + 1)) {
+      ++f;
+      switch (*f) {
+      case 'p':
+        // Virtual PCs are meaningless and %L already prints the file path.
+        // Eat the trailing space so the output doesn't start with "  in".
+        if (*(f + 1) == ' ') ++f;
+        break;
+      case 'F':
+        advance(snprintf(out_buf + pos, remaining() + 1, "in %s", func));
+        break;
+      case 'L':
+        advance(snprintf(out_buf + pos, remaining() + 1, "%s:%u:%u",
+                         file, line, col));
+        break;
+      case 's':
+        advance(snprintf(out_buf + pos, remaining() + 1, "%s", file));
+        break;
+      case 'l':
+        advance(snprintf(out_buf + pos, remaining() + 1, "%u", line));
+        break;
+      case 'c':
+        advance(snprintf(out_buf + pos, remaining() + 1, "%u", col));
+        break;
+      default:
+        if (remaining() >= 2) {
+          out_buf[pos++] = '%';
+          out_buf[pos++] = *f;
+        }
+        break;
+      }
+    } else {
+      out_buf[pos++] = *f;
+    }
+  }
+  out_buf[pos] = '\0';
 }

@@ -40,7 +40,13 @@ export type StartFuzzingAsyncFn = (
 type NativeAddon = {
 	registerCoverageMap: (buffer: Buffer) => void;
 	registerNewCounters: (oldNumCounters: number, newNumCounters: number) => void;
-	registerModuleCounters: (buffer: Buffer) => void;
+	registerModuleCounters: (buffer: Buffer) => number;
+	registerPCLocations: (
+		filename: string,
+		funcNames: string[],
+		entries: Int32Array,
+		pcBase: number,
+	) => void;
 
 	traceUnequalStrings: (
 		hookId: number,

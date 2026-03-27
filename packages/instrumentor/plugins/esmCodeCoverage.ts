@@ -30,7 +30,11 @@
 import { PluginTarget, types } from "@babel/core";
 import { Expression } from "@babel/types";
 
-import { makeCoverageVisitor } from "./coverageVisitor";
+import {
+	EdgeLocation,
+	makeCoverageVisitor,
+	StringInterner,
+} from "./coverageVisitor";
 
 const COUNTER_ARRAY = "__jazzer_cov";
 
@@ -66,9 +70,16 @@ function neverZeroIncrement(id: number): Expression {
 	);
 }
 
+/** Compact per-edge location: [localEdgeId, line, col, funcIndex]. */
+export type EdgeEntry = [number, number, number, number];
+
 export interface EsmCoverageResult {
 	plugin: () => PluginTarget;
 	edgeCount: () => number;
+	/** Deduplicated function name table for this module. */
+	funcNames: () => string[];
+	/** Flat edge-to-source entries for this module. */
+	edgeEntries: () => EdgeEntry[];
 }
 
 /**
@@ -80,11 +91,19 @@ export interface EsmCoverageResult {
  */
 export function esmCodeCoverage(): EsmCoverageResult {
 	let count = 0;
+	const funcNames = new StringInterner();
+	const entries: EdgeEntry[] = [];
+
+	const onEdge = (loc: EdgeLocation): void => {
+		entries.push([count, loc.line, loc.col, funcNames.intern(loc.func)]);
+	};
 
 	return {
 		plugin: () => ({
-			visitor: makeCoverageVisitor(() => neverZeroIncrement(count++)),
+			visitor: makeCoverageVisitor(() => neverZeroIncrement(count++), onEdge),
 		}),
 		edgeCount: () => count,
+		funcNames: () => funcNames.strings(),
+		edgeEntries: () => entries,
 	};
 }

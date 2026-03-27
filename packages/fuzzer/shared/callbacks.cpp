@@ -23,6 +23,8 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
       Napi::Function::New<RegisterNewCounters>(env);
   exports["registerModuleCounters"] =
       Napi::Function::New<RegisterModuleCounters>(env);
+  exports["registerPCLocations"] =
+      Napi::Function::New<RegisterPCLocations>(env);
   exports["traceUnequalStrings"] =
       Napi::Function::New<TraceUnequalStrings>(env);
   exports["traceStringContainment"] =

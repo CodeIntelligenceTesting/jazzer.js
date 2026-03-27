@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "coverage.h"
+
 namespace libfuzzer {
 void (*PrintCrashingInput)() = nullptr;
 }
@@ -27,3 +29,11 @@ __jazzer_set_death_callback(void (*callback)()) {
 // Suppress libFuzzer warnings about missing sanitizer methods
 extern "C" [[maybe_unused]] int __sanitizer_acquire_crash_state() { return 1; }
 extern "C" [[maybe_unused]] void __sanitizer_print_stack_trace() {}
+
+// Override libFuzzer's weak __sanitizer_symbolize_pc so that
+// -print_pcs=1 and -print_coverage=1 show JS source locations.
+extern "C" [[maybe_unused]] void
+__sanitizer_symbolize_pc(void *pc, const char *fmt, char *out_buf,
+                         size_t out_buf_size) {
+  SymbolizePC(reinterpret_cast<uintptr_t>(pc), fmt, out_buf, out_buf_size);
+}

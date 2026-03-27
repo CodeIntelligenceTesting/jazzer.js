@@ -76,11 +76,36 @@ export class CoverageTracker {
 	 * register it with libFuzzer as a new coverage region.  This lets
 	 * each ESM module own its own counters without sharing global IDs.
 	 */
-	createModuleCounters(size: number): Buffer {
+	/**
+	 * Allocate an independent counter buffer for a single ES module and
+	 * register it with libFuzzer as a new coverage region.
+	 *
+	 * Returns `{ counters, pcBase }` — the counter buffer for the module
+	 * body and the base PC to pass to `registerPCLocations`.
+	 */
+	createModuleCounters(size: number): { counters: Buffer; pcBase: number } {
 		const buf = Buffer.alloc(size, 0);
 		this.moduleCounters.push(buf);
-		addon.registerModuleCounters(buf);
-		return buf;
+		const pcBase = addon.registerModuleCounters(buf);
+		return { counters: buf, pcBase };
+	}
+
+	/**
+	 * Register edge-to-source mappings for PC symbolization.
+	 *
+	 * @param filename  Source file path
+	 * @param funcNames Deduplicated function name table
+	 * @param entries   Flat Int32Array: [edgeId, line, col, funcIdx, ...]
+	 * @param pcBase    For ESM: the pcBase from createModuleCounters.
+	 *                  For CJS: pass 0 (edge IDs are already global PCs).
+	 */
+	registerPCLocations(
+		filename: string,
+		funcNames: string[],
+		entries: Int32Array,
+		pcBase: number,
+	): void {
+		addon.registerPCLocations(filename, funcNames, entries, pcBase);
 	}
 }
 

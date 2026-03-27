@@ -13,8 +13,17 @@
 // limitations under the License.
 
 #pragma once
+#include <cstddef>
+#include <cstdint>
+
 #include <napi.h>
 
 void RegisterCoverageMap(const Napi::CallbackInfo &info);
 void RegisterNewCounters(const Napi::CallbackInfo &info);
-void RegisterModuleCounters(const Napi::CallbackInfo &info);
+Napi::Value RegisterModuleCounters(const Napi::CallbackInfo &info);
+void RegisterPCLocations(const Napi::CallbackInfo &info);
+
+// Resolve a fake PC to a human-readable description.  Called by the
+// __sanitizer_symbolize_pc override in sanitizer_symbols.cpp.
+void SymbolizePC(uintptr_t pc, const char *fmt, char *out_buf,
+                 size_t out_buf_size);

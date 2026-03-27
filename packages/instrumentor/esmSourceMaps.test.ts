@@ -52,7 +52,7 @@ function instrumentModule(
 	}
 
 	const preambleLines = [
-		`const ${COUNTER_ARRAY} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
+		`const {counters: ${COUNTER_ARRAY}, pcBase: __jazzer_pcBase} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
 	];
 
 	let shiftedMap: SourceMap | null = null;

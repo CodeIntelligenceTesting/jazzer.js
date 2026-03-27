@@ -26,6 +26,7 @@
 
 import type { PluginItem } from "@babel/core";
 import { createRequire } from "node:module";
+import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { receiveMessageOnPort, type MessagePort } from "node:worker_threads";
 
@@ -54,6 +55,17 @@ const INSTRUMENTATION_MARKER = "Fuzzer.coverageTracker.incrementCounter";
 
 // Counter buffer variable injected into each instrumented module.
 const COUNTER_ARRAY = "__jazzer_cov";
+
+const PROJECT_ROOT_PREFIX = (() => {
+	const cwd = path.resolve(process.cwd());
+	return cwd.endsWith(path.sep) ? cwd : `${cwd}${path.sep}`;
+})();
+
+function stripProjectRootPrefix(filename: string): string {
+	return filename.startsWith(PROJECT_ROOT_PREFIX)
+		? filename.slice(PROJECT_ROOT_PREFIX.length)
+		: filename;
+}
 
 interface LoaderConfig {
 	includes: string[];
@@ -164,6 +176,7 @@ function instrumentModule(code: string, filename: string): string | null {
 	if (edges === 0 || !transformed?.code) {
 		return null;
 	}
+	const displayFilename = stripProjectRootPrefix(filename);
 
 	// Build a preamble that runs on the main thread before the module
 	// body.  It allocates the per-module coverage counter buffer and,
@@ -171,15 +184,30 @@ function instrumentModule(code: string, filename: string): string | null {
 	// SourceMapRegistry so that source-map-support can remap stack
 	// traces back to the original source.
 	const preambleLines = [
-		`const ${COUNTER_ARRAY} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
+		`const {counters: ${COUNTER_ARRAY}, pcBase: __jazzer_pcBase} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
 	];
+
+	// Register edge-to-source mappings for PC symbolization.
+	// Serialized as a flat array: [id, line, col, funcIdx, ...]
+	const edgeEntries = fuzzerCoverage.edgeEntries();
+	if (edgeEntries.length > 0) {
+		const flat = edgeEntries.flat();
+		const funcNames = fuzzerCoverage.funcNames();
+		preambleLines.push(
+			`Fuzzer.coverageTracker.registerPCLocations(` +
+				`${JSON.stringify(displayFilename)},` +
+				`${JSON.stringify(funcNames)},` +
+				`new Int32Array(${JSON.stringify(flat)}),` +
+				`__jazzer_pcBase);`,
+		);
+	}
 
 	if (transformed.map) {
 		// Shift the source map to account for the preamble lines we are
 		// about to prepend.  In VLQ-encoded mappings each semicolon
 		// represents one generated line; prepending them pushes all real
 		// mappings down by the right amount.
-		const preambleOffset = preambleLines.length + 1; // +1 for the registration line itself
+		const preambleOffset = preambleLines.length + 1; // +1 for the source map line itself
 		const shifted = {
 			...transformed.map,
 			mappings: ";".repeat(preambleOffset) + transformed.map.mappings,
