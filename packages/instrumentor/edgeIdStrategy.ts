@@ -40,6 +40,8 @@ if (process.listeners) {
 
 export interface EdgeIdStrategy {
 	nextEdgeId(): number;
+	/** Return the next edge ID that will be allocated, without consuming it. */
+	peekNextEdgeId(): number;
 	startForSourceFile(filename: string): void;
 	commitIdCount(filename: string): void;
 }
@@ -50,6 +52,10 @@ export abstract class IncrementingEdgeIdStrategy implements EdgeIdStrategy {
 	nextEdgeId(): number {
 		fuzzer.coverageTracker.enlargeCountersBufferIfNeeded(this._nextEdgeId);
 		return this._nextEdgeId++;
+	}
+
+	peekNextEdgeId(): number {
+		return this._nextEdgeId;
 	}
 
 	abstract startForSourceFile(filename: string): void;
@@ -238,6 +244,10 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 
 export class ZeroEdgeIdStrategy implements EdgeIdStrategy {
 	nextEdgeId(): number {
+		return 0;
+	}
+
+	peekNextEdgeId(): number {
 		return 0;
 	}
 

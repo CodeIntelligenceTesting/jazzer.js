@@ -26,11 +26,12 @@ import {
 } from "@babel/core";
 import { hookRequire, TransformerOptions } from "istanbul-lib-hook";
 
+import { fuzzer } from "@jazzer.js/fuzzer";
 import { hookManager, HookType } from "@jazzer.js/hooking";
 
 import { EdgeIdStrategy, MemorySyncIdStrategy } from "./edgeIdStrategy";
 import { instrumentationPlugins } from "./plugin";
-import { codeCoverage } from "./plugins/codeCoverage";
+import { cjsCoverage, CjsCoverageResult } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
 import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
@@ -63,8 +64,20 @@ export interface SerializedHook {
 	async: boolean;
 }
 
+const PROJECT_ROOT_PREFIX = (() => {
+	const cwd = path.resolve(process.cwd());
+	return cwd.endsWith(path.sep) ? cwd : `${cwd}${path.sep}`;
+})();
+
+function stripProjectRootPrefix(filename: string): string {
+	return filename.startsWith(PROJECT_ROOT_PREFIX)
+		? filename.slice(PROJECT_ROOT_PREFIX.length)
+		: filename;
+}
+
 export class Instrumentor {
 	private loaderPort: MessagePort | null = null;
+	private readonly cjsCoverage: CjsCoverageResult;
 
 	constructor(
 		private readonly includes: string[] = [],
@@ -82,6 +95,7 @@ export class Instrumentor {
 		}
 		this.includes = Instrumentor.cleanup(includes);
 		this.excludes = Instrumentor.cleanup(excludes);
+		this.cjsCoverage = cjsCoverage(this.idStrategy);
 	}
 
 	init(): () => void {
@@ -112,9 +126,10 @@ export class Instrumentor {
 
 		const shouldInstrumentFile = this.shouldInstrumentForFuzzing(filename);
 		if (shouldInstrumentFile) {
+			this.cjsCoverage.clear();
 			transformations.push(
 				...instrumentationPlugins.plugins,
-				codeCoverage(this.idStrategy),
+				this.cjsCoverage.plugin,
 				compareHooks,
 			);
 		}
@@ -154,9 +169,30 @@ export class Instrumentor {
 			}
 		}
 		if (shouldInstrumentFile) {
+			this.registerCjsPCLocations(filename);
 			this.idStrategy.commitIdCount(filename);
 		}
 		return result;
+	}
+
+	private registerCjsPCLocations(filename: string): void {
+		const entries = this.cjsCoverage.edgeEntries();
+		if (entries.length === 0) return;
+
+		const flat = new Int32Array(entries.length * 4);
+		for (let i = 0; i < entries.length; i++) {
+			const e = entries[i];
+			flat[i * 4] = e[0];
+			flat[i * 4 + 1] = e[1];
+			flat[i * 4 + 2] = e[2];
+			flat[i * 4 + 3] = e[3];
+		}
+		fuzzer.coverageTracker.registerPCLocations(
+			stripProjectRootPrefix(filename),
+			this.cjsCoverage.funcNames(),
+			flat,
+			0,
+		);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

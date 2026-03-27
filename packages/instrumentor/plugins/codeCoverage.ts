@@ -18,15 +18,52 @@ import { PluginTarget, types } from "@babel/core";
 
 import { EdgeIdStrategy } from "../edgeIdStrategy";
 
-import { makeCoverageVisitor } from "./coverageVisitor";
+import {
+	EdgeLocation,
+	makeCoverageVisitor,
+	StringInterner,
+} from "./coverageVisitor";
+import type { EdgeEntry } from "./esmCodeCoverage";
+
+export interface CjsCoverageResult {
+	plugin: () => PluginTarget;
+	/** Deduplicated function name table accumulated so far. */
+	funcNames: () => string[];
+	/** Edge entries accumulated since the last clear(). */
+	edgeEntries: () => EdgeEntry[];
+	/** Reset accumulated entries — call after registering each file's locations. */
+	clear: () => void;
+}
+
+export function cjsCoverage(idStrategy: EdgeIdStrategy): CjsCoverageResult {
+	const funcNames = new StringInterner();
+	const entries: EdgeEntry[] = [];
+
+	const onEdge = (loc: EdgeLocation): void => {
+		const id = idStrategy.peekNextEdgeId();
+		entries.push([id, loc.line, loc.col, funcNames.intern(loc.func)]);
+	};
+
+	return {
+		plugin: () => ({
+			visitor: makeCoverageVisitor(
+				() =>
+					types.callExpression(
+						types.identifier("Fuzzer.coverageTracker.incrementCounter"),
+						[types.numericLiteral(idStrategy.nextEdgeId())],
+					),
+				onEdge,
+			),
+		}),
+		funcNames: () => funcNames.strings(),
+		edgeEntries: () => entries,
+		clear: () => {
+			entries.length = 0;
+			funcNames.clear();
+		},
+	};
+}
 
 export function codeCoverage(idStrategy: EdgeIdStrategy): () => PluginTarget {
-	return () => ({
-		visitor: makeCoverageVisitor(() =>
-			types.callExpression(
-				types.identifier("Fuzzer.coverageTracker.incrementCounter"),
-				[types.numericLiteral(idStrategy.nextEdgeId())],
-			),
-		),
-	});
+	return cjsCoverage(idStrategy).plugin;
 }
