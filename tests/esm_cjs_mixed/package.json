@@ -1,0 +1,12 @@
+{
+	"name": "jazzerjs-esm-cjs-mixed-test",
+	"version": "1.0.0",
+	"description": "Integration test: fuzzer finds a secret split across CJS and ESM modules",
+	"scripts": {
+		"fuzz": "jest",
+		"dryRun": "echo \"Skipped: requires Node >= 20.6 for ESM loader hooks\""
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}

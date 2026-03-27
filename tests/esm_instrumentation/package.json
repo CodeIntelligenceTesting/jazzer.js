@@ -1,0 +1,12 @@
+{
+	"name": "jazzerjs-esm-instrumentation-test",
+	"version": "1.0.0",
+	"description": "Integration test: coverage-guided fuzzing of a pure ES module",
+	"scripts": {
+		"fuzz": "jest",
+		"dryRun": "echo \"Skipped: requires Node >= 20.6 for ESM loader hooks\""
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core"
+	}
+}
