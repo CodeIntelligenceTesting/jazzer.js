@@ -369,20 +369,38 @@ export function asFindingAwareFuzzFn(
 			try {
 				callbacks.runBeforeEachCallbacks();
 				result = (originalFuzzFn as fuzzer.FuzzTargetAsyncOrValue)(data);
-				// Explicitly set promise handlers to process findings, but still return
-				// the fuzz target result directly, so that sync execution is still
-				// possible.
 				if (isPromiseLike(result)) {
-					result = result.then(
-						(result) => {
-							callbacks.runAfterEachCallbacks();
-							return throwIfError() ?? result;
-						},
-						(reason) => {
-							callbacks.runAfterEachCallbacks();
-							return throwIfError(reason);
-						},
-					);
+					// Check if a finding was already detected synchronously
+					// (e.g., a before-hook threw inside an async function body,
+					// which stores the finding and returns a rejected Promise).
+					// If so, handle it synchronously and do NOT attach .then()
+					// handlers, as that would cause BOTH the synchronous throw
+					// (caught by the C++ catch block) AND the .then() rejection
+					// handler to resolve the C++ promise and deferred -- which
+					// is undefined behavior (double set_value on std::promise,
+					// double napi_reject_deferred) that can hang forked child
+					// processes.
+					const syncFinding = clearFirstFinding();
+					if (syncFinding) {
+						// Suppress the unhandled rejection from the abandoned
+						// rejected Promise returned by the async fuzz target.
+						result.catch(() => {});
+						callbacks.runAfterEachCallbacks();
+						fuzzTargetError = syncFinding;
+					} else {
+						// No synchronous finding -- let the async chain handle
+						// findings that occur during promise resolution.
+						result = result.then(
+							(result) => {
+								callbacks.runAfterEachCallbacks();
+								return throwIfError() ?? result;
+							},
+							(reason) => {
+								callbacks.runAfterEachCallbacks();
+								return throwIfError(reason);
+							},
+						);
+					}
 				} else {
 					callbacks.runAfterEachCallbacks();
 				}
