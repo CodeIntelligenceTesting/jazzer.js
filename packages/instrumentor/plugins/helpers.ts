@@ -14,11 +14,21 @@
  * limitations under the License.
  */
 
-import * as crypto from "crypto";
-
 import { types } from "@babel/core";
 import { NumericLiteral } from "@babel/types";
 
+// xorshift32 PRNG for deterministic compare-hook TORC slot assignments.
+// Seeded once at startup so that a given -seed= value produces identical
+// mutation schedules across runs.
+let state = 0xdead_beef;
+
+export function setSeed(seed: number): void {
+	state = seed | 1; // xorshift requires non-zero state
+}
+
 export function fakePC(): NumericLiteral {
-	return types.numericLiteral(crypto.randomInt(512));
+	state ^= state << 13;
+	state ^= state >> 17;
+	state ^= state << 5;
+	return types.numericLiteral((state >>> 0) % 512);
 }

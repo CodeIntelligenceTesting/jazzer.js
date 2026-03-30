@@ -83,9 +83,30 @@ declare global {
 	var options: OptionsManager;
 }
 
+/**
+ * Extract -seed=N from the libFuzzer arguments.  If absent, generate
+ * a random seed and inject it so both the instrumentation layer and
+ * libFuzzer use the same value — making the entire run reproducible
+ * from a single seed.
+ */
+function resolveInstrumentationSeed(options: OptionsManager): number {
+	const fuzzerOpts = options.get("fuzzerOptions");
+	const seedArg = fuzzerOpts.find((a: string) => a.startsWith("-seed="));
+	if (seedArg) {
+		const parsed = parseInt(seedArg.split("=")[1], 10);
+		// libFuzzer treats -seed=0 as "pick random", so we do the same.
+		if (parsed !== 0) return parsed;
+	}
+	const generated = Math.floor(Math.random() * 0x7fff_fffe) + 1; // [1, 2^31-1]
+	fuzzerOpts.push(`-seed=${generated}`);
+	console.error(`INFO: Using generated seed: ${generated}`);
+	return generated;
+}
+
 export async function initFuzzing(
 	options: OptionsManager,
 ): Promise<Instrumentor> {
+	const seed = resolveInstrumentationSeed(options);
 	const instrumentor = new Instrumentor(
 		options.get("includes"),
 		options.get("excludes"),
@@ -95,6 +116,8 @@ export async function initFuzzing(
 		options.get("idSyncFile")
 			? new FileSyncIdStrategy(options.get("idSyncFile"))
 			: new MemorySyncIdStrategy(),
+		undefined, // sourceMapRegistry — use default
+		seed,
 	);
 	registerInstrumentor(instrumentor);
 

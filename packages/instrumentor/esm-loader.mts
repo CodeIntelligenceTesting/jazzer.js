@@ -48,6 +48,8 @@ const { functionHooks } =
 // it with stub hooks from the serialized data we receive via the port.
 const { hookManager: loaderHookManager } =
 	require("@jazzer.js/hooking") as typeof import("@jazzer.js/hooking");
+const { setSeed } =
+	require("./plugins/helpers.js") as typeof import("./plugins/helpers.js");
 
 // Already-instrumented code contains this marker.
 const INSTRUMENTATION_MARKER = "Fuzzer.coverageTracker.incrementCounter";
@@ -59,6 +61,7 @@ interface LoaderConfig {
 	includes: string[];
 	excludes: string[];
 	coverage: boolean;
+	seed?: number;
 	port?: MessagePort;
 }
 
@@ -67,6 +70,9 @@ let loaderPort: MessagePort | null = null;
 
 export function initialize(data: LoaderConfig): void {
 	config = data;
+	if (data.seed != null) {
+		setSeed(data.seed);
+	}
 	if (data.port) {
 		loaderPort = data.port;
 	}
