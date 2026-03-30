@@ -33,6 +33,7 @@ import { instrumentationPlugins } from "./plugin";
 import { codeCoverage } from "./plugins/codeCoverage";
 import { compareHooks } from "./plugins/compareHooks";
 import { functionHooks } from "./plugins/functionHooks";
+import { setSeed } from "./plugins/helpers";
 import { sourceCodeCoverage } from "./plugins/sourceCodeCoverage";
 import {
 	extractInlineSourceMap,
@@ -74,6 +75,7 @@ export class Instrumentor {
 		private readonly isDryRun = false,
 		private readonly idStrategy: EdgeIdStrategy = new MemorySyncIdStrategy(),
 		private readonly sourceMapRegistry: SourceMapRegistry = new SourceMapRegistry(),
+		private readonly _seed: number = 0xdead_beef,
 	) {
 		// This is our default case where we want to include everything and exclude the "node_modules" folder.
 		if (includes.length === 0 && excludes.length === 0) {
@@ -85,6 +87,8 @@ export class Instrumentor {
 	}
 
 	init(): () => void {
+		setSeed(this._seed);
+
 		if (this.includes.includes("jazzer.js")) {
 			this.unloadInternalModules();
 		}
@@ -231,6 +235,10 @@ export class Instrumentor {
 		return this.shouldCollectSourceCodeCoverage;
 	}
 
+	get seed(): number {
+		return this._seed;
+	}
+
 	/** Connect the main-thread side of the loader MessagePort. */
 	setLoaderPort(port: MessagePort): void {
 		this.loaderPort = port;
@@ -351,6 +359,7 @@ function registerEsmHooks(instrumentor: Instrumentor): void {
 			includes: instrumentor.includePatterns,
 			excludes: instrumentor.excludePatterns,
 			coverage: instrumentor.coverageEnabled,
+			seed: instrumentor.seed,
 		};
 
 		const options: {
