@@ -34,7 +34,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -47,7 +47,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -60,7 +60,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -73,7 +73,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of Function changed",
 		);
@@ -88,7 +88,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of String changed",
 		);
@@ -103,7 +103,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of Number changed",
 		);
@@ -118,7 +118,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of Boolean changed",
 		);
@@ -136,7 +136,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    a.__proto__ value is ",
 		);
@@ -154,7 +154,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution\n    a.__proto__");
 	});
 
@@ -180,7 +180,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -206,7 +206,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -219,7 +219,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -235,7 +235,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -250,7 +250,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -265,7 +265,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -281,7 +281,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -297,7 +297,7 @@ describe("Prototype Pollution", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(FuzzingExitCode);
+		}).toThrow(FuzzingExitCode);
 		expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	});
 
@@ -314,7 +314,7 @@ describe("Prototype Pollution", () => {
 	// 		.build();
 	// 	expect(() => {
 	// 		fuzzTest.execute();
-	// 	}).toThrowError(FuzzingExitCode);
+	// 	}).toThrow(FuzzingExitCode);
 	// 	expect(fuzzTest.stderr).toContain("Prototype Pollution");
 	// });
 });
@@ -332,7 +332,7 @@ describe("Prototype Pollution Jest tests", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(JestRegressionExitCode);
+		}).toThrow(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of Object changed",
 		);
@@ -351,7 +351,7 @@ describe("Prototype Pollution Jest tests", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(JestRegressionExitCode);
+		}).toThrow(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    a.__proto__ value is",
 		);
@@ -370,7 +370,7 @@ describe("Prototype Pollution Jest tests", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(JestRegressionExitCode);
+		}).toThrow(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    a.__proto__ value is",
 		);
@@ -387,7 +387,7 @@ describe("Prototype Pollution Jest tests", () => {
 			.build();
 		expect(() => {
 			fuzzTest.execute();
-		}).toThrowError(JestRegressionExitCode);
+		}).toThrow(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(
 			"Prototype Pollution\n    Prototype of Object changed",
 		);

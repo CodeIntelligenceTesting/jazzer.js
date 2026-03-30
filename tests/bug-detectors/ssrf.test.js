@@ -83,7 +83,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetOptionsCallback")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -93,7 +93,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlCallback")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -103,7 +103,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlNoPort")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -113,7 +113,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpGetUrlNoAnything")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -123,7 +123,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestOptionsCallback")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -133,7 +133,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestUrlCallback")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -143,7 +143,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpRequestUrlNoPort")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -153,7 +153,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("netConnectPortHost")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -163,7 +163,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("netConnectOptions")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -171,7 +171,7 @@ describe("SSRF", () => {
 
 		it("net Socket.connect(port, host, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("socketConnect").build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -181,7 +181,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("socketConnectWithOptions")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -189,7 +189,7 @@ describe("SSRF", () => {
 
 		it("tls.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("TlsConnect").build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -199,7 +199,7 @@ describe("SSRF", () => {
 			const fuzzTest = fuzzTestBuilder
 				.fuzzEntryPoint("HttpsGetOptions")
 				.build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -207,7 +207,7 @@ describe("SSRF", () => {
 
 		it("http2.connect(options, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("Http2Connect").build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -215,7 +215,7 @@ describe("SSRF", () => {
 
 		it("udp.connect(port, host, callback)", async () => {
 			const fuzzTest = fuzzTestBuilder.fuzzEntryPoint("udpConnect").build();
-			await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+			await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 				FuzzingExitCode,
 			);
 			expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -233,7 +233,7 @@ describe("SSRF", () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("net.connect\\(options, callback\\)")
 					.build();
-				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 					JestRegressionExitCode,
 				);
 				expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -243,7 +243,7 @@ describe("SSRF", () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("udp.connect\\(port, host, callback\\)")
 					.build();
-				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 					JestRegressionExitCode,
 				);
 				expect(fuzzTest.stderr).toContain(ssrfFindingMessage);
@@ -338,7 +338,7 @@ describe("SSRF", () => {
 
 			it("http.request", async () => {
 				const fuzzTest = fuzzTestBuilder.jestTestName("http.request").build();
-				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 					JestRegressionExitCode,
 				);
 				expect(fuzzTest.stderr).toContain(okMessage);
@@ -348,7 +348,7 @@ describe("SSRF", () => {
 				const fuzzTest = fuzzTestBuilder
 					.jestTestName("udp.connect IPv6")
 					.build();
-				await expect(fuzzTest.executeWithPromise()).rejects.toThrowError(
+				await expect(fuzzTest.executeWithPromise()).rejects.toThrow(
 					JestRegressionExitCode,
 				);
 				expect(fuzzTest.stderr).toContain(okMessage);
