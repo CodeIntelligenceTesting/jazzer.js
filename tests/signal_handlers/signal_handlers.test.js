@@ -143,7 +143,7 @@ describe("SIGSEGV handlers", () => {
 				.sync(true)
 				.fuzzEntryPoint("SIGSEGV_SYNC")
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectSignalMessagesLogged(fuzzTest);
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
@@ -153,7 +153,7 @@ describe("SIGSEGV handlers", () => {
 				.sync(false)
 				.fuzzEntryPoint("SIGSEGV_ASYNC")
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectSignalMessagesLogged(fuzzTest);
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
@@ -163,7 +163,7 @@ describe("SIGSEGV handlers", () => {
 				.sync(true)
 				.fuzzEntryPoint("NATIVE_SIGSEGV_SYNC")
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
@@ -172,7 +172,7 @@ describe("SIGSEGV handlers", () => {
 				.sync(false)
 				.fuzzEntryPoint("NATIVE_SIGSEGV_ASYNC")
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
@@ -185,7 +185,7 @@ describe("SIGSEGV handlers", () => {
 				.jestTestName("^Jest Sync$")
 				.jestRunInFuzzingMode(true)
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectSignalMessagesLogged(fuzzTest);
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
@@ -196,7 +196,7 @@ describe("SIGSEGV handlers", () => {
 				.jestTestName("^Jest Async$")
 				.jestRunInFuzzingMode(true)
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectSignalMessagesLogged(fuzzTest);
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
@@ -207,7 +207,7 @@ describe("SIGSEGV handlers", () => {
 				.jestTestName("^Jest Native$")
 				.jestRunInFuzzingMode(true)
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});
@@ -217,7 +217,7 @@ describe("SIGSEGV handlers", () => {
 				.jestTestName("^Jest Native Async$")
 				.jestRunInFuzzingMode(true)
 				.build();
-			expect(() => fuzzTest.execute()).toThrowError();
+			expect(() => fuzzTest.execute()).toThrow();
 			expectFuzzingStopped(fuzzTest);
 			expectErrorAndCrashFileLogged(fuzzTest, errorMessage);
 		});

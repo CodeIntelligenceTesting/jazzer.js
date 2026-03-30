@@ -997,7 +997,7 @@ function expectLogHooks(
 	hookType: string,
 	hookName: string,
 ) {
-	expect(mock).toBeCalledTimes(callsites);
+	expect(mock).toHaveBeenCalledTimes(callsites);
 	if (callsites > 0) {
 		const hookTp: string = mock.mock.calls[0][1];
 		expect(hookTp).toEqual(hookType);

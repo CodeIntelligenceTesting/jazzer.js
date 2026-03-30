@@ -52,7 +52,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -63,7 +63,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -74,7 +74,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -85,7 +85,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 	});
@@ -116,7 +116,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -127,7 +127,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -147,7 +147,7 @@ describe("CLI", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(FuzzingExitCode);
+			}).toThrow(FuzzingExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -172,7 +172,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -184,7 +184,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -196,7 +196,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -209,7 +209,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -253,7 +253,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -265,7 +265,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 
@@ -287,7 +287,7 @@ describe("Jest", () => {
 				.build();
 			expect(() => {
 				fuzzTest.execute();
-			}).toThrowError(JestRegressionExitCode);
+			}).toThrow(JestRegressionExitCode);
 			expect(fuzzTest.stderr).toContain(findingMessage);
 		});
 

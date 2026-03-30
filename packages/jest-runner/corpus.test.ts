@@ -95,7 +95,7 @@ describe("Corpus", () => {
 
 		it("throw error if no package.json was found", () => {
 			const fuzzTest = mockFuzzTest({ generatePackageJson: false });
-			expect(() => new Corpus(fuzzTest, [])).toThrowError();
+			expect(() => new Corpus(fuzzTest, [])).toThrow();
 		});
 	});
 });

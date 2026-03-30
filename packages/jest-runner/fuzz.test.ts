@@ -179,7 +179,7 @@ describe("fuzz", () => {
 				}),
 			).rejects;
 			await rejects.toThrow(FuzzerError);
-			await rejects.toThrowError(new RegExp(".*async or done.*"));
+			await rejects.toThrow(new RegExp(".*async or done.*"));
 		});
 
 		// This test is disabled as it prints an additional error message to the console,

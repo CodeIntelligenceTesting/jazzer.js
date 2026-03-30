@@ -32,7 +32,7 @@ describe("callbacks", () => {
 		registerBeforeEachCallback(callback);
 		const callbacks = getCallbacks();
 		callbacks.runBeforeEachCallbacks();
-		expect(callback).toBeCalledTimes(3);
+		expect(callback).toHaveBeenCalledTimes(3);
 	});
 
 	it("executes registered afterEach callbacks", () => {
@@ -42,6 +42,6 @@ describe("callbacks", () => {
 		registerAfterEachCallback(callback);
 		const callbacks = getCallbacks();
 		callbacks.runAfterEachCallbacks();
-		expect(callback).toBeCalledTimes(3);
+		expect(callback).toHaveBeenCalledTimes(3);
 	});
 });
