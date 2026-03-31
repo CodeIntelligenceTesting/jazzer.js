@@ -4,6 +4,7 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
+	"exclude": ["dist"],
 	"references": [
 		{
 			"path": "../instrumentor"

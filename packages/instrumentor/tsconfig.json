@@ -4,5 +4,6 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
+	"exclude": ["dist"],
 	"references": [{ "path": "../fuzzer" }, { "path": "../hooking" }]
 }
