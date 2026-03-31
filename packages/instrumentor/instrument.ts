@@ -313,6 +313,11 @@ export function registerEsmLoaderHooks(instrumentor: Instrumentor) {
 	registerEsmHooks(instrumentor);
 }
 
+function nodeVersionAtLeast(major: number, minor: number): boolean {
+	const [maj, min] = process.versions.node.split(".").map(Number);
+	return maj > major || (maj === major && min >= minor);
+}
+
 /**
  * On Node.js >= 20.6 register an ESM loader hook so that
  * import() and static imports are instrumented too.
@@ -327,16 +332,28 @@ function registerEsmHooks(instrumentor: Instrumentor): void {
 		return;
 	}
 
-	const [major, minor] = process.versions.node.split(".").map(Number);
-	if (major < 20 || (major === 20 && minor < 6)) {
+	// module.register() is available since Node 20.6.
+	if (!nodeVersionAtLeast(20, 6)) {
+		console.error(
+			"WARN: [jazzer.js] ES module instrumentation requires Node.js >= 20.6" +
+				` (current: ${process.versions.node}).` +
+				" ES modules (import/import()) will not be instrumented.",
+		);
 		return;
 	}
 
-	// transferList (needed for MessagePort) requires Node >= 20.11.
-	// On older 20.x builds, ESM gets coverage and compare-hooks but
-	// not function hooks — a MessagePort in `data` without transferList
-	// would throw DataCloneError, so we simply omit it.
-	const supportsTransferList = major > 20 || (major === 20 && minor >= 11);
+	// transferList for MessagePort (needed to send function-hook
+	// definitions to the loader thread) requires Node 20.11.  Without
+	// it ESM still gets coverage and compare-hooks, but bug detectors
+	// will not fire on ES module code.
+	const canTransferPort = nodeVersionAtLeast(20, 11);
+	if (!canTransferPort) {
+		console.error(
+			"WARN: [jazzer.js] ES module function hooks require Node.js >= 20.11" +
+				` (current: ${process.versions.node}).` +
+				" Bug detectors will not apply to ES modules.",
+		);
+	}
 
 	try {
 		const { register } = require("node:module") as {
@@ -368,7 +385,7 @@ function registerEsmHooks(instrumentor: Instrumentor): void {
 			transferList?: unknown[];
 		} = { parentURL: pathToFileURL(__filename).href, data };
 
-		if (supportsTransferList) {
+		if (canTransferPort) {
 			const { port1, port2 } = new MessageChannel();
 			data.port = port2;
 			options.transferList = [port2];
@@ -376,7 +393,15 @@ function registerEsmHooks(instrumentor: Instrumentor): void {
 		}
 
 		register(loaderUrl, options);
-	} catch {
-		// Silently fall back to CJS-only instrumentation.
+	} catch (e) {
+		const detail = e instanceof Error ? ` (${e.message})` : "";
+		console.error(
+			"WARN: [jazzer.js] Failed to register ESM loader hooks." +
+				" ES modules will not be instrumented." +
+				detail,
+		);
+		if (process.env.JAZZER_DEBUG && e instanceof Error) {
+			console.error(e.stack);
+		}
 	}
 }

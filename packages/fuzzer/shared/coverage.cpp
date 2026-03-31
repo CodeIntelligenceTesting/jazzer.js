@@ -93,6 +93,12 @@ void RegisterNewCounters(const Napi::CallbackInfo &info) {
 // Monotonically increasing fake PC so that each module's counters get
 // unique program-counter entries that don't collide with the shared
 // coverage map or with each other.
+//
+// With PCFlags=0, libFuzzer's core feedback loop (CollectFeatures) does
+// not read the PC value — it works purely from counter indices.  Unique
+// PCs are still needed for forward-compatibility: __sanitizer_symbolize_pc
+// support, __sanitizer_cov_get_observed_pcs for external tool integration,
+// and -print_pcs cosmetic output all depend on distinct PC values.
 static uintptr_t gNextModulePC = 0x10000000;
 
 // Register an independent coverage counter region for a single ES module.
