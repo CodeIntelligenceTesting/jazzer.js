@@ -29,6 +29,7 @@ import {
 	FileSyncIdStrategy,
 	Instrumentor,
 	MemorySyncIdStrategy,
+	registerEsmLoaderHooks,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
 
@@ -189,7 +190,9 @@ export async function startFuzzing(
 	options: OptionsManager,
 ): Promise<FuzzingResult> {
 	registerGlobals(options);
-	await initFuzzing(options);
+	const instrumentor = await initFuzzing(options);
+	registerEsmLoaderHooks(instrumentor);
+	instrumentor.sendHooksToLoader();
 	const fuzzFn = await loadFuzzFunction(options);
 	const findingAwareFuzzFn = asFindingAwareFuzzFn(fuzzFn);
 	return startFuzzingNoInit(findingAwareFuzzFn, options).finally(() => {
