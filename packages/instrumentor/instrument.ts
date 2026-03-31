@@ -237,12 +237,17 @@ export function registerInstrumentor(instrumentor: Instrumentor) {
 		(code: string, opts: TransformerOptions): string => {
 			return instrumentor.instrument(code, opts.filename)?.code || code;
 		},
-		// required to allow jest to run typescript files
-		// jest's typescript integration will transform the typescript into javascript before giving it to the
-		// instrumentor but the filename will still have a .ts extension
 		{ extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"] },
 	);
+}
 
+/**
+ * Register an ESM loader hook so that import() and static imports are
+ * instrumented too.  Only needed when modules are loaded via Node
+ * directly (CLI path).  The jest-runner uses Jest's own transformer
+ * pipeline instead and does not need the ESM loader thread.
+ */
+export function registerEsmLoaderHooks(instrumentor: Instrumentor) {
 	registerEsmHooks(instrumentor);
 }
 
