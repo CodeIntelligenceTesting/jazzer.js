@@ -13,7 +13,8 @@
 // limitations under the License.
 #include "coverage.h"
 
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
 
 extern "C" {
 void __sanitizer_cov_8bit_counters_init(uint8_t *start, uint8_t *end);
@@ -22,24 +23,47 @@ void __sanitizer_cov_pcs_init(const uintptr_t *pcs_beg,
 }
 
 namespace {
-// We register an array of 8-bit coverage counters with libFuzzer. The array is
-// populated from JavaScript using Buffer.
+// Shared coverage counter buffer populated from JavaScript using Buffer.
+// Individual slices are registered with libFuzzer by RegisterNewCounters.
 uint8_t *gCoverageCounters = nullptr;
 
-// PC-Table is used by libfuzzer to keep track of program addresses
+// PC-Table is used by libFuzzer to keep track of program addresses
 // corresponding to coverage counters. The flags determine whether the
 // corresponding counter is the beginning of a function; we don't currently use
 // it.
 struct PCTableEntry {
   uintptr_t PC, PCFlags;
 };
+static_assert(sizeof(PCTableEntry) == 2 * sizeof(uintptr_t),
+              "PCTableEntry must match sanitizer PC table layout");
 
-// The array of supplementary information for coverage counters. Each entry
-// corresponds to an entry in gCoverageCounters; since we don't know the actual
-// addresses of our counters in JS land, we fill this table with fake
-// information.
-PCTableEntry *gPCEntries = nullptr;
+void RegisterCounterRange(uint8_t *start, uint8_t *end) {
+  if (start >= end) {
+    return;
+  }
+
+  auto num_counters = static_cast<std::size_t>(end - start);
+
+  // libFuzzer requires an array containing the instruction addresses
+  // associated with the coverage counters. Since these JavaScript counters are
+  // synthetic and not associated with real code, we create PC entries with the
+  // flag set to 0 to indicate they are not real function-entry PCs. The PC
+  // value is set to the local counter index for identification purposes.
+  //
+  // Intentionally never freed: libFuzzer holds a raw pointer to this table via
+  // __sanitizer_cov_pcs_init and may read it at any time.
+  auto *pc_entries = new PCTableEntry[num_counters];
+  for (std::size_t i = 0; i < num_counters; ++i) {
+    pc_entries[i] = {i, 0};
+  }
+
+  auto *pc_entries_end = pc_entries + num_counters;
+  __sanitizer_cov_8bit_counters_init(start, end);
+  __sanitizer_cov_pcs_init(reinterpret_cast<const uintptr_t *>(pc_entries),
+                           reinterpret_cast<const uintptr_t *>(pc_entries_end));
+}
 } // namespace
+
 void RegisterCoverageMap(const Napi::CallbackInfo &info) {
   if (info.Length() != 1) {
     throw Napi::Error::New(info.Env(),
@@ -52,14 +76,6 @@ void RegisterCoverageMap(const Napi::CallbackInfo &info) {
   auto buf = info[0].As<Napi::Buffer<uint8_t>>();
 
   gCoverageCounters = reinterpret_cast<uint8_t *>(buf.Data());
-  // Fill the PC table with fake entries. The only requirement is that the fake
-  // addresses must not collide with the locations of real counters (e.g., from
-  // instrumented C++ code). Therefore, we just use the address of the counter
-  // itself - it's in a statically allocated memory region under our control.
-  gPCEntries = new PCTableEntry[buf.Length()];
-  for (std::size_t i = 0; i < buf.Length(); ++i) {
-    gPCEntries[i] = {i, 0};
-  }
 }
 
 void RegisterNewCounters(const Napi::CallbackInfo &info) {
@@ -84,22 +100,9 @@ void RegisterNewCounters(const Napi::CallbackInfo &info) {
     return;
   }
 
-  __sanitizer_cov_8bit_counters_init(gCoverageCounters + old_num_counters,
-                                     gCoverageCounters + new_num_counters);
-  __sanitizer_cov_pcs_init((uintptr_t *)(gPCEntries + old_num_counters),
-                           (uintptr_t *)(gPCEntries + new_num_counters));
+  RegisterCounterRange(gCoverageCounters + old_num_counters,
+                       gCoverageCounters + new_num_counters);
 }
-
-// Monotonically increasing fake PC so that each module's counters get
-// unique program-counter entries that don't collide with the shared
-// coverage map or with each other.
-//
-// With PCFlags=0, libFuzzer's core feedback loop (CollectFeatures) does
-// not read the PC value — it works purely from counter indices.  Unique
-// PCs are still needed for forward-compatibility: __sanitizer_symbolize_pc
-// support, __sanitizer_cov_get_observed_pcs for external tool integration,
-// and -print_pcs cosmetic output all depend on distinct PC values.
-static uintptr_t gNextModulePC = 0x10000000;
 
 // Register an independent coverage counter region for a single ES module.
 // libFuzzer supports multiple disjoint counter regions; each call here
@@ -116,17 +119,5 @@ void RegisterModuleCounters(const Napi::CallbackInfo &info) {
     return;
   }
 
-  // Intentionally never freed: libFuzzer holds a raw pointer to this table
-  // (via __sanitizer_cov_pcs_init) and may read it at any time — during the
-  // fuzz loop, coverage printing, or crash handling.  The CJS path (line 59)
-  // uses the same pattern.  Module count is bounded by project size, so the
-  // cumulative allocation is negligible.
-  auto *pcEntries = new PCTableEntry[size];
-  for (std::size_t i = 0; i < size; ++i) {
-    pcEntries[i] = {gNextModulePC++, 0};
-  }
-
-  __sanitizer_cov_8bit_counters_init(buf.Data(), buf.Data() + size);
-  __sanitizer_cov_pcs_init(reinterpret_cast<uintptr_t *>(pcEntries),
-                           reinterpret_cast<uintptr_t *>(pcEntries + size));
+  RegisterCounterRange(buf.Data(), buf.Data() + size);
 }
