@@ -82,7 +82,8 @@ jobs:
     needs: [verify-prebuilds]
     runs-on: ubuntu-latest
     permissions:
-      contents: write # for creating releases
+      id-token: write # Required for OIDC
+      contents: write # for creating GH releases
     steps:
       - name: checkout
         uses: actions/checkout@v6
@@ -91,7 +92,6 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
-          registry-url: https://registry.npmjs.org
       - name: install
         run: npm ci
       - name: build
