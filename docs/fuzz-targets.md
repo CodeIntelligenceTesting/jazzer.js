@@ -137,7 +137,7 @@ export function fuzz(data) {
 		"fuzz": "jazzer fuzz -i my-library corpus"
 	},
 	"devDependencies": {
-		"@jazzer.js/core": "^3.0.0"
+		"@jazzer.js/core": "^4.0.0"
 	}
 }
 ```
