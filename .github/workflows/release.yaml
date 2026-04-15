@@ -119,3 +119,4 @@ jobs:
           name: Release ${{ steps.read-version.outputs.version }}
           body_path: ./.github/release_template.md
           generate_release_notes: true
+          draft: true
