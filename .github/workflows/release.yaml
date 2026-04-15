@@ -104,8 +104,6 @@ jobs:
           merge-multiple: true
       - name: publish
         run: npm publish --workspaces --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_ACCESS_TOKEN}}
       # create GitHub release
       - name: read version
         id: read-version
