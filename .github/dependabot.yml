@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: "weekly"
     versioning-strategy: increase
+    ignore:
+      - dependency-name: "yargs"
+        versions:
+          - ">=18.0.0"
     groups:
       minor-dependencies:
         update-types:
