@@ -4,6 +4,8 @@
 	"scripts": {
 		"build": "tsc",
 		"dryRun": "jest",
+		"fuzz:cli": "jazzer cli-smoke.cjs --sync -- -runs=1 -seed=123456789 -max_len=32",
+		"test:runtime": "npm run dryRun && npm run fuzz:cli",
 		"fuzz": "JAZZER_FUZZ=1 jest --coverage",
 		"coverage": "jest --coverage"
 	},
