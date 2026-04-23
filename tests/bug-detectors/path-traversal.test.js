@@ -24,9 +24,9 @@ const {
 } = require("../helpers");
 
 describe("Path Traversal", () => {
-	const SAFE = "../safe_path/";
-	const EVIL = "../evil_path/";
 	const bugDetectorDirectory = path.join(__dirname, "path-traversal");
+	const SAFE = path.join(bugDetectorDirectory, "../../safe_path");
+	const EVIL = path.join(bugDetectorDirectory, "../../evil_path");
 	const goalPath = path.join(bugDetectorDirectory, "../../jaz_zer");
 
 	beforeEach(async () => {
