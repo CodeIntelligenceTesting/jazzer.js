@@ -93,6 +93,93 @@ describe("CLI", () => {
 		});
 	}
 
+	it("prints a generic access suppression example", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("heuristicReadAccessesCanary")
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(
+			'getBugDetectorConfiguration("code-injection")',
+		);
+		expect(fuzzTest.stderr).toContain(
+			"Example only: copy/paste it and adapt `stackPattern` to your needs.",
+		);
+		expect(fuzzTest.stderr).toContain(
+			"// Example only: adapt `stackPattern` to the shown stack above.",
+		);
+		expect(fuzzTest.stderr).toContain("?.ignoreAccess({");
+		expect(fuzzTest.stderr).toContain('stackPattern: "test.js:10"');
+	});
+
+	it("reports confirmed invocation when access reporting is disabled", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("evalAccessesCanary")
+			.customHooks(["disable-access.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(invocationFindingMessage);
+		expect(fuzzTest.stderr).toContain("?.ignoreInvocation({");
+	});
+
+	it("falls back to potential access when invocation reporting is disabled", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("evalAccessesCanary")
+			.customHooks(["disable-invocation.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(accessFindingMessage);
+		expect(fuzzTest.stderr).not.toContain(invocationFindingMessage);
+	});
+
+	it("suppresses heuristic access when a stack pattern matches", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("heuristicReadAccessesCanary")
+			.customHooks(["ignore-heuristic-access.config.js"])
+			.build()
+			.execute();
+		expect(fuzzTest.stdout).toContain(okMessage);
+		expect(fuzzTest.stderr).not.toContain(accessFindingMessage);
+	});
+
+	it("reaches invocation reporting when access is ignored by stack pattern", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("evalAccessesCanary")
+			.customHooks(["ignore-access-by-stack.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(invocationFindingMessage);
+	});
+
+	it("falls back to potential access when invocation is ignored", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("evalAccessesCanary")
+			.customHooks(["ignore-invocation-only.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(accessFindingMessage);
+		expect(fuzzTest.stderr).not.toContain(invocationFindingMessage);
+	});
+
+	it("suppresses invocation when the invocation rule matches", () => {
+		const fuzzTest = fuzzTestBuilder
+			.fuzzEntryPoint("evalAccessesCanary")
+			.customHooks(["ignore-invocation.config.js"])
+			.build();
+		fuzzTest.execute();
+		expect(fuzzTest.stderr).not.toContain(accessFindingMessage);
+		expect(fuzzTest.stderr).not.toContain(invocationFindingMessage);
+	});
+
 	it("Function.prototype should still exist", () => {
 		const fuzzTest = fuzzTestBuilder
 			.dryRun(false)
@@ -157,6 +244,33 @@ describe("Jest", () => {
 		}).toThrow(JestRegressionExitCode);
 		expect(fuzzTest.stderr).toContain(invocationFindingMessage);
 		expect(fuzzTest.stderr).not.toContain(accessFindingMessage);
+	});
+
+	it("reports confirmed invocation when access reporting is disabled", () => {
+		const fuzzTest = fuzzTestBuilder
+			.dryRun(false)
+			.jestTestFile("tests.fuzz.js")
+			.jestTestName("eval Accesses canary$")
+			.customHooks(["disable-access.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(JestRegressionExitCode);
+		expect(fuzzTest.stderr).toContain(invocationFindingMessage);
+	});
+
+	it("falls back to potential access when invocation reporting is disabled", () => {
+		const fuzzTest = fuzzTestBuilder
+			.dryRun(false)
+			.jestTestFile("tests.fuzz.js")
+			.jestTestName("eval Accesses canary$")
+			.customHooks(["disable-invocation.config.js"])
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(JestRegressionExitCode);
+		expect(fuzzTest.stderr).toContain(accessFindingMessage);
+		expect(fuzzTest.stderr).not.toContain(invocationFindingMessage);
 	});
 
 	it("safe code stays quiet", () => {
