@@ -133,7 +133,7 @@ You can watch the recording [here](https://youtu.be/KyIhxEiNnfc).
 Jazzer.js supports Node.js LTS versions on the following platforms, other
 versions are best effort only:
 
-- Linux x86_64
+- Linux x86_64 and arm64
 - macOS x86_64 and arm64
 - Windows x86_64
 

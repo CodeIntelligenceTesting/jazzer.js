@@ -7,7 +7,7 @@ applications using [libFuzzer](https://llvm.org/docs/LibFuzzer.html).
 
 Support for:
 
-- Linux x86_64
+- Linux x86_64 and arm64
 - macOS x86_64 and arm64
 - Windows x86_64
 
