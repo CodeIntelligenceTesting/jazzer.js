@@ -182,27 +182,21 @@ describe("fuzz", () => {
 			await rejects.toThrow(new RegExp(".*async or done.*"));
 		});
 
-		// This test is disabled as it prints an additional error message to the console,
-		// which breaks the CI pipeline.
-		it.skip("print error on multiple calls to done callback", async () => {
-			await new Promise((resolve, reject) => {
-				withMockTest(() => {
-					runInRegressionMode(
-						"fuzz",
-						asFindingAwareFuzzFn((_: Buffer, done: (e?: Error) => void) => {
-							done();
-							done();
-							// Use another promise to stop test from finishing too fast.
-							resolve("done called multiple times");
-						}),
-						mockDefaultCorpus(),
-						new OptionsManager(OptionSource.DefaultJestOptions),
-						globalThis as Global.Global,
-						"standard",
-					);
-				}).then(resolve, reject);
+		it("print error on multiple calls to done callback", async () => {
+			await withMockTest(() => {
+				runInRegressionMode(
+					"fuzz",
+					asFindingAwareFuzzFn((_: Buffer, done: (e?: Error) => void) => {
+						done();
+						done();
+					}),
+					mockDefaultCorpus(),
+					new OptionsManager(OptionSource.DefaultJestOptions),
+					globalThis as Global.Global,
+					"standard",
+				);
 			});
-			expect(consoleErrorMock).toHaveBeenCalledTimes(1);
+			expect(consoleErrorMock).toHaveBeenCalledTimes(2);
 		});
 
 		it("always call tests with empty input", async () => {
