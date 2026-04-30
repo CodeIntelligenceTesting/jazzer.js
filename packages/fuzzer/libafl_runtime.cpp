@@ -70,6 +70,55 @@ constexpr int kRuntimeStopped = kJazzerLibAflRuntimeStopped;
 constexpr int kRuntimeFatal = kJazzerLibAflRuntimeFatal;
 constexpr int kRuntimeFoundTimeout = kJazzerLibAflRuntimeFoundTimeout;
 
+std::atomic_bool gLibAflRuntimeActive{false};
+
+class ScopedLibAflRuntime {
+public:
+  ~ScopedLibAflRuntime() {
+    gLibAflRuntimeActive.store(false, std::memory_order_release);
+  }
+
+  ScopedLibAflRuntime(const ScopedLibAflRuntime &) = delete;
+  ScopedLibAflRuntime &operator=(const ScopedLibAflRuntime &) = delete;
+
+private:
+  friend std::unique_ptr<ScopedLibAflRuntime>
+  AcquireLibAflRuntime(Napi::Env env);
+
+  ScopedLibAflRuntime() = default;
+};
+
+class ScopedSignalHandler {
+public:
+  ScopedSignalHandler(int signum, void (*handler)(int))
+      : signum_(signum), previous_handler_(std::signal(signum, handler)) {}
+
+  ~ScopedSignalHandler() {
+    if (previous_handler_ != SIG_ERR) {
+      std::signal(signum_, previous_handler_);
+    }
+  }
+
+  ScopedSignalHandler(const ScopedSignalHandler &) = delete;
+  ScopedSignalHandler &operator=(const ScopedSignalHandler &) = delete;
+
+private:
+  int signum_;
+  void (*previous_handler_)(int);
+};
+
+std::unique_ptr<ScopedLibAflRuntime> AcquireLibAflRuntime(Napi::Env env) {
+  bool expected = false;
+  if (!gLibAflRuntimeActive.compare_exchange_strong(
+          expected, true, std::memory_order_acq_rel,
+          std::memory_order_acquire)) {
+    throw Napi::Error::New(
+        env, "The LibAFL backend only supports one active run per process");
+  }
+
+  return std::unique_ptr<ScopedLibAflRuntime>(new ScopedLibAflRuntime());
+}
+
 struct SyncWatchdogState {
   std::thread thread;
   std::mutex mutex;
@@ -95,13 +144,17 @@ struct SyncFuzzTargetContext {
   LibAflOptions options;
   SyncWatchdogState watchdog;
   volatile std::sig_atomic_t signal_status = 0;
-  volatile int sigints = 0;
+  volatile std::sig_atomic_t execution_active = 0;
+  volatile std::sig_atomic_t sigints = 0;
   std::jmp_buf execution_context;
 };
 
 struct AsyncExecutionState {
   std::promise<int> promise;
   std::atomic<bool> settled = false;
+  bool done_called = false;
+  bool done_succeeded = false;
+  bool callback_invocation_completed = false;
 };
 
 struct AsyncDataType {
@@ -112,17 +165,21 @@ struct AsyncDataType {
 };
 
 struct AsyncFuzzTargetContext {
-  explicit AsyncFuzzTargetContext(Napi::Env env, LibAflOptions options)
+  explicit AsyncFuzzTargetContext(
+      Napi::Env env, LibAflOptions options,
+      std::unique_ptr<ScopedLibAflRuntime> runtime_guard)
       : deferred(Napi::Promise::Deferred::New(env)),
-        options(std::move(options)) {}
+        options(std::move(options)), runtime_guard(std::move(runtime_guard)) {}
 
   std::thread native_thread;
   Napi::Promise::Deferred deferred;
+  Napi::Reference<Napi::Value> deferred_rejection;
   LibAflOptions options;
+  std::unique_ptr<ScopedLibAflRuntime> runtime_guard;
   bool is_resolved = false;
-  bool is_done_called = false;
   int run_status = kRuntimeOk;
-  volatile int sigints = 0;
+  volatile std::sig_atomic_t execution_active = 0;
+  volatile std::sig_atomic_t sigints = 0;
   std::jmp_buf execution_context;
 };
 
@@ -138,38 +195,129 @@ AsyncFuzzTargetContext *gActiveAsyncContext = nullptr;
 AsyncTsfn gAsyncTsfn;
 JazzerLibAflFindingInfo gFindingInfo{};
 
-void RejectDeferredIfNeeded(AsyncFuzzTargetContext *context,
+void StoreDeferredRejection(AsyncFuzzTargetContext *context,
                             const Napi::Value &error) {
-  if (context->is_resolved) {
+  if (!context->deferred_rejection.IsEmpty()) {
     return;
   }
-  context->deferred.Reject(error);
-  context->is_resolved = true;
+  context->deferred_rejection = Napi::Persistent(error);
 }
 
-bool TrySetExecutionStatus(const std::shared_ptr<AsyncExecutionState> &state,
-                           int status) {
+void SettleLibAflRun(Napi::Env env, Napi::Promise::Deferred &deferred,
+                     bool &is_resolved, int status) {
+  if (is_resolved) {
+    return;
+  }
+
+  auto reject = [&](const char *message) {
+    is_resolved = true;
+    deferred.Reject(Napi::Error::New(env, message).Value());
+  };
+
+  switch (status) {
+  case kRuntimeFatal:
+    reject("The LibAFL backend failed internally");
+    return;
+  case kRuntimeFoundTimeout:
+    reject("Exceeded timeout while executing one fuzz input");
+    return;
+  case kRuntimeFoundFinding:
+    reject("The LibAFL backend found a crashing input");
+    return;
+  default:
+    is_resolved = true;
+    deferred.Resolve(env.Undefined());
+    return;
+  }
+}
+
+bool IsExecutionSettled(const std::shared_ptr<AsyncExecutionState> &state) {
+  return state->settled.load(std::memory_order_acquire);
+}
+
+bool TryClaimExecution(const std::shared_ptr<AsyncExecutionState> &state) {
   bool expected = false;
   if (!state->settled.compare_exchange_strong(expected, true,
                                               std::memory_order_acq_rel,
                                               std::memory_order_acquire)) {
     return false;
   }
-  state->promise.set_value(status);
   return true;
+}
+
+void PublishExecutionStatus(const std::shared_ptr<AsyncExecutionState> &state,
+                            int status) {
+  state->promise.set_value(status);
+}
+
+bool TryPublishExecutionStatus(
+    const std::shared_ptr<AsyncExecutionState> &state, int status) {
+  if (!TryClaimExecution(state)) {
+    return false;
+  }
+  PublishExecutionStatus(state, status);
+  return true;
+}
+
+Napi::Value NormalizeAsyncError(Napi::Env env, const Napi::Value &error) {
+  if (error.IsObject()) {
+    return error;
+  }
+  return Napi::Error::New(env, error.ToString()).Value();
 }
 
 void ReportAsyncFinding(AsyncFuzzTargetContext *context, Napi::Env env,
                         const std::shared_ptr<AsyncExecutionState> &state,
                         const Napi::Value &error,
                         const std::vector<uint8_t> &input) {
-  if (TrySetExecutionStatus(state, kExecutionFinding)) {
-    const auto artifact =
-        WriteArtifact(context->options.artifact_prefix, "crash", input.data(),
-                      input.size(), false);
-    RecordFindingInfo(&gFindingInfo, artifact, DescribeJsError(env, error));
+  if (!TryClaimExecution(state)) {
+    return;
   }
-  RejectDeferredIfNeeded(context, error);
+
+  auto normalized_error = NormalizeAsyncError(env, error);
+  auto summary = std::string("The LibAFL backend found a crashing input");
+  const auto artifact = WriteArtifact(context->options.artifact_prefix, "crash",
+                                      input.data(), input.size(), false);
+  try {
+    summary = DescribeJsError(env, normalized_error);
+  } catch (const std::exception &exception) {
+    normalized_error =
+        Napi::Error::New(env, std::string("Internal fuzzer error - ") +
+                                  exception.what())
+            .Value();
+    summary = normalized_error.ToString().Utf8Value();
+  }
+
+  RecordFindingInfo(&gFindingInfo, artifact, summary);
+  StoreDeferredRejection(context, normalized_error);
+  PublishExecutionStatus(state, kExecutionFinding);
+}
+
+void ReportAsyncInternalError(AsyncFuzzTargetContext *context, Napi::Env env,
+                              const std::shared_ptr<AsyncExecutionState> &state,
+                              const std::string &message) {
+  if (!TryClaimExecution(state)) {
+    return;
+  }
+
+  StoreDeferredRejection(context, Napi::Error::New(env, message).Value());
+  PublishExecutionStatus(state, kExecutionFatal);
+}
+
+void SettleAsyncLibAflRun(Napi::Env env, AsyncFuzzTargetContext *context) {
+  if (context->is_resolved) {
+    return;
+  }
+
+  if (!context->deferred_rejection.IsEmpty()) {
+    context->is_resolved = true;
+    context->deferred.Reject(context->deferred_rejection.Value());
+    context->deferred_rejection.Reset();
+    return;
+  }
+
+  SettleLibAflRun(env, context->deferred, context->is_resolved,
+                  context->run_status);
 }
 
 void StartSyncWatchdog(SyncFuzzTargetContext *context) {
@@ -270,17 +418,26 @@ private:
 };
 
 void SyncSigintHandler(int signum) {
-  std::cerr << std::endl;
-  gActiveSyncContext->signal_status = signum;
-  if (gActiveSyncContext->sigints > 0) {
+  auto *context = gActiveSyncContext;
+  if (context == nullptr) {
     _Exit(libfuzzer::RETURN_CONTINUE);
   }
-  gActiveSyncContext->sigints++;
+
+  context->signal_status = signum;
+  if (context->sigints > 0) {
+    _Exit(libfuzzer::RETURN_CONTINUE);
+  }
+  context->sigints++;
 }
 
 void SyncErrorSignalHandler(int signum) {
-  gActiveSyncContext->signal_status = signum;
-  std::longjmp(gActiveSyncContext->execution_context, signum);
+  auto *context = gActiveSyncContext;
+  if (context == nullptr || context->execution_active == 0) {
+    _Exit(libfuzzer::EXIT_ERROR_SEGV);
+  }
+
+  context->signal_status = signum;
+  std::longjmp(context->execution_context, signum);
 }
 
 int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
@@ -293,7 +450,11 @@ int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
 
   try {
     auto buffer = Napi::Buffer<uint8_t>::Copy(context->env, data, size);
-    if (setjmp(context->execution_context) == 0) {
+    // Initialize the jump target before signal handlers can treat this
+    // invocation as actively executing user code.
+    const auto signal_status = setjmp(context->execution_context);
+    context->execution_active = 1;
+    if (signal_status == 0) {
       auto result = context->target.Call({buffer});
       if (result.IsPromise()) {
         AsyncReturnsHandler();
@@ -301,7 +462,9 @@ int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
         SyncReturnsHandler();
       }
     }
+    context->execution_active = 0;
   } catch (const Napi::Error &error) {
+    context->execution_active = 0;
     if (!context->is_resolved) {
       const auto artifact = WriteArtifact(context->options.artifact_prefix,
                                           "crash", data, size, false);
@@ -312,6 +475,7 @@ int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
     }
     return kExecutionFinding;
   } catch (const std::exception &exception) {
+    context->execution_active = 0;
     ExitWithUnexpectedError(exception);
   }
 
@@ -343,13 +507,16 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
 
   try {
     if (context->sigints > 0) {
-      TrySetExecutionStatus(state, kExecutionStop);
-      context->deferred.Resolve(env.Undefined());
-      context->is_resolved = true;
+      TryPublishExecutionStatus(state, kExecutionStop);
       return;
     }
 
-    if (setjmp(context->execution_context) == SIGSEGV) {
+    // Initialize the jump target before signal handlers can treat this
+    // invocation as actively executing user code.
+    const auto signal_status = setjmp(context->execution_context);
+    context->execution_active = 1;
+    if (signal_status == SIGSEGV) {
+      context->execution_active = 0;
       std::cerr << "==" << static_cast<unsigned long>(GetPID())
                 << "== Segmentation Fault" << std::endl;
       libfuzzer::PrintCrashingInput();
@@ -357,7 +524,8 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
     }
 
     if (env == nullptr) {
-      TrySetExecutionStatus(state, kExecutionFatal);
+      context->execution_active = 0;
+      TryPublishExecutionStatus(state, kExecutionFatal);
       return;
     }
 
@@ -369,13 +537,12 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
                                .Int32Value();
 
     if (parameter_count > 1) {
-      context->is_done_called = false;
       auto done = Napi::Function::New(env, [=](const Napi::CallbackInfo &info) {
-        if (context->is_resolved) {
+        if (IsExecutionSettled(state)) {
           return;
         }
 
-        if (context->is_done_called) {
+        if (state->done_called) {
           auto error =
               Napi::Error::New(env, "Expected done to be called once, but it "
                                     "was called multiple times.")
@@ -384,21 +551,24 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
           return;
         }
 
-        context->is_done_called = true;
+        state->done_called = true;
         const auto has_error =
             info.Length() > 0 && !(info[0].IsNull() || info[0].IsUndefined());
         if (has_error) {
-          auto error = info[0];
-          if (!error.IsObject()) {
-            error = Napi::Error::New(env, error.ToString()).Value();
-          }
-          ReportAsyncFinding(context, env, state, error, current_input);
+          ReportAsyncFinding(context, env, state, info[0], current_input);
+          return;
+        }
+
+        if (state->callback_invocation_completed) {
+          TryPublishExecutionStatus(state, kExecutionContinue);
         } else {
-          TrySetExecutionStatus(state, kExecutionContinue);
+          state->done_succeeded = true;
         }
       });
 
       auto result = js_fuzz_callback.Call({buffer, done});
+      state->callback_invocation_completed = true;
+      context->execution_active = 0;
       if (result.IsPromise()) {
         AsyncReturnsHandler();
         auto error =
@@ -408,11 +578,15 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
         ReportAsyncFinding(context, env, state, error, current_input);
       } else {
         SyncReturnsHandler();
+        if (state->done_succeeded) {
+          TryPublishExecutionStatus(state, kExecutionContinue);
+        }
       }
       return;
     }
 
     auto result = js_fuzz_callback.Call({buffer});
+    context->execution_active = 0;
     if (result.IsPromise()) {
       AsyncReturnsHandler();
       auto js_promise = result.As<Napi::Object>();
@@ -420,7 +594,7 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
       then.Call(js_promise,
                 {Napi::Function::New(env,
                                      [=](const Napi::CallbackInfo &) {
-                                       TrySetExecutionStatus(
+                                       TryPublishExecutionStatus(
                                            state, kExecutionContinue);
                                      }),
                  Napi::Function::New(env, [=](const Napi::CallbackInfo &info) {
@@ -429,36 +603,43 @@ void CallJsFuzzCallback(Napi::Env env, Napi::Function js_fuzz_callback,
                            ? info[0]
                            : Napi::Error::New(env, "Unknown promise rejection")
                                  .Value();
-                   if (!error.IsObject()) {
-                     error = Napi::Error::New(env, error.ToString()).Value();
-                   }
                    ReportAsyncFinding(context, env, state, error,
                                       current_input);
                  })});
     } else {
       SyncReturnsHandler();
-      TrySetExecutionStatus(state, kExecutionContinue);
+      TryPublishExecutionStatus(state, kExecutionContinue);
     }
   } catch (const Napi::Error &error) {
+    context->execution_active = 0;
     ReportAsyncFinding(context, env, state, error.Value(), current_input);
   } catch (const std::exception &exception) {
-    TrySetExecutionStatus(state, kExecutionFatal);
-    auto message =
-        std::string("Internal fuzzer error - ").append(exception.what());
-    RejectDeferredIfNeeded(context, Napi::Error::New(env, message).Value());
+    context->execution_active = 0;
+    ReportAsyncInternalError(
+        context, env, state,
+        std::string("Internal fuzzer error - ").append(exception.what()));
   }
 }
 
 void AsyncSigintHandler(int signum) {
-  std::cerr << std::endl;
-  if (gActiveAsyncContext->sigints > 0) {
+  auto *context = gActiveAsyncContext;
+  if (context == nullptr) {
     _Exit(libfuzzer::RETURN_CONTINUE);
   }
-  gActiveAsyncContext->sigints = signum;
+
+  if (context->sigints > 0) {
+    _Exit(libfuzzer::RETURN_CONTINUE);
+  }
+  context->sigints = signum;
 }
 
 void AsyncErrorSignalHandler(int signum) {
-  std::longjmp(gActiveAsyncContext->execution_context, signum);
+  auto *context = gActiveAsyncContext;
+  if (context == nullptr || context->execution_active == 0) {
+    _Exit(libfuzzer::EXIT_ERROR_SEGV);
+  }
+
+  std::longjmp(context->execution_context, signum);
 }
 
 int ExecuteAsyncInput(void *user_data, const uint8_t *data, size_t size) {
@@ -540,6 +721,7 @@ Napi::Value StartLibAfl(const Napi::CallbackInfo &info) {
   }
 
   auto options = ParseLibAflOptions(info.Env(), info[1].As<Napi::Object>());
+  auto runtime_guard = AcquireLibAflRuntime(info.Env());
   ClearFindingInfo(&gFindingInfo);
   auto maps = SharedMapsForLibAflRuntime(info.Env(), &gFindingInfo);
 
@@ -549,47 +731,27 @@ Napi::Value StartLibAfl(const Napi::CallbackInfo &info) {
   gActiveSyncContext = &context;
 
   StartSyncWatchdog(&context);
-  signal(SIGINT, SyncSigintHandler);
-  signal(SIGSEGV, SyncErrorSignalHandler);
 
   auto status = kRuntimeOk;
-  if (context.options.mode == LibAflOptions::Mode::kRegression) {
-    status = ReplayRegressionInputs(
-        context.options, [&context](const uint8_t *data, size_t size) {
-          return ExecuteSyncInput(&context, data, size);
-        });
-  } else {
-    status =
-        RunLibAflRuntime(context.options, maps, ExecuteSyncInput, &context);
+  {
+    ScopedSignalHandler sigint_handler(SIGINT, SyncSigintHandler);
+    ScopedSignalHandler sigsegv_handler(SIGSEGV, SyncErrorSignalHandler);
+
+    if (context.options.mode == LibAflOptions::Mode::kRegression) {
+      status = ReplayRegressionInputs(
+          context.options, [&context](const uint8_t *data, size_t size) {
+            return ExecuteSyncInput(&context, data, size);
+          });
+    } else {
+      status =
+          RunLibAflRuntime(context.options, maps, ExecuteSyncInput, &context);
+    }
   }
 
-  signal(SIGINT, SIG_DFL);
-  signal(SIGSEGV, SIG_DFL);
   StopSyncWatchdog(&context);
   gActiveSyncContext = nullptr;
 
-  if (status == kRuntimeFatal && !context.is_resolved) {
-    context.is_resolved = true;
-    context.deferred.Reject(
-        Napi::Error::New(info.Env(), "The LibAFL backend failed internally")
-            .Value());
-  } else if (status == kRuntimeFoundTimeout && !context.is_resolved) {
-    context.is_resolved = true;
-    context.deferred.Reject(
-        Napi::Error::New(info.Env(),
-                         "Exceeded timeout while executing one fuzz input")
-            .Value());
-  } else if (status == kRuntimeFoundFinding && !context.is_resolved) {
-    context.is_resolved = true;
-    context.deferred.Reject(
-        Napi::Error::New(info.Env(),
-                         "The LibAFL backend found a crashing input")
-            .Value());
-  }
-
-  if (!context.is_resolved) {
-    context.deferred.Resolve(context.env.Undefined());
-  }
+  SettleLibAflRun(info.Env(), context.deferred, context.is_resolved, status);
 
   return context.deferred.Promise();
 }
@@ -602,57 +764,47 @@ Napi::Value StartLibAflAsync(const Napi::CallbackInfo &info) {
   }
 
   auto options = ParseLibAflOptions(info.Env(), info[1].As<Napi::Object>());
+  auto runtime_guard = AcquireLibAflRuntime(info.Env());
   ClearFindingInfo(&gFindingInfo);
   auto maps = SharedMapsForLibAflRuntime(info.Env(), &gFindingInfo);
-  auto *context = new AsyncFuzzTargetContext(info.Env(), std::move(options));
+  auto context = std::make_unique<AsyncFuzzTargetContext>(
+      info.Env(), std::move(options), std::move(runtime_guard));
 
   gAsyncTsfn = AsyncTsfn::New(
       info.Env(), info[0].As<Napi::Function>(), "LibAflAsyncAddon", 0, 1,
-      context,
+      context.get(),
       [](Napi::Env env, AsyncFinalizerDataType *, AsyncFuzzTargetContext *ctx) {
+        Napi::HandleScope scope(env);
         ctx->native_thread.join();
-        if (ctx->run_status == kRuntimeFatal && !ctx->is_resolved) {
-          ctx->deferred.Reject(
-              Napi::Error::New(env, "The LibAFL backend failed internally")
-                  .Value());
-        } else if (ctx->run_status == kRuntimeFoundTimeout &&
-                   !ctx->is_resolved) {
-          ctx->deferred.Reject(
-              Napi::Error::New(
-                  env, "Exceeded timeout while executing one fuzz input")
-                  .Value());
-        } else if (ctx->run_status == kRuntimeFoundFinding &&
-                   !ctx->is_resolved) {
-          ctx->deferred.Reject(
-              Napi::Error::New(env, "The LibAFL backend found a crashing input")
-                  .Value());
-        } else if (!ctx->is_resolved) {
-          ctx->deferred.Resolve(env.Undefined());
-        }
+        ctx->runtime_guard.reset();
+        SettleAsyncLibAflRun(env, ctx);
         delete ctx;
       });
 
-  context->native_thread = std::thread(
+  auto *context_ptr = context.get();
+  context_ptr->native_thread = std::thread(
       [maps](AsyncFuzzTargetContext *ctx) {
         gActiveAsyncContext = ctx;
-        signal(SIGSEGV, AsyncErrorSignalHandler);
-        signal(SIGINT, AsyncSigintHandler);
+        {
+          ScopedSignalHandler sigsegv_handler(SIGSEGV, AsyncErrorSignalHandler);
+          ScopedSignalHandler sigint_handler(SIGINT, AsyncSigintHandler);
 
-        if (ctx->options.mode == LibAflOptions::Mode::kRegression) {
-          ctx->run_status = ReplayRegressionInputs(
-              ctx->options, [ctx](const uint8_t *data, size_t size) {
-                return ExecuteAsyncInput(ctx, data, size);
-              });
-        } else {
-          ctx->run_status =
-              RunLibAflRuntime(ctx->options, maps, ExecuteAsyncInput, ctx);
+          if (ctx->options.mode == LibAflOptions::Mode::kRegression) {
+            ctx->run_status = ReplayRegressionInputs(
+                ctx->options, [ctx](const uint8_t *data, size_t size) {
+                  return ExecuteAsyncInput(ctx, data, size);
+                });
+          } else {
+            ctx->run_status =
+                RunLibAflRuntime(ctx->options, maps, ExecuteAsyncInput, ctx);
+          }
         }
-        signal(SIGINT, SIG_DFL);
-        signal(SIGSEGV, SIG_DFL);
         gActiveAsyncContext = nullptr;
         gAsyncTsfn.Release();
       },
-      context);
+      context_ptr);
 
-  return context->deferred.Promise();
+  auto promise = context_ptr->deferred.Promise();
+  context.release();
+  return promise;
 }
