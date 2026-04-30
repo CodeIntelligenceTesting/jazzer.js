@@ -49,6 +49,7 @@ class FuzzTest {
 		expectedErrors,
 		asJson,
 		timeout,
+		engine,
 	) {
 		this.logTestOutput = logTestOutput;
 		this.includes = includes;
@@ -74,6 +75,7 @@ class FuzzTest {
 		this.expectedErrors = expectedErrors;
 		this.asJson = asJson;
 		this.timeout = timeout;
+		this.engine = engine;
 	}
 
 	// Runs the fuzz test in another process using `spawnSync`.
@@ -104,6 +106,7 @@ class FuzzTest {
 		if (this.verbose) options.push("--verbose");
 		if (this.dryRun !== undefined) options.push("--dry_run=" + this.dryRun);
 		if (this.timeout !== undefined) options.push("--timeout=" + this.timeout);
+		if (this.engine !== undefined) options.push("--engine=" + this.engine);
 		for (const include of this.includes) {
 			options.push("-i=" + include);
 		}
@@ -176,6 +179,9 @@ class FuzzTest {
 		}
 		if (this.verbose) {
 			config.verbose = this.verbose;
+		}
+		if (this.engine !== undefined) {
+			config.engine = this.engine;
 		}
 
 		// Write jest config file even if it exists
@@ -298,6 +304,7 @@ class FuzzTestBuilder {
 	_expectedErrors = [];
 	_asJson = false;
 	_timeout = undefined;
+	_engine = "libfuzzer";
 
 	/**
 	 * @param {boolean} logTestOutput - whether to print the output of the fuzz test to the console.
@@ -502,6 +509,11 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	engine(engine) {
+		this._engine = engine;
+		return this;
+	}
+
 	build() {
 		if (this._jestTestFile === "" && this._fuzzEntryPoint === "") {
 			throw new Error("fuzzEntryPoint or jestTestFile are not set.");
@@ -536,6 +548,7 @@ class FuzzTestBuilder {
 			this._expectedErrors,
 			this._asJson,
 			this._timeout,
+			this._engine,
 		);
 	}
 }

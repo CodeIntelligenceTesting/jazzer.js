@@ -21,8 +21,6 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
       Napi::Function::New<RegisterCoverageMap>(env);
   exports["registerNewCounters"] =
       Napi::Function::New<RegisterNewCounters>(env);
-  exports["registerModuleCounters"] =
-      Napi::Function::New<RegisterModuleCounters>(env);
   exports["traceUnequalStrings"] =
       Napi::Function::New<TraceUnequalStrings>(env);
   exports["traceStringContainment"] =
@@ -30,4 +28,12 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
   exports["traceIntegerCompare"] =
       Napi::Function::New<TraceIntegerCompare>(env);
   exports["tracePcIndir"] = Napi::Function::New<TracePcIndir>(env);
+  exports["clearCompareFeedbackMap"] =
+      Napi::Function::New<ClearCompareFeedbackMap>(env);
+  exports["countNonZeroCompareFeedbackSlots"] =
+      Napi::Function::New<CountNonZeroCompareFeedbackSlots>(env);
+  exports["countCompareLogEntries"] =
+      Napi::Function::New<CountCompareLogEntries>(env);
+  exports["countDroppedCompareLogEntries"] =
+      Napi::Function::New<CountDroppedCompareLogEntries>(env);
 }

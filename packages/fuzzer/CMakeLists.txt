@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(jazzerjs)
 
 find_package(Patch REQUIRED)
+find_program(CARGO_EXECUTABLE cargo REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17) # mostly supported since GCC 7
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -71,6 +72,65 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_JS_INC})
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+    set(RUST_TARGET_TRIPLE "aarch64-unknown-linux-gnu")
+  else()
+    set(RUST_TARGET_TRIPLE "x86_64-unknown-linux-gnu")
+  endif()
+  set(RUST_STATICLIB_NAME "libjazzerjs_libafl_runtime.a")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  if(CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+    set(RUST_TARGET_TRIPLE "x86_64-apple-darwin")
+  elseif(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
+    set(RUST_TARGET_TRIPLE "aarch64-apple-darwin")
+  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+    set(RUST_TARGET_TRIPLE "aarch64-apple-darwin")
+  else()
+    set(RUST_TARGET_TRIPLE "x86_64-apple-darwin")
+  endif()
+  set(RUST_STATICLIB_NAME "libjazzerjs_libafl_runtime.a")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(RUST_TARGET_TRIPLE "x86_64-pc-windows-msvc")
+  set(RUST_STATICLIB_NAME "jazzerjs_libafl_runtime.lib")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CARGO_PROFILE_DIR "debug")
+  set(CARGO_PROFILE_FLAG "")
+else()
+  set(CARGO_PROFILE_DIR "release")
+  set(CARGO_PROFILE_FLAG "--release")
+endif()
+
+set(RUST_CRATE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/rust")
+set(RUST_CARGO_TOML "${RUST_CRATE_DIR}/Cargo.toml")
+set(RUST_CARGO_LOCK "${RUST_CRATE_DIR}/Cargo.lock")
+set(RUST_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/cargo-target")
+set(RUST_STATICLIB_PATH
+    "${RUST_TARGET_DIR}/${RUST_TARGET_TRIPLE}/${CARGO_PROFILE_DIR}/${RUST_STATICLIB_NAME}")
+file(GLOB_RECURSE RUST_SOURCE_FILES CONFIGURE_DEPENDS
+     "${RUST_CRATE_DIR}/src/*.rs")
+
+add_custom_command(
+  OUTPUT ${RUST_STATICLIB_PATH}
+  COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${RUST_TARGET_DIR}
+          ${CARGO_EXECUTABLE} build --manifest-path ${RUST_CARGO_TOML}
+          --target ${RUST_TARGET_TRIPLE} ${CARGO_PROFILE_FLAG}
+  WORKING_DIRECTORY ${RUST_CRATE_DIR}
+  DEPENDS ${RUST_CARGO_TOML} ${RUST_CARGO_LOCK} ${RUST_SOURCE_FILES}
+  COMMENT "Building the LibAFL runtime static library")
+
+add_custom_target(jazzerjs_libafl_runtime ALL DEPENDS ${RUST_STATICLIB_PATH})
+add_dependencies(${PROJECT_NAME} jazzerjs_libafl_runtime)
+target_link_libraries(${PROJECT_NAME} ${RUST_STATICLIB_PATH})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  # Rust staticlibs do not propagate Windows import libraries to the final
+  # Node addon target, so link the system APIs used by Rust std explicitly.
+  target_link_libraries(${PROJECT_NAME} ntdll ws2_32 userenv)
+endif()
 
 # We're not sure why but sometimes systems don't end up setting LLVM_TARGET_TRIPLE used in llvm's cmake to eventually
 # set COMPILER_RT_DEFAULT_TARGET which is necessary for compiler-rt to build

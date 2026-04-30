@@ -222,7 +222,15 @@ function executeFuzzTest(
 	verbose = false,
 ) {
 	removeCoverageDir(coverageOutputDir);
-	let options = ["jazzer", "fuzz", "-e", excludePattern, "--corpus", "corpus"];
+	let options = [
+		"jazzer",
+		"fuzz",
+		"--engine=libfuzzer",
+		"-e",
+		excludePattern,
+		"--corpus",
+		"corpus",
+	];
 	// add dry run option
 	if (dryRun) options.push("-d");
 	if (includeLib) {

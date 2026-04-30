@@ -74,6 +74,11 @@ export function prepareArgs(args: any) {
 			.concat(args._)
 			.map((e: unknown) => e + ""),
 	};
+	if (options.engine !== undefined) {
+		options.engine = options.engine === "afl" ? "libafl" : options.engine;
+	} else {
+		delete options.engine;
+	}
 	if (options.fuzzerOptions.length === 0) {
 		delete options.fuzzerOptions;
 	}

@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 extern "C" {
 void __sanitizer_cov_8bit_counters_init(uint8_t *start, uint8_t *end);
@@ -24,8 +25,11 @@ void __sanitizer_cov_pcs_init(const uintptr_t *pcs_beg,
 
 namespace {
 // Shared coverage counter buffer populated from JavaScript using Buffer.
-// Individual slices are registered with libFuzzer by RegisterNewCounters.
+// It is preallocated on the JavaScript side; registerNewCounters grows the
+// active prefix that the fuzzing backends should observe.
 uint8_t *gCoverageCounters = nullptr;
+std::size_t gCoverageCountersCapacity = 0;
+std::size_t gCoverageCountersSize = 0;
 
 // PC-Table is used by libFuzzer to keep track of program addresses
 // corresponding to coverage counters. The flags determine whether the
@@ -76,6 +80,7 @@ void RegisterCoverageMap(const Napi::CallbackInfo &info) {
   auto buf = info[0].As<Napi::Buffer<uint8_t>>();
 
   gCoverageCounters = reinterpret_cast<uint8_t *>(buf.Data());
+  gCoverageCountersCapacity = buf.Length();
 }
 
 void RegisterNewCounters(const Napi::CallbackInfo &info) {
@@ -96,28 +101,31 @@ void RegisterNewCounters(const Napi::CallbackInfo &info) {
         info.Env(),
         "new_num_counters must not be smaller than old_num_counters");
   }
+  if (static_cast<std::size_t>(new_num_counters) > gCoverageCountersCapacity) {
+    throw Napi::Error::New(info.Env(),
+                           "new_num_counters exceeds the coverage map size");
+  }
   if (new_num_counters == old_num_counters) {
     return;
   }
 
   RegisterCounterRange(gCoverageCounters + old_num_counters,
                        gCoverageCounters + new_num_counters);
+  gCoverageCountersSize = static_cast<std::size_t>(new_num_counters);
 }
 
-// Register an independent coverage counter region for a single ES module.
-// libFuzzer supports multiple disjoint counter regions; each call here
-// hands it a fresh one.
-void RegisterModuleCounters(const Napi::CallbackInfo &info) {
-  if (info.Length() != 1 || !info[0].IsBuffer()) {
-    throw Napi::Error::New(info.Env(),
-                           "Need one argument: a Buffer of 8-bit counters");
-  }
+uint8_t *CoverageCounters() { return gCoverageCounters; }
 
-  auto buf = info[0].As<Napi::Buffer<uint8_t>>();
-  auto size = buf.Length();
-  if (size == 0) {
+std::size_t CoverageCountersCapacity() { return gCoverageCountersCapacity; }
+
+std::size_t CoverageCountersSize() { return gCoverageCountersSize; }
+
+std::size_t *CoverageCountersSizePointer() { return &gCoverageCountersSize; }
+
+void ClearCoverageCounters() {
+  if (gCoverageCounters == nullptr || gCoverageCountersSize == 0) {
     return;
   }
 
-  RegisterCounterRange(buf.Data(), buf.Data() + size);
+  std::memset(gCoverageCounters, 0, gCoverageCountersSize);
 }

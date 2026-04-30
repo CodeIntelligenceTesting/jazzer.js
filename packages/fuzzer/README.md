@@ -1,16 +1,17 @@
 # @jazzer.js/fuzzer
 
-This module provides a native Node.js addon which loads libfuzzer into Node.js.
-Users can install it with `npm install`, which tries to download a prebuilt
-shared object from GitHub but falls back to compilation on the user's machine if
-there is no suitable binary.
+This module provides a native Node.js addon that hosts Jazzer.js fuzzing
+backends inside Node.js. Users can install it with `npm install`, which tries to
+download a prebuilt shared object from GitHub but falls back to compilation on
+the user's machine if there is no suitable binary.
 
-Loading the addon initializes libFuzzer and the sanitizer runtime. Users can
-then start the fuzzer with the exported `startFuzzing` or `startFuzzingAsync`
-functions; see [the test](fuzzer.test.ts) for an example. In sync mode
-(`--sync`), the fuzzer runs on the main thread and blocks the event loop. In the
-default async mode, libFuzzer runs on a separate native thread and communicates
-with the JS event loop via a thread-safe function.
+Loading the addon initializes the sanitizer runtime and fuzzing hooks. Users can
+start the libFuzzer backend with `startFuzzing` or `startFuzzingAsync`, and the
+LibAFL backend with `startLibAfl` or `startLibAflAsync`; see
+[the tests](fuzzer.test.ts) for examples. In sync mode (`--sync`), the fuzzer
+runs on the main thread and blocks the event loop. In the default async mode,
+the native backend runs on a separate thread and communicates with the JS event
+loop via a thread-safe function.
 
 ## Development
 

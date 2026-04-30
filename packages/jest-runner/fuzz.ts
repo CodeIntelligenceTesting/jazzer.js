@@ -140,6 +140,7 @@ export function fuzz(
 		const wrappedFn = asFindingAwareFuzzFn(
 			fn,
 			localConfig.get("mode") === "fuzzing",
+			localConfig.get("engine"),
 		);
 
 		if (localConfig.get("mode") === "regression") {

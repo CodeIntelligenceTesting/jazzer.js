@@ -43,7 +43,12 @@ import {
 	reportFinding,
 } from "./finding";
 import { getJazzerJsGlobal, jazzerJs } from "./globals";
-import { buildFuzzerOption, OptionsManager } from "./options";
+import {
+	buildLibAflOptions,
+	buildLibFuzzerOptions,
+	OptionsManager,
+	resolveEngine,
+} from "./options";
 import { ensureFilepath, importModule } from "./utils";
 
 // Remove temporary files on exit
@@ -223,7 +228,11 @@ export async function startFuzzing(
 	registerEsmLoaderHooks(instrumentor);
 	instrumentor.sendHooksToLoader();
 	const fuzzFn = await loadFuzzFunction(options);
-	const findingAwareFuzzFn = asFindingAwareFuzzFn(fuzzFn);
+	const findingAwareFuzzFn = asFindingAwareFuzzFn(
+		fuzzFn,
+		true,
+		options.get("engine"),
+	);
 	return startFuzzingNoInit(findingAwareFuzzFn, options).finally(() => {
 		// These post fuzzing actions are only required for invocations through the CLI,
 		// other means of invocation, e.g. via Jest, don't need them.
@@ -245,24 +254,47 @@ export async function startFuzzingNoInit(
 	// Currently only SIGINT is handled this way, as SIGSEGV has to be handled
 	// by the native addon and directly stops the process.
 	const signalHandler = (signal: number): void => {
+		if (signal === 0) {
+			return;
+		}
 		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
 
 	try {
-		const fuzzerOptions = buildFuzzerOption(options);
-		if (options.get("sync")) {
-			await fuzzer.fuzzer.startFuzzing(
-				fuzzFn,
-				fuzzerOptions,
-				// In synchronous mode, we cannot use the SIGINT handler in Node,
-				// because the event loop is blocked by the fuzzer, and the handler
-				// won't be called until the fuzzing process is finished.
-				// Hence, we pass a callback function to the native fuzzer and
-				// register a SIGINT handler there.
-				signalHandler,
-			);
+		if (resolveEngine(options.get("engine")) === "libfuzzer") {
+			const fuzzerOptions = buildLibFuzzerOptions(options);
+			if (options.get("sync")) {
+				await fuzzer.fuzzer.startFuzzing(
+					fuzzFn,
+					fuzzerOptions,
+					// In synchronous mode, we cannot use the SIGINT handler in Node,
+					// because the event loop is blocked by the fuzzer, and the handler
+					// won't be called until the fuzzing process is finished.
+					// Hence, we pass a callback function to the native fuzzer and
+					// register a SIGINT handler there.
+					signalHandler,
+				);
+			} else {
+				await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+			}
 		} else {
-			await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+			const libAflOptions = buildLibAflOptions(options);
+			const libAflFuzzer = fuzzer.fuzzer as unknown as {
+				startLibAfl: (
+					fuzzFn: FindingAwareFuzzTarget,
+					options: typeof libAflOptions,
+					jsStopCallback: (signal: number) => void,
+				) => Promise<void>;
+				startLibAflAsync: (
+					fuzzFn: FindingAwareFuzzTarget,
+					options: typeof libAflOptions,
+				) => Promise<void>;
+			};
+			if (options.get("sync")) {
+				await libAflFuzzer.startLibAfl(fuzzFn, libAflOptions, signalHandler);
+			} else {
+				await libAflFuzzer.startLibAflAsync(fuzzFn, libAflOptions);
+			}
 		}
 		// Fuzzing ended without a finding, due to -max_total_time or -runs.
 		return reportFuzzingResult(undefined, options.get("expectedErrors"));
@@ -366,9 +398,11 @@ async function loadFuzzFunction(
 export function asFindingAwareFuzzFn(
 	originalFuzzFn: fuzzer.FuzzTarget,
 	dumpCrashingInput = true,
+	engine = "libfuzzer",
 ): FindingAwareFuzzTarget {
 	function printAndDump(error: unknown): void {
 		cleanErrorStack(error);
+		const shouldDumpWithLibFuzzer = resolveEngine(engine) === "libfuzzer";
 		if (
 			!(
 				error instanceof FuzzerSignalFinding &&
@@ -376,7 +410,7 @@ export function asFindingAwareFuzzFn(
 			)
 		) {
 			printFinding(error);
-			if (dumpCrashingInput) {
+			if (dumpCrashingInput && shouldDumpWithLibFuzzer) {
 				fuzzer.fuzzer.printAndDumpCrashingInput();
 			}
 		}

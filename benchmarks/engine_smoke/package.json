@@ -1,0 +1,15 @@
+{
+	"name": "jazzerjs-engine-smoke",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Manual 30-second smoke benchmark for libFuzzer vs LibAFL.",
+	"scripts": {
+		"smoke": "node run.js",
+		"smoke:anomalies": "node anomaly.js"
+	},
+	"devDependencies": {
+		"@jazzer.js/core": "file:../../packages/core",
+		"istanbul-lib-coverage": "^3.2.2",
+		"qs": "^6.14.0"
+	}
+}
