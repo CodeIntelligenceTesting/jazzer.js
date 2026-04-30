@@ -27,9 +27,7 @@ use libafl::{
         havoc_mutations::havoc_mutations, scheduled::HavocScheduledMutator, tokens_mutations,
         I2SRandReplace, Tokens,
     },
-    observers::{
-        CanTrack, HitcountsMapObserver, StdMapObserver, VariableMapObserver,
-    },
+    observers::{CanTrack, HitcountsMapObserver, StdMapObserver, VariableMapObserver},
     schedulers::{
         powersched::PowerSchedule, IndexesLenTimeMinimizerScheduler, PowerQueueScheduler,
     },
@@ -347,16 +345,26 @@ fn build_progress_snapshot(
     })
 }
 
+fn progress_marker(event: StatusEvent, in_campaign: bool, colors_enabled: bool) -> String {
+    let marker = if matches!(event, StatusEvent::Testcase) && !in_campaign {
+        "[i]"
+    } else {
+        marker_text(event)
+    };
+
+    colorize_marker(marker, event_color_code(event), colors_enabled)
+}
+
 fn format_progress_line(
     event: StatusEvent,
     snapshot: ProgressSnapshot,
     colors_enabled: bool,
-    highlight_full_line: bool,
+    in_campaign: bool,
 ) -> String {
-    let marker = if colors_enabled && !highlight_full_line {
-        marker_for_event(event, true)
+    let marker = if colors_enabled && !in_campaign {
+        progress_marker(event, false, true)
     } else {
-        marker_text(event).to_string()
+        progress_marker(event, in_campaign, false)
     };
     let line = format!(
         "{} #{:<width$} | edges: {} | corp: {:>4} | exec/s: {:>8.1} | obj: {:>3} | stab: {} | t: {}",
@@ -375,7 +383,7 @@ fn format_progress_line(
         width = EXECUTION_FIELD_WIDTH,
     );
 
-    if colors_enabled && highlight_full_line {
+    if colors_enabled && in_campaign {
         format!("\x1b[{}m{}\x1b[0m", event_color_code(event), line)
     } else {
         line
@@ -636,7 +644,11 @@ fn has_non_zero_coverage(ptr: *mut u8, len: usize) -> bool {
         return false;
     }
 
-    unsafe { slice::from_raw_parts(ptr, len).iter().any(|slot| *slot != 0) }
+    unsafe {
+        slice::from_raw_parts(ptr, len)
+            .iter()
+            .any(|slot| *slot != 0)
+    }
 }
 
 fn ensure_non_empty_edge_map(ptr: *mut u8, len: usize) -> bool {
@@ -771,14 +783,12 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
     let (monitor, monitor_state) = LibAflMonitor::new(maps.finding_info);
     let mut mgr = SimpleEventManager::new(monitor);
 
-    let edges_observer = HitcountsMapObserver::new(
-        VariableMapObserver::from_mut_ptr(
-            "edges",
-            maps.edges,
-            maps.edges_capacity,
-            maps.edges_size,
-        ),
-    )
+    let edges_observer = HitcountsMapObserver::new(VariableMapObserver::from_mut_ptr(
+        "edges",
+        maps.edges,
+        maps.edges_capacity,
+        maps.edges_size,
+    ))
     .track_indices();
     let cmp_observer =
         HitcountsMapObserver::new(StdMapObserver::from_mut_ptr("cmp", maps.cmp, maps.cmp_len));
@@ -848,10 +858,7 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
         let bytes = bytes.as_slice();
         let size = bytes.len().min(options.max_len);
         let status = unsafe { execute_one(user_data, bytes.as_ptr(), size) };
-        let synthetic_edges = ensure_non_empty_edge_map(
-            maps.edges,
-            edge_map_len(maps),
-        );
+        let synthetic_edges = ensure_non_empty_edge_map(maps.edges, edge_map_len(maps));
         monitor_state.borrow_mut().last_edges_are_synthetic = synthetic_edges;
         match status {
             EXECUTION_CONTINUE => ExitKind::Ok,
@@ -988,4 +995,89 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
     );
 
     status
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compare_log::{
+        JazzerLibAflCompareLog, JazzerLibAflCompareLogEntry, COMPARE_LOG_ENTRY_BYTES,
+        COMPARE_LOG_MAX_ENTRIES,
+    };
+    use std::mem::{align_of, size_of};
+
+    #[test]
+    fn libafl_status_codes_match_cpp_header() {
+        assert_eq!(EXECUTION_CONTINUE, 0);
+        assert_eq!(EXECUTION_FINDING, 1);
+        assert_eq!(EXECUTION_STOP, 2);
+        assert_eq!(EXECUTION_FATAL, 3);
+        assert_eq!(EXECUTION_TIMEOUT, 4);
+
+        assert_eq!(RUNTIME_OK, 0);
+        assert_eq!(RUNTIME_FOUND_FINDING, 1);
+        assert_eq!(RUNTIME_STOPPED, 2);
+        assert_eq!(RUNTIME_FATAL, 3);
+        assert_eq!(RUNTIME_FOUND_TIMEOUT, 4);
+    }
+
+    #[test]
+    fn libafl_c_abi_layout_matches_cpp_header() {
+        assert_eq!(size_of::<usize>(), 8);
+        assert_eq!(COMPARE_LOG_ENTRY_BYTES, 32);
+        assert_eq!(COMPARE_LOG_MAX_ENTRIES, 1024);
+        assert_eq!(FINDING_INFO_ARTIFACT_BYTES, 256);
+        assert_eq!(FINDING_INFO_SUMMARY_BYTES, 1024);
+
+        assert_eq!(size_of::<JazzerLibAflCompareLogEntry>(), 88);
+        assert_eq!(align_of::<JazzerLibAflCompareLogEntry>(), 8);
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflCompareLogEntry, left_value),
+            8
+        );
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflCompareLogEntry, right_value),
+            16
+        );
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflCompareLogEntry, left_bytes),
+            24
+        );
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflCompareLogEntry, right_bytes),
+            56
+        );
+
+        assert_eq!(size_of::<JazzerLibAflCompareLog>(), 90120);
+        assert_eq!(align_of::<JazzerLibAflCompareLog>(), 8);
+        assert_eq!(std::mem::offset_of!(JazzerLibAflCompareLog, entries), 8);
+
+        assert_eq!(size_of::<JazzerLibAflFindingInfo>(), 1281);
+        assert_eq!(align_of::<JazzerLibAflFindingInfo>(), 1);
+        assert_eq!(std::mem::offset_of!(JazzerLibAflFindingInfo, artifact), 1);
+        assert_eq!(std::mem::offset_of!(JazzerLibAflFindingInfo, summary), 257);
+
+        assert_eq!(size_of::<JazzerLibAflRuntimeOptions>(), 72);
+        assert_eq!(align_of::<JazzerLibAflRuntimeOptions>(), 8);
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflRuntimeOptions, corpus_directories),
+            40
+        );
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflRuntimeOptions, dictionary_files),
+            56
+        );
+
+        assert_eq!(size_of::<JazzerLibAflRuntimeSharedMaps>(), 56);
+        assert_eq!(align_of::<JazzerLibAflRuntimeSharedMaps>(), 8);
+        assert_eq!(std::mem::offset_of!(JazzerLibAflRuntimeSharedMaps, cmp), 24);
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflRuntimeSharedMaps, compare_log),
+            40
+        );
+        assert_eq!(
+            std::mem::offset_of!(JazzerLibAflRuntimeSharedMaps, finding_info),
+            48
+        );
+    }
 }

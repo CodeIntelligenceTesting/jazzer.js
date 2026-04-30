@@ -14,9 +14,10 @@
 
 #pragma once
 
-#include <napi.h>
+#include <functional>
 
-#include "shared/libafl_abi.h"
+#include "libafl_options.h"
 
-Napi::Value StartLibAfl(const Napi::CallbackInfo &info);
-Napi::Value StartLibAflAsync(const Napi::CallbackInfo &info);
+int ReplayRegressionInputs(
+    const LibAflOptions &options,
+    const std::function<int(const uint8_t *, size_t)> &execute_one);

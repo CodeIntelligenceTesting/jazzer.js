@@ -105,22 +105,32 @@ else()
 endif()
 
 set(RUST_CRATE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/rust")
+set(RUST_CARGO_TOML "${RUST_CRATE_DIR}/Cargo.toml")
+set(RUST_CARGO_LOCK "${RUST_CRATE_DIR}/Cargo.lock")
 set(RUST_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/cargo-target")
 set(RUST_STATICLIB_PATH
     "${RUST_TARGET_DIR}/${RUST_TARGET_TRIPLE}/${CARGO_PROFILE_DIR}/${RUST_STATICLIB_NAME}")
+file(GLOB_RECURSE RUST_SOURCE_FILES CONFIGURE_DEPENDS
+     "${RUST_CRATE_DIR}/src/*.rs")
 
 add_custom_command(
   OUTPUT ${RUST_STATICLIB_PATH}
   COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${RUST_TARGET_DIR}
-          ${CARGO_EXECUTABLE} build --manifest-path ${RUST_CRATE_DIR}/Cargo.toml
+          ${CARGO_EXECUTABLE} build --manifest-path ${RUST_CARGO_TOML}
           --target ${RUST_TARGET_TRIPLE} ${CARGO_PROFILE_FLAG}
   WORKING_DIRECTORY ${RUST_CRATE_DIR}
-  DEPENDS ${RUST_CRATE_DIR}/Cargo.toml ${RUST_CRATE_DIR}/src/lib.rs
+  DEPENDS ${RUST_CARGO_TOML} ${RUST_CARGO_LOCK} ${RUST_SOURCE_FILES}
   COMMENT "Building the LibAFL runtime static library")
 
 add_custom_target(jazzerjs_libafl_runtime ALL DEPENDS ${RUST_STATICLIB_PATH})
 add_dependencies(${PROJECT_NAME} jazzerjs_libafl_runtime)
 target_link_libraries(${PROJECT_NAME} ${RUST_STATICLIB_PATH})
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  # Rust staticlibs do not propagate Windows import libraries to the final
+  # Node addon target, so link the system APIs used by Rust std explicitly.
+  target_link_libraries(${PROJECT_NAME} ntdll ws2_32 userenv)
+endif()
 
 # We're not sure why but sometimes systems don't end up setting LLVM_TARGET_TRIPLE used in llvm's cmake to eventually
 # set COMPILER_RT_DEFAULT_TARGET which is necessary for compiler-rt to build
