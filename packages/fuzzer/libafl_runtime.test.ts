@@ -92,5 +92,7 @@ describe("LibAFL runtime", () => {
 		);
 
 		expect(addon.countNonZeroCompareFeedbackSlots()).toBeGreaterThan(0);
+		expect(addon.countCompareLogEntries()).toBeGreaterThan(0);
+		expect(addon.countDroppedCompareLogEntries()).toBe(0);
 	});
 });

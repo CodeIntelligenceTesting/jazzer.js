@@ -92,6 +92,8 @@ type NativeAddon = {
 	startLibAflAsync?: StartLibAflAsyncFn;
 	clearCompareFeedbackMap: () => void;
 	countNonZeroCompareFeedbackSlots: () => number;
+	countCompareLogEntries: () => number;
+	countDroppedCompareLogEntries: () => number;
 };
 
 type LoadedAddon = NativeAddon & {

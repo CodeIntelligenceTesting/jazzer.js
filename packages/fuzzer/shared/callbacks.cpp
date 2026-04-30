@@ -34,4 +34,8 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
       Napi::Function::New<ClearCompareFeedbackMap>(env);
   exports["countNonZeroCompareFeedbackSlots"] =
       Napi::Function::New<CountNonZeroCompareFeedbackSlots>(env);
+  exports["countCompareLogEntries"] =
+      Napi::Function::New<CountCompareLogEntries>(env);
+  exports["countDroppedCompareLogEntries"] =
+      Napi::Function::New<CountDroppedCompareLogEntries>(env);
 }

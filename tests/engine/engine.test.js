@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+const { spawnSync } = require("child_process");
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 const {
@@ -23,6 +26,45 @@ const {
 	JestRegressionExitCode,
 	TimeoutExitCode,
 } = require("../helpers.js");
+
+async function withTempGuidanceDirectory(callback) {
+	const directory = await fs.promises.mkdtemp(
+		path.join(os.tmpdir(), "jazzer-libafl-guidance-"),
+	);
+	try {
+		return await callback(directory);
+	} finally {
+		await fs.promises.rm(directory, { force: true, recursive: true });
+	}
+}
+
+function runLibAflCli(cwd, entryPoint, extraFuzzerOptions = []) {
+	const proc = spawnSync(
+		"npx",
+		[
+			"jazzer",
+			"fuzz.js",
+			"-f",
+			entryPoint,
+			"--engine=afl",
+			"--sync",
+			"--disable_bug_detectors=.*",
+			"--",
+			...extraFuzzerOptions,
+		],
+		{
+			cwd,
+			env: { ...process.env },
+			shell: true,
+			stdio: "pipe",
+			windowsHide: true,
+		},
+	);
+	return {
+		status: proc.status,
+		output: proc.stdout.toString() + proc.stderr.toString(),
+	};
+}
 
 describe("Engine selection", () => {
 	const testDirectory = __dirname;
@@ -46,6 +88,8 @@ describe("Engine selection", () => {
 				.execute();
 
 			expect(fuzzTest.stderr).not.toContain("Unknown fuzzing engine");
+			expect(fuzzTest.stderr).toContain("[libafl::start] mode: fuzzing");
+			expect(fuzzTest.stderr).toContain("[libafl::done] mode: fuzzing");
 		});
 
 		it("rejects unsupported libFuzzer options in LibAFL mode", () => {
@@ -59,6 +103,148 @@ describe("Engine selection", () => {
 				.build();
 
 			expect(() => fuzzTest.execute()).toThrow(FuzzingExitCode);
+		});
+
+		it("supports regression mode in LibAFL mode", async () => {
+			const corpusDirectory = path.join(testDirectory, "regression_corpus");
+			await fs.promises.rm(corpusDirectory, { force: true, recursive: true });
+			await fs.promises.mkdir(corpusDirectory, { recursive: true });
+			await fs.promises.writeFile(
+				path.join(corpusDirectory, "seed"),
+				"afl-regression-hit",
+			);
+
+			try {
+				const proc = spawnSync(
+					"npx",
+					[
+						"jazzer",
+						"fuzz",
+						"-f",
+						"regression",
+						"--engine=afl",
+						"--mode=regression",
+						"--disable_bug_detectors=.*",
+						"--",
+						corpusDirectory,
+					],
+					{
+						cwd: testDirectory,
+						env: { ...process.env },
+						shell: true,
+						stdio: "pipe",
+						windowsHide: true,
+					},
+				);
+
+				expect(proc.status).toBe(Number(FuzzingExitCode));
+				const output = proc.stdout.toString() + proc.stderr.toString();
+				expect(output).toContain("[libafl::start] mode: regression");
+				expect(output).toContain("AFL regression finding");
+			} finally {
+				await fs.promises.rm(corpusDirectory, {
+					force: true,
+					recursive: true,
+				});
+			}
+		});
+
+		it("finds integer comparisons with LibAFL compare guidance", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const corpusDirectory = path.join(directory, "numeric-corpus");
+				await fs.promises.mkdir(corpusDirectory, { recursive: true });
+				await fs.promises.writeFile(
+					path.join(corpusDirectory, "seed"),
+					Buffer.alloc(4),
+				);
+
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"guided_numeric",
+					[
+						corpusDirectory,
+						"-runs=4000",
+						"-seed=1337",
+						"-max_len=16",
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+				);
+
+				expect(status).toBe(Number(FuzzingExitCode));
+				expect(output).toContain("AFL numeric guidance finding");
+			});
+		});
+
+		it("promotes equality targets into LibAFL tokens", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const corpusDirectory = path.join(directory, "equality-corpus");
+				await fs.promises.mkdir(corpusDirectory, { recursive: true });
+				await fs.promises.writeFile(path.join(corpusDirectory, "seed"), "");
+
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"guided_equality",
+					[
+						corpusDirectory,
+						"-runs=4000",
+						"-seed=1441",
+						"-max_len=32",
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+				);
+
+				expect(status).toBe(Number(FuzzingExitCode));
+				expect(output).toContain("AFL equality guidance finding");
+			});
+		});
+
+		it("promotes containment needles into LibAFL tokens", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const corpusDirectory = path.join(directory, "containment-corpus");
+				await fs.promises.mkdir(corpusDirectory, { recursive: true });
+				await fs.promises.writeFile(path.join(corpusDirectory, "seed"), "");
+
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"guided_containment",
+					[
+						corpusDirectory,
+						"-runs=4000",
+						"-seed=1777",
+						"-max_len=32",
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+				);
+
+				expect(status).toBe(Number(FuzzingExitCode));
+				expect(output).toContain("AFL containment guidance finding");
+			});
+		});
+
+		it("uses dictionaries with LibAFL token mutations", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const corpusDirectory = path.join(directory, "dictionary-corpus");
+				const dictionaryPath = path.join(directory, "tokens.dict");
+				await fs.promises.mkdir(corpusDirectory, { recursive: true });
+				await fs.promises.writeFile(path.join(corpusDirectory, "seed"), "");
+				await fs.promises.writeFile(dictionaryPath, '"from-dictionary"\n');
+
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"dictionary_target",
+					[
+						corpusDirectory,
+						"-runs=4000",
+						"-seed=2333",
+						"-max_len=32",
+						`-dict=${dictionaryPath}`,
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+				);
+
+				expect(status).toBe(Number(FuzzingExitCode));
+				expect(output).toContain("AFL dictionary guidance finding");
+			});
 		});
 
 		it("fails fast on asynchronous hangs in LibAFL mode", async () => {

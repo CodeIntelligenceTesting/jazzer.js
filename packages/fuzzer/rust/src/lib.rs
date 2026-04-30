@@ -1,3 +1,5 @@
+mod compare_log;
+
 use core::ffi::{c_char, c_void};
 use core::ptr;
 use std::cell::Cell;
@@ -9,7 +11,7 @@ use std::time::{Duration, Instant};
 use libafl::{
     corpus::{CachedOnDiskCorpus, Corpus, InMemoryCorpus},
     events::SimpleEventManager,
-    executors::{inprocess::InProcessExecutor, ExitKind},
+    executors::{inprocess::InProcessExecutor, ExitKind, ShadowExecutor},
     feedback_or_fast,
     feedbacks::{CrashFeedback, MaxMapFeedback, TimeoutFeedback},
     fuzzer::{Evaluator, Fuzzer, StdFuzzer},
@@ -17,11 +19,11 @@ use libafl::{
     monitors::{stats::ClientStatsManager, Monitor},
     mutators::{
         havoc_mutations::havoc_mutations, scheduled::HavocScheduledMutator, tokens_mutations,
-        Tokens,
+        I2SRandReplace, Tokens,
     },
     observers::{CanTrack, HitcountsMapObserver, StdMapObserver},
     schedulers::{IndexesLenTimeMinimizerScheduler, QueueScheduler},
-    stages::mutational::StdMutationalStage,
+    stages::{mutational::StdMutationalStage, shadow::ShadowTracingStage},
     state::{HasCorpus, HasExecutions, HasMaxSize, HasSolutions, StdState},
     Error, HasMetadata,
 };
@@ -30,6 +32,8 @@ use libafl_bolts::{
     tuples::{tuple_list, Merge},
     AsSlice, ClientId,
 };
+
+use crate::compare_log::{JazzerCompareLogObserver, JazzerLibAflCompareLog};
 
 const EXECUTION_CONTINUE: i32 = 0;
 const EXECUTION_FINDING: i32 = 1;
@@ -62,6 +66,7 @@ pub struct JazzerLibAflRuntimeSharedMaps {
     pub edges_len: usize,
     pub cmp: *mut u8,
     pub cmp_len: usize,
+    pub compare_log: *mut JazzerLibAflCompareLog,
 }
 
 pub type JazzerLibAflExecuteCallback =
@@ -188,6 +193,16 @@ fn clear_shared_map(ptr: *mut u8, len: usize) {
     }
 }
 
+fn clear_compare_log(ptr: *mut JazzerLibAflCompareLog) {
+    if ptr.is_null() {
+        return;
+    }
+
+    unsafe {
+        ptr::write_bytes(ptr, 0, 1);
+    }
+}
+
 unsafe fn parse_corpus_directories(options: &JazzerLibAflRuntimeOptions) -> Option<Vec<PathBuf>> {
     if options.corpus_directories.is_null() || options.corpus_directories_len == 0 {
         return Some(Vec::new());
@@ -262,7 +277,12 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
 
     let options = &*options;
     let maps = &*maps;
-    if maps.edges.is_null() || maps.edges_len == 0 || maps.cmp.is_null() || maps.cmp_len == 0 {
+    if maps.edges.is_null()
+        || maps.edges_len == 0
+        || maps.cmp.is_null()
+        || maps.cmp_len == 0
+        || maps.compare_log.is_null()
+    {
         eprintln!("[libafl] fatal: shared maps are missing");
         return RUNTIME_FATAL;
     }
@@ -339,8 +359,12 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
 
     let scheduler = IndexesLenTimeMinimizerScheduler::new(&edges_observer, QueueScheduler::new());
     let mut fuzzer = StdFuzzer::new(scheduler, feedback, objective);
-    let mutator = HavocScheduledMutator::new(havoc_mutations().merge(tokens_mutations()));
-    let mut stages = tuple_list!(StdMutationalStage::new(mutator),);
+    let mutator = HavocScheduledMutator::new(
+        havoc_mutations()
+            .merge(tokens_mutations())
+            .merge(tuple_list!(I2SRandReplace::new())),
+    );
+    let mut stages = tuple_list!(ShadowTracingStage::new(), StdMutationalStage::new(mutator),);
     let stop_requested = Cell::new(false);
     let fatal_error = Cell::new(false);
     let timeout_found = Cell::new(false);
@@ -348,6 +372,7 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
     let mut harness = |input: &BytesInput| {
         clear_shared_map(maps.edges, maps.edges_len);
         clear_shared_map(maps.cmp, maps.cmp_len);
+        clear_compare_log(maps.compare_log);
 
         let bytes = input.target_bytes();
         let bytes = bytes.as_slice();
@@ -375,7 +400,7 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
         }
     };
 
-    let mut executor = match InProcessExecutor::new(
+    let executor = match InProcessExecutor::new(
         &mut harness,
         tuple_list!(edges_observer, cmp_observer),
         &mut fuzzer,
@@ -388,6 +413,8 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
             return RUNTIME_FATAL;
         }
     };
+    let shadow_observer = JazzerCompareLogObserver::new(maps.compare_log);
+    let mut executor = ShadowExecutor::new(executor, tuple_list!(shadow_observer));
 
     if !corpus_dirs.is_empty() && state.must_load_initial_inputs() {
         if state

@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <napi.h>
 
+#include "shared/tracing.h"
+
 extern "C" {
 struct JazzerLibAflRuntimeOptions {
   uint64_t runs;
@@ -36,6 +38,7 @@ struct JazzerLibAflRuntimeSharedMaps {
   size_t edges_len;
   uint8_t *cmp;
   size_t cmp_len;
+  JazzerLibAflCompareLog *compare_log;
 };
 
 typedef int (*JazzerLibAflExecuteCallback)(void *user_data, const uint8_t *data,

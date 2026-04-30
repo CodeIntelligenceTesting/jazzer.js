@@ -443,14 +443,16 @@ JazzerLibAflRuntimeSharedMaps SharedMapsForRuntime(Napi::Env env) {
   const auto edges_len = CoverageCountersSize();
   auto *cmp = CompareFeedbackMap();
   const auto cmp_len = CompareFeedbackMapSize();
+  auto *compare_log = CompareLog();
 
-  if (edges == nullptr || edges_len == 0 || cmp == nullptr || cmp_len == 0) {
+  if (edges == nullptr || edges_len == 0 || cmp == nullptr || cmp_len == 0 ||
+      compare_log == nullptr) {
     throw Napi::Error::New(
         env,
         "Coverage maps were not initialized before the LibAFL backend started");
   }
 
-  return {edges, edges_len, cmp, cmp_len};
+  return {edges, edges_len, cmp, cmp_len, compare_log};
 }
 
 bool CollectRegressionCorpusFiles(
@@ -765,9 +767,11 @@ int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
       }
     }
   } catch (const Napi::Error &error) {
-    WriteArtifact(context->options.artifact_prefix, "crash", data, size);
-    context->is_resolved = true;
-    context->deferred.Reject(error.Value());
+    if (!context->is_resolved) {
+      WriteArtifact(context->options.artifact_prefix, "crash", data, size);
+      context->is_resolved = true;
+      context->deferred.Reject(error.Value());
+    }
     return kExecutionFinding;
   } catch (const std::exception &exception) {
     ExitWithUnexpectedError(exception);
