@@ -20,7 +20,16 @@
 
 #include "shared/tracing.h"
 
+constexpr std::size_t kFindingInfoArtifactBytes = 256;
+constexpr std::size_t kFindingInfoSummaryBytes = 1024;
+
 extern "C" {
+struct JazzerLibAflFindingInfo {
+  uint8_t has_value;
+  char artifact[kFindingInfoArtifactBytes];
+  char summary[kFindingInfoSummaryBytes];
+};
+
 struct JazzerLibAflRuntimeOptions {
   uint64_t runs;
   uint64_t seed;
@@ -39,6 +48,7 @@ struct JazzerLibAflRuntimeSharedMaps {
   uint8_t *cmp;
   size_t cmp_len;
   JazzerLibAflCompareLog *compare_log;
+  JazzerLibAflFindingInfo *finding_info;
 };
 
 typedef int (*JazzerLibAflExecuteCallback)(void *user_data, const uint8_t *data,

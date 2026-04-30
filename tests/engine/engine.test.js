@@ -38,7 +38,7 @@ async function withTempGuidanceDirectory(callback) {
 	}
 }
 
-function runLibAflCli(cwd, entryPoint, extraFuzzerOptions = []) {
+function runLibAflCli(cwd, entryPoint, extraFuzzerOptions = [], extraEnv = {}) {
 	const proc = spawnSync(
 		"npx",
 		[
@@ -54,7 +54,7 @@ function runLibAflCli(cwd, entryPoint, extraFuzzerOptions = []) {
 		],
 		{
 			cwd,
-			env: { ...process.env },
+			env: { ...process.env, ...extraEnv },
 			shell: true,
 			stdio: "pipe",
 			windowsHide: true,
@@ -64,6 +64,10 @@ function runLibAflCli(cwd, entryPoint, extraFuzzerOptions = []) {
 		status: proc.status,
 		output: proc.stdout.toString() + proc.stderr.toString(),
 	};
+}
+
+function findOutputLine(output, prefix) {
+	return output.split(/\r?\n/).find((line) => line.startsWith(prefix));
 }
 
 describe("Engine selection", () => {
@@ -88,8 +92,106 @@ describe("Engine selection", () => {
 				.execute();
 
 			expect(fuzzTest.stderr).not.toContain("Unknown fuzzing engine");
-			expect(fuzzTest.stderr).toContain("[libafl::start] mode: fuzzing");
-			expect(fuzzTest.stderr).toContain("[libafl::done] mode: fuzzing");
+			expect(fuzzTest.stderr).toContain("[>] INITED");
+			expect(fuzzTest.stderr).toContain("    mode:           fuzzing");
+			expect(fuzzTest.stderr).toContain("    seed:           1337");
+			expect(fuzzTest.stderr).toContain("    loaded_inputs:  1");
+			expect(fuzzTest.stderr).toMatch(/ {4}edges:\s{10}\S/);
+			expect(fuzzTest.stderr).toContain("    timeout:        5000 ms");
+			expect(fuzzTest.stderr).toContain("    max_len:        4096");
+			expect(fuzzTest.stderr).toContain("    runs:           250");
+			expect(fuzzTest.stderr).toContain("    max_total_time: unlimited");
+			expect(fuzzTest.stderr).toContain("[=] #");
+			expect(fuzzTest.stderr).toContain("| DONE");
+		});
+
+		it("prints aligned testcase, heartbeat, and done lines", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"fuzz",
+					[
+						"-max_total_time=1",
+						"-seed=1337",
+						"-max_len=32",
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+					{ JAZZER_LIBAFL_MONITOR_TIMEOUT_MS: "50" },
+				);
+
+				expect(status).toBe(0);
+				const testcaseLine = findOutputLine(output, "[i]");
+				const heartbeatLine = findOutputLine(output, "[*]");
+
+				expect(testcaseLine).toBeDefined();
+				expect(heartbeatLine).toBeDefined();
+				expect(testcaseLine.indexOf("| edges:")).toBe(
+					heartbeatLine.indexOf("| edges:"),
+				);
+				expect(testcaseLine.indexOf("| corp:")).toBe(
+					heartbeatLine.indexOf("| corp:"),
+				);
+				expect(testcaseLine.indexOf("| exec/s:")).toBe(
+					heartbeatLine.indexOf("| exec/s:"),
+				);
+				expect(testcaseLine.indexOf("| obj:")).toBe(
+					heartbeatLine.indexOf("| obj:"),
+				);
+				expect(testcaseLine.indexOf("| stab:")).toBe(
+					heartbeatLine.indexOf("| stab:"),
+				);
+				expect(testcaseLine.indexOf("| t:")).toBe(
+					heartbeatLine.indexOf("| t:"),
+				);
+
+				expect(output).toContain("[=] #");
+				expect(output).toContain("| DONE");
+				expect(output).toContain("reason:     max_total_time");
+				expect(output).toContain("time:       ");
+				expect(output).toContain("edges:      ");
+				expect(output).toContain("crashes:    0");
+				expect(output).toContain("speed:      ");
+			});
+		});
+
+		it("only reports power-of-two testcase milestones while loading corpus", async () => {
+			await withTempGuidanceDirectory(async (directory) => {
+				const corpusDirectory = path.join(directory, "seed-corpus");
+				await fs.promises.mkdir(corpusDirectory, { recursive: true });
+
+				for (let i = 1; i <= 6; i++) {
+					await fs.promises.writeFile(
+						path.join(corpusDirectory, `seed-${i}.txt`),
+						Buffer.from([i]),
+					);
+				}
+
+				const { status, output } = runLibAflCli(
+					testDirectory,
+					"seed_progress",
+					[
+						corpusDirectory,
+						"-runs=1",
+						"-seed=1337",
+						"-max_len=32",
+						`-artifact_prefix=${directory}${path.sep}`,
+					],
+					{ JAZZER_LIBAFL_MONITOR_TIMEOUT_MS: "1" },
+				);
+
+				expect(status).toBe(0);
+				const initOutput = output.split("[>] INITED", 1)[0];
+				expect(initOutput).not.toContain("[*]");
+				const testcaseLines = initOutput
+					.split(/\r?\n/)
+					.filter((line) => line.startsWith("[i]"));
+
+				expect(testcaseLines).toHaveLength(4);
+				expect(testcaseLines[0]).toContain("| corp:    1 |");
+				expect(testcaseLines[1]).toContain("| corp:    2 |");
+				expect(testcaseLines[2]).toContain("| corp:    4 |");
+				expect(testcaseLines[3]).toContain("| corp:    6 |");
+			});
 		});
 
 		it("rejects unsupported libFuzzer options in LibAFL mode", () => {
@@ -139,7 +241,15 @@ describe("Engine selection", () => {
 
 				expect(proc.status).toBe(Number(FuzzingExitCode));
 				const output = proc.stdout.toString() + proc.stderr.toString();
-				expect(output).toContain("[libafl::start] mode: regression");
+				expect(output).toContain("[>] INITED");
+				expect(output).toContain("    mode:           regression");
+				expect(output).toMatch(/ {4}seed:\s+\d+/);
+				expect(output).toContain("    loaded_inputs:  2");
+				expect(output).toContain("    edges:          -/   - (  -%)");
+				expect(output).toContain("    timeout:        5000 ms");
+				expect(output).toContain("    max_len:        4096");
+				expect(output).toContain("    runs:           unlimited");
+				expect(output).toContain("    max_total_time: unlimited");
 				expect(output).toContain("AFL regression finding");
 			} finally {
 				await fs.promises.rm(corpusDirectory, {
@@ -195,6 +305,9 @@ describe("Engine selection", () => {
 
 				expect(status).toBe(Number(FuzzingExitCode));
 				expect(output).toContain("AFL equality guidance finding");
+				expect(output).toMatch(
+					/\[!\] #\d+\s+\| artifact: crash-[0-9a-f]+ \| Error: AFL equality guidance finding/,
+				);
 			});
 		});
 

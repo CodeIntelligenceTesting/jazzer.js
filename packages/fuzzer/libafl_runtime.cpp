@@ -17,11 +17,14 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <condition_variable>
 #include <csetjmp>
 #include <csignal>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <functional>
@@ -37,6 +40,7 @@
 #include <vector>
 
 #ifdef _WIN32
+#include <io.h>
 #include <process.h>
 #define GetPID _getpid
 #else
@@ -113,16 +117,61 @@ std::string FormatTotalTimeLimit(uint64_t max_total_time_seconds) {
   return FormatDuration(std::chrono::seconds(max_total_time_seconds));
 }
 
+bool ShouldColorizeOutput() {
+  if (std::getenv("NO_COLOR") != nullptr) {
+    return false;
+  }
+
+  const auto *term = std::getenv("TERM");
+  if (term != nullptr && std::string(term) == "dumb") {
+    return false;
+  }
+
+#ifdef _WIN32
+  return _isatty(_fileno(stderr)) != 0;
+#else
+  return isatty(fileno(stderr)) != 0;
+#endif
+}
+
+std::string StartMarker() {
+  if (!ShouldColorizeOutput()) {
+    return "[>]";
+  }
+
+  return "\x1b[34m[>]\x1b[0m";
+}
+
+std::string FormatInitedField(const std::string &label,
+                              const std::string &value) {
+  const auto first = value.find_first_not_of(' ');
+  const auto trimmed = first == std::string::npos
+                           ? std::string_view("")
+                           : std::string_view(value).substr(first);
+  std::ostringstream stream;
+  stream << "    " << std::left << std::setw(15) << label << ' ' << trimmed;
+  return stream.str();
+}
+
+std::string EmptyEdgesMetric() { return "   -/   - (  -%)"; }
+
 void PrintRegressionStart(const ParsedRuntimeOptions &options,
                           size_t replay_inputs) {
-  std::cerr << "[libafl::start] mode: regression, seed: " << options.seed
-            << ", replay_inputs: " << replay_inputs
-            << ", timeout: " << options.timeout_millis
-            << " ms, max_len: " << options.max_len
-            << ", runs: " << FormatRunLimit(options.runs)
-            << ", max_total_time: "
-            << FormatTotalTimeLimit(options.max_total_time_seconds)
-            << std::endl;
+  std::cerr
+      << StartMarker() << " INITED\n"
+      << FormatInitedField("mode:", "regression") << '\n'
+      << FormatInitedField("seed:", std::to_string(options.seed)) << '\n'
+      << FormatInitedField("loaded_inputs:", std::to_string(replay_inputs))
+      << '\n'
+      << FormatInitedField("edges:", EmptyEdgesMetric()) << '\n'
+      << FormatInitedField("timeout:",
+                           std::to_string(options.timeout_millis) + " ms")
+      << '\n'
+      << FormatInitedField("max_len:", std::to_string(options.max_len)) << '\n'
+      << FormatInitedField("runs:", FormatRunLimit(options.runs)) << '\n'
+      << FormatInitedField("max_total_time:",
+                           FormatTotalTimeLimit(options.max_total_time_seconds))
+      << std::endl;
 }
 
 void PrintRegressionDone(std::chrono::steady_clock::time_point started_at,
@@ -207,6 +256,107 @@ using AsyncTsfn =
 SyncFuzzTargetContext *gActiveSyncContext = nullptr;
 AsyncFuzzTargetContext *gActiveAsyncContext = nullptr;
 AsyncTsfn gAsyncTsfn;
+JazzerLibAflFindingInfo gFindingInfo{};
+
+void ClearFindingInfo() { std::memset(&gFindingInfo, 0, sizeof(gFindingInfo)); }
+
+void CopyFindingField(char *destination, size_t destination_size,
+                      const std::string &value) {
+  if (destination == nullptr || destination_size == 0) {
+    return;
+  }
+
+  std::memset(destination, 0, destination_size);
+  const auto copied = std::min(destination_size - 1, value.size());
+  if (copied > 0) {
+    std::memcpy(destination, value.data(), copied);
+  }
+}
+
+std::string CollapseWhitespace(const std::string &value) {
+  std::string collapsed;
+  collapsed.reserve(value.size());
+
+  bool previous_was_space = false;
+  for (const auto character : value) {
+    if (std::isspace(static_cast<unsigned char>(character)) != 0) {
+      if (!collapsed.empty() && !previous_was_space) {
+        collapsed.push_back(' ');
+      }
+      previous_was_space = true;
+      continue;
+    }
+
+    collapsed.push_back(character);
+    previous_was_space = false;
+  }
+
+  if (!collapsed.empty() && collapsed.back() == ' ') {
+    collapsed.pop_back();
+  }
+
+  return collapsed;
+}
+
+std::string TrimStackFrame(const std::string &frame) {
+  const auto first = frame.find_first_not_of(" \t");
+  if (first == std::string::npos) {
+    return "";
+  }
+
+  auto trimmed = frame.substr(first);
+  constexpr char kAtPrefix[] = "at ";
+  if (trimmed.rfind(kAtPrefix, 0) == 0) {
+    trimmed.erase(0, sizeof(kAtPrefix) - 1);
+  }
+
+  if (!trimmed.empty() && trimmed.back() == ')') {
+    const auto open_paren = trimmed.rfind('(');
+    if (open_paren != std::string::npos && open_paren + 1 < trimmed.size()) {
+      return trimmed.substr(open_paren + 1, trimmed.size() - open_paren - 2);
+    }
+  }
+
+  return trimmed;
+}
+
+std::string DescribeJsError(Napi::Env env, const Napi::Value &error) {
+  std::string summary = error.ToString().Utf8Value();
+  if (!error.IsObject()) {
+    return CollapseWhitespace(summary);
+  }
+
+  const auto stack_value = error.As<Napi::Object>().Get("stack");
+  if (!stack_value.IsString()) {
+    return CollapseWhitespace(summary);
+  }
+
+  std::istringstream stream(stack_value.As<Napi::String>().Utf8Value());
+  std::string line;
+  std::getline(stream, line);
+  while (std::getline(stream, line)) {
+    const auto frame = TrimStackFrame(line);
+    if (frame.empty()) {
+      continue;
+    }
+    summary.append(" in ").append(frame);
+    break;
+  }
+
+  return CollapseWhitespace(summary);
+}
+
+std::string DescribeTimeout(uint64_t timeout_millis) {
+  return "timeout after " + std::to_string(timeout_millis) + " ms";
+}
+
+void RecordFindingInfo(const std::string &artifact,
+                       const std::string &summary) {
+  gFindingInfo.has_value = 1;
+  CopyFindingField(gFindingInfo.artifact, sizeof(gFindingInfo.artifact),
+                   artifact);
+  CopyFindingField(gFindingInfo.summary, sizeof(gFindingInfo.summary), summary);
+}
 
 std::string DigestInput(const uint8_t *data, size_t size) {
   uint64_t hash = 1469598103934665603ULL;
@@ -253,10 +403,11 @@ std::filesystem::path ArtifactPath(const std::string &artifact_prefix,
   return std::filesystem::path(artifact_prefix + filename);
 }
 
-void WriteArtifact(const std::string &artifact_prefix, const std::string &kind,
-                   const uint8_t *data, size_t size) {
+std::string WriteArtifact(const std::string &artifact_prefix,
+                          const std::string &kind, const uint8_t *data,
+                          size_t size, bool emit_info = true) {
   if (data == nullptr && size != 0) {
-    return;
+    return "";
   }
 
   try {
@@ -272,7 +423,7 @@ void WriteArtifact(const std::string &artifact_prefix, const std::string &kind,
     if (!output.is_open()) {
       std::cerr << "ERROR: Failed to open artifact file '"
                 << artifact_path.string() << "'" << std::endl;
-      return;
+      return "";
     }
 
     if (size > 0) {
@@ -282,14 +433,18 @@ void WriteArtifact(const std::string &artifact_prefix, const std::string &kind,
     if (!output.good()) {
       std::cerr << "ERROR: Failed to write artifact file '"
                 << artifact_path.string() << "'" << std::endl;
-      return;
+      return "";
     }
 
-    std::cerr << "INFO: Wrote " << kind << " input to "
-              << artifact_path.string() << std::endl;
+    if (emit_info) {
+      std::cerr << "INFO: Wrote " << kind << " input to "
+                << artifact_path.string() << std::endl;
+    }
+    return artifact_path.filename().string();
   } catch (const std::exception &exception) {
     std::cerr << "ERROR: Failed to persist " << kind
               << " artifact: " << exception.what() << std::endl;
+    return "";
   }
 }
 
@@ -298,7 +453,9 @@ void WriteArtifact(const std::string &artifact_prefix, const std::string &kind,
                                 const std::vector<uint8_t> &input) {
   std::cerr << "ERROR: Exceeded timeout of " << timeout_millis
             << " ms for one fuzz target execution." << std::endl;
-  WriteArtifact(artifact_prefix, "timeout", input.data(), input.size());
+  const auto artifact =
+      WriteArtifact(artifact_prefix, "timeout", input.data(), input.size());
+  RecordFindingInfo(artifact, DescribeTimeout(timeout_millis));
   _Exit(libfuzzer::EXIT_ERROR_TIMEOUT);
 }
 
@@ -336,8 +493,10 @@ void ReportAsyncFinding(AsyncFuzzTargetContext *context, Napi::Env env,
                         const Napi::Value &error,
                         const std::vector<uint8_t> &input) {
   if (TrySetExecutionStatus(state, kExecutionFinding)) {
-    WriteArtifact(context->options.artifact_prefix, "crash", input.data(),
-                  input.size());
+    const auto artifact =
+        WriteArtifact(context->options.artifact_prefix, "crash", input.data(),
+                      input.size(), false);
+    RecordFindingInfo(artifact, DescribeJsError(env, error));
   }
   RejectDeferredIfNeeded(context, error);
 }
@@ -440,19 +599,23 @@ ParsedRuntimeOptions ParseRuntimeOptions(Napi::Env env,
 
 JazzerLibAflRuntimeSharedMaps SharedMapsForRuntime(Napi::Env env) {
   auto *edges = CoverageCounters();
-  const auto edges_len = CoverageCountersSize();
+  const auto edges_capacity = CoverageCountersCapacity();
+  auto *edges_size = CoverageCountersSizePointer();
   auto *cmp = CompareFeedbackMap();
   const auto cmp_len = CompareFeedbackMapSize();
   auto *compare_log = CompareLog();
+  auto *finding_info = &gFindingInfo;
 
-  if (edges == nullptr || edges_len == 0 || cmp == nullptr || cmp_len == 0 ||
-      compare_log == nullptr) {
+  if (edges == nullptr || edges_capacity == 0 || edges_size == nullptr ||
+      cmp == nullptr || cmp_len == 0 || compare_log == nullptr ||
+      finding_info == nullptr) {
     throw Napi::Error::New(
         env,
         "Coverage maps were not initialized before the LibAFL backend started");
   }
 
-  return {edges, edges_len, cmp, cmp_len, compare_log};
+  return {edges, edges_capacity, edges_size, cmp,
+          cmp_len, compare_log, finding_info};
 }
 
 bool CollectRegressionCorpusFiles(
@@ -768,7 +931,9 @@ int ExecuteSyncInput(void *user_data, const uint8_t *data, size_t size) {
     }
   } catch (const Napi::Error &error) {
     if (!context->is_resolved) {
-      WriteArtifact(context->options.artifact_prefix, "crash", data, size);
+      const auto artifact = WriteArtifact(context->options.artifact_prefix,
+                                          "crash", data, size, false);
+      RecordFindingInfo(artifact, DescribeJsError(context->env, error.Value()));
       context->is_resolved = true;
       context->deferred.Reject(error.Value());
     }
