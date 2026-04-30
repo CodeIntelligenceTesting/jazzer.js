@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { OptionsManager, OptionSource } from "@jazzer.js/core";
+import { OptionsManager, OptionSource } from "@jazzer.js/options";
 
 import { loadConfig } from "./config";
 

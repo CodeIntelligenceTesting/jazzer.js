@@ -19,13 +19,9 @@ import fs from "fs";
 import { Circus, Global } from "@jest/types";
 import * as tmp from "tmp";
 
-import {
-	FindingAwareFuzzTarget,
-	OptionsManager,
-	OptionSource,
-	startFuzzingNoInit,
-} from "@jazzer.js/core";
+import { FindingAwareFuzzTarget, startFuzzingNoInit } from "@jazzer.js/core";
 import { FuzzTarget } from "@jazzer.js/fuzzer";
+import { OptionsManager, OptionSource } from "@jazzer.js/options";
 
 import { Corpus } from "./corpus";
 import {

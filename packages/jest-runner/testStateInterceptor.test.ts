@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Options, OptionsManager, OptionSource } from "@jazzer.js/core";
+import { Options, OptionsManager, OptionSource } from "@jazzer.js/options";
 
 import { interceptTestState } from "./testStateInterceptor";
 

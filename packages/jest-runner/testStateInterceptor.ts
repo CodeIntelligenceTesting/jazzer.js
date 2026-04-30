@@ -17,7 +17,7 @@
 import { JestEnvironment } from "@jest/environment";
 import { Circus } from "@jest/types";
 
-import { OptionsManager } from "@jazzer.js/core";
+import { OptionsManager } from "@jazzer.js/options";
 
 // Arbitrary high value to disable Jest timeout.
 const JEST_TIMEOUT_DISABLED = 1000 * 60 * 24 * 365;

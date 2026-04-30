@@ -19,18 +19,20 @@ import * as fs from "fs";
 import { Circus, Global } from "@jest/types";
 
 import {
-	AllowedFuzzTestOptions,
 	asFindingAwareFuzzFn,
 	FindingAwareFuzzTarget,
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
-	Options,
-	OptionsManager,
-	OptionSource,
 	printOptions,
 	startFuzzingNoInit,
 } from "@jazzer.js/core";
+import {
+	AllowedFuzzTestOptions,
+	Options,
+	OptionsManager,
+	OptionSource,
+} from "@jazzer.js/options";
 
 import { Corpus } from "./corpus";
 import { removeTopFramesFromError } from "./errorUtils";

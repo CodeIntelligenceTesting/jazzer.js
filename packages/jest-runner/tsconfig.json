@@ -7,6 +7,9 @@
 	"exclude": ["dist"],
 	"references": [
 		{
+			"path": "../options"
+		},
+		{
 			"path": "../core"
 		}
 	]

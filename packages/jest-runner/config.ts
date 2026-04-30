@@ -16,7 +16,7 @@
 
 import { cosmiconfigSync } from "cosmiconfig";
 
-import { Options, OptionsManager, OptionSource } from "@jazzer.js/core";
+import { Options, OptionsManager, OptionSource } from "@jazzer.js/options";
 
 export const TIMEOUT_PLACEHOLDER = Number.MIN_SAFE_INTEGER;
 

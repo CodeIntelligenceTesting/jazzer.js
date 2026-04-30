@@ -1,7 +1,7 @@
 {
-	"name": "@jazzer.js/jest-runner",
+	"name": "@jazzer.js/options",
 	"version": "4.0.0",
-	"description": "Jazzer.js Jest runner",
+	"description": "Jazzer.js option contracts and normalization",
 	"homepage": "https://github.com/CodeIntelligenceTesting/jazzer.js#readme",
 	"author": "Code Intelligence",
 	"license": "Apache-2.0",
@@ -11,24 +11,10 @@
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/CodeIntelligenceTesting/jazzer.js.git",
-		"directory": "packages/core"
+		"directory": "packages/options"
 	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"dependencies": {
-		"@jazzer.js/core": "4.0.0",
-		"@jazzer.js/options": "4.0.0",
-		"cosmiconfig": "^9.0.0",
-		"istanbul-reports": "^3.1.7"
-	},
-	"peerDependencies": {
-		"@types/jest": ">=29.0.0",
-		"jest": ">=29.0.0"
-	},
-	"devDependencies": {
-		"@types/tmp": "^0.2.6",
-		"tmp": "^0.2.3"
-	},
 	"engines": {
 		"node": ">= 14.0.0",
 		"npm": ">= 7.0.0"
