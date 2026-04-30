@@ -37,6 +37,7 @@ export class Dictionary {
 }
 
 function getDictionary(): Dictionary {
+	globalThis.JazzerJS ??= new Map();
 	return getOrSetJazzerJsGlobal("dictionary", new Dictionary());
 }
 

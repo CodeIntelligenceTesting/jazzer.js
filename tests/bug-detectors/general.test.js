@@ -176,6 +176,7 @@ describe("General tests", () => {
 				.sync(false)
 				.fuzzEntryPoint("ForkModeCallOriginalEvil")
 				.dir(bugDetectorDirectory)
+				.engine("libfuzzer")
 				.runs(200)
 				.forkMode(3)
 				.build();
@@ -195,6 +196,7 @@ describe("General tests", () => {
 				.sync(false)
 				.fuzzEntryPoint("ForkModeCallOriginalFriendly")
 				.dir(bugDetectorDirectory)
+				.engine("libfuzzer")
 				.runs(200)
 				.forkMode(3)
 				.build();
@@ -214,6 +216,7 @@ describe("General tests", () => {
 				.sync(false)
 				.fuzzEntryPoint("ForkModeCallOriginalEvilAsync")
 				.dir(bugDetectorDirectory)
+				.engine("libfuzzer")
 				.runs(10)
 				.forkMode(3)
 				.build();
@@ -233,6 +236,7 @@ describe("General tests", () => {
 				.sync(false)
 				.fuzzEntryPoint("ForkModeCallOriginalFriendlyAsync")
 				.dir(bugDetectorDirectory)
+				.engine("libfuzzer")
 				.runs(200)
 				.forkMode(3)
 				.build();

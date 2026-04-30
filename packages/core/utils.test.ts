@@ -36,6 +36,18 @@ describe("core", () => {
 		});
 	});
 	describe("prepareArgs", () => {
+		it("does not add an undefined engine", () => {
+			const args = {
+				_: ["-some_arg=value"],
+				corpus: [],
+				fuzzTarget: "filename.js",
+			};
+			const options = prepareArgs(args);
+			expect(
+				Object.prototype.hasOwnProperty.call(options, "engine"),
+			).toBeFalsy();
+		});
+
 		it("converts fuzzer args to strings", () => {
 			const args = {
 				_: ["-some_arg=value", "-other_arg", 123],
@@ -53,6 +65,17 @@ describe("core", () => {
 					"123",
 				],
 			});
+		});
+
+		it("normalizes engine alias", () => {
+			const args = {
+				_: [],
+				corpus: [],
+				engine: "afl",
+				fuzzTarget: "filename.js",
+			};
+			const options = prepareArgs(args);
+			expect(options.engine).toBe("libafl");
 		});
 	});
 });

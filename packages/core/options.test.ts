@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
+import fs from "fs";
+import os from "os";
+import path from "path";
+
 import {
+	buildLibAflOptions,
 	defaultCLIOptions,
+	defaultJestOptions,
 	fromSnakeCase,
 	fromSnakeCaseWithPrefix,
 	Options,
 	OptionsManager,
 	OptionSource,
+	resolveEngine,
 	spawnsSubprocess,
 	validateKeySource,
 } from "./options";
@@ -70,6 +77,14 @@ describe("options", () => {
 	});
 
 	describe("merge", () => {
+		it("uses LibAFL as default CLI engine", () => {
+			expect(defaultCLIOptions.engine).toBe("libafl");
+		});
+
+		it("keeps libFuzzer as default Jest engine", () => {
+			expect(defaultJestOptions.engine).toBe("libfuzzer");
+		});
+
 		it("New options with lower priorities will not be added", () => {
 			const baseOptions = OptionsManager.attachSource(
 				defaultCLIOptions,
@@ -311,6 +326,139 @@ describe("buildLibFuzzerOptions", () => {
 			expect(spawnsSubprocess(["abc"])).toBeFalsy();
 			expect(spawnsSubprocess(["123"])).toBeFalsy();
 		});
+	});
+});
+
+describe("libafl options", () => {
+	it("normalizes engine aliases", () => {
+		expect(resolveEngine("libfuzzer")).toBe("libfuzzer");
+		expect(resolveEngine("afl")).toBe("libafl");
+		expect(resolveEngine("libafl")).toBe("libafl");
+		expect(() => resolveEngine("unknown")).toThrow("Unknown fuzzing engine");
+	});
+
+	it("canonicalizes engine aliases during option merge", () => {
+		const manager = new OptionsManager(OptionSource.DefaultJestOptions).merge(
+			{ engine: "afl" },
+			OptionSource.ConfigurationFile,
+		);
+
+		expect(manager.get("engine")).toBe("libafl");
+	});
+
+	it("builds structured LibAFL options from fuzzer options", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				timeout: 1234,
+				fuzzerOptions: [
+					"corpus-main",
+					"corpus-seed",
+					"-runs=99",
+					"-seed=1337",
+					"-max_len=1024",
+					"-max_total_time=42",
+					"-artifact_prefix=/tmp/artifacts/",
+				],
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toEqual({
+			mode: "fuzzing",
+			runs: 99,
+			seed: 1337,
+			maxLen: 1024,
+			timeoutMillis: 1234,
+			maxTotalTimeSeconds: 42,
+			artifactPrefix: "/tmp/artifacts/",
+			corpusDirectories: ["corpus-main", "corpus-seed"],
+			dictionaryFiles: [],
+		});
+	});
+
+	it("rejects unsupported options in LibAFL mode", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				fuzzerOptions: ["-fork=1"],
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(() => buildLibAflOptions(manager)).toThrow("not supported");
+	});
+
+	it("supports regression mode in LibAFL mode", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				mode: "regression",
+				fuzzerOptions: ["corpus", "-runs=1"],
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toEqual({
+			mode: "regression",
+			runs: 0,
+			seed: 0,
+			maxLen: 4096,
+			timeoutMillis: 5000,
+			maxTotalTimeSeconds: 0,
+			artifactPrefix: "",
+			corpusDirectories: ["corpus"],
+			dictionaryFiles: [],
+		});
+	});
+
+	it("supports dictionary entries in LibAFL mode", () => {
+		const tempDirectory = fs.mkdtempSync(
+			path.join(os.tmpdir(), "jazzer-libafl-dict-"),
+		);
+		const dictionaryPath = path.join(tempDirectory, "seed.dict");
+		fs.writeFileSync(dictionaryPath, '"Amazing"\n');
+
+		try {
+			const manager = new OptionsManager(OptionSource.DefaultCLIOptions)
+				.merge(
+					{
+						engine: "libafl",
+						fuzzerOptions: ["corpus", `-dict=${dictionaryPath}`],
+					},
+					OptionSource.CommandLineArguments,
+				)
+				.merge(
+					{ dictionaryEntries: ["banana"] },
+					OptionSource.JestFuzzTestOptions,
+				);
+
+			const built = buildLibAflOptions(manager);
+			expect(built.corpusDirectories).toEqual(["corpus"]);
+			expect(built.dictionaryFiles).toHaveLength(1);
+			expect(fs.readFileSync(built.dictionaryFiles[0], "utf8")).toContain(
+				"\\x62\\x61\\x6e\\x61\\x6e\\x61",
+			);
+			expect(fs.readFileSync(built.dictionaryFiles[0], "utf8")).toContain(
+				"Amazing",
+			);
+		} finally {
+			fs.rmSync(tempDirectory, { force: true, recursive: true });
+		}
+	});
+
+	it("rejects malformed LibAFL integer flags", () => {
+		for (const option of ["-runs=1abc", "-max_len=1.5", "-seed="]) {
+			const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+				{
+					engine: "libafl",
+					fuzzerOptions: [option],
+				},
+				OptionSource.CommandLineArguments,
+			);
+
+			expect(() => buildLibAflOptions(manager)).toThrow();
+		}
 	});
 });
 

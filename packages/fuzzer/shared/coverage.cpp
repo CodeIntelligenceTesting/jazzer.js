@@ -15,6 +15,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 extern "C" {
 void __sanitizer_cov_8bit_counters_init(uint8_t *start, uint8_t *end);
@@ -26,6 +27,7 @@ namespace {
 // Shared coverage counter buffer populated from JavaScript using Buffer.
 // Individual slices are registered with libFuzzer by RegisterNewCounters.
 uint8_t *gCoverageCounters = nullptr;
+std::size_t gCoverageCountersSize = 0;
 
 // PC-Table is used by libFuzzer to keep track of program addresses
 // corresponding to coverage counters. The flags determine whether the
@@ -102,6 +104,7 @@ void RegisterNewCounters(const Napi::CallbackInfo &info) {
 
   RegisterCounterRange(gCoverageCounters + old_num_counters,
                        gCoverageCounters + new_num_counters);
+  gCoverageCountersSize = static_cast<std::size_t>(new_num_counters);
 }
 
 // Register an independent coverage counter region for a single ES module.
@@ -120,4 +123,16 @@ void RegisterModuleCounters(const Napi::CallbackInfo &info) {
   }
 
   RegisterCounterRange(buf.Data(), buf.Data() + size);
+}
+
+uint8_t *CoverageCounters() { return gCoverageCounters; }
+
+std::size_t CoverageCountersSize() { return gCoverageCountersSize; }
+
+void ClearCoverageCounters() {
+  if (gCoverageCounters == nullptr || gCoverageCountersSize == 0) {
+    return;
+  }
+
+  std::memset(gCoverageCounters, 0, gCoverageCountersSize);
 }

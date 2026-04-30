@@ -13,8 +13,14 @@
 // limitations under the License.
 
 #pragma once
+#include <cstddef>
+#include <cstdint>
 #include <napi.h>
 
 void RegisterCoverageMap(const Napi::CallbackInfo &info);
 void RegisterNewCounters(const Napi::CallbackInfo &info);
 void RegisterModuleCounters(const Napi::CallbackInfo &info);
+
+uint8_t *CoverageCounters();
+std::size_t CoverageCountersSize();
+void ClearCoverageCounters();

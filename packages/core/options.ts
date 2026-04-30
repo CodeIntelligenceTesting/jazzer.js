@@ -22,6 +22,18 @@ import * as tmp from "tmp";
 import { useDictionaryByParams } from "./dictionary";
 import { replaceAll } from "./utils";
 
+export type LibAflOptions = {
+	mode: "fuzzing" | "regression";
+	runs: number;
+	seed: number;
+	maxLen: number;
+	timeoutMillis: number;
+	maxTotalTimeSeconds: number;
+	artifactPrefix: string;
+	corpusDirectories: string[];
+	dictionaryFiles: string[];
+};
+
 /**
  * Jazzer.js options structure expected by the fuzzer.
  *
@@ -30,6 +42,8 @@ import { replaceAll } from "./utils";
  * options.
  */
 export interface Options {
+	// Fuzzing backend engine.
+	engine: "libfuzzer" | "libafl";
 	// Enable source code coverage report generation.
 	coverage: boolean;
 	// Directory to write coverage reports to.
@@ -85,6 +99,7 @@ export type OptionsWithPrintableSource = {
 
 // These options can be set from the Jest fuzz test.
 const allowedFuzzTestOptions = [
+	"engine",
 	"dictionaryEntries",
 	"fuzzerOptions",
 	"sync",
@@ -93,6 +108,7 @@ const allowedFuzzTestOptions = [
 export type AllowedFuzzTestOptions = (typeof allowedFuzzTestOptions)[number];
 
 export const defaultCLIOptions: Options = Object.freeze({
+	engine: "libafl",
 	coverage: false,
 	coverageDirectory: "coverage",
 	coverageReporters: ["json", "text", "lcov", "clover"], // default Jest reporters
@@ -115,6 +131,7 @@ export const defaultCLIOptions: Options = Object.freeze({
 
 export const defaultJestOptions: Options = Object.freeze({
 	...defaultCLIOptions,
+	engine: "libfuzzer",
 	mode: "regression",
 });
 
@@ -147,6 +164,22 @@ export enum OptionSource {
 	EnvironmentVariables,
 	CommandLineArguments,
 	JestFuzzTestOptions,
+}
+
+export type FuzzingEngine = Options["engine"];
+
+export function resolveEngine(engine: string): FuzzingEngine {
+	switch (engine) {
+		case "libfuzzer":
+			return "libfuzzer";
+		case "libafl":
+		case "afl":
+			return "libafl";
+		default:
+			throw new Error(
+				`Unknown fuzzing engine '${engine}'. Supported engines are 'libfuzzer' and 'libafl' (alias 'afl').`,
+			);
+	}
 }
 
 type DefaultSourceInfo = {
@@ -303,6 +336,9 @@ export class OptionsManager {
 					`Invalid type for Jazzer.js option '${key}', expected type '${keyType}', got '${typeof resultValue}'`,
 				);
 			}
+			if (key === "engine") {
+				resultValue = resolveEngine(resultValue);
+			}
 			// Deep copy the new value to avoid reference keeping and unintended mutations.
 			resultValue = OptionsManager.copyOptionValue(resultValue);
 			setProperty(this._options, key, { value: resultValue, source: source });
@@ -421,7 +457,7 @@ function setProperty<T, K extends keyof T>(obj: T, key: K, value: T[K]) {
 	obj[key] = value;
 }
 
-export function buildFuzzerOption(options: OptionsManager) {
+export function buildLibFuzzerOptions(options: OptionsManager) {
 	let params: string[] = [];
 	params = optionDependentParams(options, params);
 	params = forkedExecutionParams(params);
@@ -434,6 +470,141 @@ export function buildFuzzerOption(options: OptionsManager) {
 	printOptions(options);
 	logInfoAboutFuzzerOptions(params);
 	return params;
+}
+
+// Backwards-compatible alias for existing call sites.
+export const buildFuzzerOption = buildLibFuzzerOptions;
+
+export function buildLibAflOptions(options: OptionsManager): LibAflOptions {
+	if (options.get("timeout") <= 0) {
+		throw new Error("timeout must be > 0");
+	}
+
+	const normalizedFuzzerOptions = useDictionaryByParams(
+		options.get("fuzzerOptions"),
+		options.get("dictionaryEntries"),
+	);
+
+	let runs = 0;
+	let seed = 0;
+	let maxLen = 4096;
+	let maxTotalTimeSeconds = 0;
+	let artifactPrefix = "";
+	const corpusDirectories: string[] = [];
+	const dictionaryFiles: string[] = [];
+
+	for (const option of normalizedFuzzerOptions) {
+		if (!option.startsWith("-")) {
+			corpusDirectories.push(option);
+			continue;
+		}
+
+		if (option.startsWith("-runs=")) {
+			runs = parsePositiveOrZeroInteger("runs", option.substring(6));
+			continue;
+		}
+		if (option.startsWith("-seed=")) {
+			seed = parsePositiveOrZeroInteger("seed", option.substring(6));
+			continue;
+		}
+		if (option.startsWith("-max_len=")) {
+			maxLen = parsePositiveInteger("max_len", option.substring(9));
+			continue;
+		}
+		if (option.startsWith("-max_total_time=")) {
+			maxTotalTimeSeconds = parsePositiveOrZeroInteger(
+				"max_total_time",
+				option.substring(16),
+			);
+			continue;
+		}
+		if (option.startsWith("-artifact_prefix=")) {
+			artifactPrefix = option.substring(17);
+			continue;
+		}
+		if (option.startsWith("-dict=")) {
+			dictionaryFiles.splice(0, dictionaryFiles.length, option.substring(6));
+			continue;
+		}
+
+		throw new Error(
+			`Option '${option}' is not supported by the '${resolveEngine(options.get("engine"))}' engine`,
+		);
+	}
+
+	if (options.get("mode") === "regression") {
+		// Regression mode should replay every available corpus input unless the
+		// user asked to stop for some other reason, mirroring libFuzzer's behavior.
+		runs = 0;
+	}
+
+	printOptions(options);
+	if (process.env.JAZZER_DEBUG) {
+		console.error(
+			`DEBUG: [core] LibAFL options: ${JSON.stringify(
+				{
+					mode: options.get("mode"),
+					runs,
+					seed,
+					maxLen,
+					maxTotalTimeSeconds,
+					timeoutMillis: options.get("timeout"),
+					artifactPrefix,
+					corpusDirectories,
+					dictionaryFiles,
+				},
+				null,
+				2,
+			)}`,
+		);
+	}
+
+	return {
+		mode: options.get("mode"),
+		runs,
+		seed,
+		maxLen,
+		timeoutMillis: options.get("timeout"),
+		maxTotalTimeSeconds,
+		artifactPrefix,
+		corpusDirectories,
+		dictionaryFiles,
+	};
+}
+
+function parsePositiveInteger(name: string, value: string): number {
+	const parsed = parseDecimalInteger(name, value);
+	if (!Number.isInteger(parsed) || parsed <= 0) {
+		throw new Error(
+			`Option '${name}' must be a positive integer, got '${value}'`,
+		);
+	}
+	return parsed;
+}
+
+function parsePositiveOrZeroInteger(name: string, value: string): number {
+	const parsed = parseDecimalInteger(name, value);
+	if (!Number.isInteger(parsed) || parsed < 0) {
+		throw new Error(
+			`Option '${name}' must be a non-negative integer, got '${value}'`,
+		);
+	}
+	return parsed;
+}
+
+function parseDecimalInteger(name: string, value: string): number {
+	if (!/^\d+$/.test(value)) {
+		throw new Error(`Option '${name}' must be an integer, got '${value}'`);
+	}
+
+	const parsed = Number(value);
+	if (!Number.isSafeInteger(parsed)) {
+		throw new Error(
+			`Option '${name}' must fit into a safe integer, got '${value}'`,
+		);
+	}
+
+	return parsed;
 }
 
 export function printOptions(options: OptionsManager, infix = "") {

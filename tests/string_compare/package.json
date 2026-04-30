@@ -3,8 +3,8 @@
 	"version": "1.0.0",
 	"description": "An example showing how Jazzer.js handles string comparisons in the code",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync --disableBugDetectors='.*' -x Error -- -runs=5000000 -seed=111994470",
-		"dryRun": "jazzer fuzz --sync -- -runs=100 -seed=123456789"
+		"fuzz": "jazzer fuzz --engine=libfuzzer --sync --disableBugDetectors='.*' -x Error -- -runs=5000000 -seed=111994470",
+		"dryRun": "jazzer fuzz --engine=libfuzzer --sync -- -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

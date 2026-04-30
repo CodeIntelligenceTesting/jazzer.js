@@ -3,8 +3,8 @@
 	"version": "1.0.0",
 	"description": "An example showing how to use libFuzzer's fork mode in Jazzer.js",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync --disableBugDetectors='.*' -- -fork=3",
-		"dryRun": "jazzer fuzz --sync -- -fork=3 -runs=100 -seed=123456789"
+		"fuzz": "jazzer fuzz --engine=libfuzzer --sync --disableBugDetectors='.*' -- -fork=3",
+		"dryRun": "jazzer fuzz --engine=libfuzzer --sync -- -fork=3 -runs=100 -seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

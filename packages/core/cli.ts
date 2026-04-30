@@ -44,7 +44,7 @@ yargs(process.argv.slice(2))
 		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
 			'and use the directory "corpus" to store newly generated inputs. ' +
 			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
-			"(libFuzzer) to stop the fuzzing run after 60 seconds.",
+			"to stop the fuzzing run after 60 seconds.",
 	)
 	.epilogue("Happy fuzzing!")
 	.command(
@@ -56,7 +56,7 @@ yargs(process.argv.slice(2))
 			'The "corpus" directory is optional and can be used to provide initial ' +
 			"seed input. It is also used to store interesting inputs between fuzzing " +
 			"runs.\n\n" +
-			"To pass options to the internal fuzzing engine (libFuzzer) use a " +
+			"To pass options to the internal fuzzing engine use a " +
 			'double-dash, "--", to mark the end of the normal fuzzer arguments. ' +
 			"An example is shown in the examples section of this help message.",
 		(yargs: Argv) => {
@@ -174,6 +174,14 @@ yargs(process.argv.slice(2))
 						"or if the fuzz target should only be invoked using existing corpus " +
 						"entries, 'regression' mode." +
 						"Regression mode is helpful if only coverage reports should be generated.",
+					group: "Fuzzer:",
+					type: "string",
+				})
+				.option("engine", {
+					alias: ["backend"],
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.engine)}`,
+					describe:
+						"Fuzzing engine backend. Use 'afl' (alias 'libafl') for the default LibAFL backend or 'libfuzzer' to run the libFuzzer backend.",
 					group: "Fuzzer:",
 					type: "string",
 				})

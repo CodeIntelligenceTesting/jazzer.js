@@ -27,6 +27,18 @@ export type FuzzTargetCallback = (
 export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
 export type FuzzOpts = string[];
 
+export type LibAflOptions = {
+	mode: "fuzzing" | "regression";
+	runs: number;
+	seed: number;
+	maxLen: number;
+	timeoutMillis: number;
+	maxTotalTimeSeconds: number;
+	artifactPrefix: string;
+	corpusDirectories: string[];
+	dictionaryFiles: string[];
+};
+
 export type StartFuzzingSyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
@@ -35,6 +47,15 @@ export type StartFuzzingSyncFn = (
 export type StartFuzzingAsyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
+) => Promise<void>;
+export type StartLibAflSyncFn = (
+	fuzzFn: FuzzTarget,
+	options: LibAflOptions,
+	jsStopCallback: (signal: number) => void,
+) => Promise<void>;
+export type StartLibAflAsyncFn = (
+	fuzzFn: FuzzTarget,
+	options: LibAflOptions,
 ) => Promise<void>;
 
 type NativeAddon = {
@@ -67,6 +88,15 @@ type NativeAddon = {
 
 	startFuzzing: StartFuzzingSyncFn;
 	startFuzzingAsync: StartFuzzingAsyncFn;
+	startLibAfl?: StartLibAflSyncFn;
+	startLibAflAsync?: StartLibAflAsyncFn;
+	clearCompareFeedbackMap: () => void;
+	countNonZeroCompareFeedbackSlots: () => number;
+};
+
+type LoadedAddon = NativeAddon & {
+	startLibAfl: StartLibAflSyncFn;
+	startLibAflAsync: StartLibAflAsyncFn;
 };
 
 function addonFilename(): string {
@@ -81,4 +111,12 @@ function addonFilename(): string {
 	return path.join(dirName, `fuzzer-${process.platform}-${process.arch}.node`);
 }
 
-export const addon: NativeAddon = require(addonFilename());
+const loadedAddon = require(addonFilename()) as NativeAddon;
+
+if (!loadedAddon.startLibAfl || !loadedAddon.startLibAflAsync) {
+	throw new Error(
+		"The native addon does not export startLibAfl/startLibAflAsync",
+	);
+}
+
+export const addon: LoadedAddon = loadedAddon as LoadedAddon;

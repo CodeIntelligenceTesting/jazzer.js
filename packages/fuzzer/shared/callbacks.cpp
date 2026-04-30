@@ -30,4 +30,8 @@ void RegisterCallbackExports(Napi::Env env, Napi::Object exports) {
   exports["traceIntegerCompare"] =
       Napi::Function::New<TraceIntegerCompare>(env);
   exports["tracePcIndir"] = Napi::Function::New<TracePcIndir>(env);
+  exports["clearCompareFeedbackMap"] =
+      Napi::Function::New<ClearCompareFeedbackMap>(env);
+  exports["countNonZeroCompareFeedbackSlots"] =
+      Napi::Function::New<CountNonZeroCompareFeedbackSlots>(env);
 }
