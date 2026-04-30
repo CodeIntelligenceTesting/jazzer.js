@@ -589,13 +589,53 @@ JAZZER_FUZZ_ENTRY_POINT=buzz npx jazzer my-fuzz-file
 _Note:_ In Jest mode, this option cannot be set via environment variable.
 Instead use the native Jest flag `--testNamePattern` as described above.
 
+### `engine` : [string]
+
+Default: `"libafl"` in CLI mode, `"libfuzzer"` in Jest mode
+
+Select the native fuzzing backend.
+
+- `libfuzzer`: use the existing libFuzzer backend.
+- `afl` (alias for `libafl`): use the LibAFL backend.
+
+**CLI:** Select the backend with `--engine`, for example:
+
+```bash
+npx jazzer my-fuzz-file --engine=afl
+```
+
+**Jest:** Set it in `.jazzerjsrc.json`:
+
+```json
+{
+	"engine": "afl"
+}
+```
+
+LibAFL supports both `fuzzing` and `regression` mode.
+
 ### `fuzzerOptions` : [array\<string\>]
 
 Default: []
 
-Pass options to native fuzzing engine (Jazzer.js uses libFuzzer).
+Pass options to the selected native fuzzing engine.
 
-For a list of available options, see the
+For `engine=libfuzzer`, Jazzer.js supports the full libFuzzer-style argument
+list.
+
+For `engine=afl`/`engine=libafl`, Jazzer.js currently supports these options:
+
+- `-runs=<N>`
+- `-seed=<N>`
+- `-max_len=<N>`
+- `-max_total_time=<seconds>`
+- `-artifact_prefix=<path-prefix>`
+- `-dict=<path>`
+- non-flag entries interpreted as corpus directories
+
+Unsupported engine-specific flags are rejected with an explicit error.
+
+For the `libfuzzer` backend, see the
 [libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html#options). To get
 a quick overview of all available options, call Jazzer.js with the libFuzzer
 argument `-help`. Here is an example for the CLI mode:

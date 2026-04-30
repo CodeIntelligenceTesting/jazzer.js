@@ -17,8 +17,9 @@
 
 Jazzer.js is a coverage-guided, in-process fuzzer for the
 [Node.js](https://nodejs.org) platform developed by
-[Code Intelligence](https://www.code-intelligence.com). It is based on
-[libFuzzer](https://llvm.org/docs/LibFuzzer.html) and brings many of its
+[Code Intelligence](https://www.code-intelligence.com). It supports
+[libFuzzer](https://llvm.org/docs/LibFuzzer.html) and
+[LibAFL](https://github.com/AFLplusplus/LibAFL) backends and brings
 instrumentation-powered mutation features to the JavaScript ecosystem.
 
 ## Quickstart
@@ -46,6 +47,9 @@ To use Jazzer.js in your own project follow these few simple steps:
    ```shell
    npx jazzer FuzzTarget
    ```
+
+   CLI fuzzing uses the LibAFL backend by default. To run with libFuzzer
+   instead, add `--engine=libfuzzer`.
 
 4. Enjoy fuzzing!
 
