@@ -346,10 +346,6 @@ std::string DescribeJsError(Napi::Env env, const Napi::Value &error) {
   return CollapseWhitespace(summary);
 }
 
-std::string DescribeTimeout(uint64_t timeout_millis) {
-  return "timeout after " + std::to_string(timeout_millis) + " ms";
-}
-
 void RecordFindingInfo(const std::string &artifact,
                        const std::string &summary) {
   gFindingInfo.has_value = 1;
@@ -453,9 +449,7 @@ std::string WriteArtifact(const std::string &artifact_prefix,
                                 const std::vector<uint8_t> &input) {
   std::cerr << "ERROR: Exceeded timeout of " << timeout_millis
             << " ms for one fuzz target execution." << std::endl;
-  const auto artifact =
-      WriteArtifact(artifact_prefix, "timeout", input.data(), input.size());
-  RecordFindingInfo(artifact, DescribeTimeout(timeout_millis));
+  WriteArtifact(artifact_prefix, "timeout", input.data(), input.size());
   _Exit(libfuzzer::EXIT_ERROR_TIMEOUT);
 }
 

@@ -47,4 +47,21 @@ describeOrSkip("Mixed CJS + ESM instrumentation", () => {
 		fuzzTest.execute();
 		expect(fuzzTest.stderr).toContain("Found the mixed CJS+ESM secret!");
 	});
+
+	it("should report real edge coverage with the LibAFL backend", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.fuzzEntryPoint("fuzz")
+			.fuzzFile("fuzz.mjs")
+			.dir(__dirname)
+			.engine("afl")
+			.disableBugDetectors([".*"])
+			.runs(1)
+			.seed(1337)
+			.build();
+
+		fuzzTest.execute();
+		expect(fuzzTest.stderr).toContain("[>] INITED");
+		expect(fuzzTest.stderr).toMatch(/\bedges:\s+\d+\/\d+/);
+		expect(fuzzTest.stderr).not.toContain("edges:          -/   - (  -%)");
+	});
 });

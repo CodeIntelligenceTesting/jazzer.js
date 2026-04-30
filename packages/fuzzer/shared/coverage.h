@@ -19,8 +19,9 @@
 
 void RegisterCoverageMap(const Napi::CallbackInfo &info);
 void RegisterNewCounters(const Napi::CallbackInfo &info);
-void RegisterModuleCounters(const Napi::CallbackInfo &info);
 
 uint8_t *CoverageCounters();
+std::size_t CoverageCountersCapacity();
 std::size_t CoverageCountersSize();
+std::size_t *CoverageCountersSizePointer();
 void ClearCoverageCounters();

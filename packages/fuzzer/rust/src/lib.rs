@@ -347,26 +347,16 @@ fn build_progress_snapshot(
     })
 }
 
-fn progress_marker(event: StatusEvent, in_campaign: bool, colors_enabled: bool) -> String {
-    let marker = if matches!(event, StatusEvent::Testcase) && !in_campaign {
-        "[i]"
-    } else {
-        marker_text(event)
-    };
-
-    colorize_marker(marker, event_color_code(event), colors_enabled)
-}
-
 fn format_progress_line(
     event: StatusEvent,
     snapshot: ProgressSnapshot,
     colors_enabled: bool,
-    in_campaign: bool,
+    highlight_full_line: bool,
 ) -> String {
-    let marker = if colors_enabled && !in_campaign {
-        progress_marker(event, false, true)
+    let marker = if colors_enabled && !highlight_full_line {
+        marker_for_event(event, true)
     } else {
-        progress_marker(event, in_campaign, false)
+        marker_text(event).to_string()
     };
     let line = format!(
         "{} #{:<width$} | edges: {} | corp: {:>4} | exec/s: {:>8.1} | obj: {:>3} | stab: {} | t: {}",
@@ -385,7 +375,7 @@ fn format_progress_line(
         width = EXECUTION_FIELD_WIDTH,
     );
 
-    if colors_enabled && in_campaign {
+    if colors_enabled && highlight_full_line {
         format!("\x1b[{}m{}\x1b[0m", event_color_code(event), line)
     } else {
         line

@@ -44,7 +44,8 @@ struct JazzerLibAflRuntimeOptions {
 
 struct JazzerLibAflRuntimeSharedMaps {
   uint8_t *edges;
-  size_t edges_len;
+  size_t edges_capacity;
+  size_t *edges_size;
   uint8_t *cmp;
   size_t cmp_len;
   JazzerLibAflCompareLog *compare_log;
