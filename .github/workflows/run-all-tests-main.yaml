@@ -21,18 +21,25 @@ jobs:
           path: |
             packages/fuzzer/prebuilds
           key:
-            fuzzer-cache-${{ runner.os }}-${{
-            hashFiles('packages/fuzzer/CMakeLists.txt',
-            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
+            fuzzer-cache-${{ runner.os }}-${{ hashFiles('package-lock.json',
+            'package.json', 'packages/fuzzer/package.json',
+            'packages/fuzzer/CMakeLists.txt', 'packages/fuzzer/**/*.h',
+            'packages/fuzzer/**/*.cpp', 'packages/fuzzer/rust/Cargo.toml',
+            'packages/fuzzer/rust/Cargo.lock',
+            'packages/fuzzer/rust/src/**/*.rs') }}
       - name: node
         uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: "npm"
+      - name: rust
+        uses: dtolnay/rust-toolchain@stable
       - name: install dependencies
         run: npm ci
       - name: build project
         run: npm run build
+      - name: test LibAFL runtime
+        run: cargo test --manifest-path packages/fuzzer/rust/Cargo.toml
       - name: build fuzzer
         if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
         run: npm run build --workspace=@jazzer.js/fuzzer

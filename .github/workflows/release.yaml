@@ -28,6 +28,11 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
+      - name: rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: rust target (macos x64)
+        if: ${{ matrix.os == 'macos-latest' && matrix.arch == '--arch x86_64' }}
+        run: rustup target add x86_64-apple-darwin
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
