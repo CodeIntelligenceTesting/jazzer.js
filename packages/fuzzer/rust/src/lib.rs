@@ -22,8 +22,10 @@ use libafl::{
         I2SRandReplace, Tokens,
     },
     observers::{CanTrack, HitcountsMapObserver, StdMapObserver},
-    schedulers::{IndexesLenTimeMinimizerScheduler, QueueScheduler},
-    stages::{mutational::StdMutationalStage, shadow::ShadowTracingStage},
+    schedulers::{
+        powersched::PowerSchedule, IndexesLenTimeMinimizerScheduler, PowerQueueScheduler,
+    },
+    stages::{calibrate::CalibrationStage, shadow::ShadowTracingStage, StdPowerMutationalStage},
     state::{HasCorpus, HasExecutions, HasMaxSize, HasSolutions, StdState},
     Error, HasMetadata,
 };
@@ -203,6 +205,22 @@ fn clear_compare_log(ptr: *mut JazzerLibAflCompareLog) {
     }
 }
 
+fn ensure_non_empty_edge_map(ptr: *mut u8, len: usize) {
+    if ptr.is_null() || len == 0 {
+        return;
+    }
+
+    unsafe {
+        let map = std::slice::from_raw_parts_mut(ptr, len);
+        if map.iter().all(|slot| *slot == 0) {
+            // Power scheduling rejects corpus entries that never hit any edge.
+            // Preserve the old behavior for uninstrumented callbacks by marking
+            // one synthetic edge only when the target left the map untouched.
+            map[0] = 1;
+        }
+    }
+}
+
 unsafe fn parse_corpus_directories(options: &JazzerLibAflRuntimeOptions) -> Option<Vec<PathBuf>> {
     if options.corpus_directories.is_null() || options.corpus_directories_len == 0 {
         return Some(Vec::new());
@@ -357,14 +375,22 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
         }
     }
 
-    let scheduler = IndexesLenTimeMinimizerScheduler::new(&edges_observer, QueueScheduler::new());
+    let calibration_stage = CalibrationStage::ignore_stability(&feedback);
+    let scheduler = IndexesLenTimeMinimizerScheduler::new(
+        &edges_observer,
+        PowerQueueScheduler::new(&mut state, &edges_observer, PowerSchedule::fast()),
+    );
     let mut fuzzer = StdFuzzer::new(scheduler, feedback, objective);
     let mutator = HavocScheduledMutator::new(
         havoc_mutations()
             .merge(tokens_mutations())
             .merge(tuple_list!(I2SRandReplace::new())),
     );
-    let mut stages = tuple_list!(ShadowTracingStage::new(), StdMutationalStage::new(mutator),);
+    let mut stages = tuple_list!(
+        calibration_stage,
+        ShadowTracingStage::new(),
+        StdPowerMutationalStage::new(mutator),
+    );
     let stop_requested = Cell::new(false);
     let fatal_error = Cell::new(false);
     let timeout_found = Cell::new(false);
@@ -378,6 +404,7 @@ pub unsafe extern "C" fn jazzer_libafl_runtime_run(
         let bytes = bytes.as_slice();
         let size = bytes.len().min(options.max_len);
         let status = unsafe { execute_one(user_data, bytes.as_ptr(), size) };
+        ensure_non_empty_edge_map(maps.edges, maps.edges_len);
         match status {
             EXECUTION_CONTINUE => ExitKind::Ok,
             EXECUTION_FINDING => ExitKind::Crash,
