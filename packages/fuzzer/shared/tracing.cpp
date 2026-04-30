@@ -147,7 +147,7 @@ void TraceStringContainment(const Napi::CallbackInfo &info) {
   // libFuzzer currently ignores the result, which allows us to simply pass a
   // valid but arbitrary pointer here instead of performing an actual strstr
   // operation.
-  __sanitizer_weak_hook_strstr((void *)id, needle.c_str(), haystack.c_str(),
+  __sanitizer_weak_hook_strstr((void *)id, haystack.c_str(), needle.c_str(),
                                needle.c_str());
 }
 
