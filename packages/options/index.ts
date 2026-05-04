@@ -115,25 +115,9 @@ export const defaultJestOptions: Options = Object.freeze({
 export type KeyFormatSource = (key: string) => string;
 export const fromCamelCase: KeyFormatSource = (key: string): string => key;
 
-function replaceAll(
-	text: string,
-	pattern: RegExp,
-	replacer: string | ((substring: string) => string),
-): string {
-	let previous = text;
-	let current = previous;
-	do {
-		previous = current;
-		current = previous.replace(pattern, replacer as string);
-	} while (current !== previous);
-	return current;
-}
+export const fromSnakeCase = (key: string): string =>
+	key.toLowerCase().replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase());
 
-export const fromSnakeCase: KeyFormatSource = (key: string): string => {
-	return replaceAll(key.toLowerCase(), /(_[a-z0-9])/g, (group) =>
-		group.toUpperCase().replace("_", ""),
-	);
-};
 export const fromSnakeCaseWithPrefix: (prefix: string) => KeyFormatSource = (
 	prefix: string,
 ): KeyFormatSource => {
