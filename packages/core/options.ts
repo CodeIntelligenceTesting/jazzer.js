@@ -16,7 +16,7 @@
 
 import fs from "fs";
 
-import * as tmp from "tmp";
+import { fileSync } from "tmp";
 
 import {
 	logInfoAboutFuzzerOptions,
@@ -93,7 +93,7 @@ function createWrapperScript(fuzzerOptions: string[]) {
 	);
 
 	if (jazzerArgs.indexOf("--id_sync_file") === -1) {
-		const idSyncFile = tmp.fileSync({
+		const idSyncFile = fileSync({
 			mode: 0o600,
 			prefix: "jazzer.js",
 			postfix: "idSync",
@@ -109,7 +109,7 @@ cd "${process.cwd()}"
 ${jazzerArgs.map((s) => '"' + s + '"').join(" ")} -- ${isWindows ? "%*" : "$@"}
 `;
 
-	const scriptTempFile = tmp.fileSync({
+	const scriptTempFile = fileSync({
 		mode: 0o700,
 		prefix: "jazzer.js",
 		postfix: "libfuzzer" + (isWindows ? ".bat" : ".sh"),
