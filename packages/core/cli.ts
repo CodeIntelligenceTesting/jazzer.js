@@ -17,8 +17,13 @@
 
 import yargs, { Argv } from "yargs";
 
+import {
+	defaultCLIOptions,
+	OptionsManager,
+	OptionSource,
+} from "@jazzer.js/options";
+
 import { FuzzingExitCode, startFuzzing } from "./core";
-import { defaultCLIOptions, OptionsManager, OptionSource } from "./options";
 import { prepareArgs } from "./utils";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.

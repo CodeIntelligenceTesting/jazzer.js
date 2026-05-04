@@ -32,6 +32,7 @@ import {
 	registerEsmLoaderHooks,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
+import { OptionsManager } from "@jazzer.js/options";
 
 import { getCallbacks } from "./callback";
 import {
@@ -43,7 +44,7 @@ import {
 	reportFinding,
 } from "./finding";
 import { getJazzerJsGlobal, jazzerJs } from "./globals";
-import { buildFuzzerOption, OptionsManager } from "./options";
+import { buildFuzzerOption } from "./options";
 import { ensureFilepath, importModule } from "./utils";
 
 // Remove temporary files on exit
@@ -474,14 +475,6 @@ export function asFindingAwareFuzzFn(
 // Export public API from within core module for easy access.
 export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";
-export {
-	AllowedFuzzTestOptions,
-	Options,
-	OptionsManager,
-	OptionSource,
-	OptionsWithSource,
-	printOptions,
-} from "./options";
 
 export type {
 	FuzzTarget,

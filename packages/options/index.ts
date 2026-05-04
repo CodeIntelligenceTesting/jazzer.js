@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { formatWithOptions } from "node:util";
+
 /**
  * Jazzer.js options structure expected by the fuzzer.
  *
@@ -439,4 +441,24 @@ export function validateOptionPermissions(
 		);
 	}
 	return source > options[key].source;
+}
+
+export function printOptions(options: OptionsManager, infix = "") {
+	if (process.env.JAZZER_DEBUG) {
+		console.error(
+			formatWithOptions(
+				{ maxArrayLength: null, depth: null, colors: false },
+				`DEBUG: [core] Jazzer.js options ${infix}: \n%O`,
+				toOptionsWithPrintableSources(options),
+			),
+		);
+	}
+}
+
+export function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
+	fuzzerOptions.slice(1).forEach((element) => {
+		if (element.length > 0 && element[0] != "-") {
+			console.error("INFO: using inputs from:", element);
+		}
+	});
 }

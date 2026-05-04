@@ -15,18 +15,16 @@
  */
 
 import fs from "fs";
-import * as util from "util";
 
 import * as tmp from "tmp";
 
 import {
+	logInfoAboutFuzzerOptions,
 	type OptionsManager,
-	toOptionsWithPrintableSources,
+	printOptions,
 } from "@jazzer.js/options";
 
 import { useDictionaryByParams } from "./dictionary";
-
-export * from "@jazzer.js/options";
 
 export function buildFuzzerOption(options: OptionsManager) {
 	let params: string[] = [];
@@ -41,26 +39,6 @@ export function buildFuzzerOption(options: OptionsManager) {
 	printOptions(options);
 	logInfoAboutFuzzerOptions(params);
 	return params;
-}
-
-export function printOptions(options: OptionsManager, infix = "") {
-	if (process.env.JAZZER_DEBUG) {
-		console.error(
-			util.formatWithOptions(
-				{ maxArrayLength: null, depth: null, colors: false },
-				`DEBUG: [core] Jazzer.js options ${infix}: \n%O`,
-				toOptionsWithPrintableSources(options),
-			),
-		);
-	}
-}
-
-function logInfoAboutFuzzerOptions(fuzzerOptions: string[]) {
-	fuzzerOptions.slice(1).forEach((element) => {
-		if (element.length > 0 && element[0] != "-") {
-			console.error("INFO: using inputs from:", element);
-		}
-	});
 }
 
 function optionDependentParams(

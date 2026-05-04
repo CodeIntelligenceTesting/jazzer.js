@@ -24,7 +24,6 @@ import {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
-	printOptions,
 	startFuzzingNoInit,
 } from "@jazzer.js/core";
 import {
@@ -32,6 +31,7 @@ import {
 	Options,
 	OptionsManager,
 	OptionSource,
+	printOptions,
 } from "@jazzer.js/options";
 
 import { Corpus } from "./corpus";
