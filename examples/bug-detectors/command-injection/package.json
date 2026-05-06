@@ -7,9 +7,9 @@
 		"global-modules-path": "^2.3.1"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i global-modules-path --disable_bug_detectors='.*' -h custom-hooks --timeout=100000000 --sync -x Error -- -runs=100000 -print_final_stats=1",
-		"bugDetectors": "jazzer fuzz -i global-modules-path --timeout=100000000 --sync -- -runs=100000 -print_final_stats=1",
-		"dryRun": "jazzer fuzz --sync -x Error -- -runs=100000 -seed=123456789"
+		"fuzz": "jazzer fuzz -i global-modules-path --disable_bug_detectors='.*' -h custom-hooks --timeout=100000000 --sync -x Error --runs=100000 --libFuzzerOptions=-print_final_stats=1",
+		"bugDetectors": "jazzer fuzz -i global-modules-path --timeout=100000000 --sync --runs=100000 --libFuzzerOptions=-print_final_stats=1",
+		"dryRun": "jazzer fuzz --sync -x Error --runs=100000 --seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../../packages/core"

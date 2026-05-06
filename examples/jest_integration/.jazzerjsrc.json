@@ -1,9 +1,6 @@
 {
 	"includes": ["target", "integration.fuzz", "worker.fuzz"],
 	"excludes": ["@babel"],
-	"fuzzerOptions": [
-		"-rss_limit_mb=16000",
-		"-use_value_profile=1",
-		"-runs=1000000"
-	]
+	"runs": 1000000,
+	"libFuzzerOptions": ["-rss_limit_mb=16000", "-use_value_profile=1"]
 }
