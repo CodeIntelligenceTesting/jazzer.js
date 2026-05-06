@@ -49,6 +49,7 @@ class FuzzTest {
 		expectedErrors,
 		asJson,
 		timeout,
+		engine,
 	) {
 		this.logTestOutput = logTestOutput;
 		this.includes = includes;
@@ -74,6 +75,7 @@ class FuzzTest {
 		this.expectedErrors = expectedErrors;
 		this.asJson = asJson;
 		this.timeout = timeout;
+		this.engine = engine;
 	}
 
 	// Runs the fuzz test in another process using `spawnSync`.
@@ -104,6 +106,9 @@ class FuzzTest {
 		if (this.verbose) options.push("--verbose");
 		if (this.dryRun !== undefined) options.push("--dry_run=" + this.dryRun);
 		if (this.timeout !== undefined) options.push("--timeout=" + this.timeout);
+		if (this.engine !== undefined) options.push("--engine=" + this.engine);
+		if (this.runs !== undefined) options.push("--runs=" + this.runs);
+		if (this.seed) options.push("--seed=" + this.seed);
 		for (const include of this.includes) {
 			options.push("-i=" + include);
 		}
@@ -119,12 +124,11 @@ class FuzzTest {
 		for (const expectedError of this.expectedErrors) {
 			options.push("-x=" + expectedError);
 		}
-		options.push("--");
-		if (this.runs !== undefined) options.push("-runs=" + this.runs);
-		if (this.forkMode) options.push("-fork=" + this.forkMode);
-		if (this.seed) options.push("-seed=" + this.seed);
+		if (this.forkMode) {
+			options.push("--libFuzzerOptions=-fork=" + this.forkMode);
+		}
 		for (const dictionary of this.dictionaries) {
-			options.push("-dict=" + dictionary);
+			options.push("--dict=" + dictionary);
 		}
 		if (useSpawnSync) {
 			this.#spawnTestSync("npx", options, { ...process.env });
@@ -134,18 +138,6 @@ class FuzzTest {
 	}
 
 	#executeWithJest(useSpawnSync = true) {
-		const fuzzerOptions = [];
-		if (this.runs) {
-			fuzzerOptions.push("-runs=" + this.runs);
-		}
-		if (this.seed) {
-			fuzzerOptions.push("-seed=" + this.seed);
-		}
-		const dictionaries = this.dictionaries.map(
-			(dictionary) => "-dict=" + dictionary,
-		);
-		fuzzerOptions.push(...dictionaries);
-
 		const config = {};
 		if (this.sync !== undefined) {
 			config.sync = this.sync;
@@ -162,8 +154,14 @@ class FuzzTest {
 		if (this.disableBugDetectors.length > 0) {
 			config.disableBugDetectors = this.disableBugDetectors;
 		}
-		if (fuzzerOptions.length > 0) {
-			config.fuzzerOptions = fuzzerOptions;
+		if (this.runs !== undefined) {
+			config.runs = this.runs;
+		}
+		if (this.seed) {
+			config.seed = this.seed;
+		}
+		if (this.dictionaries.length > 0) {
+			config.dictionaryFiles = this.dictionaries;
 		}
 		if (this.customHooks.length > 0) {
 			config.customHooks = this.customHooks;
@@ -176,6 +174,9 @@ class FuzzTest {
 		}
 		if (this.verbose) {
 			config.verbose = this.verbose;
+		}
+		if (this.engine !== undefined) {
+			config.engine = this.engine;
 		}
 
 		// Write jest config file even if it exists
@@ -298,6 +299,7 @@ class FuzzTestBuilder {
 	_expectedErrors = [];
 	_asJson = false;
 	_timeout = undefined;
+	_engine = "libfuzzer";
 
 	/**
 	 * @param {boolean} logTestOutput - whether to print the output of the fuzz test to the console.
@@ -317,7 +319,7 @@ class FuzzTestBuilder {
 	}
 
 	/**
-	 * @param {number} runs - libFuzzer's (-runs=<runs>) option. Number of times the fuzz target
+	 * @param {number} runs - number of times the fuzz target
 	 * function should be executed.
 	 */
 	runs(runs) {
@@ -502,6 +504,11 @@ class FuzzTestBuilder {
 		return this;
 	}
 
+	engine(engine) {
+		this._engine = engine;
+		return this;
+	}
+
 	build() {
 		if (this._jestTestFile === "" && this._fuzzEntryPoint === "") {
 			throw new Error("fuzzEntryPoint or jestTestFile are not set.");
@@ -536,6 +543,7 @@ class FuzzTestBuilder {
 			this._expectedErrors,
 			this._asJson,
 			this._timeout,
+			this._engine,
 		);
 	}
 }

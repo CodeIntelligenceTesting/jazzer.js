@@ -19,18 +19,21 @@ import * as fs from "fs";
 import { Circus, Global } from "@jest/types";
 
 import {
-	AllowedFuzzTestOptions,
 	asFindingAwareFuzzFn,
 	FindingAwareFuzzTarget,
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
+	startFuzzingNoInit,
+} from "@jazzer.js/core";
+import {
+	AllowedFuzzTestOptions,
+	Mode,
 	Options,
 	OptionsManager,
 	OptionSource,
 	printOptions,
-	startFuzzingNoInit,
-} from "@jazzer.js/core";
+} from "@jazzer.js/options";
 
 import { Corpus } from "./corpus";
 import { removeTopFramesFromError } from "./errorUtils";
@@ -139,12 +142,13 @@ export function fuzz(
 
 		const wrappedFn = asFindingAwareFuzzFn(
 			fn,
-			localConfig.get("mode") === "fuzzing",
+			localConfig.get("mode") === Mode.Fuzzing,
+			localConfig.get("engine"),
 		);
 
-		if (localConfig.get("mode") === "regression") {
+		if (localConfig.get("mode") === Mode.Regression) {
 			runInRegressionMode(name, wrappedFn, corpus, localConfig, globals, mode);
-		} else if (localConfig.get("mode") === "fuzzing") {
+		} else if (localConfig.get("mode") === Mode.Fuzzing) {
 			runInFuzzingMode(name, wrappedFn, corpus, localConfig, globals, mode);
 		} else {
 			throw new Error(`Unknown mode ${localConfig.get("mode")}`);
@@ -162,10 +166,16 @@ export const runInFuzzingMode = (
 ) => {
 	handleMode(mode, globals.test)(name, async () => {
 		const newOptions = options.clone();
-		const fuzzerOptions = newOptions.get("fuzzerOptions");
-		fuzzerOptions.unshift(corpus.seedInputsDirectory);
-		fuzzerOptions.unshift(corpus.generatedInputsDirectory);
-		fuzzerOptions.push("-artifact_prefix=" + corpus.seedInputsDirectory);
+		newOptions.merge(
+			{
+				artifactPrefix: corpus.seedInputsDirectory,
+				corpusDirectories: [
+					corpus.generatedInputsDirectory,
+					corpus.seedInputsDirectory,
+				],
+			},
+			OptionSource.InternalFuzzTestOptions,
+		);
 		return startFuzzingNoInit(fn, newOptions).then(({ error }) => {
 			// Throw the found error to mark the test as failed.
 			if (error) throw error;
