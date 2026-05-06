@@ -1,4 +1,4 @@
-// Copyright 2022 Code Intelligence GmbH
+// Copyright 2026 Code Intelligence GmbH
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,15 +13,10 @@
 // limitations under the License.
 
 #pragma once
-#include <cstddef>
-#include <cstdint>
+
 #include <napi.h>
 
-void RegisterCoverageMap(const Napi::CallbackInfo &info);
-void RegisterNewCounters(const Napi::CallbackInfo &info);
+#include "shared/libafl_abi.h"
 
-uint8_t *CoverageCounters();
-std::size_t CoverageCountersCapacity();
-std::size_t CoverageCountersSize();
-std::size_t *CoverageCountersSizePointer();
-void ClearCoverageCounters();
+Napi::Value StartLibAfl(const Napi::CallbackInfo &info);
+Napi::Value StartLibAflAsync(const Napi::CallbackInfo &info);

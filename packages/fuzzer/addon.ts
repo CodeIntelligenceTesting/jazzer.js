@@ -17,6 +17,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import type { LibAflOptions } from "@jazzer.js/options";
+
 export type FuzzTargetAsyncOrValue = (
 	data: Buffer,
 ) => unknown | Promise<unknown>;
@@ -26,6 +28,7 @@ export type FuzzTargetCallback = (
 ) => unknown;
 export type FuzzTarget = FuzzTargetAsyncOrValue | FuzzTargetCallback;
 export type FuzzOpts = string[];
+export type { LibAflOptions } from "@jazzer.js/options";
 
 export type StartFuzzingSyncFn = (
 	fuzzFn: FuzzTarget,
@@ -36,11 +39,19 @@ export type StartFuzzingAsyncFn = (
 	fuzzFn: FuzzTarget,
 	fuzzOpts: FuzzOpts,
 ) => Promise<void>;
+export type StartLibAflSyncFn = (
+	fuzzFn: FuzzTarget,
+	options: LibAflOptions,
+	jsStopCallback: (signal: number) => void,
+) => Promise<void>;
+export type StartLibAflAsyncFn = (
+	fuzzFn: FuzzTarget,
+	options: LibAflOptions,
+) => Promise<void>;
 
 type NativeAddon = {
 	registerCoverageMap: (buffer: Buffer) => void;
 	registerNewCounters: (oldNumCounters: number, newNumCounters: number) => void;
-	registerModuleCounters: (buffer: Buffer) => void;
 
 	traceUnequalStrings: (
 		hookId: number,
@@ -67,6 +78,17 @@ type NativeAddon = {
 
 	startFuzzing: StartFuzzingSyncFn;
 	startFuzzingAsync: StartFuzzingAsyncFn;
+	startLibAfl?: StartLibAflSyncFn;
+	startLibAflAsync?: StartLibAflAsyncFn;
+	clearCompareFeedbackMap: () => void;
+	countNonZeroCompareFeedbackSlots: () => number;
+	countCompareLogEntries: () => number;
+	countDroppedCompareLogEntries: () => number;
+};
+
+type LoadedAddon = NativeAddon & {
+	startLibAfl: StartLibAflSyncFn;
+	startLibAflAsync: StartLibAflAsyncFn;
 };
 
 function addonFilename(): string {
@@ -81,4 +103,12 @@ function addonFilename(): string {
 	return path.join(dirName, `fuzzer-${process.platform}-${process.arch}.node`);
 }
 
-export const addon: NativeAddon = require(addonFilename());
+const loadedAddon = require(addonFilename()) as NativeAddon;
+
+if (!loadedAddon.startLibAfl || !loadedAddon.startLibAflAsync) {
+	throw new Error(
+		"The native addon does not export startLibAfl/startLibAflAsync",
+	);
+}
+
+export const addon: LoadedAddon = loadedAddon as LoadedAddon;

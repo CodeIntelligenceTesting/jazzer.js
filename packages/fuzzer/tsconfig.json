@@ -4,5 +4,10 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"exclude": ["build", "dist", "cmake-build-*"]
+	"exclude": ["build", "dist", "runtime", "cmake-build-*"],
+	"references": [
+		{
+			"path": "../options"
+		}
+	]
 }

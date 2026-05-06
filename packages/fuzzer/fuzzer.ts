@@ -22,6 +22,7 @@ export type {
 	FuzzTarget,
 	FuzzTargetAsyncOrValue,
 	FuzzTargetCallback,
+	LibAflOptions,
 } from "./addon";
 
 export interface Fuzzer {
@@ -29,6 +30,8 @@ export interface Fuzzer {
 	tracer: Tracer;
 	startFuzzing: typeof addon.startFuzzing;
 	startFuzzingAsync: typeof addon.startFuzzingAsync;
+	startLibAfl: typeof addon.startLibAfl;
+	startLibAflAsync: typeof addon.startLibAflAsync;
 	printAndDumpCrashingInput: typeof addon.printAndDumpCrashingInput;
 	printReturnInfo: typeof addon.printReturnInfo;
 }
@@ -38,6 +41,8 @@ export const fuzzer: Fuzzer = {
 	tracer: tracer,
 	startFuzzing: addon.startFuzzing,
 	startFuzzingAsync: addon.startFuzzingAsync,
+	startLibAfl: addon.startLibAfl,
+	startLibAflAsync: addon.startLibAflAsync,
 	printAndDumpCrashingInput: addon.printAndDumpCrashingInput,
 	printReturnInfo: addon.printReturnInfo,
 };

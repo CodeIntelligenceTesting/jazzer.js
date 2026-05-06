@@ -15,7 +15,20 @@
 
 #include <napi.h>
 
+#include "libafl_abi.h"
+
 void TraceUnequalStrings(const Napi::CallbackInfo &info);
 void TraceStringContainment(const Napi::CallbackInfo &info);
 void TraceIntegerCompare(const Napi::CallbackInfo &info);
 void TracePcIndir(const Napi::CallbackInfo &info);
+
+void ClearCompareFeedbackMap(const Napi::CallbackInfo &info);
+Napi::Value CountNonZeroCompareFeedbackSlots(const Napi::CallbackInfo &info);
+Napi::Value CountCompareLogEntries(const Napi::CallbackInfo &info);
+Napi::Value CountDroppedCompareLogEntries(const Napi::CallbackInfo &info);
+
+uint8_t *CompareFeedbackMap();
+std::size_t CompareFeedbackMapSize();
+void ClearCompareFeedbackMap();
+JazzerLibAflCompareLog *CompareLog();
+void ClearCompareLog();

@@ -72,6 +72,25 @@ volatile int nSigInts = 0;
 // jump back to this stored context in case of a segfault.
 std::jmp_buf executionContext;
 
+class ScopedSignalHandler {
+public:
+  ScopedSignalHandler(int signum, void (*handler)(int))
+      : signum_(signum), previous_handler_(std::signal(signum, handler)) {}
+
+  ~ScopedSignalHandler() {
+    if (previous_handler_ != SIG_ERR) {
+      std::signal(signum_, previous_handler_);
+    }
+  }
+
+  ScopedSignalHandler(const ScopedSignalHandler &) = delete;
+  ScopedSignalHandler &operator=(const ScopedSignalHandler &) = delete;
+
+private:
+  int signum_;
+  void (*previous_handler_)(int);
+};
+
 void sigintHandler(int signum) {
   std::cerr << std::endl; // Print a newline after the ^C.
   // Pressing CTRL+C more than once will terminate the process immediately.
@@ -325,8 +344,8 @@ Napi::Value StartFuzzingAsync(const Napi::CallbackInfo &info) {
   // loop.
   context->native_thread = std::thread(
       [](const std::vector<std::string> &fuzzer_args) {
-        signal(SIGSEGV, ErrorSignalHandler);
-        signal(SIGINT, sigintHandler);
+        ScopedSignalHandler sigsegv_handler(SIGSEGV, ErrorSignalHandler);
+        ScopedSignalHandler sigint_handler(SIGINT, sigintHandler);
         StartLibFuzzer(fuzzer_args, FuzzCallbackAsync);
         gTSFN.Release();
       },
