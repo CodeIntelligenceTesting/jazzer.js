@@ -4,13 +4,5 @@
 		"rootDir": ".",
 		"outDir": "dist"
 	},
-	"exclude": ["dist"],
-	"references": [
-		{
-			"path": "../options"
-		},
-		{
-			"path": "../core"
-		}
-	]
+	"exclude": ["dist"]
 }

@@ -1,6 +1,7 @@
 {
 	"files": [],
 	"references": [
+		{ "path": "packages/options" },
 		{ "path": "packages/bug-detectors" },
 		{ "path": "packages/core" },
 		{ "path": "packages/fuzzer" },
