@@ -222,7 +222,15 @@ function executeFuzzTest(
 	verbose = false,
 ) {
 	removeCoverageDir(coverageOutputDir);
-	let options = ["jazzer", "fuzz", "-e", excludePattern, "--corpus", "corpus"];
+	let options = [
+		"jazzer",
+		"fuzz",
+		"--engine=libfuzzer",
+		"-e",
+		excludePattern,
+		"--corpus",
+		"corpus",
+	];
 	// add dry run option
 	if (dryRun) options.push("-d");
 	if (includeLib) {
@@ -251,8 +259,7 @@ function executeFuzzTest(
 	}
 
 	options.push("--disableBugDetectors='.*'");
-	options.push("--");
-	options.push("-runs=0");
+	options.push("--mode=regression");
 	const process = spawnSync("npx", options, {
 		stdio: "pipe",
 		cwd: testDirectory,
