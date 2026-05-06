@@ -32,6 +32,11 @@ import {
 	registerEsmLoaderHooks,
 	registerInstrumentor,
 } from "@jazzer.js/instrumentor";
+import {
+	OptionsManager,
+	OptionSource,
+	resolveEngine,
+} from "@jazzer.js/options";
 
 import { getCallbacks } from "./callback";
 import {
@@ -43,7 +48,7 @@ import {
 	reportFinding,
 } from "./finding";
 import { getJazzerJsGlobal, jazzerJs } from "./globals";
-import { buildFuzzerOption, OptionsManager } from "./options";
+import { buildLibAflOptions, buildLibFuzzerOptions } from "./options";
 import { ensureFilepath, importModule } from "./utils";
 
 // Remove temporary files on exit
@@ -84,21 +89,16 @@ declare global {
 }
 
 /**
- * Extract -seed=N from the libFuzzer arguments.  If absent, generate
- * a random seed and inject it so both the instrumentation layer and
- * libFuzzer use the same value — making the entire run reproducible
- * from a single seed.
+ * Resolve the seed once so instrumentation and the selected backend share the
+ * same value. A configured seed of 0 means that Jazzer.js should generate one.
  */
 function resolveInstrumentationSeed(options: OptionsManager): number {
-	const fuzzerOpts = options.get("fuzzerOptions");
-	const seedArg = fuzzerOpts.find((a: string) => a.startsWith("-seed="));
-	if (seedArg) {
-		const parsed = parseInt(seedArg.split("=")[1], 10);
-		// libFuzzer treats -seed=0 as "pick random", so we do the same.
-		if (parsed !== 0) return parsed;
+	const seed = options.get("seed");
+	if (seed !== 0) {
+		return seed;
 	}
 	const generated = Math.floor(Math.random() * 0x7fff_fffe) + 1; // [1, 2^31-1]
-	fuzzerOpts.push(`-seed=${generated}`);
+	options.merge({ seed: generated }, OptionSource.GeneratedSeed);
 	console.error(`INFO: Using generated seed: ${generated}`);
 	return generated;
 }
@@ -223,7 +223,11 @@ export async function startFuzzing(
 	registerEsmLoaderHooks(instrumentor);
 	instrumentor.sendHooksToLoader();
 	const fuzzFn = await loadFuzzFunction(options);
-	const findingAwareFuzzFn = asFindingAwareFuzzFn(fuzzFn);
+	const findingAwareFuzzFn = asFindingAwareFuzzFn(
+		fuzzFn,
+		true,
+		options.get("engine"),
+	);
 	return startFuzzingNoInit(findingAwareFuzzFn, options).finally(() => {
 		// These post fuzzing actions are only required for invocations through the CLI,
 		// other means of invocation, e.g. via Jest, don't need them.
@@ -245,24 +249,47 @@ export async function startFuzzingNoInit(
 	// Currently only SIGINT is handled this way, as SIGSEGV has to be handled
 	// by the native addon and directly stops the process.
 	const signalHandler = (signal: number): void => {
+		if (signal === 0) {
+			return;
+		}
 		reportFinding(new FuzzerSignalFinding(signal), false);
 	};
 
 	try {
-		const fuzzerOptions = buildFuzzerOption(options);
-		if (options.get("sync")) {
-			await fuzzer.fuzzer.startFuzzing(
-				fuzzFn,
-				fuzzerOptions,
-				// In synchronous mode, we cannot use the SIGINT handler in Node,
-				// because the event loop is blocked by the fuzzer, and the handler
-				// won't be called until the fuzzing process is finished.
-				// Hence, we pass a callback function to the native fuzzer and
-				// register a SIGINT handler there.
-				signalHandler,
-			);
+		if (resolveEngine(options.get("engine")) === "libfuzzer") {
+			const libFuzzerArgv = buildLibFuzzerOptions(options);
+			if (options.get("sync")) {
+				await fuzzer.fuzzer.startFuzzing(
+					fuzzFn,
+					libFuzzerArgv,
+					// In synchronous mode, we cannot use the SIGINT handler in Node,
+					// because the event loop is blocked by the fuzzer, and the handler
+					// won't be called until the fuzzing process is finished.
+					// Hence, we pass a callback function to the native fuzzer and
+					// register a SIGINT handler there.
+					signalHandler,
+				);
+			} else {
+				await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, libFuzzerArgv);
+			}
 		} else {
-			await fuzzer.fuzzer.startFuzzingAsync(fuzzFn, fuzzerOptions);
+			const libAflOptions = buildLibAflOptions(options);
+			const libAflFuzzer = fuzzer.fuzzer as unknown as {
+				startLibAfl: (
+					fuzzFn: FindingAwareFuzzTarget,
+					options: typeof libAflOptions,
+					jsStopCallback: (signal: number) => void,
+				) => Promise<void>;
+				startLibAflAsync: (
+					fuzzFn: FindingAwareFuzzTarget,
+					options: typeof libAflOptions,
+				) => Promise<void>;
+			};
+			if (options.get("sync")) {
+				await libAflFuzzer.startLibAfl(fuzzFn, libAflOptions, signalHandler);
+			} else {
+				await libAflFuzzer.startLibAflAsync(fuzzFn, libAflOptions);
+			}
 		}
 		// Fuzzing ended without a finding, due to -max_total_time or -runs.
 		return reportFuzzingResult(undefined, options.get("expectedErrors"));
@@ -366,9 +393,11 @@ async function loadFuzzFunction(
 export function asFindingAwareFuzzFn(
 	originalFuzzFn: fuzzer.FuzzTarget,
 	dumpCrashingInput = true,
+	engine = "libfuzzer",
 ): FindingAwareFuzzTarget {
 	function printAndDump(error: unknown): void {
 		cleanErrorStack(error);
+		const shouldDumpWithLibFuzzer = resolveEngine(engine) === "libfuzzer";
 		if (
 			!(
 				error instanceof FuzzerSignalFinding &&
@@ -376,7 +405,7 @@ export function asFindingAwareFuzzFn(
 			)
 		) {
 			printFinding(error);
-			if (dumpCrashingInput) {
+			if (dumpCrashingInput && shouldDumpWithLibFuzzer) {
 				fuzzer.fuzzer.printAndDumpCrashingInput();
 			}
 		}
@@ -474,14 +503,6 @@ export function asFindingAwareFuzzFn(
 // Export public API from within core module for easy access.
 export * from "./api";
 export { FuzzedDataProvider } from "./FuzzedDataProvider";
-export {
-	AllowedFuzzTestOptions,
-	Options,
-	OptionsManager,
-	OptionSource,
-	OptionsWithSource,
-	printOptions,
-} from "./options";
 
 export type {
 	FuzzTarget,

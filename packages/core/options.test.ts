@@ -14,292 +14,19 @@
  * limitations under the License.
  */
 
+import fs from "fs";
+import os from "os";
+import path from "path";
+
+import { Mode, OptionsManager, OptionSource } from "@jazzer.js/options";
+
 import {
-	defaultCLIOptions,
-	fromSnakeCase,
-	fromSnakeCaseWithPrefix,
-	Options,
-	OptionsManager,
-	OptionSource,
+	buildLibAflOptions,
+	buildLibFuzzerOptions,
 	spawnsSubprocess,
-	validateKeySource,
 } from "./options";
 
-describe("options", () => {
-	describe("OptionsManager", () => {
-		it("mergeInPlace: options of type string[] are copied", () => {
-			const input = ["1", "2", "3"];
-			const v0 = "CHANGED";
-			const v1 = "CHANGED AGAIN";
-
-			// get all keys of Options for which the type is string[]
-			Object.keys(defaultCLIOptions).forEach((key) => {
-				if (defaultCLIOptions[key as keyof Options] instanceof Array) {
-					mutateArrayAndCheck(key as keyof Options, input, v0, v1);
-				}
-			});
-		});
-
-		it("mergeInPlace: Uint8Array is copied", () => {
-			const originalArray = new Uint8Array([0, 1, 2, 3, 4, 5]);
-			const options = new OptionsManager(OptionSource.DefaultCLIOptions);
-			options.merge(
-				{ dictionaryEntries: [originalArray] },
-				OptionSource.JestFuzzTestOptions,
-			);
-			originalArray[0] = 42;
-			expect(options.get("dictionaryEntries")).not.toStrictEqual(originalArray);
-			expect(options.get("dictionaryEntries")).toStrictEqual([
-				new Uint8Array([0, 1, 2, 3, 4, 5]),
-			]);
-		});
-
-		it("mergeInPlace: Int8Array is copied", () => {
-			const originalArray = new Int8Array([-1, 0, 1, 2, 3, 4, 5]);
-			const options = new OptionsManager(OptionSource.DefaultCLIOptions);
-			options.merge(
-				{ dictionaryEntries: [originalArray] },
-				OptionSource.JestFuzzTestOptions,
-			);
-			originalArray[0] = 42;
-			expect(options.get("dictionaryEntries")).not.toStrictEqual(originalArray);
-			expect(options.get("dictionaryEntries")).toStrictEqual([
-				new Int8Array([-1, 0, 1, 2, 3, 4, 5]),
-			]);
-		});
-	});
-
-	describe("merge", () => {
-		it("New options with lower priorities will not be added", () => {
-			const baseOptions = OptionsManager.attachSource(
-				defaultCLIOptions,
-				OptionSource.JestFuzzTestOptions,
-			);
-
-			const mergedOptions = new OptionsManager(baseOptions).merge(
-				{ verbose: "foo", fuzzTarget: "bla" },
-				OptionSource.CommandLineArguments,
-			);
-			expect(mergedOptions.getOptions()).not.toHaveProperty("verbose", "foo");
-		});
-
-		it("Only 'Jest fuzz tests' are allowed to set `dictionaryEntries`", () => {
-			// Looping over enum keys gives them twice: 1) 0...n; 2) the key names: "JestFuzztestOptions" etc.
-			Object.keys(OptionSource)
-				.filter((k) => isNaN(Number(k)))
-				.forEach((key) => {
-					const source = OptionSource[key as keyof typeof OptionSource];
-					if (source === OptionSource.JestFuzzTestOptions) {
-						const options = new OptionsManager(
-							OptionSource.DefaultCLIOptions,
-						).merge({ dictionaryEntries: ["foo"] }, source);
-						expect(options.getOptionsWithSource()).toHaveProperty(
-							"dictionaryEntries",
-							{
-								value: ["foo"],
-								source: source,
-							},
-						);
-					} else {
-						expect(() => {
-							new OptionsManager(OptionSource.DefaultCLIOptions).merge(
-								{ dictionaryEntries: ["foo"] },
-								source,
-							);
-						}).toThrow();
-					}
-				});
-		});
-	});
-
-	describe("detachSource", () => {
-		it("options should not change", () => {
-			// @ts-ignore
-			const options = OptionsManager.detachSource({
-				verbose: { value: false, source: OptionSource.JestFuzzTestOptions },
-				dictionaryEntries: {
-					value: ["1", "2", "3"],
-					source: OptionSource.JestFuzzTestOptions,
-				},
-			});
-			expect(options).toHaveProperty("verbose", false);
-			expect(options).toHaveProperty("dictionaryEntries", ["1", "2", "3"]);
-			// expect options to have only one property
-			expect(Object.keys(options).length).toEqual(2);
-		});
-	});
-
-	describe("processOptions", () => {
-		it("prefer configuration file values to defaults", () => {
-			const manager = new OptionsManager(OptionSource.DefaultJestOptions).merge(
-				{ fuzzTarget: "FOO" },
-				OptionSource.ConfigurationFile,
-			);
-			const options = manager.getOptions();
-			expect(options).toHaveProperty("fuzzTarget", "FOO");
-			expectDefaultsExceptKeys(
-				options,
-				OptionSource.DefaultJestOptions,
-				"fuzzTarget",
-			);
-		});
-		it("prefer environment variables to configuration file values", () => {
-			withEnv("JAZZER_FUZZ_TARGET", "FOO", () => {
-				withEnv("JAZZER_INCLUDES", '["BAR", "BAZ"]', () => {
-					withSource(
-						OptionSource.DefaultJestOptions,
-						{ fuzzTarget: "QUX" },
-						OptionSource.ConfigurationFile,
-						(options) => {
-							expect(options).toHaveProperty("fuzzTarget", "FOO");
-							expect(options).toHaveProperty("includes", ["BAR", "BAZ"]);
-							expectDefaultsExceptKeys(
-								options,
-								OptionSource.DefaultJestOptions,
-								"fuzzTarget",
-								"includes",
-							);
-						},
-					);
-				});
-			});
-		});
-		it("prefer CLI parameters to environment variables", () => {
-			withEnv("JAZZER_FUZZ_TARGET", "bar", () => {
-				withSource(
-					OptionSource.DefaultCLIOptions,
-					{ fuzzTarget: "foo" },
-					OptionSource.CommandLineArguments,
-					(options) => {
-						expect(options).toHaveProperty("fuzzTarget", "foo");
-						expectDefaultsExceptKeys(
-							options,
-							OptionSource.DefaultCLIOptions,
-							"fuzzTarget",
-						);
-					},
-				);
-			});
-		});
-		it("includes and excludes are set together", () => {
-			withSource(
-				OptionSource.DefaultCLIOptions,
-				{ includes: ["foo"] },
-				OptionSource.CommandLineArguments,
-				(options) => {
-					expect(options).toHaveProperty("excludes", []);
-				},
-			);
-			withSource(
-				OptionSource.DefaultCLIOptions,
-				{ excludes: ["foo"] },
-				OptionSource.CommandLineArguments,
-				(options) => {
-					expect(options).toHaveProperty("includes", []);
-				},
-			);
-		});
-		it("error on unknown option", () => {
-			expect(() => {
-				withSource(
-					OptionSource.DefaultCLIOptions,
-					{ unknown_option: "foo" },
-					OptionSource.CommandLineArguments,
-					(options) => {},
-				);
-			}).toThrow("unknown_option");
-		});
-		it("error on mismatching type", () => {
-			expect(() => {
-				withSource(
-					OptionSource.DefaultCLIOptions,
-					{ fuzzTarget: false },
-					OptionSource.CommandLineArguments,
-					(options) => {},
-				);
-			}).toThrow("expected type 'string'");
-		});
-		it("options are copied", () => {
-			const input = { includes: ["foo"] };
-			withSource(
-				OptionSource.DefaultCLIOptions,
-				input,
-				OptionSource.CommandLineArguments,
-				(options) => {
-					input.includes.push("bar");
-					expect(options.includes).not.toContain("bar");
-				},
-			);
-		});
-		it("set debug env variable", () => {
-			withEnv("JAZZER_DEBUG", "", () => {
-				withSource(
-					OptionSource.DefaultCLIOptions,
-					{ verbose: true },
-					OptionSource.CommandLineArguments,
-					(options) => {
-						expect(process.env.JAZZER_DEBUG).toEqual("1");
-					},
-				);
-			});
-			withEnv("JAZZER_DEBUG", "", () => {
-				withEnv("DEBUG", "1", () => {
-					// const options = buildInitialOptions(OptionSource.DefaultCLIOptions);
-					// expect(process.env.JAZZER_DEBUG).toEqual("1");
-				});
-			});
-		});
-		it("does not merge __proto__", () => {
-			expect(() => {
-				withSource(
-					OptionSource.DefaultCLIOptions,
-					JSON.parse('{"__proto__": {"polluted": 42}}'),
-					OptionSource.CommandLineArguments,
-					(options) => {},
-				);
-			}).toThrow();
-		});
-	});
-});
-
-describe("KeyFormatSource", () => {
-	describe("fromSnakeCase", () => {
-		it("converts to camelCase", () => {
-			expect(fromSnakeCase("snake_case")).toEqual("snakeCase");
-			expect(fromSnakeCase("Snake_Case")).toEqual("snakeCase");
-			expect(fromSnakeCase("SNAKE_CASE")).toEqual("snakeCase");
-			expect(fromSnakeCase("SNAKE_CASE_123")).toEqual("snakeCase123");
-			expect(fromSnakeCase("SNAKE_CASE_123_")).toEqual("snakeCase123_");
-			expect(fromSnakeCase("word")).toEqual("word");
-			expect(fromSnakeCase("kebab-case")).toEqual("kebab-case");
-		});
-	});
-	describe("fromSnakeCaseWithPrefix", () => {
-		it("converts to camelCase", () => {
-			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_snake_case")).toEqual(
-				"snakeCase",
-			);
-			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_Snake_Case")).toEqual(
-				"snakeCase",
-			);
-			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_SNAKE_CASE")).toEqual(
-				"snakeCase",
-			);
-			expect(
-				fromSnakeCaseWithPrefix("PREFIX")("PREFIX_SNAKE_CASE_123"),
-			).toEqual("snakeCase123");
-			expect(
-				fromSnakeCaseWithPrefix("PREFIX")("PREFIX_SNAKE_CASE_123_"),
-			).toEqual("snakeCase123_");
-			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_word")).toEqual("word");
-			expect(fromSnakeCaseWithPrefix("PREFIX")("PREFIX_kebab-case")).toEqual(
-				"kebab-case",
-			);
-		});
-	});
-});
-
-describe("buildLibFuzzerOptions", () => {
+describe("libFuzzer options", () => {
 	describe("spawnsSubprocess", () => {
 		it("checks if subprocess libFuzzer flags are present", () => {
 			expect(spawnsSubprocess(["-fork=1"])).toBeTruthy();
@@ -312,93 +39,226 @@ describe("buildLibFuzzerOptions", () => {
 			expect(spawnsSubprocess(["123"])).toBeFalsy();
 		});
 	});
+
+	it("translates common options and appends backend-specific options", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				artifactPrefix: "/tmp/artifacts/",
+				corpusDirectories: ["corpus-main", "corpus-seed"],
+				libFuzzerOptions: ["-use_value_profile=1", "-print_final_stats=1"],
+				maxLen: 1024,
+				maxTotalTime: 42,
+				runs: 99,
+				seed: 1337,
+				timeout: 1234,
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibFuzzerOptions(manager)).toEqual([
+			"unused_arg0_report_a_bug_if_you_see_this",
+			"-seed=1337",
+			"-max_len=1024",
+			"-timeout=2",
+			"-runs=99",
+			"-max_total_time=42",
+			"-artifact_prefix=/tmp/artifacts/",
+			"corpus-main",
+			"corpus-seed",
+			"-use_value_profile=1",
+			"-print_final_stats=1",
+			"-handle_int=0",
+			"-handle_term=0",
+			"-handle_segv=0",
+		]);
+	});
+
+	it("forwards explicitly configured zero runs to libFuzzer", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{ runs: 0 },
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibFuzzerOptions(manager)).toContain("-runs=0");
+	});
+
+	it("does not turn the default zero runs value into a libFuzzer run limit", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions);
+
+		expect(buildLibFuzzerOptions(manager)).not.toContain("-runs=0");
+	});
+
+	it("rejects common flags in libFuzzer-specific options", () => {
+		for (const option of ["-runs=1", "-max_len=1", "-timeout=5", "-dict=x"]) {
+			const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+				{ libFuzzerOptions: [option] },
+				OptionSource.CommandLineArguments,
+			);
+
+			expect(() => buildLibFuzzerOptions(manager)).toThrow(
+				"Jazzer.js common option",
+			);
+		}
+	});
 });
 
-function expectDefaultsExceptKeys(
-	options: Options,
-	source: OptionSource,
-	...ignore: string[]
-) {
-	const defaultOptions = new OptionsManager(source).getOptions();
-	Object.keys(defaultOptions).forEach((key: string) => {
-		if (ignore.includes(key)) return;
-		expect(options).toHaveProperty(key, defaultOptions[key as keyof Options]);
+describe("LibAFL options", () => {
+	it("builds structured LibAFL options from common options", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				artifactPrefix: "/tmp/artifacts/",
+				corpusDirectories: ["corpus-main", "corpus-seed"],
+				engine: "libafl",
+				maxLen: 1024,
+				maxTotalTime: 42,
+				runs: 99,
+				seed: 1337,
+				timeout: 1234,
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toEqual({
+			mode: Mode.Fuzzing,
+			runs: 99,
+			runsSet: true,
+			seed: 1337,
+			maxLen: 1024,
+			timeoutMillis: 1234,
+			maxTotalTimeSeconds: 42,
+			artifactPrefix: "/tmp/artifacts/",
+			corpusDirectories: ["corpus-main", "corpus-seed"],
+			dictionaryFiles: [],
+		});
 	});
-}
 
-function withEnv(property: string, value: string, fn: () => void) {
-	const current = process.env[property];
-	try {
-		process.env[property] = value;
-		fn();
-	} finally {
-		if (current) {
-			process.env[property] = current;
-		} else {
-			delete process.env[property];
+	it("preserves explicitly configured zero runs for LibAFL", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				runs: 0,
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toMatchObject({
+			runs: 0,
+			runsSet: true,
+		});
+	});
+
+	it("marks default zero runs as unset for LibAFL", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{ engine: "libafl" },
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toMatchObject({
+			runs: 0,
+			runsSet: false,
+		});
+	});
+
+	it("rejects LibAFL-specific options until they are implemented", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				libAflOptions: ["-some_libafl_option=1"],
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(() => buildLibAflOptions(manager)).toThrow("not supported yet");
+	});
+
+	it("rejects libFuzzer-specific options in LibAFL mode", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				engine: "libafl",
+				libFuzzerOptions: ["-fork=1"],
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(() => buildLibAflOptions(manager)).toThrow(
+			"libFuzzerOptions can only be used",
+		);
+	});
+
+	it("supports regression mode in LibAFL mode", () => {
+		const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+			{
+				corpusDirectories: ["corpus"],
+				engine: "libafl",
+				mode: Mode.Regression,
+				runs: 1,
+			},
+			OptionSource.CommandLineArguments,
+		);
+
+		expect(buildLibAflOptions(manager)).toEqual({
+			mode: Mode.Regression,
+			runs: 0,
+			runsSet: true,
+			seed: 0,
+			maxLen: 4096,
+			timeoutMillis: 5000,
+			maxTotalTimeSeconds: 0,
+			artifactPrefix: "",
+			corpusDirectories: ["corpus"],
+			dictionaryFiles: [],
+		});
+	});
+
+	it("supports dictionary entries in LibAFL mode", () => {
+		const tempDirectory = fs.mkdtempSync(
+			path.join(os.tmpdir(), "jazzer-libafl-dict-"),
+		);
+		const dictionaryPath = path.join(tempDirectory, "seed.dict");
+		fs.writeFileSync(dictionaryPath, '"Amazing"\n');
+
+		try {
+			const manager = new OptionsManager(OptionSource.DefaultCLIOptions)
+				.merge(
+					{
+						corpusDirectories: ["corpus"],
+						dictionaryFiles: [dictionaryPath],
+						engine: "libafl",
+					},
+					OptionSource.CommandLineArguments,
+				)
+				.merge(
+					{ dictionaryEntries: ["banana"] },
+					OptionSource.JestFuzzTestOptions,
+				);
+
+			const built = buildLibAflOptions(manager);
+			expect(built.corpusDirectories).toEqual(["corpus"]);
+			expect(built.dictionaryFiles).toHaveLength(1);
+			expect(fs.readFileSync(built.dictionaryFiles[0], "utf8")).toContain(
+				"\\x62\\x61\\x6e\\x61\\x6e\\x61",
+			);
+			expect(fs.readFileSync(built.dictionaryFiles[0], "utf8")).toContain(
+				"Amazing",
+			);
+		} finally {
+			fs.rmSync(tempDirectory, { force: true, recursive: true });
 		}
-	}
-}
+	});
 
-function withSource(
-	initialSource: OptionSource,
-	args: object,
-	argsSource: OptionSource,
-	fn: (options: Options) => void,
-) {
-	const options = new OptionsManager(initialSource).merge(args, argsSource);
-	fn(options.getOptions());
-}
+	it("rejects malformed common integer options", () => {
+		for (const option of [
+			{ runs: -1 },
+			{ maxLen: 0 },
+			{ seed: 1.5 },
+			{ maxTotalTime: Number.NaN },
+		]) {
+			const manager = new OptionsManager(OptionSource.DefaultCLIOptions).merge(
+				{ engine: "libafl", ...option },
+				OptionSource.CommandLineArguments,
+			);
 
-// Check that OptionsManager.merge() copies new input
-function mutateArrayAndCheck<T extends Options, K extends keyof Options>(
-	key: K,
-	newValue: T[K],
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	v0: any,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	v1: any,
-) {
-	const options = new OptionsManager(OptionSource.DefaultCLIOptions);
-	const newValueCopy = OptionsManager.copyOptionValue(newValue);
-	if (!(newValueCopy instanceof Array) || newValueCopy.length < 1) {
-		throw new Error("Array should have at least 1 elements.");
-	}
-	if (!(newValue instanceof Array) || newValueCopy.length < 1) {
-		throw new Error("Array should have at least 1 elements.");
-	}
-	const originalReference = options.get(key);
-	const originalValue = OptionsManager.copyOptionValue(originalReference);
-
-	let newPriority = OptionSource.CommandLineArguments;
-	try {
-		validateKeySource(key, OptionSource.JestFuzzTestOptions);
-		newPriority = OptionSource.JestFuzzTestOptions;
-	} catch (e) {
-		/**/
-	}
-
-	options.merge({ [key]: newValue }, newPriority);
-	const newReference = options.get(key);
-	if (!(newReference instanceof Array) || newReference.length < 1) {
-		throw new Error("Array should have at least 1 elements.");
-	}
-	const newStoredValue = OptionsManager.copyOptionValue(newReference);
-
-	// after merge, value of the option should equal to the newValue, and not equal to the old one
-	expect(options.get(key)).toStrictEqual(newValue);
-	expect(options.get(key)).not.toStrictEqual(originalValue);
-	// also the reference should be different
-	expect(options.get(key)).not.toStrictEqual(originalReference);
-
-	// mutate newValue and check that the new value of option is not changed
-	newValue[0] = v0;
-	expect(options.get(key)).toStrictEqual(newStoredValue);
-
-	// mutate the option, and check that newValue is not changed
-	newReference[0] = v1;
-	expect(newValue[0]).toStrictEqual(v0);
-	// @ts-ignore
-	expect(options.get(key)[0]).toStrictEqual(v1);
-	return options;
-}
+			expect(() => buildLibAflOptions(manager)).toThrow();
+		}
+	});
+});
