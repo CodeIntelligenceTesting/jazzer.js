@@ -41,7 +41,8 @@ format:
 	"includes": ["*"],
 	"excludes": ["node_modules"],
 	"customHooks": [],
-	"fuzzerOptions": [],
+	"runs": 1000,
+	"libFuzzerOptions": [],
 	"sync": false
 }
 ```
