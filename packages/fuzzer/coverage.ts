@@ -16,16 +16,22 @@
 
 import { addon } from "./addon";
 
+type CoverageRangeAllocator = (filename: string, edgeCount: number) => number;
+
+function getCoverageRangeAllocator(): CoverageRangeAllocator {
+	const allocator = (globalThis as Record<string, unknown>)
+		.__jazzer_reserveCoverageRange;
+	if (typeof allocator !== "function") {
+		throw new Error("Coverage range allocator was not initialized");
+	}
+	return allocator as CoverageRangeAllocator;
+}
+
 export class CoverageTracker {
 	private static readonly MAX_NUM_COUNTERS: number = 1 << 20;
 	private static readonly INITIAL_NUM_COUNTERS: number = 1 << 9;
 	private readonly coverageMap: Buffer;
 	private currentNumCounters: number;
-
-	// Per-module counter buffers registered independently with libFuzzer.
-	// We must prevent GC from reclaiming these while libFuzzer still
-	// monitors the underlying memory.
-	private readonly moduleCounters: Buffer[] = [];
 
 	constructor() {
 		this.coverageMap = Buffer.alloc(CoverageTracker.MAX_NUM_COUNTERS, 0);
@@ -71,16 +77,17 @@ export class CoverageTracker {
 		return this.coverageMap.readUint8(edgeId);
 	}
 
-	/**
-	 * Allocate an independent counter buffer for a single module and
-	 * register it with libFuzzer as a new coverage region.  This lets
-	 * each ESM module own its own counters without sharing global IDs.
-	 */
-	createModuleCounters(size: number): Buffer {
-		const buf = Buffer.alloc(size, 0);
-		this.moduleCounters.push(buf);
-		addon.registerModuleCounters(buf);
-		return buf;
+	createModuleCounters(filename: string, edgeCount: number): Buffer {
+		if (!Number.isInteger(edgeCount) || edgeCount < 0) {
+			throw new Error(`Invalid edge count: ${edgeCount}`);
+		}
+		if (edgeCount === 0) {
+			return Buffer.alloc(0);
+		}
+
+		const firstEdgeId = getCoverageRangeAllocator()(filename, edgeCount);
+		this.enlargeCountersBufferIfNeeded(firstEdgeId + edgeCount - 1);
+		return this.coverageMap.subarray(firstEdgeId, firstEdgeId + edgeCount);
 	}
 }
 

@@ -167,6 +167,10 @@ function instrumentModule(code: string, filename: string): string | null {
 			filename,
 			sourceFileName: filename,
 			sourceMaps: true,
+			// Ignore host-project Babel config so ESM instrumentation keeps the
+			// module format intact and doesn't inherit target-specific transforms.
+			babelrc: false,
+			configFile: false,
 			plugins,
 			sourceType: "module",
 		});
@@ -187,7 +191,7 @@ function instrumentModule(code: string, filename: string): string | null {
 	// SourceMapRegistry so that source-map-support can remap stack
 	// traces back to the original source.
 	const preambleLines = [
-		`const ${COUNTER_ARRAY} = Fuzzer.coverageTracker.createModuleCounters(${edges});`,
+		`const ${COUNTER_ARRAY} = Fuzzer.coverageTracker.createModuleCounters(${JSON.stringify(filename)}, ${edges});`,
 	];
 
 	if (transformed.map) {
