@@ -167,6 +167,13 @@ describe("SSRF", () => {
 			expect(() =>
 				hookTCPSocket(undefined, [80, "localhost", "callback"], 0),
 			).not.toThrow();
+			// connect(port, host) without a listener
+			expect(() => hookTCPSocket(undefined, [8080, "local"], 0)).toThrow(
+				"Server Side Request Forgery",
+			);
+			expect(() =>
+				hookTCPSocket(undefined, [80, "localhost"], 0),
+			).not.toThrow();
 		});
 
 		test("Call TCP socket hook with ports as strings", () => {
@@ -193,6 +200,13 @@ describe("SSRF", () => {
 			// allowed connection with explicit port and host
 			expect(() =>
 				hookTCPSocket(undefined, ["80", "localhost", "callback"], 0),
+			).not.toThrow();
+			// connect(port, host) without a listener
+			expect(() => hookTCPSocket(undefined, ["81", "local"], 0)).toThrow(
+				"Server Side Request Forgery",
+			);
+			expect(() =>
+				hookTCPSocket(undefined, ["80", "localhost"], 0),
 			).not.toThrow();
 		});
 	});
