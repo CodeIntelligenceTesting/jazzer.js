@@ -212,7 +212,7 @@ function guideTowardsContainment(needle: string, haystack: string, id: number) {
 export function exploreState(state: number, id: number) {
 	// Check types as JavaScript fuzz targets could provide wrong ones.
 	// noinspection SuspiciousTypeOfGuard
-	if (typeof state !== "string" || typeof id !== "number") {
+	if (typeof state !== "number" || typeof id !== "number") {
 		return;
 	}
 	tracer.tracePcIndir(id, state);
