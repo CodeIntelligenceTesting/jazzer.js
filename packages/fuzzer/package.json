@@ -29,7 +29,7 @@
 	"dependencies": {
 		"bindings": "^1.5.0",
 		"cmake-js": "^8.0.0",
-		"node-addon-api": "^8.7.0"
+		"node-addon-api": "^8.8.0"
 	},
 	"devDependencies": {
 		"@types/bindings": "^1.5.5",
