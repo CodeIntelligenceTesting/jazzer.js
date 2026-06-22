@@ -20,12 +20,52 @@ import {
 } from "@jazzer.js/core";
 import { callSiteId, registerBeforeHook } from "@jazzer.js/hooking";
 
+import { bugDetectorConfigurations } from "../configuration";
+import {
+	buildGenericSuppressionSnippet,
+	captureStack,
+	getUserFacingStackLines,
+	IgnoreList,
+	type IgnoreRule,
+} from "../shared/finding-suppression";
+
 /**
  * Importing this file adds "before-hooks" for all functions in the built-in `fs`, `fs/promises`, and `path` module and guides
  * the fuzzer towards the uniquely chosen `goal` string `"../../jaz_zer"`. If the goal is found in the first argument
  * of any hooked function, a `Finding` is reported.
  */
 const goal = "../../jaz_zer";
+
+export type { IgnoreRule } from "../shared/finding-suppression";
+
+/**
+ * Configuration for the Path Traversal bug detector.
+ * Controls suppression of matched path traversal findings.
+ */
+export interface PathTraversalConfig {
+	/**
+	 * Suppresses findings that match the provided rule.
+	 * Use this to silence known-safe callsites in your test environment.
+	 */
+	ignore(rule: IgnoreRule): this;
+}
+
+class PathTraversalConfigImpl implements PathTraversalConfig {
+	private readonly _ignoredRules = new IgnoreList();
+
+	ignore(rule: IgnoreRule): this {
+		this._ignoredRules.add(rule);
+		return this;
+	}
+
+	shouldReport(stack: string): boolean {
+		return !this._ignoredRules.matches(stack);
+	}
+}
+
+const config = new PathTraversalConfigImpl();
+bugDetectorConfigurations.set("path-traversal", config);
+
 const modulesToHook = [
 	{
 		moduleName: "fs",
@@ -208,11 +248,38 @@ function detectFindingAndGuideFuzzing(
 	) {
 		const argument = input.toString();
 		if (argument.includes(goal)) {
+			const stack = captureStack();
+			if (!config.shouldReport(stack)) {
+				return;
+			}
 			reportAndThrowFinding(
-				"Path Traversal\n" +
-					`    in ${functionName}(): called with '${argument}'`,
+				buildFindingMessage(functionName, argument, stack),
+				false,
 			);
 		}
 		guideTowardsContainment(argument, goal, hookId);
 	}
+}
+
+function buildFindingMessage(
+	functionName: string,
+	argument: string,
+	stack: string,
+): string {
+	const relevantStackLines = getUserFacingStackLines(stack);
+	const message = [
+		"Path Traversal",
+		`    in ${functionName}(): called with '${argument}'`,
+	];
+	if (relevantStackLines.length > 0) {
+		message.push(...relevantStackLines);
+	}
+	message.push(
+		"",
+		"[!] If this callsite is expected in your test environment, suppress it:",
+		"    Example only: copy/paste it and adapt `stackPattern` to your needs.",
+		"",
+		buildGenericSuppressionSnippet("path-traversal", "ignore"),
+	);
+	return message.join("\n");
 }

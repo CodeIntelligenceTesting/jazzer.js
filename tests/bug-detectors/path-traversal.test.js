@@ -24,12 +24,14 @@ const {
 } = require("../helpers");
 
 describe("Path Traversal", () => {
-	const SAFE = "../safe_path/";
-	const EVIL = "../evil_path/";
 	const bugDetectorDirectory = path.join(__dirname, "path-traversal");
+	const SAFE = path.join(bugDetectorDirectory, "../../safe_path");
+	const EVIL = path.join(bugDetectorDirectory, "../../evil_path");
+	const goalPath = path.join(bugDetectorDirectory, "../../jaz_zer");
 
 	beforeEach(async () => {
 		fs.rmSync(SAFE, { recursive: true, force: true });
+		fs.rmSync(goalPath, { recursive: true, force: true });
 		await cleanCrashFilesIn(bugDetectorDirectory);
 	});
 
@@ -189,6 +191,66 @@ describe("Path Traversal", () => {
 			.dir(bugDetectorDirectory)
 			.build();
 		fuzzTest.execute();
+	});
+
+	it("prints a generic suppression example", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalFsMkdirEvilSync")
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain(
+			'getBugDetectorConfiguration("path-traversal")',
+		);
+		expect(fuzzTest.stderr).toContain(
+			"Example only: copy/paste it and adapt `stackPattern` to your needs.",
+		);
+		expect(fuzzTest.stderr).toContain(
+			"// Example only: adapt `stackPattern` to the shown stack above.",
+		);
+		expect(fuzzTest.stderr).toContain("?.ignore({");
+		expect(fuzzTest.stderr).toContain('stackPattern: "test.js:10"');
+	});
+
+	it("suppresses findings when a stack pattern matches the fs callsite", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalFsMkdirEvilSync")
+			.customHooks(["ignore-fs-stack.config.js"])
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+		expect(fs.existsSync(goalPath)).toBeTruthy();
+	});
+
+	it("suppresses findings when stack pattern matches", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalJoinEvilSync")
+			.customHooks(["ignore-by-stack.config.js"])
+			.dir(bugDetectorDirectory)
+			.build();
+		fuzzTest.execute();
+	});
+
+	it("still reports when ignore rule does not match", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.runs(0)
+			.sync(true)
+			.fuzzEntryPoint("PathTraversalJoinEvilSync")
+			.customHooks(["ignore-no-match.config.js"])
+			.dir(bugDetectorDirectory)
+			.build();
+		expect(() => {
+			fuzzTest.execute();
+		}).toThrow(FuzzingExitCode);
+		expect(fuzzTest.stderr).toContain("Path Traversal");
 	});
 });
 

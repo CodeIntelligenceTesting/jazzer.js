@@ -13,6 +13,8 @@ coverage
 node_modules
 tests
 shared
+!**/dist/shared/
+!**/dist/shared/**
 
 # Exclude docs, those can be accessed online
 docs

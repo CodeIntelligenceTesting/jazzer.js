@@ -452,11 +452,11 @@ export function asFindingAwareFuzzFn(
 				callbacks.runBeforeEachCallbacks();
 				// Return result of fuzz target to enable sanity checks in C++ part.
 				const result = originalFuzzFn(data, (err?) => {
+					callbacks.runAfterEachCallbacks();
 					const error = clearFirstFinding() ?? err;
 					if (error) {
 						printAndDump(error);
 					}
-					callbacks.runAfterEachCallbacks();
 					done(error);
 				});
 				// Check if any finding was reported by the invocation before the

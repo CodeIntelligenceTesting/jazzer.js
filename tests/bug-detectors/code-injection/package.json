@@ -1,7 +1,7 @@
 {
-	"name": "jazzerjs-remote-code-execution-tests",
+	"name": "jazzerjs-code-injection-tests",
 	"version": "1.0.0",
-	"description": "Tests for the Remote Code Execution bug detector",
+	"description": "Tests for the Code Injection bug detector",
 	"scripts": {
 		"test": "jest",
 		"fuzz": "JAZZER_FUZZ=1 jest"
