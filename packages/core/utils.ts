@@ -57,6 +57,28 @@ export function ensureFilepath(filePath: string): string {
 		: fullPath + ".js";
 }
 
+const LEGACY_ENGINE_FLAG_PREFIXES = [
+	"-runs=",
+	"-seed=",
+	"-max_len=",
+	"-timeout=",
+	"-max_total_time=",
+	"-artifact_prefix=",
+	"-dict=",
+];
+
+export function normalizeLegacyEngineFlags(argv: string[]): string[] {
+	return argv.map((arg) => {
+		if (arg.startsWith("--")) {
+			return arg;
+		}
+		if (LEGACY_ENGINE_FLAG_PREFIXES.some((prefix) => arg.startsWith(prefix))) {
+			return `-${arg}`;
+		}
+		return arg;
+	});
+}
+
 /**
  * Transform arguments to common format, add compound properties and
  * remove framework specific ones, so that the result can be passed on to the
@@ -67,15 +89,35 @@ export function ensureFilepath(filePath: string): string {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function prepareArgs(args: any) {
+	const engineArgs = (args._ ?? []).map((e: unknown) => e + "");
+	const internalLibFuzzerArgs =
+		process.env.JAZZER_INTERNAL_LIBFUZZER_ARGS === "1" ? engineArgs : [];
+	if (engineArgs.length > 0 && internalLibFuzzerArgs.length === 0) {
+		throw new Error(
+			"Engine options after '--' are no longer supported. Use " +
+				"--libFuzzerOptions or --libAflOptions.",
+		);
+	}
+
 	const options = {
 		...args,
 		fuzzTarget: ensureFilepath(args.fuzzTarget),
-		fuzzerOptions: (args.corpus ?? [])
-			.concat(args._)
-			.map((e: unknown) => e + ""),
+		corpusDirectories: (args.corpus ?? []).map((e: unknown) => e + ""),
+		libFuzzerOptions:
+			internalLibFuzzerArgs.length > 0
+				? internalLibFuzzerArgs
+				: args.libFuzzerOptions,
 	};
-	if (options.fuzzerOptions.length === 0) {
-		delete options.fuzzerOptions;
+	if (options.engine !== undefined) {
+		options.engine = options.engine === "afl" ? "libafl" : options.engine;
+	} else {
+		delete options.engine;
+	}
+	if (options.corpusDirectories.length === 0) {
+		delete options.corpusDirectories;
+	}
+	if (options.libFuzzerOptions === undefined) {
+		delete options.libFuzzerOptions;
 	}
 	delete options._;
 	delete options.corpus;

@@ -20,6 +20,7 @@ namespace libfuzzer {
 extern void (*PrintCrashingInput)();
 
 const int EXIT_ERROR_CODE = 77;
+const int EXIT_ERROR_TIMEOUT = 70;
 
 // Signals should exit with code 128+n, see
 // https://tldp.org/LDP/abs/html/exitcodes.html

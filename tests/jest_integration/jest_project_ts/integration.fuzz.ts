@@ -60,7 +60,7 @@ describe("Jest TS Integration", () => {
 			},
 			{
 				sync: true,
-				fuzzerOptions: ["-runs=101"],
+				runs: 101,
 				dictionaryEntries: ["Amazing"],
 			},
 		);

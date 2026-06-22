@@ -24,6 +24,10 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
+      - name: rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: install dependencies
         run: npm ci
       - name: install clang-tidy
@@ -31,6 +35,10 @@ jobs:
       - name: build project
         # Build project so that imports can be checked during linting
         run: npm run build
+      - name: check Rust formatting
+        run: npm run format:rust
+      - name: test LibAFL runtime
+        run: cargo test --manifest-path packages/fuzzer/rust/Cargo.toml
       - name: build fuzzer
         # Build the native addon so that CMake downloads libFuzzer and
         # generates compile_commands.json, which are needed by clang-tidy
@@ -40,6 +48,7 @@ jobs:
   tests:
     name: unit tests
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, ubuntu-24.04-arm, macos-latest]
@@ -59,14 +68,19 @@ jobs:
           path: |
             packages/fuzzer/prebuilds
           key:
-            fuzzer-cache-${{ matrix.os }}-${{
-            hashFiles('packages/fuzzer/CMakeLists.txt',
-            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
+            fuzzer-cache-${{ matrix.os }}-${{ hashFiles('package-lock.json',
+            'package.json', 'packages/fuzzer/package.json',
+            'packages/fuzzer/CMakeLists.txt', 'packages/fuzzer/**/*.h',
+            'packages/fuzzer/**/*.cpp', 'packages/fuzzer/rust/Cargo.toml',
+            'packages/fuzzer/rust/Cargo.lock',
+            'packages/fuzzer/rust/src/**/*.rs') }}
       - name: node
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: "npm"
+      - name: rust
+        uses: dtolnay/rust-toolchain@stable
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')
@@ -95,6 +109,8 @@ jobs:
         with:
           node-version: 22
           cache: "npm"
+      - name: rust
+        uses: dtolnay/rust-toolchain@stable
       - name: MSVC (windows)
         uses: ilammy/msvc-dev-cmd@v1
         if: contains(matrix.os, 'windows')

@@ -6,3 +6,4 @@ node_modules
 .idea
 .vscode
 compile_commands.json
+packages/fuzzer/rust/target

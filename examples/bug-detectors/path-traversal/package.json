@@ -7,8 +7,8 @@
 		"jszip": "3.7.1"
 	},
 	"scripts": {
-		"fuzz": "jazzer fuzz -i fuzz.js -i jszip -x Error corpus -- -runs=10000000 -print_final_stats=1 -use_value_profile=1 -max_len=600 -seed=123456789",
-		"dryRun": "jazzer fuzz --sync -x Error -- -runs=100000 -seed=123456789"
+		"fuzz": "jazzer fuzz -i fuzz.js -i jszip -x Error corpus --runs=10000000 --maxLen=600 --seed=123456789 --libFuzzerOptions=-print_final_stats=1 --libFuzzerOptions=-use_value_profile=1",
+		"dryRun": "jazzer fuzz --sync -x Error --runs=100000 --seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../../packages/core"

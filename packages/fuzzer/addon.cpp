@@ -16,6 +16,7 @@
 
 #include "fuzzing_async.h"
 #include "fuzzing_sync.h"
+#include "libafl_runtime.h"
 
 #include "shared/callbacks.h"
 #include "shared/libfuzzer.h"
@@ -61,6 +62,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
   exports["startFuzzing"] = Napi::Function::New<StartFuzzing>(env);
   exports["startFuzzingAsync"] = Napi::Function::New<StartFuzzingAsync>(env);
+  exports["startLibAfl"] = Napi::Function::New<StartLibAfl>(env);
+  exports["startLibAflAsync"] = Napi::Function::New<StartLibAflAsync>(env);
 
   RegisterCallbackExports(env, exports);
   return exports;

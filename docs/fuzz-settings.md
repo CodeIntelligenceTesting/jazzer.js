@@ -16,8 +16,11 @@ There are three ways to configure Jazzer.js:
 4. **Jest fuzz test** - some options can be set directly in Jest fuzz test.
    These options are: ([`timeout`](#timeout--number),
    [`dictionaryEntries`](#dictionaryentries--arraystring--uint8array--int8array),
-   [`fuzzerOptions`](#fuzzeroptions--arraystring), and
-   [`sync`](#sync--boolean)).
+   [`dictionaryFiles`](#dictionaryfiles--arraystring),
+   [`libFuzzerOptions`](#libfuzzeroptions--arraystring),
+   [`libAflOptions`](#libafloptions--arraystring), [`runs`](#runs--number),
+   [`seed`](#seed--number), [`maxLen`](#maxlen--number),
+   [`maxTotalTime`](#maxtotaltime--number), and [`sync`](#sync--boolean)).
 
 The following preferences apply with increasing priority:
 
@@ -166,19 +169,19 @@ If the fuzzer does not finish, no report will be generated. Pressing CTRL-C to
 manually stop the fuzzer might result in incomplete coverage reports. To
 reliably generate coverage reports, it makes sense to run the fuzzer on each
 input in the corpus only once. This can be accomplished by adding the following
-to the option [fuzzerOptions](#fuzzeroptions--arraystring): `-runs=1` (run each
-input once and quit); or `-max_total_time=N` (fuzz for N seconds and quit); or
-by running the fuzzer in [regression mode](#mode--fuzzingregression) using the
-option `--mode=regression`. While it's possible to generate coverage reports by
-running Jazzer.js in fuzzing mode, instrumentation for code coverage makes
-fuzzing less efficient.
+the native Jazzer.js options [`runs`](#runs--number) or
+[`maxTotalTime`](#maxtotaltime--number), or by running the fuzzer in
+[regression mode](#mode--fuzzingregression) using the option
+`--mode=regression`. While it's possible to generate coverage reports by running
+Jazzer.js in fuzzing mode, instrumentation for code coverage makes fuzzing less
+efficient.
 
 **CLI:** To run the fuzz function `buzz` in file `my-fuzz-file.js` for 10
 seconds from the command line and generate a code coverage report, add the
 `--coverage` option without arguments:
 
 ```bash
-npx jazzer my-fuzz-file --fuzzEntryPoint=buzz --coverage -- -max_total_time=10
+npx jazzer my-fuzz-file --fuzzEntryPoint=buzz --coverage --maxTotalTime=10
 ```
 
 **Jest:** Call Jest with `--coverage` flag:
@@ -205,7 +208,7 @@ command in order to generate a code coverage report of the fuzz function `fuzz`
 directory `./corpus` once:
 
 ```bash
-JAZZER_COVERAGE=true npx jazzer my-fuzz-file ./corpus -- -runs=1
+JAZZER_COVERAGE=true npx jazzer my-fuzz-file ./corpus --runs=1
 ```
 
 In Jest mode it is not possible to set this option using an environment
@@ -371,6 +374,36 @@ const xmlDictionary = ["IDREF", "<![IGNORE[", "<![INCLUDE[", "<!"];
 it.fuzz("XML parser",
 	(data) => {...},
 	{dictionaryEntries: xmlDictionary});
+```
+
+### `dictionaryFiles` : [array\<string\>]
+
+Default: []
+
+Set fuzzing dictionary files. Dictionaries are common Jazzer.js options because
+both backends can use them. Do not pass libFuzzer's `-dict` flag via backend
+options; use this option instead.
+
+**CLI:** Dictionary files can be specified multiple times:
+
+```bash
+npx jazzer my-fuzz-file --dict=xml.txt --dict=html.txt
+```
+
+**Jest:** Add dictionary files to `.jazzerjsrc.json`:
+
+```json
+{
+	"dictionaryFiles": ["xml.txt", "html.txt"]
+}
+```
+
+**Jest fuzz test:** Dictionary files can also be set directly for a fuzz test:
+
+```javascript
+it.fuzz("XML parser",
+	(data) => {...},
+	{dictionaryFiles: ["xml.txt"]});
 ```
 
 ### `disableBugDetectors` : [array\<RegExp\>]
@@ -589,65 +622,124 @@ JAZZER_FUZZ_ENTRY_POINT=buzz npx jazzer my-fuzz-file
 _Note:_ In Jest mode, this option cannot be set via environment variable.
 Instead use the native Jest flag `--testNamePattern` as described above.
 
-### `fuzzerOptions` : [array\<string\>]
+### `engine` : [string]
 
-Default: []
+Default: `"libfuzzer"` in CLI mode, `"libfuzzer"` in Jest mode
 
-Pass options to native fuzzing engine (Jazzer.js uses libFuzzer).
+Select the native fuzzing backend.
 
-For a list of available options, see the
-[libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html#options). To get
-a quick overview of all available options, call Jazzer.js with the libFuzzer
-argument `-help`. Here is an example for the CLI mode:
+- `libfuzzer`: use the existing libFuzzer backend.
+- `afl` (alias for `libafl`): use the LibAFL backend.
 
-```bash
-npx jazzer my-fuzz-file -- -help=1
-```
-
-_Note:_ the libFuzzer option `-timeout` (notice the single dash) is natively
-supported in Jazzer.js with the option [`timeout`](#timeout--number) and will be
-ignored if passed via `fuzzerOptions`.
-
-**CLI:** It is not possible to use this flag directly on the command line.
-Instead, the options can be passed to libFuzzer after a double-dash `--`. For
-example, libFuzzer's flags `-use_value_profile=1` and `-dict=xml.txt` can be set
-as follows:
+**CLI:** Select the backend with `--engine`, for example:
 
 ```bash
-npx jazzer my-fuzz-file -- -use_value_profile=1 -dict=xml.txt
+npx jazzer my-fuzz-file --engine=afl
 ```
 
-**Jest:** To pass the options `-use_value_profile=1` and `-dict=xml.txt` to
-libFuzzer in Jest mode, add the following to the `.jazzerjsrc.json` file:
+**Jest:** Set it in `.jazzerjsrc.json`:
 
 ```json
 {
-	"fuzzerOptions": ["-use_value_profile=1", "-dict=xml.txt"]
+	"engine": "afl"
 }
 ```
 
-**Jest fuzz test:** The `fuzzerOptions` can be set directly in the fuzz test in
-_fuzzing_ mode by providing it as part of an object with options as the third
-argument to the fuzz test. _Note:_ this overrides any prior settings (e.g.
-settings loaded from `.jazzerjsrc.json`). Here is an example how make the fuzzer
-use the dictionary "xml.txt" for fuzz test "My test 1":
+LibAFL supports both `fuzzing` and `regression` mode.
+
+### `runs` : [number]
+
+Default: 0
+
+Set the number of fuzz target executions. `0` means unlimited in fuzzing mode.
+In [regression mode](#mode--fuzzingregression), Jazzer.js always replays all
+available inputs and ignores any configured run limit.
+
+```bash
+npx jazzer my-fuzz-file --runs=1000
+```
+
+### `seed` : [number]
+
+Default: 0
+
+Set the fuzzing seed. `0` lets Jazzer.js generate a seed once and pass the same
+value to instrumentation and the selected backend.
+
+```bash
+npx jazzer my-fuzz-file --seed=123456789
+```
+
+### `maxLen` : [number]
+
+Default: 4096
+
+Set the maximum generated input length in bytes.
+
+```bash
+npx jazzer my-fuzz-file --maxLen=8192
+```
+
+### `maxTotalTime` : [number]
+
+Default: 0
+
+Set the maximum total fuzzing time in seconds. `0` means unlimited.
+
+```bash
+npx jazzer my-fuzz-file --maxTotalTime=60
+```
+
+### `artifactPrefix` : [string]
+
+Default: ""
+
+Set the prefix used when writing crash artifacts.
+
+```bash
+npx jazzer my-fuzz-file --artifactPrefix=./artifacts/
+```
+
+### `libFuzzerOptions` : [array\<string\>]
+
+Default: []
+
+Pass backend-specific options to libFuzzer. Common Jazzer.js options such as
+`runs`, `seed`, `maxLen`, `maxTotalTime`, `timeout`, `artifactPrefix`, and
+`dictionaryFiles` must be configured with their Jazzer.js-native options and are
+rejected here.
+
+For the `libfuzzer` backend, see the
+[libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html#options).
+
+```bash
+npx jazzer my-fuzz-file --libFuzzerOptions=-use_value_profile=1 --libFuzzerOptions=-print_final_stats=1
+```
+
+**Jest:** Add libFuzzer-specific options to `.jazzerjsrc.json`:
+
+```json
+{
+	"libFuzzerOptions": ["-use_value_profile=1", "-print_final_stats=1"]
+}
+```
+
+**Jest fuzz test:** Backend-specific libFuzzer options can be set directly for a
+fuzz test:
 
 ```javascript
 it.fuzz("My test 1",
 	(data) => {...},
-	{fuzzerOptions: ["-dict=xml.txt"]});
+	{libFuzzerOptions: ["-use_value_profile=1"]});
 ```
 
-**ENV:** For example, to pass the options `-use_value_profile=1` and
-`-dict=xml.txt` to libFuzzer in Jest mode using environmental variable can be
-done as follows:
+### `libAflOptions` : [array\<string\>]
 
-```bash
-JAZZER_FUZZER_OPTIONS='["-use_value_profile=1", "-dict=xml.txt"]' npx jest tests.fuzz.js
-```
+Default: []
 
-_Note:_ It is not possible to set this flag in CLI mode via an environment
-variable.
+Reserved for backend-specific LibAFL options. No LibAFL-specific options are
+currently exposed; use common Jazzer.js options such as `runs`, `seed`,
+`maxLen`, `maxTotalTime`, and `timeout` instead.
 
 #### Value profile
 
@@ -695,7 +787,7 @@ Default: ""
 
 Specify a file to synchronize edge IDs used during fuzzing by multiple processes
 (e.g. in fork mode by adding `-fork=1` to the option
-[`fuzzerOption`](#fuzzeroptions--arraystring)).
+[`libFuzzerOptions`](#libfuzzeroptions--arraystring)).
 
 _Note: This option is intended for internal use only when fuzzing in
 multi-process mode. It is not possible to set this option on command-line or
@@ -811,10 +903,9 @@ coverage will be stored in the seed directory. Inputs that trigger a crash will
 be stored in the regression directory.
 
 In _regression_ mode on command line, Jazzer.js runs each input from the seed
-and regression corpus directories on the fuzz target once, and then stops. Under
-the hood, this option adds `-runs=0` to the option
-[`fuzzerOptions`](#fuzzeroptions--arraystring). Setting the fuzzer option to
-`-runs=0` (run each input only once) can be used to achieve the same behavior.
+and regression corpus directories on the fuzz target once, and then stops. This
+behavior is configured with the native Jazzer.js mode option instead of backend
+flags.
 
 **Jest:** Default: `"regression"`.
 

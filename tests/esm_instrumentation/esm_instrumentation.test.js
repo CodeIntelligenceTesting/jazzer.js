@@ -70,4 +70,21 @@ describeOrSkip("ESM instrumentation", () => {
 		fuzzTest.execute();
 		expect(fuzzTest.stderr).toContain("Found the ESM secret!");
 	});
+
+	it("should report edges for a lazily imported ESM module in LibAFL", () => {
+		const fuzzTest = new FuzzTestBuilder()
+			.fuzzEntryPoint("fuzz")
+			.fuzzFile("fuzz-lazy.mjs")
+			.dir(__dirname)
+			.engine("afl")
+			.disableBugDetectors([".*"])
+			.runs(1)
+			.seed(1337)
+			.build();
+
+		fuzzTest.execute();
+		expect(fuzzTest.stderr).toContain("[>] INITED");
+		expect(fuzzTest.stderr).toMatch(/\bedges:\s+\d+\/\d+/);
+		expect(fuzzTest.stderr).not.toContain("edges:          -/   - (  -%)");
+	});
 });

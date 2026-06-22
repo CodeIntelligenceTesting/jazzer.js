@@ -16,7 +16,7 @@
 
 import Runtime from "jest-runtime";
 
-import { OptionsManager } from "@jazzer.js/core";
+import { OptionsManager } from "@jazzer.js/options";
 
 import { fuzz } from "./fuzz";
 import { InterceptedTestState } from "./testStateInterceptor";

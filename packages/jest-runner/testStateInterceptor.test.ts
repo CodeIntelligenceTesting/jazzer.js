@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { Options, OptionsManager, OptionSource } from "@jazzer.js/core";
+import {
+	Mode,
+	Options,
+	OptionsManager,
+	OptionSource,
+} from "@jazzer.js/options";
 
 import { interceptTestState } from "./testStateInterceptor";
 
@@ -32,7 +37,7 @@ describe("Test state interceptor", () => {
 	});
 
 	it("adjust test name pattern in regression mode", () => {
-		const { env, config } = mockEnvironment({ mode: "regression" });
+		const { env, config } = mockEnvironment({ mode: Mode.Regression });
 
 		const { originalTestNamePattern } = interceptTestState(env, config);
 
@@ -43,7 +48,7 @@ describe("Test state interceptor", () => {
 	});
 
 	it("do not adjust test name pattern in fuzzing mode", () => {
-		const { env, config } = mockEnvironment({ mode: "fuzzing" });
+		const { env, config } = mockEnvironment({ mode: Mode.Fuzzing });
 
 		const interceptedTestState = interceptTestState(env, config);
 
@@ -68,7 +73,7 @@ describe("Test state interceptor", () => {
 		}
 
 		const { env, config, originalHandleTestEvent } = mockEnvironment({
-			mode: "fuzzing",
+			mode: Mode.Fuzzing,
 		});
 
 		interceptTestState(env, config);
@@ -88,7 +93,7 @@ describe("Test state interceptor", () => {
 	});
 
 	it("deactivate Jest timeout in fuzzing mode", () => {
-		const { env, config } = mockEnvironment({ mode: "fuzzing" });
+		const { env, config } = mockEnvironment({ mode: Mode.Fuzzing });
 
 		const { currentTestTimeout } = interceptTestState(env, config);
 

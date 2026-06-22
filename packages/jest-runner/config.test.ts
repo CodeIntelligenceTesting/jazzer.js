@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { OptionsManager, OptionSource } from "@jazzer.js/core";
+import { Mode, OptionsManager, OptionSource } from "@jazzer.js/options";
 
 import { loadConfig } from "./config";
 
@@ -39,19 +39,19 @@ describe("Config", () => {
 		});
 		it("deep copy configurations", () => {
 			const config1 = loadConfig();
-			config1.get("fuzzerOptions").push("-runs=100");
+			config1.get("libFuzzerOptions").push("-use_value_profile=1");
 			const config2 = loadConfig({}, "merge-test-jazzerjs");
-			expect(config1.get("fuzzerOptions")).not.toEqual(
-				config2.get("fuzzerOptions"),
+			expect(config1.get("libFuzzerOptions")).not.toEqual(
+				config2.get("libFuzzerOptions"),
 			);
 		});
 		it("default to regression mode", () => {
-			expect(loadConfig().get("mode")).toEqual("regression");
+			expect(loadConfig().get("mode")).toEqual(Mode.Regression);
 		});
 		it("set fuzzing mode based on environment variable", () => {
 			try {
 				process.env.JAZZER_FUZZ = "1";
-				expect(loadConfig().get("mode")).toEqual("fuzzing");
+				expect(loadConfig().get("mode")).toEqual(Mode.Fuzzing);
 			} finally {
 				delete process.env.JAZZER_FUZZ;
 			}

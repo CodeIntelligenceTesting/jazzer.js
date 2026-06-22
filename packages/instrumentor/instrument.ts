@@ -104,6 +104,10 @@ export class Instrumentor {
 			filename: string,
 			map: SourceMap,
 		) => registry.registerSourceMap(filename, map);
+		(globalThis as Record<string, unknown>).__jazzer_reserveCoverageRange = (
+			filename: string,
+			idCount: number,
+		) => this.idStrategy.reserveEdgeRange(filename, idCount);
 
 		return this.sourceMapRegistry.installSourceMapSupport();
 	}
@@ -187,6 +191,10 @@ export class Instrumentor {
 			filename: filename,
 			sourceFileName: filename,
 			sourceMaps: true,
+			// Ignore host-project Babel config so Jazzer's runtime transforms stay
+			// deterministic and don't pick up polyfill injection from the fuzz target.
+			babelrc: false,
+			configFile: false,
 			plugins: plugins,
 			...options,
 		});

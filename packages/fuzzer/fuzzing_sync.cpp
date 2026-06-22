@@ -51,6 +51,25 @@ volatile int nSigInts = 0;
 // Store the execution context of the fuzz target function. The execution will
 // jump back to this stored context in case of a segfault.
 std::jmp_buf executionContext;
+
+class ScopedSignalHandler {
+public:
+  ScopedSignalHandler(int signum, void (*handler)(int))
+      : signum_(signum), previous_handler_(std::signal(signum, handler)) {}
+
+  ~ScopedSignalHandler() {
+    if (previous_handler_ != SIG_ERR) {
+      std::signal(signum_, previous_handler_);
+    }
+  }
+
+  ScopedSignalHandler(const ScopedSignalHandler &) = delete;
+  ScopedSignalHandler &operator=(const ScopedSignalHandler &) = delete;
+
+private:
+  int signum_;
+  void (*previous_handler_)(int);
+};
 } // namespace
 
 void sigintHandler(int signum) {
@@ -175,10 +194,12 @@ Napi::Value StartFuzzing(const Napi::CallbackInfo &info) {
                  Napi::Promise::Deferred::New(info.Env()),
                  info[2].As<Napi::Function>()};
 
-  signal(SIGINT, sigintHandler);
-  signal(SIGSEGV, ErrorSignalHandler);
+  {
+    ScopedSignalHandler sigint_handler(SIGINT, sigintHandler);
+    ScopedSignalHandler sigsegv_handler(SIGSEGV, ErrorSignalHandler);
 
-  StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
+    StartLibFuzzer(fuzzer_args, FuzzCallbackSync);
+  }
 
   // Resolve the deferred in case no error could be found during fuzzing.
   if (!gFuzzTarget->isResolved) {

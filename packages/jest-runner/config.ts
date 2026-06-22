@@ -16,7 +16,12 @@
 
 import { cosmiconfigSync } from "cosmiconfig";
 
-import { Options, OptionsManager, OptionSource } from "@jazzer.js/core";
+import {
+	Mode,
+	Options,
+	OptionsManager,
+	OptionSource,
+} from "@jazzer.js/options";
 
 export const TIMEOUT_PLACEHOLDER = Number.MIN_SAFE_INTEGER;
 
@@ -29,7 +34,7 @@ export function loadConfig(
 
 	// Switch to fuzzing mode if environment variable `JAZZER_FUZZ` is set.
 	if (process.env.JAZZER_FUZZ) {
-		config.mode = "fuzzing";
+		config.mode = Mode.Fuzzing;
 	}
 	// Merge explicitly passed in options, e.g. coverage settings from Jest.
 	Object.assign(config, options);

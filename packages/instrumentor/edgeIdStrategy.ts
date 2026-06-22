@@ -40,6 +40,7 @@ if (process.listeners) {
 
 export interface EdgeIdStrategy {
 	nextEdgeId(): number;
+	reserveEdgeRange(filename: string, idCount: number): number;
 	startForSourceFile(filename: string): void;
 	commitIdCount(filename: string): void;
 }
@@ -50,6 +51,15 @@ export abstract class IncrementingEdgeIdStrategy implements EdgeIdStrategy {
 	nextEdgeId(): number {
 		fuzzer.coverageTracker.enlargeCountersBufferIfNeeded(this._nextEdgeId);
 		return this._nextEdgeId++;
+	}
+
+	reserveEdgeRange(_filename: string, idCount: number): number {
+		if (!Number.isInteger(idCount) || idCount < 0) {
+			throw new Error(`Invalid edge count: ${idCount}`);
+		}
+		const firstId = this._nextEdgeId;
+		this._nextEdgeId += idCount;
+		return firstId;
 	}
 
 	abstract startForSourceFile(filename: string): void;
@@ -76,6 +86,29 @@ interface EdgeIdInfo {
 	idCount: number;
 }
 
+function parseIdInfoLine(line: string): EdgeIdInfo {
+	const parts = line.split(",");
+	if (parts.length !== 3) {
+		throw new Error(
+			`Expected ID file line to be <file>,<first ID>,<num IDs>, got ` +
+				`"${line}"`,
+		);
+	}
+	return {
+		filename: parts[0],
+		firstId: parseInt(parts[1], 10),
+		idCount: parseInt(parts[2], 10),
+	};
+}
+
+function nextFreeId(idInfo: EdgeIdInfo[]): number {
+	if (idInfo.length === 0) {
+		return 0;
+	}
+	const last = idInfo[idInfo.length - 1];
+	return last.firstId + last.idCount;
+}
+
 /**
  * A strategy for edge ID generation that synchronizes the IDs assigned to a source file
  * with other processes via the specified `idSyncFile`. The edge information stored as a
@@ -95,93 +128,69 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 	}
 
 	startForSourceFile(filename: string): void {
-		// We resort to busy waiting since the `Transformer` required by istanbul's `hookRequire`
-		// must be a synchronous function returning the transformed code.
-		for (;;) {
-			const isLocked = lock.checkSync(this.idSyncFile);
-			if (isLocked) {
-				// If the ID sync file is already locked, wait for a random period of time
-				// between 0 and 100 milliseconds. Waiting for different periods reduces
-				// the chance of all processes wanting to acquire the lock at the same time.
-				this.wait(this.randomIntFromInterval(0, 100));
-				continue;
-			}
-			try {
-				// Acquire the lock for the ID sync file and look for the initial edge ID and
-				// corresponding number of inserted counters.
-				this.releaseLockOnSyncFile = lock.lockSync(this.idSyncFile);
-				const idInfo = fs
-					.readFileSync(this.idSyncFile, "utf8")
-					.toString()
-					.split(os.EOL)
-					.filter((line) => line.length !== 0)
-					.map((line): EdgeIdInfo => {
-						const parts = line.split(",");
-						if (parts.length !== 3) {
-							lock.unlockSync(this.idSyncFile);
-							throw Error(
-								`Expected ID file line to be of the form <source file>,<first ID>,<num IDs>", got "${line}"`,
-							);
-						}
-						return {
-							filename: parts[0],
-							firstId: parseInt(parts[1], 10),
-							idCount: parseInt(parts[2], 10),
-						};
-					});
-				const idInfoForFile = idInfo.filter(
-					(info) => info.filename === filename,
-				);
+		const idInfo = this.acquireLockAndReadIdInfo();
+		const idInfoForFile = idInfo.filter((info) => info.filename === filename);
 
-				switch (idInfoForFile.length) {
-					case 0:
-						// We are the first to encounter this source file and thus need to hold the lock
-						// until the file has been instrumented and we know the required number of edge IDs.
-						//
-						// Compute the next free ID as the maximum over the sums of first ID and ID count, starting at 0 if
-						// this is the first ID to be assigned. Since this is the only way new lines are added to
-						// the file, the maximum is always attained by the last line.
-						this.firstEdgeId =
-							idInfo.length !== 0
-								? idInfo[idInfo.length - 1].firstId +
-									idInfo[idInfo.length - 1].idCount
-								: 0;
-						break;
-					case 1:
-						// This source file has already been instrumented elsewhere, so we just return the first ID and
-						// ID count reported from there and release the lock right away. The caller is still expected
-						// to call commitIdCount.
-						this.firstEdgeId = idInfoForFile[0].firstId;
-						this.cachedIdCount = idInfoForFile[0].idCount;
-						this.releaseLockOnSyncFile();
-						break;
-					default:
-						this.releaseLockOnSyncFile();
-						console.error(
-							`ERROR: Multiple entries for ${filename} in ID sync file`,
-						);
-						process.exit(FileSyncIdStrategy.fatalExitCode);
-				}
+		switch (idInfoForFile.length) {
+			case 0:
+				// Keep the lock until commitIdCount() records the final range.
+				this.firstEdgeId = nextFreeId(idInfo);
+				this.cachedIdCount = undefined;
 				break;
-			} catch (e) {
-				// Retry to wait for the lock to be release it is acquired by another process
-				// in the time window between last successful check and trying to acquire it.
-				if (this.isLockAlreadyHeldError(e)) {
-					continue;
-				}
-
-				// Before rethrowing the exception, release the lock if we have already acquired it.
-				if (this.releaseLockOnSyncFile !== undefined) {
-					this.releaseLockOnSyncFile();
-				}
-
-				// Stop waiting for the lock if we encounter other errors. Also, rethrow the error.
-				throw e;
-			}
+			case 1:
+				this.firstEdgeId = idInfoForFile[0].firstId;
+				this.cachedIdCount = idInfoForFile[0].idCount;
+				this.releaseLock();
+				break;
+			default:
+				this.releaseLock();
+				console.error(
+					`ERROR: Multiple entries for ${filename} in ID sync file`,
+				);
+				process.exit(FileSyncIdStrategy.fatalExitCode);
 		}
 
 		this._nextEdgeId = this.firstEdgeId;
 	}
+
+	reserveEdgeRange(filename: string, idCount: number): number {
+		const idInfo = this.acquireLockAndReadIdInfo();
+		try {
+			const idInfoForFile = idInfo.filter((info) => info.filename === filename);
+			switch (idInfoForFile.length) {
+				case 0: {
+					const firstId = nextFreeId(idInfo);
+					fs.appendFileSync(
+						this.idSyncFile,
+						`${filename},${firstId},${idCount}${os.EOL}`,
+					);
+					this._nextEdgeId = Math.max(this._nextEdgeId, firstId + idCount);
+					return firstId;
+				}
+				case 1:
+					if (idInfoForFile[0].idCount !== idCount) {
+						throw new Error(
+							`${filename} has ${idCount} edges, but ` +
+								`${idInfoForFile[0].idCount} edges reserved in ` +
+								"ID sync file",
+						);
+					}
+					this._nextEdgeId = Math.max(
+						this._nextEdgeId,
+						idInfoForFile[0].firstId + idCount,
+					);
+					return idInfoForFile[0].firstId;
+				default:
+					console.error(
+						`ERROR: Multiple entries for ${filename} in ID sync file`,
+					);
+					process.exit(FileSyncIdStrategy.fatalExitCode);
+			}
+		} finally {
+			this.releaseLock();
+		}
+	}
+
 	commitIdCount(filename: string): void {
 		if (this.firstEdgeId === undefined) {
 			throw Error("commitIdCount() is called before startForSourceFile()");
@@ -210,10 +219,40 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 				this.idSyncFile,
 				`${filename},${this.firstEdgeId},${usedIdsCount}${os.EOL}`,
 			);
-			this.releaseLockOnSyncFile();
-			this.releaseLockOnSyncFile = undefined;
+			this.releaseLock();
 			this.firstEdgeId = undefined;
 			this.cachedIdCount = undefined;
+		}
+	}
+
+	private acquireLockAndReadIdInfo(): EdgeIdInfo[] {
+		for (;;) {
+			if (lock.checkSync(this.idSyncFile)) {
+				this.wait(this.randomIntFromInterval(0, 100));
+				continue;
+			}
+			try {
+				this.releaseLockOnSyncFile = lock.lockSync(this.idSyncFile);
+				return fs
+					.readFileSync(this.idSyncFile, "utf8")
+					.toString()
+					.split(os.EOL)
+					.filter((line) => line.length !== 0)
+					.map(parseIdInfoLine);
+			} catch (e) {
+				if (this.isLockAlreadyHeldError(e)) {
+					continue;
+				}
+				this.releaseLock();
+				throw e;
+			}
+		}
+	}
+
+	private releaseLock() {
+		if (this.releaseLockOnSyncFile !== undefined) {
+			this.releaseLockOnSyncFile();
+			this.releaseLockOnSyncFile = undefined;
 		}
 	}
 
@@ -238,6 +277,10 @@ export class FileSyncIdStrategy extends IncrementingEdgeIdStrategy {
 
 export class ZeroEdgeIdStrategy implements EdgeIdStrategy {
 	nextEdgeId(): number {
+		return 0;
+	}
+
+	reserveEdgeRange(_filename: string, _idCount: number): number {
 		return 0;
 	}
 

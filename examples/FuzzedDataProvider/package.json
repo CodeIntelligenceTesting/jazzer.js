@@ -3,8 +3,8 @@
 	"version": "1.0.0",
 	"description": "An example showing how to use FuzzedDataProvider in Jazzer.js",
 	"scripts": {
-		"fuzz": "jazzer fuzz --sync -x Error -i fuzz.js -- -use_value_profile=1 -print_pcs=1 -print_final_stats=1 -max_len=52 -runs=4000000 -seed=605643277",
-		"dryRun": "jazzer fuzz --sync -- -runs=100 -seed=123456789"
+		"fuzz": "jazzer fuzz --sync -x Error -i fuzz.js --maxLen=52 --runs=4000000 --seed=605643277 --libFuzzerOptions=-use_value_profile=1 --libFuzzerOptions=-print_pcs=1 --libFuzzerOptions=-print_final_stats=1",
+		"dryRun": "jazzer fuzz --sync --runs=100 --seed=123456789"
 	},
 	"devDependencies": {
 		"@jazzer.js/core": "file:../../packages/core"

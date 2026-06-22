@@ -17,9 +17,14 @@
 
 import yargs, { Argv } from "yargs";
 
+import {
+	defaultCLIOptions,
+	OptionsManager,
+	OptionSource,
+} from "@jazzer.js/options";
+
 import { FuzzingExitCode, startFuzzing } from "./core";
-import { defaultCLIOptions, OptionsManager, OptionSource } from "./options";
-import { prepareArgs } from "./utils";
+import { normalizeLegacyEngineFlags, prepareArgs } from "./utils";
 
 // Use yargs to parse command line arguments and provide a nice CLI experience.
 // Default values are provided by the options module and must not be set by yargs.
@@ -27,7 +32,7 @@ import { prepareArgs } from "./utils";
 // descriptions.
 // Handling of unsupported parameters is also done via the options module.
 
-yargs(process.argv.slice(2))
+yargs(normalizeLegacyEngineFlags(process.argv.slice(2)))
 	.scriptName("jazzer")
 	.parserConfiguration({
 		"camel-case-expansion": false,
@@ -40,11 +45,10 @@ yargs(process.argv.slice(2))
 			'and only instrument code in the "packages/a" and "packages/b" modules.',
 	)
 	.example(
-		"$0 package/target corpus -- -max_total_time=60",
+		"$0 package/target corpus --maxTotalTime=60",
 		'Start a fuzzing run using the "fuzz" function exported by "target" ' +
 			'and use the directory "corpus" to store newly generated inputs. ' +
-			'Also pass the "-max_total_time" flag to the internal fuzzing engine ' +
-			"(libFuzzer) to stop the fuzzing run after 60 seconds.",
+			"Stop the fuzzing run after 60 seconds.",
 	)
 	.epilogue("Happy fuzzing!")
 	.command(
@@ -56,9 +60,8 @@ yargs(process.argv.slice(2))
 			'The "corpus" directory is optional and can be used to provide initial ' +
 			"seed input. It is also used to store interesting inputs between fuzzing " +
 			"runs.\n\n" +
-			"To pass options to the internal fuzzing engine (libFuzzer) use a " +
-			'double-dash, "--", to mark the end of the normal fuzzer arguments. ' +
-			"An example is shown in the examples section of this help message.",
+			"Backend-specific options can be passed with --libFuzzerOptions " +
+			"or --libAflOptions.",
 		(yargs: Argv) => {
 			yargs
 				.positional("fuzzTarget", {
@@ -177,6 +180,14 @@ yargs(process.argv.slice(2))
 					group: "Fuzzer:",
 					type: "string",
 				})
+				.option("engine", {
+					alias: ["backend"],
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.engine)}`,
+					describe:
+						"Fuzzing engine backend. Use 'libfuzzer' for the default backend or 'afl' (alias 'libafl') to opt into the LibAFL backend.",
+					group: "Fuzzer:",
+					type: "string",
+				})
 				.option("dryRun", {
 					alias: ["dry_run", "d"],
 					defaultDescription: `${JSON.stringify(defaultCLIOptions.dryRun)}`,
@@ -189,6 +200,73 @@ yargs(process.argv.slice(2))
 					describe: "Timeout in milliseconds for each fuzz test execution.",
 					group: "Fuzzer:",
 					type: "number",
+				})
+				.option("runs", {
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.runs)}`,
+					describe:
+						"Number of fuzz target executions. Explicit 0 is forwarded to the backend.",
+					group: "Fuzzer:",
+					type: "number",
+				})
+				.option("seed", {
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.seed)}`,
+					describe: "Fuzzing seed. 0 lets Jazzer.js generate one.",
+					group: "Fuzzer:",
+					type: "number",
+				})
+				.option("maxLen", {
+					alias: "max_len",
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.maxLen)}`,
+					describe: "Maximum fuzz input length in bytes.",
+					group: "Fuzzer:",
+					type: "number",
+				})
+				.option("maxTotalTime", {
+					alias: "max_total_time",
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.maxTotalTime)}`,
+					describe: "Maximum total fuzzing time in seconds. 0 means unlimited.",
+					group: "Fuzzer:",
+					type: "number",
+				})
+				.option("artifactPrefix", {
+					alias: "artifact_prefix",
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.artifactPrefix)}`,
+					describe: "Path prefix for crash artifacts.",
+					group: "Fuzzer:",
+					type: "string",
+				})
+				.option("dictionaryFiles", {
+					alias: ["dict", "dictionary_files"],
+					array: true,
+					defaultDescription: `${JSON.stringify(
+						defaultCLIOptions.dictionaryFiles,
+					)}`,
+					describe:
+						"Fuzzing dictionary files. Can be specified multiple times.",
+					group: "Fuzzer:",
+					type: "string",
+				})
+				.option("libFuzzerOptions", {
+					alias: "lib_fuzzer_options",
+					array: true,
+					defaultDescription: `${JSON.stringify(
+						defaultCLIOptions.libFuzzerOptions,
+					)}`,
+					describe:
+						"Backend-specific libFuzzer options. Common Jazzer.js " +
+						"options such as --runs and --timeout are rejected here.",
+					group: "Fuzzer:",
+					type: "string",
+				})
+				.option("libAflOptions", {
+					alias: "lib_afl_options",
+					array: true,
+					defaultDescription: `${JSON.stringify(defaultCLIOptions.libAflOptions)}`,
+					describe:
+						"Reserved for backend-specific LibAFL options. Common " +
+						"Jazzer.js options such as --runs and --timeout are rejected here.",
+					group: "Fuzzer:",
+					type: "string",
 				})
 				.option("sync", {
 					defaultDescription: `${JSON.stringify(defaultCLIOptions.sync)}`,
