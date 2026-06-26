@@ -21,9 +21,6 @@ import { tracer } from "./trace";
 jest.mock("./addon", () => ({
 	addon: {
 		tracePcIndir: jest.fn(),
-		traceUnequalStrings: jest.fn(),
-		traceStringContainment: jest.fn(),
-		traceIntegerCompare: jest.fn(),
 	},
 }));
 
