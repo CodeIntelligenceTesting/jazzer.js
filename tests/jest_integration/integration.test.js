@@ -201,10 +201,11 @@ describe("Jest integration", () => {
 				expect(lines).toHaveLength(3);
 				expect(lines[0]).toEqual("Error: Welcome to Awesome Fuzzing!");
 				expect(lines[1]).toMatch(
-					/at Object\.Error \[as fuzzMe] \(.*target\.js:\d+:\d+\)/,
+					// Jest >= 30.5 reports the actual function names.
+					/at Object\.(Error \[as fuzzMe]|fuzzMe) \(.*target\.js:\d+:\d+\)/,
 				);
 				expect(lines[2]).toMatch(
-					/at fuzzMe \(.*integration\.fuzz\.js:\d+:\d+\)/,
+					/at (fuzzMe \()?.*integration\.fuzz\.js:\d+:\d+\)?$/,
 				);
 			});
 		});
