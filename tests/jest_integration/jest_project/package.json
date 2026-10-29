@@ -7,7 +7,7 @@
 	},
 	"devDependencies": {
 		"@jazzer.js/jest-runner": "file:../../../packages/jest-runner",
-		"jest": "^29.3.1"
+		"jest": "^30.5.2"
 	},
 	"jest": {
 		"projects": [
