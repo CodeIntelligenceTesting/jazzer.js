@@ -23,11 +23,67 @@ import tmp from "tmp";
 import { Instrumentor } from "@jazzer.js/instrumentor";
 import { SourceMap } from "@jazzer.js/instrumentor/dist/SourceMapRegistry";
 
-import { interceptScriptTransformerCalls } from "./transformerInterceptor";
+import {
+	getScriptTransformer,
+	interceptScriptTransformerCalls,
+} from "./transformerInterceptor";
 
 tmp.setGracefulCleanup();
 
 describe("TransformerInterceptor", () => {
+	describe("getScriptTransformer", () => {
+		it("returns the transformer of Jest < 30.4", () => {
+			const scriptTransformer = {};
+			const runtime = {
+				_scriptTransformer: scriptTransformer,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			} as any;
+			expect(getScriptTransformer(runtime)).toBe(scriptTransformer);
+		});
+
+		it("returns the transformer of Jest >= 30.4", () => {
+			const scriptTransformer = {};
+			const runtime = {
+				transformCache: { scriptTransformer },
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			} as any;
+			expect(getScriptTransformer(runtime)).toBe(scriptTransformer);
+		});
+
+		it("throws if the transformer is not found", () => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const runtime = {} as any;
+			expect(() => getScriptTransformer(runtime)).toThrow(
+				/not supported by @jazzer.js\/jest-runner/,
+			);
+		});
+
+		it("intercepts the transformer of Jest >= 30.4", () => {
+			const { instrumentor, scriptTransformer } = mockInstrumentorAndRuntime({
+				code: "instrumentedCode",
+			});
+			const runtime = {
+				transformCache: { scriptTransformer },
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			} as any;
+			scriptTransformer._transformAndBuildScript.mockImplementationOnce(() => ({
+				code: "some code",
+				originalCode: "originalCode",
+				sourceMapPath: null,
+			}));
+
+			interceptScriptTransformerCalls(runtime, instrumentor);
+			const result = scriptTransformer._transformAndBuildScript(
+				"filename",
+				{},
+				{},
+				"fileSource",
+			);
+
+			expect(result.code).toBe("instrumentedCode");
+		});
+	});
+
 	describe("_buildTransformResult", () => {
 		it("instrument sources", () => {
 			const instrumentedReturn = {

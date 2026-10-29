@@ -21,6 +21,7 @@ import fs from "fs";
 
 import {
 	CallerTransformOptions,
+	ScriptTransformer,
 	TransformedSource,
 	TransformResult,
 } from "@jest/transform";
@@ -34,11 +35,30 @@ tmp.setGracefulCleanup();
 // Code containing coverage instrumentation calls is considered to be instrumented.
 const INSTRUMENTATION_MARKER = "Fuzzer.coverageTracker.incrementCounter";
 
+// Private Runtime fields holding Jest's ScriptTransformer. jest-runtime 30.4.0
+// moved it from the runtime itself into a TransformCache wrapper.
+type RuntimeInternals = {
+	_scriptTransformer?: ScriptTransformer;
+	transformCache?: { scriptTransformer?: ScriptTransformer };
+};
+
+export function getScriptTransformer(runtime: Runtime): ScriptTransformer {
+	const internals = runtime as unknown as RuntimeInternals;
+	const scriptTransformer =
+		internals._scriptTransformer ?? internals.transformCache?.scriptTransformer;
+	if (!scriptTransformer) {
+		throw new Error(
+			"Could not access Jest's ScriptTransformer. This Jest version is not supported by @jazzer.js/jest-runner.",
+		);
+	}
+	return scriptTransformer;
+}
+
 export function interceptScriptTransformerCalls(
 	runtime: Runtime,
 	instrumentor: Instrumentor,
 ) {
-	const scriptTransformer = runtime["_scriptTransformer"];
+	const scriptTransformer = getScriptTransformer(runtime);
 
 	// _buildTransformResult is used in transformSource and transformSourceAsync
 	// and creates a cache file for the transformed code. We instrument and hence change

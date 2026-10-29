@@ -32,7 +32,10 @@ import { cleanupJestError, cleanupJestRunnerStack } from "./errorUtils";
 import { FuzzTest } from "./fuzz";
 import { interceptGlobals } from "./globalsInterceptor";
 import { interceptTestState } from "./testStateInterceptor";
-import { interceptScriptTransformerCalls } from "./transformerInterceptor";
+import {
+	getScriptTransformer,
+	interceptScriptTransformerCalls,
+} from "./transformerInterceptor";
 
 export default async function jazzerTestRunner(
 	globalConfig: Config.GlobalConfig,
@@ -60,9 +63,9 @@ export default async function jazzerTestRunner(
 	interceptGlobals(runtime, testPath, options, testState);
 
 	const circusRunner =
-		await runtime["_scriptTransformer"].requireAndTranspileModule(
-			"jest-circus/runner",
-		);
+		await getScriptTransformer(runtime).requireAndTranspileModule<
+			typeof jazzerTestRunner
+		>("jest-circus/runner");
 
 	return circusRunner(
 		globalConfig,
