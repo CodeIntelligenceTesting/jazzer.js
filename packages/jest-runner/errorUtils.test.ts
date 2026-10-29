@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { cleanupJestError } from "./errorUtils";
+import { cleanupJestError, cleanupJestRunnerStack } from "./errorUtils";
 
 describe("ErrorUtils", () => {
 	const error = new Error();
@@ -35,18 +35,7 @@ Add a timeout value to this test to increase the timeout, if this is a long-runn
     at jestAdapter (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
     at runTestInternal (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:367:16)
     at runTest (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:444:34)`;
-
-	beforeEach(() => {
-		error.stack = stack;
-	});
-
-	describe("clean up Jest runner frames", () => {
-		it("in errors", () => {
-			const result = cleanupJestError(error);
-			expect(result instanceof Error).toBeTruthy();
-			if (result instanceof Error) {
-				expect(result.stack)
-					.toMatch(`Error: thrown: "Exceeded timeout of 5000 ms for a test.
+	const cleanedStack = `Error: thrown: "Exceeded timeout of 5000 ms for a test.
 Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
     at fuzz (/home/Code-Intelligence/jazzer.js/tests/jest_integration/jest_project/integration.fuzz.js:44:5)
     at _dispatchDescribe (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/index.js:91:26)
@@ -57,8 +46,47 @@ Add a timeout value to this test to increase the timeout, if this is a long-runn
     at Runtime.requireModule (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runtime/build/index.js:882:12)
     at jestAdapter (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:77:13)
     at runTestInternal (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:367:16)
-    at runTest (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:444:34)`);
+    at runTest (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-runner/build/runTest.js:444:34)`;
+
+	beforeEach(() => {
+		error.stack = stack;
+	});
+
+	describe("clean up Jest runner frames", () => {
+		it("in errors", () => {
+			const result = cleanupJestError(error);
+			expect(result instanceof Error).toBeTruthy();
+			if (result instanceof Error) {
+				expect(result.stack).toMatch(cleanedStack);
 			}
+		});
+
+		it("in causes of errors", () => {
+			const wrapper = new Error();
+			(wrapper as { cause?: unknown }).cause = error;
+			cleanupJestError(wrapper);
+			expect(error.stack).toMatch(cleanedStack);
+		});
+
+		it("in circular causes of errors", () => {
+			const cause = Object.assign(new Error(), { stack });
+			const wrapper = Object.assign(new Error(), { cause });
+			Object.assign(cause, { cause: wrapper });
+
+			cleanupJestError(wrapper);
+
+			expect(cause.stack).toMatch(cleanedStack);
+		});
+
+		it("in every stack of a message", () => {
+			const wrapperStack = `Error: wrapper
+    at _getError (/home/Code-Intelligence/jazzer.js/tests/jest_integration/node_modules/jest-circus/build/jestAdapterInit.js:1985:12)
+    at Array.map (<anonymous>)`;
+			expect(
+				cleanupJestRunnerStack(`${wrapperStack}\n\n[cause]: ${stack}`),
+			).toBe(
+				`Error: wrapper\n    at Array.map (<anonymous>)\n\n[cause]: ${cleanedStack}`,
+			);
 		});
 	});
 });

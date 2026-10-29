@@ -15,11 +15,14 @@
  */
 
 export const cleanupJestError = (error: unknown): unknown => {
-	if (error == undefined) {
-		return undefined;
-	}
-	if (error instanceof Error) {
-		error.stack = cleanupJestRunnerStack(error.stack);
+	// Jest >= 30.5 wraps non-Error failures, like timeouts, and reports the
+	// original stack as cause. Causes can be circular.
+	const seen = new Set<Error>();
+	let current = error;
+	while (current instanceof Error && !seen.has(current)) {
+		seen.add(current);
+		current.stack = cleanupJestRunnerStack(current.stack);
+		current = (current as { cause?: unknown }).cause;
 	}
 	return error;
 };
@@ -41,6 +44,9 @@ export const cleanupJestRunnerStack = (stack?: string): string | undefined => {
 		.split("\n")
 		.filter((frame) => {
 			if (!isStackFrame(frame)) {
+				// Messages can contain multiple stacks, e.g. the cause of an error,
+				// so remove the leading runner frames of each.
+				foundFirstNoneRunnerFrame = false;
 				return true;
 			}
 			if (foundFirstNoneRunnerFrame || !isRunnerFrame(frame)) {

@@ -368,14 +368,13 @@ describe("Jest integration", () => {
 				}).toThrow(JestRegressionExitCode);
 
 				const result = JSON.parse(fuzzTest.stdout);
+				// Jest >= 30.5 reports the stack of the test as cause of the timeout.
 				const stackFrames = firstFailureMessage(result)
+					.split("[cause]: ")
+					.pop()
 					.split("\n")
 					.filter((line) => line.startsWith("    at"));
-				// TODO: understand why the stack trace contains one more frame when all bug detectors are enabled.
-				// missing stack frame before last:
-				// '    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n' +
-				expect(stackFrames.length).toBeLessThanOrEqual(11);
-				expect(stackFrames.length).toBeGreaterThanOrEqual(10);
+				expect(stackFrames[0]).toMatch(/integration\.fuzz\.js:\d+:\d+\)?$/);
 			});
 
 			it("prioritize finding over error", () => {
