@@ -191,7 +191,9 @@ class FuzzTest {
 			"--no-colors",
 			this.asJson ? "--json" : "",
 			this.coverage ? "--coverage" : "",
-			this.listFuzzTestNames ? "--reporters=" : "",
+			// Jest 30 rejects an empty reporter list. The summary reporter only
+			// writes to stderr, so stdout contains only the listed test names.
+			this.listFuzzTestNames ? "--reporters=summary" : "",
 		];
 		let env = { ...process.env };
 		if (this.listFuzzTestNames) {
