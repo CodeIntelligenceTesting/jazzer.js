@@ -79,6 +79,42 @@ jobs:
         run: npm run build --workspace=@jazzer.js/fuzzer
       - name: run all tests
         run: npm run test
+  jest-compatibility:
+    name: jest integration (jest ${{ matrix.jest }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The tests job covers the Jest version of tests/jest_integration.
+        jest: [29]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        id: cache-fuzzer
+        with:
+          path: |
+            packages/fuzzer/prebuilds
+          key:
+            fuzzer-cache-ubuntu-latest-${{
+            hashFiles('packages/fuzzer/CMakeLists.txt',
+            'packages/fuzzer/**/*.h', 'packages/fuzzer/**/*.cpp') }}
+      - name: node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "npm"
+      - name: install dependencies
+        run: npm ci
+      - name: build project
+        run: npm run build
+      - name: build fuzzer
+        if: ${{ steps.cache-fuzzer.outputs.cache-hit != 'true' }}
+        run: npm run build --workspace=@jazzer.js/fuzzer
+      - name: run jest integration tests
+        working-directory: tests/jest_integration
+        run: |
+          npm install --no-save jest@${{ matrix.jest }} @types/jest@${{ matrix.jest }}
+          npm run fuzz
   end-to-end:
     name: end-to-end (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -162,6 +198,7 @@ jobs:
     needs:
       - linting
       - tests
+      - jest-compatibility
       - end-to-end
     permissions:
       pull-requests: write
