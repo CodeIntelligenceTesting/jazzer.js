@@ -123,8 +123,8 @@ Whenever adding the above guiding functions is not feasible, add values specific
 to your bug detector to a dictionary. The dictionary is used by the fuzzer just
 like any other mutator, which means that the fuzzer will occasionally take
 values from the dictionary and replace parts of the whole input with it. The
-syntax used by the dictionary is documented
-[here](https://llvm.org/docs/LibFuzzer.html#dictionaries).
+syntax used by the dictionary is documented in the
+[libFuzzer documentation](https://llvm.org/docs/LibFuzzer.html#dictionaries).
 
 - ```typescript
       addDictionary(...libFuzzerDictionary: string[])

@@ -374,9 +374,8 @@ Additional options for coverage report generation are described in the
 [fuzz targets documentation](./fuzz-targets.md#coverage-report-generation).
 
 The desired report format can be set by the flag `--coverageReporters`, which by
-default is set to `--coverageReporters json text lcov clover`. See
-[here](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib)
-for a list of supported coverage reporters.
+default is set to `--coverageReporters json text lcov clover`. See the
+[list of supported coverage reporters](https://github.com/istanbuljs/istanbuljs/tree/master/packages/istanbul-reports/lib).
 
 ### Manually adding regression tests
 
