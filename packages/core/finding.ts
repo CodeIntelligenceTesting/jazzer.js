@@ -15,7 +15,7 @@
  */
 
 import { EOL } from "os";
-import { sep } from "path";
+import { basename, dirname, sep } from "path";
 import process from "process";
 
 import { getJazzerJsGlobal, setJazzerJsGlobal } from "./globals";
@@ -144,6 +144,11 @@ function hasStack(arg: unknown): arg is WithStack {
 	);
 }
 
+// Folder containing all Jazzer.js packages: <checkout>/packages or
+// node_modules/@jazzer.js. Built code runs from core/dist.
+const coreDir = basename(__dirname) === "dist" ? dirname(__dirname) : __dirname;
+const jazzerPackagesDir = dirname(coreDir) + sep;
+
 export function cleanErrorStack(error: unknown): void {
 	if (!hasStack(error) || !error.stack) return;
 	if (error instanceof Finding) {
@@ -157,6 +162,8 @@ export function cleanErrorStack(error: unknown): void {
 	// like bug detector and reporting ones, and stack frames on the bottom, like the function
 	// wrapper.
 	const filterCriteria = [
+		// Filter Jazzer.js packages, regardless of the checkout folder name
+		jazzerPackagesDir,
 		`${sep}@jazzer.js${sep}`, // cli usage
 		// Filter public name (jest)
 		`${sep}jazzer.js${sep}packages${sep}`,

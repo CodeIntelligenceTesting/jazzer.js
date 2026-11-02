@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { sep } from "path";
+import { dirname, join, sep } from "path";
 
 import { Finding, printFinding } from "./finding";
 import { replaceAll } from "./utils";
@@ -80,6 +80,23 @@ describe("Finding", () => {
 			),
 		);
 		expect(lines[3]).toEqual("");
+	});
+
+	it("print a finding without Jazzer.js frames in any checkout folder", () => {
+		const printer = mockPrinter();
+		const error = new Finding("Welcome to Awesome Fuzzing!");
+		const packagesDir = dirname(__dirname);
+		const targetFrame = `    at fuzzMe (${join(dirname(packagesDir), "tests", "target.js")}:21:9)`;
+		error.stack = `Error: Welcome to Awesome Fuzzing!
+${targetFrame}
+    at ${join(packagesDir, "core", "core.ts")}:281:2`;
+
+		printFinding(error, printer);
+
+		const lines = printer.printed().split("\n");
+		expect(lines).toHaveLength(3);
+		expect(lines[1]).toContain(targetFrame);
+		expect(lines[2]).toEqual("");
 	});
 
 	it("print error with inherited/stale stack (e.g. pdf.js BaseException)", () => {
