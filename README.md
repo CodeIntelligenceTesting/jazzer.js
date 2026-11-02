@@ -8,7 +8,7 @@
     />
   </div>
   <hr />
-  
+
 <a href="https://www.code-intelligence.com/" target="_blank">Website</a> |
 <a href="https://www.code-intelligence.com/blog" target="_blank">Blog</a> |
 <a href="https://twitter.com/CI_Fuzz" target="_blank">Twitter</a>

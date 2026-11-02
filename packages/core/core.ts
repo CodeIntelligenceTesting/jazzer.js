@@ -369,12 +369,10 @@ export function asFindingAwareFuzzFn(
 ): FindingAwareFuzzTarget {
 	function printAndDump(error: unknown): void {
 		cleanErrorStack(error);
-		if (
-			!(
-				error instanceof FuzzerSignalFinding &&
-				error.exitCode === FuzzingExitCode.Ok
-			)
-		) {
+		if (!(
+			error instanceof FuzzerSignalFinding &&
+			error.exitCode === FuzzingExitCode.Ok
+		)) {
 			printFinding(error);
 			if (dumpCrashingInput) {
 				fuzzer.fuzzer.printAndDumpCrashingInput();
