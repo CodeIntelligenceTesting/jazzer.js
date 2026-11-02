@@ -185,11 +185,14 @@ export function hookTCPSocket(_thisPtr: unknown, args: unknown[], _id: number) {
 			detectSSRF(port, host, "Attempted connection via TCP");
 		}
 	} else if (args.length === 2) {
-		// connect(options: SocketConnectOpts, connectionListener?: () => void): this;
 		const firstArgument = args[0];
 		if (typeof firstArgument === "object" && firstArgument !== null) {
+			// connect(options: SocketConnectOpts, connectionListener?: () => void): this;
 			const options = firstArgument as TcpSocketConnectOpts;
 			detectSSRF(options.port, options.host, "Attempted connection via TCP");
+		} else if (typeof args[1] === "string") {
+			// connect(port: number, host: string): this;
+			detectSSRF(firstArgument, args[1], "Attempted connection via TCP");
 		}
 	} else if (args.length === 3) {
 		// connect(port: number, host: string, connectionListener?: () => void): this;
