@@ -160,6 +160,7 @@ yargs(process.argv.slice(2))
 						"bug detectors are enabled. To disable all, use the '.*' pattern." +
 						"Following bug detectors are available: " +
 						"    command-injection\n" +
+						"    code-injection\n" +
 						"    path-traversal\n" +
 						"    prototype-pollution\n",
 					group: "Fuzzer:",

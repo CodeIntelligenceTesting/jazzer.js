@@ -22,8 +22,33 @@ using Jest in `.jazzerjsrc.json`:
 
 ## Path Traversal
 
-Hooks all relevant functions of the built-in modules `fs` and `path` and reports
-a finding if the fuzzer could pass a special path to any of the functions.
+Hooks all relevant functions of the built-in modules `fs`, `fs/promises`, and
+`path` and reports a finding if the fuzzer could pass a special path to any of
+the functions.
+
+The Path Traversal bug detector can be configured in the
+[custom hooks](./fuzz-settings.md#customhooks--arraystring) file.
+
+- `ignore(rule)` - suppresses findings from callsites matching the shown stack
+  excerpt.
+- `stackPattern` accepts either a string or a `RegExp` and is matched against
+  the shown stack excerpt after removing the leading `Error` line and Jazzer.js
+  frames. The remaining stack text is matched as shown, including path
+  separators and column numbers.
+
+Here is an example configuration in the
+[custom hooks](./fuzz-settings.md#customhooks--arraystring) file:
+
+```javascript
+const { getBugDetectorConfiguration } = require("@jazzer.js/bug-detectors");
+
+getBugDetectorConfiguration("path-traversal")?.ignore({
+	stackPattern: "safe-path-wrapper.js:41",
+});
+```
+
+Findings also print a generic example suppression snippet. Copy/paste it and
+adapt `stackPattern` to the shown stack excerpt.
 
 _Disable with:_ `--disableBugDetectors=path-traversal` in CLI mode; or when
 using Jest in `.jazzerjsrc.json`:
@@ -98,17 +123,59 @@ using Jest in `.jazzerjsrc.json`:
 { "disableBugDetectors": ["prototype-pollution"] }
 ```
 
-## Remote Code Execution
+## Code Injection
 
-Hooks the `eval` and `Function` functions and reports a finding if the fuzzer
-was able to pass a special string to `eval` and to the function body of
-`Function`.
+Installs a canary on the active global object and hooks the `eval` and
+`Function` functions. The before-hooks guide the fuzzer toward injecting the
+active canary identifier into code strings. The detector reports two fatal
+stages by default:
 
-_Disable with:_ `--disableBugDetectors=remote-code-execution` in CLI mode; or
-when using Jest in `.jazzerjsrc.json`:
+- `Potential Code Injection (Canary Accessed)` - some code resolved the canary.
+  This high-recall heuristic catches cases where dynamically produced code reads
+  or stores the canary before executing it later.
+- `Confirmed Code Injection (Canary Invoked)` - the callable canary returned by
+  the getter was invoked.
+
+The detector can be configured in the
+[custom hooks](./fuzz-settings.md#customhooks--arraystring) file.
+
+- `disableAccessReporting` - disables the stage-1 access finding while keeping
+  invocation reporting active.
+- `disableInvocationReporting` - disables the stage-2 invocation finding.
+- `ignoreAccess(rule)` - suppresses stage-1 findings matching the shown stack
+  excerpt.
+- `ignoreInvocation(rule)` - suppresses stage-2 findings matching the shown
+  stack excerpt.
+- `stackPattern` accepts either a string or a `RegExp` and is matched against
+  the shown stack excerpt after removing the leading `Error` line and Jazzer.js
+  frames. The remaining stack text is matched as shown, including path
+  separators and column numbers.
+
+The detector must be able to install a canary on at least one active global
+object. Locked-down environments that forbid this should disable the detector
+explicitly.
+
+Here is an example configuration in the
+[custom hooks](./fuzz-settings.md#customhooks--arraystring) file:
+
+```javascript
+const { getBugDetectorConfiguration } = require("@jazzer.js/bug-detectors");
+
+getBugDetectorConfiguration("code-injection")
+	?.ignoreAccess({
+		stackPattern: "handlebars/runtime.js:87",
+	})
+	?.disableInvocationReporting();
+```
+
+Findings print a generic example suppression snippet. Copy/paste it and adapt
+`stackPattern` to a stable substring or `RegExp` from the shown stack.
+
+_Disable with:_ `--disableBugDetectors=code-injection` in CLI mode; or when
+using Jest in `.jazzerjsrc.json`:
 
 ```json
-{ "disableBugDetectors": ["remote-code-execution"] }
+{ "disableBugDetectors": ["code-injection"] }
 ```
 
 ## Server-Side Request Forgery (SSRF)

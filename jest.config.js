@@ -27,6 +27,7 @@ module.exports = {
 		"^.+\\.tsx?$": [
 			"ts-jest",
 			{
+				tsconfig: "<rootDir>/tsconfig.jest.json",
 				// ts-jest does not support composite project references.
 				// It compiles workspace .ts sources in one flat program,
 				// which breaks cross-package type resolution.  Disabling

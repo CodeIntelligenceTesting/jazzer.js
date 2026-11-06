@@ -95,7 +95,14 @@ describe("Corpus", () => {
 
 		it("throw error if no package.json was found", () => {
 			const fuzzTest = mockFuzzTest({ generatePackageJson: false });
-			expect(() => new Corpus(fuzzTest, [])).toThrow();
+			const readdirSync = jest.spyOn(fs, "readdirSync").mockReturnValue([]);
+			try {
+				expect(() => new Corpus(fuzzTest, [])).toThrow(
+					"Could not find package.json in any parent directory",
+				);
+			} finally {
+				readdirSync.mockRestore();
+			}
 		});
 	});
 });
